@@ -1,0 +1,15 @@
+node_modules/
+dist/
+dist-ssr/
+release/
+*.local
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# Temp files
+.temp/
+.temp/trash/
+.DS_Store
+Thumbs.db
