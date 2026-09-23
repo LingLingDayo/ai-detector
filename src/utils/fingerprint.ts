@@ -4,12 +4,103 @@ export const DIMENSION = VALUE_MAX - VALUE_MIN + 1;
 export const ALPHA = 0.5;
 export const ORDERED_BLOCK_WEIGHT = 0.25;
 
-export function parseNumbers(text) {
-  const runs = [];
-  let current = [];
+export interface BankModel {
+  id: string;
+  display_name: string;
+  family?: string;
+  family_name?: string;
+  counts: number[];
+  response_count?: number;
+  valid_number_count?: number;
+}
+
+export interface CalibrationData {
+  beta: number | string;
+  cv_accuracy: number;
+}
+
+export interface RobustArtifact {
+  feature_mean: number[];
+  feature_scale: number[];
+  nuisance_basis?: number[][];
+  centroids: number[][];
+  environment_centroids?: number[][][];
+  weight?: number | string;
+}
+
+export interface UnifiedBank {
+  models: BankModel[];
+  calibration: Record<string, CalibrationData>;
+  robust: {
+    hellinger: RobustArtifact;
+    ordered_blocks?: RobustArtifact;
+  };
+}
+
+export interface DiagnosticItem {
+  index: number;
+  parsed_numbers: number;
+  minimum_numbers: number;
+  accepted: boolean;
+  raw_text: string;
+}
+
+export interface ModelAttributionResult {
+  model: string;
+  display_name: string;
+  probability: number;
+  profile_similarity: number;
+  score: number;
+  family: string;
+  family_name: string;
+  conditional_probability?: number;
+}
+
+export interface FamilyProbabilityItem {
+  family: string;
+  display_name: string;
+  probability: number;
+}
+
+export interface GlobalAnalysisResult {
+  prediction: string;
+  prediction_name: string;
+  probability: number;
+  used_outputs: number;
+  results: ModelAttributionResult[];
+  diagnostics: DiagnosticItem[];
+  calibration: {
+    queries: string;
+    beta: number;
+    cv_accuracy: number;
+  };
+  family_prediction: string;
+  family_prediction_name: string;
+  family_probability: number;
+  family_probabilities: FamilyProbabilityItem[];
+  method: string;
+}
+
+export interface ProbeOutputItem {
+  text: string;
+  expected_count?: number;
+}
+
+interface ValidProbeItem {
+  numbers: number[];
+  counts: number[];
+  scores: number[];
+}
+
+export function parseNumbers(text: string): number[] {
+  const runs: number[][] = [];
+  let current: number[] = [];
   let previousEnd = 0;
-  for (const match of String(text).matchAll(/\d+/g)) {
-    const separator = String(text).slice(previousEnd, match.index);
+  const str = String(text);
+
+  for (const match of str.matchAll(/\d+/g)) {
+    const matchIndex = match.index ?? 0;
+    const separator = str.slice(previousEnd, matchIndex);
     const value = Number(match[0]);
     if (current.length && /\p{L}/u.test(separator)) {
       runs.push(current);
@@ -18,49 +109,50 @@ export function parseNumbers(text) {
     if (value >= VALUE_MIN && value <= VALUE_MAX) {
       current.push(value);
     }
-    previousEnd = match.index + match[0].length;
+    previousEnd = matchIndex + match[0].length;
   }
   if (current.length) runs.push(current);
   return runs.reduce((best, run) => (run.length > best.length ? run : best), []);
 }
 
-export function countNumbers(numbers) {
-  const counts = Array(DIMENSION).fill(0);
+export function countNumbers(numbers: readonly number[]): number[] {
+  const counts: number[] = Array(DIMENSION).fill(0);
   numbers.forEach((number) => {
     counts[number - VALUE_MIN] += 1;
   });
   return counts;
 }
 
-function mean(values) {
-  return values.reduce((total, value) => total + value, 0) / values.length;
+function mean(values: readonly number[]): number {
+  return values.reduce((total, value) => total + value, 0) / (values.length || 1);
 }
 
-function standardize(values) {
+function standardize(values: readonly number[]): number[] {
   const center = mean(values);
   const variance = mean(values.map((value) => (value - center) ** 2));
   const scale = Math.max(Math.sqrt(variance), 1e-12);
   return values.map((value) => (value - center) / scale);
 }
 
-function dot(left, right) {
+function dot(left: readonly number[], right: readonly number[]): number {
   let value = 0;
-  for (let index = 0; index < left.length; index += 1) {
+  const len = Math.min(left.length, right.length);
+  for (let index = 0; index < len; index += 1) {
     value += left[index] * right[index];
   }
   return value;
 }
 
-function norm(values) {
+function norm(values: readonly number[]): number {
   return Math.sqrt(dot(values, values));
 }
 
-function normalized(values) {
+function normalized(values: readonly number[]): number[] {
   const scale = Math.max(norm(values), 1e-12);
   return values.map((value) => value / scale);
 }
 
-function subtractBasis(values, basis) {
+function subtractBasis(values: readonly number[], basis?: readonly number[][]): number[] {
   const output = values.slice();
   for (const vector of basis || []) {
     const projection = dot(output, vector);
@@ -71,15 +163,15 @@ function subtractBasis(values, basis) {
   return output;
 }
 
-function hellingerFeature(counts) {
+function hellingerFeature(counts: readonly number[]): number[] {
   const total = counts.reduce((sum, value) => sum + value, 0) + ALPHA * DIMENSION;
   return counts.map((value) => Math.sqrt((value + ALPHA) / total));
 }
 
-function splitIntoFour(values) {
+function splitIntoFour(values: readonly number[]): number[][] {
   const base = Math.floor(values.length / 4);
   const remainder = values.length % 4;
-  const chunks = [];
+  const chunks: number[][] = [];
   let start = 0;
   for (let index = 0; index < 4; index += 1) {
     const size = base + (index < remainder ? 1 : 0);
@@ -89,10 +181,10 @@ function splitIntoFour(values) {
   return chunks;
 }
 
-function orderedBlockFeature(numbers) {
-  const pieces = [];
+function orderedBlockFeature(numbers: readonly number[]): number[] {
+  const pieces: number[] = [];
   for (const chunk of splitIntoFour(numbers)) {
-    const bins = Array(16).fill(0.5);
+    const bins: number[] = Array(16).fill(0.5);
     for (const value of chunk) {
       const index = Math.min(15, Math.floor(((value - 1) / 355) * 16));
       bins[index] += 1;
@@ -100,7 +192,7 @@ function orderedBlockFeature(numbers) {
     const total = bins.reduce((sum, value) => sum + value, 0);
     pieces.push(...bins.map((value) => Math.sqrt(value / total)));
   }
-  const lastDigits = Array(10).fill(0.5);
+  const lastDigits: number[] = Array(10).fill(0.5);
   numbers.forEach((value) => {
     lastDigits[value % 10] += 1;
   });
@@ -109,7 +201,7 @@ function orderedBlockFeature(numbers) {
   return pieces;
 }
 
-function robustScoreCounts(counts, bank) {
+function robustScoreCounts(counts: readonly number[], bank: UnifiedBank): number[] {
   const artifact = bank.robust.hellinger;
   const feature = hellingerFeature(counts);
   let projected = feature.map((value, index) => (value - artifact.feature_mean[index]) / artifact.feature_scale[index]);
@@ -119,12 +211,12 @@ function robustScoreCounts(counts, bank) {
   return standardize(scores);
 }
 
-function orderedBlockScores(numbers, bank) {
-  const artifact = bank.robust.ordered_blocks;
+function orderedBlockScores(numbers: readonly number[], bank: UnifiedBank): number[] {
+  const artifact = bank.robust.ordered_blocks!;
   const feature = orderedBlockFeature(numbers);
   const standardizedFeature = feature.map((value, index) => (value - artifact.feature_mean[index]) / artifact.feature_scale[index]);
   const unit = normalized(standardizedFeature);
-  const environmentScores = artifact.environment_centroids.map((centroids) =>
+  const environmentScores = (artifact.environment_centroids || []).map((centroids) =>
     centroids.map((centroid) => dot(unit, centroid))
   );
   const template = standardize(
@@ -137,7 +229,7 @@ function orderedBlockScores(numbers, bank) {
   return standardize(template.map((value, index) => 0.5 * value + 0.5 * nuisance[index]));
 }
 
-function robustScoreNumbers(numbers, bank) {
+function robustScoreNumbers(numbers: readonly number[], bank: UnifiedBank): number[] {
   const marginal = robustScoreCounts(countNumbers(numbers), bank);
   const artifact = bank.robust.ordered_blocks;
   const weight = artifact ? Number(artifact.weight || 0) : 0;
@@ -146,20 +238,20 @@ function robustScoreNumbers(numbers, bank) {
   return marginal.map((value, index) => (1 - weight) * value + weight * ordered[index]);
 }
 
-function softmax(values) {
+function softmax(values: readonly number[]): number[] {
   const maximum = Math.max(...values);
   const weights = values.map((value) => Math.exp(value - maximum));
   const total = weights.reduce((sum, value) => sum + value, 0);
   return weights.map((value) => value / total);
 }
 
-function jsSimilarity(left, right) {
+function jsSimilarity(left: readonly number[], right: readonly number[]): number {
   const leftTotal = left.reduce((sum, value) => sum + value, 0);
   const rightTotal = right.reduce((sum, value) => sum + value, 0) + ALPHA * DIMENSION;
-  const p = left.map((value) => value / leftTotal);
+  const p = left.map((value) => value / (leftTotal || 1));
   const q = right.map((value) => (value + ALPHA) / rightTotal);
   const midpoint = p.map((value, index) => (value + q[index]) / 2);
-  const divergence = (values) =>
+  const divergence = (values: readonly number[]) =>
     values.reduce(
       (total, value, index) =>
         total + (value ? value * Math.log(value / midpoint[index]) : 0),
@@ -169,10 +261,10 @@ function jsSimilarity(left, right) {
   return 1 - Math.sqrt(js / Math.log(2));
 }
 
-export function analyzeGlobalOutputs(outputs, bank) {
+export function analyzeGlobalOutputs(outputs: readonly ProbeOutputItem[], bank: UnifiedBank): GlobalAnalysisResult {
   const modelIds = bank.models.map((model) => model.id);
-  const valid = [];
-  const diagnostics = [];
+  const valid: ValidProbeItem[] = [];
+  const diagnostics: DiagnosticItem[] = [];
 
   outputs.forEach((item, index) => {
     const expected = Number(item.expected_count || 0);
@@ -218,7 +310,7 @@ export function analyzeGlobalOutputs(outputs, bank) {
     ])
   );
 
-  const results = modelIds
+  const results: ModelAttributionResult[] = modelIds
     .map((model, index) => ({
       model,
       display_name: modelEntries[model].display_name,
@@ -230,7 +322,7 @@ export function analyzeGlobalOutputs(outputs, bank) {
     }))
     .sort((left, right) => right.probability - left.probability);
 
-  const familyProbabilities = Object.fromEntries(
+  const familyProbabilities: Record<string, number> = Object.fromEntries(
     familyOrder.map((family) => [
       family,
       results

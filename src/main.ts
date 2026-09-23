@@ -1,11 +1,19 @@
-import { generateChallenges } from "./utils/challenge.js";
-import { parseNumbers, analyzeGlobalOutputs } from "./utils/fingerprint.js";
-import unifiedBank from "./data/unified_bank.json";
+import { generateChallenges, type Challenge } from "./utils/challenge";
+import {
+  parseNumbers,
+  analyzeGlobalOutputs,
+  type UnifiedBank,
+  type GlobalAnalysisResult,
+  type ProbeOutputItem,
+} from "./utils/fingerprint";
+import rawUnifiedBank from "./data/unified_bank.json";
+
+const unifiedBank = rawUnifiedBank as unknown as UnifiedBank;
 
 const STORAGE_KEY = "modeltrace_client_config";
 
 // Default recommended models
-const DEFAULT_MODELS = [
+const DEFAULT_MODELS: readonly string[] = [
   "gpt-4o",
   "gpt-4o-mini",
   "gpt-4.5-preview",
@@ -18,63 +26,90 @@ const DEFAULT_MODELS = [
   "deepseek-reasoner",
 ];
 
+interface ClientConfig {
+  baseUrl: string;
+  apiKey: string;
+  apiFormat: string;
+  modelName: string;
+  temperature: string;
+  timeout: string;
+}
+
+interface SendProbeOptions {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  prompt: string;
+  apiFormat: string;
+  temperature: number | null;
+  timeoutSeconds: number;
+}
+
+interface ProbeResponse {
+  text: string;
+  raw_status: number;
+  duration_ms: number;
+}
+
+type TauriInvokeFn = <T = unknown>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
+
 // DOM Elements
-const form = document.getElementById("test-form");
-const baseUrlInput = document.getElementById("base-url");
-const apiKeyInput = document.getElementById("api-key");
-const toggleKeyBtn = document.getElementById("toggle-key-visibility");
-const eyeOpenIcon = toggleKeyBtn.querySelector(".eye-open");
-const eyeClosedIcon = toggleKeyBtn.querySelector(".eye-closed");
+const form = document.getElementById("test-form") as HTMLFormElement;
+const baseUrlInput = document.getElementById("base-url") as HTMLInputElement;
+const apiKeyInput = document.getElementById("api-key") as HTMLInputElement;
+const toggleKeyBtn = document.getElementById("toggle-key-visibility") as HTMLButtonElement;
+const eyeOpenIcon = toggleKeyBtn.querySelector(".eye-open") as SVGElement;
+const eyeClosedIcon = toggleKeyBtn.querySelector(".eye-closed") as SVGElement;
 
-const comboboxWrapper = document.getElementById("combobox-wrapper");
-const modelNameInput = document.getElementById("model-name");
-const btnFetchModels = document.getElementById("btn-fetch-models");
-const refreshIcon = btnFetchModels.querySelector(".refresh-icon");
-const btnToggleDropdown = document.getElementById("btn-toggle-dropdown");
-const modelDropdown = document.getElementById("model-dropdown");
-const dropdownSearch = document.getElementById("dropdown-search");
-const dropdownStatusBar = document.getElementById("dropdown-status-bar");
-const dropdownList = document.getElementById("dropdown-list");
+const comboboxWrapper = document.getElementById("combobox-wrapper") as HTMLDivElement;
+const modelNameInput = document.getElementById("model-name") as HTMLInputElement;
+const btnFetchModels = document.getElementById("btn-fetch-models") as HTMLButtonElement;
+const refreshIcon = btnFetchModels.querySelector(".refresh-icon") as SVGElement;
+const btnToggleDropdown = document.getElementById("btn-toggle-dropdown") as HTMLButtonElement;
+const modelDropdown = document.getElementById("model-dropdown") as HTMLDivElement;
+const dropdownSearch = document.getElementById("dropdown-search") as HTMLInputElement;
+const dropdownStatusBar = document.getElementById("dropdown-status-bar") as HTMLDivElement;
+const dropdownList = document.getElementById("dropdown-list") as HTMLUListElement;
 
-const toggleAdvancedBtn = document.getElementById("toggle-advanced");
-const advancedPanel = document.getElementById("advanced-panel");
-const settingsSummary = document.getElementById("settings-summary");
-const temperatureInput = document.getElementById("temperature");
-const timeoutInput = document.getElementById("timeout");
-const saveTip = document.getElementById("save-tip");
-const btnStart = document.getElementById("btn-start");
-const startSpinner = document.getElementById("start-spinner");
-const btnReset = document.getElementById("btn-reset");
+const toggleAdvancedBtn = document.getElementById("toggle-advanced") as HTMLButtonElement;
+const advancedPanel = document.getElementById("advanced-panel") as HTMLDivElement;
+const settingsSummary = document.getElementById("settings-summary") as HTMLSpanElement;
+const temperatureInput = document.getElementById("temperature") as HTMLInputElement;
+const timeoutInput = document.getElementById("timeout") as HTMLInputElement;
+const saveTip = document.getElementById("save-tip") as HTMLSpanElement;
+const btnStart = document.getElementById("btn-start") as HTMLButtonElement;
+const startSpinner = document.getElementById("start-spinner") as HTMLSpanElement;
+const btnReset = document.getElementById("btn-reset") as HTMLButtonElement;
 
-const progressSection = document.getElementById("progress-section");
-const progressTitle = document.getElementById("progress-title");
-const progressStatusDesc = document.getElementById("progress-status-desc");
-const progressPercent = document.getElementById("progress-percent");
-const progressCountText = document.getElementById("progress-count-text");
-const progressBarFill = document.getElementById("progress-bar-fill");
-const statusAlert = document.getElementById("status-alert");
+const progressSection = document.getElementById("progress-section") as HTMLElement;
+const progressTitle = document.getElementById("progress-title") as HTMLHeadingElement;
+const progressStatusDesc = document.getElementById("progress-status-desc") as HTMLSpanElement;
+const progressPercent = document.getElementById("progress-percent") as HTMLSpanElement;
+const progressCountText = document.getElementById("progress-count-text") as HTMLElement;
+const progressBarFill = document.getElementById("progress-bar-fill") as HTMLDivElement;
+const statusAlert = document.getElementById("status-alert") as HTMLDivElement;
 
-const resultSection = document.getElementById("result-section");
-const winnerName = document.getElementById("winner-name");
-const winnerProb = document.getElementById("winner-prob");
-const familyName = document.getElementById("family-name");
-const familyProb = document.getElementById("family-prob");
-const validSamples = document.getElementById("valid-samples");
-const diagnosticsBar = document.getElementById("diagnostics-bar");
-const resultsTbody = document.getElementById("results-tbody");
-const bankBadge = document.getElementById("bank-badge");
+const resultSection = document.getElementById("result-section") as HTMLElement;
+const winnerName = document.getElementById("winner-name") as HTMLElement;
+const winnerProb = document.getElementById("winner-prob") as HTMLSpanElement;
+const familyName = document.getElementById("family-name") as HTMLElement;
+const familyProb = document.getElementById("family-prob") as HTMLSpanElement;
+const validSamples = document.getElementById("valid-samples") as HTMLElement;
+const diagnosticsBar = document.getElementById("diagnostics-bar") as HTMLDivElement;
+const resultsTbody = document.getElementById("results-tbody") as HTMLTableSectionElement;
+const bankBadge = document.getElementById("bank-badge") as HTMLSpanElement;
 
-let availableModels = [...DEFAULT_MODELS];
+let availableModels: string[] = [...DEFAULT_MODELS];
 let isFetchedFromApi = false;
 let isFetchingModels = false;
 
 // Initialize Tauri invoke
-let tauriInvoke = null;
-async function initTauri() {
+let tauriInvoke: TauriInvokeFn | null = null;
+async function initTauri(): Promise<void> {
   try {
     const tauriApi = await import("@tauri-apps/api/core");
     if (tauriApi && typeof tauriApi.invoke === "function") {
-      tauriInvoke = tauriApi.invoke;
+      tauriInvoke = tauriApi.invoke as TauriInvokeFn;
     }
   } catch {
     console.info("Running in standard Web environment");
@@ -84,30 +119,30 @@ async function initTauri() {
 // --------------------------------------------------------------------------
 // Config Persistence
 // --------------------------------------------------------------------------
-function getActiveEndpointFormat() {
-  const checked = document.querySelector('input[name="endpoint-format"]:checked');
+function getActiveEndpointFormat(): string {
+  const checked = document.querySelector<HTMLInputElement>('input[name="endpoint-format"]:checked');
   return checked ? checked.value : "openai";
 }
 
-function updateSettingsSummary() {
+function updateSettingsSummary(): void {
   const format = getActiveEndpointFormat();
   const formatName = format === "anthropic" ? "Claude Messages" : "OpenAI 端点";
   settingsSummary.textContent = formatName;
 }
 
-let saveTimer = null;
-function triggerSaveTip() {
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+function triggerSaveTip(): void {
   saveTip.classList.add("saved");
   saveTip.textContent = "已自动保存配置 ✓";
-  clearTimeout(saveTimer);
+  if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     saveTip.classList.remove("saved");
     saveTip.textContent = "已自动保存配置";
   }, 2000);
 }
 
-function saveConfig() {
-  const config = {
+function saveConfig(): void {
+  const config: ClientConfig = {
     baseUrl: baseUrlInput.value.trim(),
     apiKey: apiKeyInput.value.trim(),
     apiFormat: getActiveEndpointFormat(),
@@ -120,18 +155,18 @@ function saveConfig() {
   triggerSaveTip();
 }
 
-function loadConfig() {
+function loadConfig(): void {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
-    const config = JSON.parse(raw);
+    const config = JSON.parse(raw) as Partial<ClientConfig>;
     if (config.baseUrl) baseUrlInput.value = config.baseUrl;
     if (config.apiKey) apiKeyInput.value = config.apiKey;
     if (config.modelName) modelNameInput.value = config.modelName;
     if (config.temperature) temperatureInput.value = config.temperature;
     if (config.timeout) timeoutInput.value = config.timeout;
     if (config.apiFormat) {
-      const radio = document.querySelector(`input[name="endpoint-format"][value="${config.apiFormat}"]`);
+      const radio = document.querySelector<HTMLInputElement>(`input[name="endpoint-format"][value="${config.apiFormat}"]`);
       if (radio) radio.checked = true;
     }
     updateSettingsSummary();
@@ -140,7 +175,7 @@ function loadConfig() {
   }
 }
 
-function resetConfig() {
+function resetConfig(): void {
   if (confirm("确定要清空已保存的 Base URL 和 API Key 等配置吗？")) {
     localStorage.removeItem(STORAGE_KEY);
     baseUrlInput.value = "";
@@ -148,7 +183,7 @@ function resetConfig() {
     modelNameInput.value = "gpt-4o";
     temperatureInput.value = "";
     timeoutInput.value = "180";
-    const defaultRadio = document.querySelector('input[name="endpoint-format"][value="openai"]');
+    const defaultRadio = document.querySelector<HTMLInputElement>('input[name="endpoint-format"][value="openai"]');
     if (defaultRadio) defaultRadio.checked = true;
     updateSettingsSummary();
     triggerSaveTip();
@@ -158,7 +193,7 @@ function resetConfig() {
 // --------------------------------------------------------------------------
 // Model Dropdown Component
 // --------------------------------------------------------------------------
-function renderModelList(filter = "") {
+function renderModelList(filter = ""): void {
   const query = filter.trim().toLowerCase();
   const filtered = availableModels.filter((m) => m.toLowerCase().includes(query));
   const currentModel = modelNameInput.value.trim();
@@ -181,7 +216,7 @@ function renderModelList(filter = "") {
     .join("");
 }
 
-function openDropdown() {
+function openDropdown(): void {
   comboboxWrapper.classList.add("combobox-open");
   modelDropdown.classList.remove("hidden");
   dropdownSearch.value = "";
@@ -189,23 +224,23 @@ function openDropdown() {
   dropdownSearch.focus();
 }
 
-function closeDropdown() {
+function closeDropdown(): void {
   comboboxWrapper.classList.remove("combobox-open");
   modelDropdown.classList.add("hidden");
 }
 
-function toggleDropdown() {
+function toggleDropdown(): void {
   if (modelDropdown.classList.contains("hidden")) {
     openDropdown();
     if (!isFetchedFromApi && baseUrlInput.value.trim() && apiKeyInput.value.trim()) {
-      fetchModelsList();
+      void fetchModelsList();
     }
   } else {
     closeDropdown();
   }
 }
 
-async function fetchModelsList() {
+async function fetchModelsList(): Promise<void> {
   const baseUrl = baseUrlInput.value.trim();
   const apiKey = apiKeyInput.value.trim();
   const apiFormat = getActiveEndpointFormat();
@@ -221,9 +256,9 @@ async function fetchModelsList() {
   dropdownStatusBar.innerHTML = `<span>正在从 /v1/models 拉取可用模型列表...</span>`;
 
   try {
-    let list = [];
+    let list: string[] = [];
     if (tauriInvoke) {
-      list = await tauriInvoke("fetch_models_list", {
+      list = await tauriInvoke<string[]>("fetch_models_list", {
         baseUrl,
         apiKey,
         apiFormat,
@@ -241,7 +276,7 @@ async function fetchModelsList() {
         endpoint += "/v1/models";
       }
 
-      const headers = {
+      const headers: Record<string, string> = {
         Authorization: `Bearer ${apiKey}`,
         Accept: "application/json",
       };
@@ -252,7 +287,7 @@ async function fetchModelsList() {
 
       const res = await fetch(endpoint, { headers });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as { data?: Array<{ id: string }> };
       list = (data.data || []).map((item) => item.id).filter(Boolean);
     }
 
@@ -263,9 +298,10 @@ async function fetchModelsList() {
     } else {
       dropdownStatusBar.innerHTML = `<span>上游未返回可用模型列表，仍可手动输入</span>`;
     }
-  } catch (err) {
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
     console.warn("获取模型列表异常:", err);
-    dropdownStatusBar.innerHTML = `<span>获取失败(${err.message || "请求受限"})，可手动输入</span>`;
+    dropdownStatusBar.innerHTML = `<span>获取失败(${errMsg || "请求受限"})，可手动输入</span>`;
   } finally {
     isFetchingModels = false;
     refreshIcon.classList.remove("spinning");
@@ -284,23 +320,25 @@ btnFetchModels.addEventListener("click", (e) => {
   if (modelDropdown.classList.contains("hidden")) {
     openDropdown();
   }
-  fetchModelsList();
+  void fetchModelsList();
 });
 
 dropdownSearch.addEventListener("input", (e) => {
-  renderModelList(e.target.value);
+  const target = e.target as HTMLInputElement;
+  renderModelList(target.value);
 });
 
 dropdownList.addEventListener("click", (e) => {
-  const item = e.target.closest(".dropdown-item");
+  const target = e.target as HTMLElement;
+  const item = target.closest<HTMLLIElement>(".dropdown-item");
   if (item && item.dataset.model) {
     const selected = item.dataset.model;
     modelNameInput.value = selected;
     if (selected.toLowerCase().includes("claude")) {
-      const claudeRadio = document.querySelector('input[name="endpoint-format"][value="anthropic"]');
+      const claudeRadio = document.querySelector<HTMLInputElement>('input[name="endpoint-format"][value="anthropic"]');
       if (claudeRadio) claudeRadio.checked = true;
     } else {
-      const openaiRadio = document.querySelector('input[name="endpoint-format"][value="openai"]');
+      const openaiRadio = document.querySelector<HTMLInputElement>('input[name="endpoint-format"][value="openai"]');
       if (openaiRadio) openaiRadio.checked = true;
     }
     saveConfig();
@@ -310,7 +348,7 @@ dropdownList.addEventListener("click", (e) => {
 
 // Close dropdown when clicking outside
 document.addEventListener("click", (e) => {
-  if (!comboboxWrapper.contains(e.target)) {
+  if (!comboboxWrapper.contains(e.target as Node)) {
     closeDropdown();
   }
 });
@@ -335,7 +373,7 @@ toggleAdvancedBtn.addEventListener("click", () => {
   el.addEventListener("input", saveConfig);
 });
 
-document.querySelectorAll('input[name="endpoint-format"]').forEach((radio) => {
+document.querySelectorAll<HTMLInputElement>('input[name="endpoint-format"]').forEach((radio) => {
   radio.addEventListener("change", saveConfig);
 });
 
@@ -344,9 +382,17 @@ btnReset.addEventListener("click", resetConfig);
 // --------------------------------------------------------------------------
 // Probe Request (IPC / Web Fetch fallback)
 // --------------------------------------------------------------------------
-async function sendProbe({ baseUrl, apiKey, model, prompt, apiFormat, temperature, timeoutSeconds }) {
+async function sendProbe({
+  baseUrl,
+  apiKey,
+  model,
+  prompt,
+  apiFormat,
+  temperature,
+  timeoutSeconds,
+}: SendProbeOptions): Promise<ProbeResponse> {
   if (tauriInvoke) {
-    return await tauriInvoke("send_probe_request", {
+    return await tauriInvoke<ProbeResponse>("send_probe_request", {
       req: {
         base_url: baseUrl,
         api_key: apiKey,
@@ -368,8 +414,15 @@ async function sendProbe({ baseUrl, apiKey, model, prompt, apiFormat, temperatur
   }
 
   const startTime = Date.now();
-  const headers = { "Content-Type": "application/json" };
-  let bodyObj;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  interface RequestBody {
+    model: string;
+    messages: Array<{ role: string; content: string }>;
+    max_tokens?: number;
+    temperature?: number;
+  }
+
+  let bodyObj: RequestBody;
 
   if (apiFormat === "anthropic") {
     headers["x-api-key"] = apiKey;
@@ -401,7 +454,10 @@ async function sendProbe({ baseUrl, apiKey, model, prompt, apiFormat, temperatur
     throw new Error(`上游接口返回错误 (HTTP ${res.status}): ${errText.slice(0, 200)}`);
   }
 
-  const json = await res.json();
+  const json = (await res.json()) as {
+    content?: Array<{ type?: string; text?: string }>;
+    choices?: Array<{ message?: { content?: string } }>;
+  };
   let text = "";
   if (apiFormat === "anthropic") {
     text = (json.content || []).map((c) => c.text || "").join("");
@@ -415,7 +471,7 @@ async function sendProbe({ baseUrl, apiKey, model, prompt, apiFormat, temperatur
 // --------------------------------------------------------------------------
 // Testing Execution & Progress Controller
 // --------------------------------------------------------------------------
-function updateStepUI(index, state, text, stat = "") {
+function updateStepUI(index: number, state: "pending" | "working" | "done" | "error", text: string, stat = ""): void {
   const stepEl = document.getElementById(`step-${index}`);
   if (!stepEl) return;
   stepEl.className = `probe-step ${state}`;
@@ -425,7 +481,7 @@ function updateStepUI(index, state, text, stat = "") {
   if (statEl) statEl.textContent = stat;
 }
 
-function setProgress(completedCount, totalCount = 3, message = "") {
+function setProgress(completedCount: number, totalCount = 3, message = ""): void {
   const percent = Math.min(100, Math.round((completedCount / totalCount) * 100));
   progressBarFill.style.width = `${percent}%`;
   progressPercent.textContent = `${percent}%`;
@@ -433,31 +489,31 @@ function setProgress(completedCount, totalCount = 3, message = "") {
   if (message) progressStatusDesc.textContent = message;
 }
 
-function showStatusAlert(msg, type = "error") {
+function showStatusAlert(msg: string, type: "error" | "warning" = "error"): void {
   statusAlert.className = `status-alert ${type}`;
   statusAlert.textContent = msg;
   statusAlert.classList.remove("hidden");
 }
 
-function hideStatusAlert() {
+function hideStatusAlert(): void {
   statusAlert.classList.add("hidden");
 }
 
-function escapeHtml(str) {
+function escapeHtml(str: string): string {
   return String(str).replace(/[&<>'"]/g, (c) => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
     "'": "&#39;",
     '"': "&quot;",
-  })[c]);
+  })[c] || c);
 }
 
-function percentFormat(val) {
+function percentFormat(val: number): string {
   return `${(val * 100).toFixed(1)}%`;
 }
 
-function renderResults(analysis) {
+function renderResults(analysis: GlobalAnalysisResult): void {
   winnerName.textContent = analysis.prediction_name || analysis.prediction;
   winnerProb.textContent = `全局概率 ${percentFormat(analysis.probability)}`;
   familyName.textContent = analysis.family_prediction_name || analysis.family_prediction;
@@ -508,7 +564,7 @@ function renderResults(analysis) {
 // --------------------------------------------------------------------------
 // Main Start Test Handler
 // --------------------------------------------------------------------------
-form.addEventListener("submit", async (e) => {
+form.addEventListener("submit", async (e: SubmitEvent) => {
   e.preventDefault();
 
   const baseUrl = baseUrlInput.value.trim();
@@ -542,9 +598,9 @@ form.addEventListener("submit", async (e) => {
   }
 
   // Generate 3 randomized questions
-  const challenges = generateChallenges(3);
-  const outputs = [];
-  const errors = [];
+  const challenges: Challenge[] = generateChallenges(3);
+  const outputs: ProbeOutputItem[] = [];
+  const errors: string[] = [];
 
   for (let i = 0; i < challenges.length; i++) {
     const challenge = challenges[i];
@@ -576,10 +632,11 @@ form.addEventListener("submit", async (e) => {
         updateStepUI(i, "error", "数字不足", `${parsedNumbers.length}/${minimum}`);
         errors.push(`第 ${i + 1} 题: 仅解析到 ${parsedNumbers.length} 个有效整数（需至少 ${minimum} 个）`);
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
       console.error(`第 ${i + 1} 题请求失败:`, err);
       updateStepUI(i, "error", "失败", "错误");
-      errors.push(`第 ${i + 1} 题失败: ${err.message || err}`);
+      errors.push(`第 ${i + 1} 题失败: ${errMsg}`);
     }
 
     // Update progress bar immediately after each probe!
@@ -604,8 +661,9 @@ form.addEventListener("submit", async (e) => {
     try {
       const analysis = analyzeGlobalOutputs(outputs, unifiedBank);
       renderResults(analysis);
-    } catch (analysisErr) {
-      showStatusAlert(`归因计算异常: ${analysisErr.message}`);
+    } catch (analysisErr: unknown) {
+      const errMsg = analysisErr instanceof Error ? analysisErr.message : String(analysisErr);
+      showStatusAlert(`归因计算异常: ${errMsg}`);
     }
   }
 
@@ -616,7 +674,7 @@ form.addEventListener("submit", async (e) => {
 // --------------------------------------------------------------------------
 // App Initialization
 // --------------------------------------------------------------------------
-async function init() {
+async function init(): Promise<void> {
   await initTauri();
   loadConfig();
   if (unifiedBank && unifiedBank.models) {
@@ -624,4 +682,4 @@ async function init() {
   }
 }
 
-init();
+void init();

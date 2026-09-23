@@ -1,4 +1,10 @@
-function randomIndex(length) {
+export interface Challenge {
+  id: string;
+  expected_count: number;
+  prompt: string;
+}
+
+function randomIndex(length: number): number {
   const limit = Math.floor(0x100000000 / length) * length;
   const buffer = new Uint32Array(1);
   do {
@@ -7,20 +13,20 @@ function randomIndex(length) {
   return buffer[0] % length;
 }
 
-function choose(values) {
+function choose<T>(values: readonly T[]): T {
   return values[randomIndex(values.length)];
 }
 
-function uniqueLengths(count) {
-  const available = Array.from({ length: 41 }, (_, index) => 292 + index);
-  const output = [];
-  while (output.length < count) {
+function uniqueLengths(count: number): number[] {
+  const available: number[] = Array.from({ length: 41 }, (_, index) => 292 + index);
+  const output: number[] = [];
+  while (output.length < count && available.length > 0) {
     output.push(available.splice(randomIndex(available.length), 1)[0]);
   }
   return output;
 }
 
-export function generateChallenges(count = 3) {
+export function generateChallenges(count: number = 3): Challenge[] {
   const openings = [
     "这是一次独立的数值选择记录",
     "请完成下面的无语义整数选择任务",
