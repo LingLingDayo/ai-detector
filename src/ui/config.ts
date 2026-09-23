@@ -74,7 +74,7 @@ export function resetConfig(): void {
     localStorage.removeItem(STORAGE_KEY);
     baseUrlInput.value = "";
     apiKeyInput.value = "";
-    modelNameInput.value = "gpt-4o";
+    modelNameInput.value = "";
     temperatureInput.value = "";
     timeoutInput.value = "180";
     setEndpointFormatRadio("openai");

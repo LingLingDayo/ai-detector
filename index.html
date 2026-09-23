@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ModelTrace - AI 模型归因检测</title>
+    <title>ModelTrace - AI 模型检测工具</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -92,11 +92,10 @@
                   <input
                     type="text"
                     id="model-name"
-                    value="gpt-4o"
                     required
                     autocomplete="off"
                     spellcheck="false"
-                    placeholder="请输入或选择模型 ID"
+                    placeholder="请输入或选择待测模型 ID (例如 gpt-4o)"
                     title="待测模型 ID。可点击右侧下拉按钮或刷新按钮自动获取当前 Key 允许的模型列表"
                   />
                   <div class="combobox-actions">
@@ -135,7 +134,7 @@
                       />
                     </div>
                     <div class="dropdown-status-bar" id="dropdown-status-bar">
-                      <span>常用推荐模型</span>
+                      <span>未获取模型，可点击右侧 ↻ 按钮自动拉取</span>
                     </div>
                     <ul class="dropdown-list" id="dropdown-list">
                       <!-- 动态填充 -->

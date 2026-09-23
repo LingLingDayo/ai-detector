@@ -1,4 +1,3 @@
-import { DEFAULT_MODELS } from "../constants";
 import { fetchRemoteModels } from "../services/api";
 import { saveConfig } from "./config";
 import {
@@ -13,22 +12,45 @@ import {
   dropdownSearch,
   dropdownStatusBar,
   dropdownList,
+  btnReset,
   getActiveEndpointFormat,
   setEndpointFormatRadio,
 } from "./dom";
 import { escapeHtml } from "./render";
 
-let availableModels: string[] = [...DEFAULT_MODELS];
+let availableModels: string[] = [];
 let isFetchedFromApi = false;
 let isFetchingModels = false;
 
+export function resetModelList(): void {
+  availableModels = [];
+  isFetchedFromApi = false;
+  isFetchingModels = false;
+}
+
 export function renderModelList(filter = ""): void {
   const query = filter.trim().toLowerCase();
-  const filtered = availableModels.filter((m) => m.toLowerCase().includes(query));
   const currentModel = modelNameInput.value.trim();
 
+  if (availableModels.length === 0) {
+    if (isFetchedFromApi) {
+      dropdownList.innerHTML = `<li class="dropdown-empty">上游未返回可用模型，可直接在上方手动输入待测模型 ID</li>`;
+    } else {
+      dropdownList.innerHTML = `
+        <li class="dropdown-empty">
+          <div style="font-weight: 500; margin-bottom: 4px; color: var(--text-secondary)">尚未拉取模型列表</div>
+          <div style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.4;">
+            请先配置 Base URL 与 API Key 后点击右侧 ↻ 按钮在线拉取，亦可直接手动输入。
+          </div>
+        </li>
+      `;
+    }
+    return;
+  }
+
+  const filtered = availableModels.filter((m) => m.toLowerCase().includes(query));
   if (filtered.length === 0) {
-    dropdownList.innerHTML = `<li class="dropdown-empty">未匹配到模型，支持直接在上方输入</li>`;
+    dropdownList.innerHTML = `<li class="dropdown-empty">未匹配到“${escapeHtml(filter)}”，支持直接在上方输入</li>`;
     return;
   }
 
@@ -49,6 +71,9 @@ export function openDropdown(): void {
   comboboxWrapper.classList.add("combobox-open");
   modelDropdown.classList.remove("hidden");
   dropdownSearch.value = "";
+  if (!isFetchedFromApi) {
+    dropdownStatusBar.innerHTML = `<span>未拉取模型，可点击右侧 ↻ 按钮自动获取</span>`;
+  }
   renderModelList();
   dropdownSearch.focus();
 }
@@ -75,7 +100,8 @@ export async function fetchModelsList(): Promise<void> {
   const apiFormat = getActiveEndpointFormat();
 
   if (!baseUrl || !apiKey) {
-    dropdownStatusBar.innerHTML = `<span>请先填写 Base URL 和 API Key 以获取模型</span>`;
+    dropdownStatusBar.innerHTML = `<span style="color:var(--warning)">请先填写 Base URL 和 API Key 以获取模型</span>`;
+    renderModelList(dropdownSearch.value);
     return;
   }
 
@@ -138,6 +164,11 @@ export function initModelDropdown(): void {
       saveConfig();
       closeDropdown();
     }
+  });
+
+  // Reset model list on configuration reset
+  btnReset.addEventListener("click", () => {
+    resetModelList();
   });
 
   // Close dropdown when clicking outside

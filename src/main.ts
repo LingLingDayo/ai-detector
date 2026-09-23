@@ -50,7 +50,7 @@ async function handleTestSubmit(e: SubmitEvent): Promise<void> {
 
   const baseUrl = baseUrlInput.value.trim();
   const apiKey = apiKeyInput.value.trim();
-  const model = modelNameInput.value.trim() || "gpt-4o";
+  const model = modelNameInput.value.trim();
   const apiFormat = getActiveEndpointFormat();
   const tempVal = temperatureInput.value.trim();
   const temperature = tempVal !== "" ? parseFloat(tempVal) : null;
@@ -58,6 +58,11 @@ async function handleTestSubmit(e: SubmitEvent): Promise<void> {
 
   if (!baseUrl || !apiKey) {
     alert("请填写 Base URL 和 API Key！");
+    return;
+  }
+
+  if (!model) {
+    alert("请填写或选择待测模型 ID！");
     return;
   }
 
