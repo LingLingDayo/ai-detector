@@ -109,7 +109,9 @@ export async function sendProbe({
     model: string;
     messages: Array<{ role: string; content: string }>;
     max_tokens?: number;
+    max_completion_tokens?: number;
     reasoning_effort?: string;
+    output_config?: { effort: string };
     thinking?: { type: string; budget_tokens: number };
   }
 
@@ -125,17 +127,25 @@ export async function sendProbe({
       messages: [{ role: "user", content: prompt }],
     };
     if (reasoningEffort && reasoningEffort !== "none") {
-      const budgetMap: Record<string, number> = {
-        minimal: 1024,
-        low: 2048,
-        medium: 4096,
-        high: 8192,
-        xhigh: 16384,
-        max: 32768,
-        ultra: 65536,
-      };
-      const budget = budgetMap[reasoningEffort] || 8192;
+      const trimmed = reasoningEffort.trim();
+      const isNum = /^\d+$/.test(trimmed);
+      let budget: number;
+      if (isNum) {
+        budget = Math.max(1024, parseInt(trimmed, 10));
+      } else {
+        const budgetMap: Record<string, number> = {
+          minimal: 1024,
+          low: 2048,
+          medium: 4096,
+          high: 8192,
+          xhigh: 16384,
+          max: 32768,
+          ultra: 65536,
+        };
+        budget = budgetMap[trimmed] || 8192;
+      }
       bodyObj.thinking = { type: "enabled", budget_tokens: budget };
+      bodyObj.output_config = { effort: trimmed };
       bodyObj.max_tokens = Math.max(4096, budget + 2048);
     }
   } else {
@@ -145,7 +155,12 @@ export async function sendProbe({
       messages: [{ role: "user", content: prompt }],
     };
     if (reasoningEffort && reasoningEffort !== "none") {
-      bodyObj.reasoning_effort = reasoningEffort;
+      const trimmed = reasoningEffort.trim();
+      if (/^\d+$/.test(trimmed)) {
+        bodyObj.max_completion_tokens = parseInt(trimmed, 10);
+      } else {
+        bodyObj.reasoning_effort = trimmed;
+      }
     }
   }
 

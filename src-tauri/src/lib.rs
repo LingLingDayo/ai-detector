@@ -220,20 +220,28 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
                 ]
             });
             if let Some(effort) = &req.reasoning_effort {
-                if effort != "none" {
-                    let budget = match effort.as_str() {
-                        "minimal" => 1024,
-                        "low" => 2048,
-                        "medium" => 4096,
-                        "high" => 8192,
-                        "xhigh" => 16384,
-                        "max" => 32768,
-                        "ultra" => 65536,
-                        _ => 8192,
+                let trimmed = effort.trim();
+                if trimmed != "none" && !trimmed.is_empty() {
+                    let budget = if let Ok(num) = trimmed.parse::<u64>() {
+                        num.max(1024)
+                    } else {
+                        match trimmed {
+                            "minimal" => 1024,
+                            "low" => 2048,
+                            "medium" => 4096,
+                            "high" => 8192,
+                            "xhigh" => 16384,
+                            "max" => 32768,
+                            "ultra" => 65536,
+                            _ => 8192,
+                        }
                     };
                     map["thinking"] = serde_json::json!({
                         "type": "enabled",
                         "budget_tokens": budget
+                    });
+                    map["output_config"] = serde_json::json!({
+                        "effort": trimmed
                     });
                     map["max_tokens"] = serde_json::json!(budget + 2048);
                 }
@@ -252,8 +260,13 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
                 ]
             });
             if let Some(effort) = &req.reasoning_effort {
-                if effort != "none" {
-                    map["reasoning_effort"] = serde_json::json!(effort);
+                let trimmed = effort.trim();
+                if trimmed != "none" && !trimmed.is_empty() {
+                    if let Ok(num) = trimmed.parse::<u64>() {
+                        map["max_completion_tokens"] = serde_json::json!(num);
+                    } else {
+                        map["reasoning_effort"] = serde_json::json!(trimmed);
+                    }
                 }
             }
             map
