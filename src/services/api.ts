@@ -126,9 +126,13 @@ export async function sendProbe({
     };
     if (reasoningEffort && reasoningEffort !== "none") {
       const budgetMap: Record<string, number> = {
+        minimal: 1024,
         low: 2048,
         medium: 4096,
         high: 8192,
+        xhigh: 16384,
+        max: 32768,
+        ultra: 65536,
       };
       const budget = budgetMap[reasoningEffort] || 8192;
       bodyObj.thinking = { type: "enabled", budget_tokens: budget };

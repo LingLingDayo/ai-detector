@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { REASONING_EFFORT_OPTIONS } from "../constants";
+
 const props = defineProps<{
   isOpen: boolean;
   summary: string;
@@ -42,7 +44,7 @@ const emit = defineEmits<{
         <div class="advanced-row">
           <label title="选择调用的 API 规范与端点路径格式">接口协议端点</label>
           <div class="segmented-control">
-            <label class="segment" title="使用 /v1/chat/completions 路由规范（最常用，兼容绝大多数中转代理与网关）">
+            <label class="segment" title="OpenAI 规范路由，兼容绝大多数中转网关与第三方模型服务（默认）">
               <input
                 type="radio"
                 name="endpoint-format"
@@ -50,19 +52,9 @@ const emit = defineEmits<{
                 :checked="apiFormat === 'chat_completions'"
                 @change="emit('update:apiFormat', 'chat_completions')"
               />
-              <span class="segment-label">/v1/chat/completions (默认)</span>
+              <span class="segment-label">/v1/chat/completions 端点</span>
             </label>
-            <label class="segment" title="使用 OpenAI 原生端点规范 (https://api.openai.com/v1/chat/completions)">
-              <input
-                type="radio"
-                name="endpoint-format"
-                value="openai_native"
-                :checked="apiFormat === 'openai_native'"
-                @change="emit('update:apiFormat', 'openai_native')"
-              />
-              <span class="segment-label">OpenAI 原生端点</span>
-            </label>
-            <label class="segment" title="使用 Claude Messages 规范 (/v1/messages) 及 x-api-key 认证">
+            <label class="segment" title="Anthropic Claude Messages 规范路由与 x-api-key 认证">
               <input
                 type="radio"
                 name="endpoint-format"
@@ -70,7 +62,7 @@ const emit = defineEmits<{
                 :checked="apiFormat === 'anthropic'"
                 @change="emit('update:apiFormat', 'anthropic')"
               />
-              <span class="segment-label">Claude Messages 端点</span>
+              <span class="segment-label">/v1/messages 端点</span>
             </label>
           </div>
         </div>
@@ -78,49 +70,24 @@ const emit = defineEmits<{
         <!-- 思考强度选择 (Reasoning Effort) -->
         <div class="advanced-row">
           <div class="advanced-row-header">
-            <label title="设置具备思考链模型的思考强度（支持 o1/o3/Claude 3.7/DeepSeek 等）">思考强度 (Reasoning)</label>
-            <span class="field-hint">默认高强度 · 超时锁定 60s</span>
+            <label title="配置模型的深度思考与推理强度">思考强度</label>
+            <span class="field-hint">默认 high · 超时锁定 60s</span>
           </div>
           <div class="segmented-control reasoning-control">
-            <label class="segment" title="关闭推理思考或最小思考预算">
+            <label
+              v-for="opt in REASONING_EFFORT_OPTIONS"
+              :key="opt.value"
+              class="segment"
+              :title="opt.value === 'high' ? `${opt.description} (默认)` : opt.description"
+            >
               <input
                 type="radio"
                 name="reasoning-effort"
-                value="none"
-                :checked="reasoningEffort === 'none'"
-                @change="emit('update:reasoningEffort', 'none')"
+                :value="opt.value"
+                :checked="reasoningEffort === opt.value"
+                @change="emit('update:reasoningEffort', opt.value)"
               />
-              <span class="segment-label">关闭 (None)</span>
-            </label>
-            <label class="segment" title="轻度思考，快速响应">
-              <input
-                type="radio"
-                name="reasoning-effort"
-                value="low"
-                :checked="reasoningEffort === 'low'"
-                @change="emit('update:reasoningEffort', 'low')"
-              />
-              <span class="segment-label">低 (Low)</span>
-            </label>
-            <label class="segment" title="中度平衡思考">
-              <input
-                type="radio"
-                name="reasoning-effort"
-                value="medium"
-                :checked="reasoningEffort === 'medium'"
-                @change="emit('update:reasoningEffort', 'medium')"
-              />
-              <span class="segment-label">中 (Medium)</span>
-            </label>
-            <label class="segment" title="深度思考，严谨推理（推荐默认）">
-              <input
-                type="radio"
-                name="reasoning-effort"
-                value="high"
-                :checked="reasoningEffort === 'high'"
-                @change="emit('update:reasoningEffort', 'high')"
-              />
-              <span class="segment-label">高 (High · 默认)</span>
+              <span class="segment-label">{{ opt.label }}</span>
             </label>
           </div>
         </div>

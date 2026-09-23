@@ -222,9 +222,13 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
             if let Some(effort) = &req.reasoning_effort {
                 if effort != "none" {
                     let budget = match effort.as_str() {
+                        "minimal" => 1024,
                         "low" => 2048,
                         "medium" => 4096,
                         "high" => 8192,
+                        "xhigh" => 16384,
+                        "max" => 32768,
+                        "ultra" => 65536,
                         _ => 8192,
                     };
                     map["thinking"] = serde_json::json!({

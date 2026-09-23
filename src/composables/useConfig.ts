@@ -33,15 +33,16 @@ export function useConfig(): UseConfigReturn {
   let isInitializing = true;
 
   const settingsSummary = computed(() => {
-    let formatName = "/v1/chat/completions";
-    if (config.apiFormat === "openai_native") {
-      formatName = "OpenAI 原生";
-    } else if (config.apiFormat === "anthropic") {
-      formatName = "Claude Messages";
-    }
+    const formatName =
+      config.apiFormat === "anthropic" ? "/v1/messages" : "/v1/chat/completions";
 
-    const effort = config.reasoningEffort;
-    const effortLabel = effort === "none" ? "无思考" : effort.toUpperCase();
+    const effortMap: Record<string, string> = {
+      none: "关闭",
+      low: "低",
+      medium: "中",
+      high: "高",
+    };
+    const effortLabel = effortMap[config.reasoningEffort] || "高";
 
     return `${formatName} · 思考:${effortLabel}`;
   });
@@ -86,7 +87,8 @@ export function useConfig(): UseConfigReturn {
       if (saved.apiKey !== undefined) config.apiKey = saved.apiKey;
       if (saved.modelName !== undefined) config.modelName = saved.modelName;
       if (saved.apiFormat !== undefined) {
-        config.apiFormat = saved.apiFormat === "openai" ? "chat_completions" : saved.apiFormat;
+        config.apiFormat =
+          saved.apiFormat === "anthropic" ? "anthropic" : "chat_completions";
       }
       if (saved.reasoningEffort !== undefined) {
         config.reasoningEffort = saved.reasoningEffort;
@@ -113,19 +115,6 @@ export function useConfig(): UseConfigReturn {
       triggerSaveTip();
     }
   }
-
-  // Auto-fill URL hint on protocol change when URL is blank
-  watch(
-    () => config.apiFormat,
-    (newFormat) => {
-      if (isInitializing) return;
-      if (newFormat === "openai_native" && !config.baseUrl.trim()) {
-        config.baseUrl = "https://api.openai.com/v1";
-      } else if (newFormat === "anthropic" && !config.baseUrl.trim()) {
-        config.baseUrl = "https://api.anthropic.com/v1";
-      }
-    }
-  );
 
   // Watch state changes and auto-save
   watch(config, () => {

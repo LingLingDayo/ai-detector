@@ -491,7 +491,7 @@ input::placeholder {
 
 .segmented-control {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 6px;
   background: var(--bg-input);
   padding: 4px;
@@ -500,7 +500,7 @@ input::placeholder {
 }
 
 .segmented-control.reasoning-control {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(8, 1fr);
 }
 
 @media (max-width: 640px) {
@@ -508,7 +508,7 @@ input::placeholder {
     grid-template-columns: 1fr;
   }
   .segmented-control.reasoning-control {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
