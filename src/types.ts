@@ -26,3 +26,17 @@ export type TauriInvokeFn = <T = unknown>(
   cmd: string,
   args?: Record<string, unknown>
 ) => Promise<T>;
+
+export type StepStatus = "pending" | "working" | "done" | "error";
+
+export interface ProbeStepItem {
+  id: number;
+  state: StepStatus;
+  stateText: string;
+  statText: string;
+}
+
+export interface StatusAlertInfo {
+  message: string;
+  type: "error" | "warning";
+}
