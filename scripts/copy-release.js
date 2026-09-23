@@ -44,7 +44,7 @@ export function copyReleaseArtifacts(options = {}) {
     }
   }
 
-  const chineseProductName = "ModelTrace模型检测";
+  const chineseProductName = "ModelTrace模型检测工具";
   const bundleDir = options.bundleDir || path.resolve(rootDir, "src-tauri/target/release/bundle");
   const releaseBinDir = options.releaseBinDir || path.resolve(rootDir, "src-tauri/target/release");
 
