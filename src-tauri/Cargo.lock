@@ -1914,7 +1914,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "modeltrace-tool"
+name = "modeltrace-ai-detector"
 version = "0.1.0"
 dependencies = [
  "log",

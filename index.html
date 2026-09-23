@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ModelTrace - AI 模型检测工具</title>
+    <title>ModelTrace AI Detector - AI 模型检测工具</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -17,7 +17,7 @@
             </svg>
           </div>
           <div>
-            <h1 class="brand-title">ModelTrace <span>Detector</span></h1>
+            <h1 class="brand-title">ModelTrace <span>AI Detector</span></h1>
             <p class="brand-subtitle" title="基于长整数生成指纹的主动式 AI 模型归因检测">AI 模型主动指纹归因探测系统</p>
           </div>
         </div>
@@ -171,9 +171,13 @@
                   <div class="advanced-row">
                     <label title="选择调用的 API 规范与端点路径格式">接口协议端点</label>
                     <div class="segmented-control">
-                      <label class="segment" title="使用 OpenAI 规范 (/v1/chat/completions) 及 Bearer 认证">
-                        <input type="radio" name="endpoint-format" value="openai" checked />
-                        <span class="segment-label">OpenAI 原生 / 兼容端点</span>
+                      <label class="segment" title="使用 /v1/chat/completions 路由规范（最常用，兼容绝大多数中转代理与网关）">
+                        <input type="radio" name="endpoint-format" value="chat_completions" checked />
+                        <span class="segment-label">/v1/chat/completions (默认)</span>
+                      </label>
+                      <label class="segment" title="使用 OpenAI 原生端点规范 (https://api.openai.com/v1/chat/completions)">
+                        <input type="radio" name="endpoint-format" value="openai_native" />
+                        <span class="segment-label">OpenAI 原生端点</span>
                       </label>
                       <label class="segment" title="使用 Claude Messages 规范 (/v1/messages) 及 x-api-key 认证">
                         <input type="radio" name="endpoint-format" value="anthropic" />
@@ -182,31 +186,29 @@
                     </div>
                   </div>
 
-                  <!-- 温度与超时 -->
-                  <div class="advanced-columns">
-                    <div class="form-group flex-1">
-                      <label for="temperature" title="采样温度 Temperature，留空表示使用模型默认值">采样温度</label>
-                      <input
-                        type="number"
-                        id="temperature"
-                        step="0.1"
-                        min="0"
-                        max="2"
-                        placeholder="默认"
-                        title="数值越大随机性越强，留空使用模型默认设置"
-                      />
+                  <!-- 思考强度选择 (Reasoning Effort) -->
+                  <div class="advanced-row">
+                    <div class="advanced-row-header">
+                      <label title="设置具备思考链模型的思考强度（支持 o1/o3/Claude 3.7/DeepSeek 等）">思考强度 (Reasoning)</label>
+                      <span class="field-hint">默认高强度 · 超时锁定 60s</span>
                     </div>
-
-                    <div class="form-group flex-1">
-                      <label for="timeout" title="单次请求最大超时时间（秒），默认 180 秒">请求超时 (秒)</label>
-                      <input
-                        type="number"
-                        id="timeout"
-                        value="180"
-                        min="10"
-                        max="600"
-                        title="单次挑战请求超时时间，单位秒"
-                      />
+                    <div class="segmented-control reasoning-control">
+                      <label class="segment" title="关闭推理思考或最小思考预算">
+                        <input type="radio" name="reasoning-effort" value="none" />
+                        <span class="segment-label">关闭 (None)</span>
+                      </label>
+                      <label class="segment" title="轻度思考，快速响应">
+                        <input type="radio" name="reasoning-effort" value="low" />
+                        <span class="segment-label">低 (Low)</span>
+                      </label>
+                      <label class="segment" title="中度平衡思考">
+                        <input type="radio" name="reasoning-effort" value="medium" />
+                        <span class="segment-label">中 (Medium)</span>
+                      </label>
+                      <label class="segment" title="深度思考，严谨推理（推荐默认）">
+                        <input type="radio" name="reasoning-effort" value="high" checked />
+                        <span class="segment-label">高 (High · 默认)</span>
+                      </label>
                     </div>
                   </div>
                 </div>

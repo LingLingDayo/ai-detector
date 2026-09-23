@@ -12,12 +12,12 @@ pub struct ProbeRequest {
     pub prompt: String,
     #[serde(default = "default_api_format")]
     pub api_format: String,
-    pub temperature: Option<f64>,
+    pub reasoning_effort: Option<String>,
     pub timeout_seconds: Option<u64>,
 }
 
 fn default_api_format() -> String {
-    "openai".to_string()
+    "chat_completions".to_string()
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -28,7 +28,19 @@ pub struct ProbeResponse {
 }
 
 fn normalize_url(base_url: &str, api_format: &str) -> String {
-    let trimmed = base_url.trim().trim_end_matches('/');
+    let raw = base_url.trim().trim_end_matches('/');
+    let trimmed = if raw.is_empty() {
+        if api_format == "anthropic" {
+            "https://api.anthropic.com"
+        } else if api_format == "openai_native" {
+            "https://api.openai.com"
+        } else {
+            ""
+        }
+    } else {
+        raw
+    };
+
     if api_format == "anthropic" {
         if trimmed.ends_with("/messages") {
             trimmed.to_string()
@@ -94,7 +106,19 @@ async fn fetch_models_list(
         .build()
         .map_err(|e| format!("构建 HTTP 客户端失败: {}", e))?;
 
-    let trimmed = base_url.trim().trim_end_matches('/');
+    let raw = base_url.trim().trim_end_matches('/');
+    let trimmed = if raw.is_empty() {
+        if api_format == "anthropic" {
+            "https://api.anthropic.com"
+        } else if api_format == "openai_native" {
+            "https://api.openai.com"
+        } else {
+            ""
+        }
+    } else {
+        raw
+    };
+
     let target_url = if trimmed.ends_with("/chat/completions") {
         format!("{}/models", trimmed.trim_end_matches("/chat/completions"))
     } else if trimmed.ends_with("/messages") {
@@ -161,7 +185,7 @@ async fn fetch_models_list(
 
 #[tauri::command]
 async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> {
-    let timeout_sec = req.timeout_seconds.unwrap_or(180).max(10);
+    let timeout_sec = req.timeout_seconds.unwrap_or(60).max(10);
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(timeout_sec))
         .build()
@@ -195,8 +219,20 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
                     { "role": "user", "content": &req.prompt }
                 ]
             });
-            if let Some(temp) = req.temperature {
-                map["temperature"] = serde_json::json!(temp);
+            if let Some(effort) = &req.reasoning_effort {
+                if effort != "none" {
+                    let budget = match effort.as_str() {
+                        "low" => 2048,
+                        "medium" => 4096,
+                        "high" => 8192,
+                        _ => 8192,
+                    };
+                    map["thinking"] = serde_json::json!({
+                        "type": "enabled",
+                        "budget_tokens": budget
+                    });
+                    map["max_tokens"] = serde_json::json!(budget + 2048);
+                }
             }
             map
         } else {
@@ -211,8 +247,10 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
                     { "role": "user", "content": &req.prompt }
                 ]
             });
-            if let Some(temp) = req.temperature {
-                map["temperature"] = serde_json::json!(temp);
+            if let Some(effort) = &req.reasoning_effort {
+                if effort != "none" {
+                    map["reasoning_effort"] = serde_json::json!(effort);
+                }
             }
             map
         };

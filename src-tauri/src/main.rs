@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    modeltrace_tool_lib::run();
+    modeltrace_ai_detector_lib::run();
 }

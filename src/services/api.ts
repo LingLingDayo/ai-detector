@@ -63,9 +63,11 @@ export async function sendProbe({
   model,
   prompt,
   apiFormat,
-  temperature,
-  timeoutSeconds,
+  reasoningEffort = "high",
+  timeoutSeconds = 60,
 }: SendProbeOptions): Promise<ProbeResponse> {
+  const actualTimeout = timeoutSeconds || 60;
+
   if (tauriInvoke) {
     return await tauriInvoke<ProbeResponse>("send_probe_request", {
       req: {
@@ -74,14 +76,19 @@ export async function sendProbe({
         model,
         prompt,
         api_format: apiFormat,
-        temperature: temperature !== null ? temperature : undefined,
-        timeout_seconds: timeoutSeconds,
+        reasoning_effort: reasoningEffort,
+        timeout_seconds: actualTimeout,
       },
     });
   }
 
   // Web fallback for browser preview
   let endpoint = baseUrl.replace(/\/+$/, "");
+  if (!endpoint) {
+    if (apiFormat === "anthropic") endpoint = "https://api.anthropic.com";
+    else if (apiFormat === "openai_native") endpoint = "https://api.openai.com";
+  }
+
   if (apiFormat === "anthropic") {
     endpoint += endpoint.endsWith("/messages")
       ? ""
@@ -102,7 +109,8 @@ export async function sendProbe({
     model: string;
     messages: Array<{ role: string; content: string }>;
     max_tokens?: number;
-    temperature?: number;
+    reasoning_effort?: string;
+    thinking?: { type: string; budget_tokens: number };
   }
 
   let bodyObj: RequestBody;
@@ -116,14 +124,26 @@ export async function sendProbe({
       max_tokens: 4096,
       messages: [{ role: "user", content: prompt }],
     };
+    if (reasoningEffort && reasoningEffort !== "none") {
+      const budgetMap: Record<string, number> = {
+        low: 2048,
+        medium: 4096,
+        high: 8192,
+      };
+      const budget = budgetMap[reasoningEffort] || 8192;
+      bodyObj.thinking = { type: "enabled", budget_tokens: budget };
+      bodyObj.max_tokens = Math.max(4096, budget + 2048);
+    }
   } else {
     headers["Authorization"] = `Bearer ${apiKey}`;
     bodyObj = {
       model,
       messages: [{ role: "user", content: prompt }],
     };
+    if (reasoningEffort && reasoningEffort !== "none") {
+      bodyObj.reasoning_effort = reasoningEffort;
+    }
   }
-  if (temperature !== null) bodyObj.temperature = temperature;
 
   const res = await fetch(endpoint, {
     method: "POST",

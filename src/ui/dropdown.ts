@@ -159,7 +159,7 @@ export function initModelDropdown(): void {
       if (selected.toLowerCase().includes("claude")) {
         setEndpointFormatRadio("anthropic");
       } else {
-        setEndpointFormatRadio("openai");
+        setEndpointFormatRadio("chat_completions");
       }
       saveConfig();
       closeDropdown();

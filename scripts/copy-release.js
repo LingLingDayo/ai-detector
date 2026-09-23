@@ -45,6 +45,7 @@ export function copyReleaseArtifacts(options = {}) {
   }
 
   const chineseProductName = "ModelTrace模型检测工具";
+  const standardEnglishName = "ModelTrace-AI-Detector";
   const bundleDir = options.bundleDir || path.resolve(rootDir, "src-tauri/target/release/bundle");
   const releaseBinDir = options.releaseBinDir || path.resolve(rootDir, "src-tauri/target/release");
 
@@ -71,6 +72,12 @@ export function copyReleaseArtifacts(options = {}) {
 
   // 2. 检查 target/release 目录下的可执行文件
   const possibleBinaries = [
+    "modeltrace-ai-detector.exe",
+    "modeltrace-ai-detector",
+    "ModelTrace-AI-Detector.exe",
+    "ModelTrace-AI-Detector",
+    "ModelTrace AI Detector.exe",
+    "ModelTrace AI Detector",
     "modeltrace-tool.exe",
     "modeltrace-tool",
     "ModelTrace.exe",
@@ -85,14 +92,18 @@ export function copyReleaseArtifacts(options = {}) {
     if (fs.existsSync(binPath) && fs.statSync(binPath).isFile()) {
       foundBinName = binName;
       foundBinPath = binPath;
-      candidateFileMap.set(binName, binPath);
       break;
     }
   }
 
-  // 3. 生成中文名称直接可执行程序
+  // 3. 规范化归档名称
   if (foundBinPath) {
     const ext = path.extname(foundBinName) || (process.platform === "win32" ? ".exe" : "");
+    // 规范英文包名（推荐：连字符无空格格式）
+    const standardBinName = `${standardEnglishName}${ext}`;
+    candidateFileMap.set(standardBinName, foundBinPath);
+
+    // 中文名称执行程序
     const chineseBinName = `${chineseProductName}${ext}`;
     candidateFileMap.set(chineseBinName, foundBinPath);
   }

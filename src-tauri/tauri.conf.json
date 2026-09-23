@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "ModelTrace",
+  "productName": "ModelTrace AI Detector",
   "version": "1.0.0",
-  "identifier": "com.modeltrace.detector",
+  "identifier": "com.modeltrace.ai-detector",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "ModelTrace - AI 模型检测工具",
+        "title": "ModelTrace AI Detector",
         "label": "main",
         "width": 1020,
         "height": 840,

@@ -3,8 +3,7 @@ export interface ClientConfig {
   apiKey: string;
   apiFormat: string;
   modelName: string;
-  temperature: string;
-  timeout: string;
+  reasoningEffort: string;
 }
 
 export interface SendProbeOptions {
@@ -13,8 +12,8 @@ export interface SendProbeOptions {
   model: string;
   prompt: string;
   apiFormat: string;
-  temperature: number | null;
-  timeoutSeconds: number;
+  reasoningEffort?: string;
+  timeoutSeconds?: number;
 }
 
 export interface ProbeResponse {

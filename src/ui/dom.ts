@@ -20,8 +20,6 @@ export const dropdownList = document.getElementById("dropdown-list") as HTMLULis
 export const toggleAdvancedBtn = document.getElementById("toggle-advanced") as HTMLButtonElement;
 export const advancedPanel = document.getElementById("advanced-panel") as HTMLDivElement;
 export const settingsSummary = document.getElementById("settings-summary") as HTMLSpanElement;
-export const temperatureInput = document.getElementById("temperature") as HTMLInputElement;
-export const timeoutInput = document.getElementById("timeout") as HTMLInputElement;
 export const saveTip = document.getElementById("save-tip") as HTMLSpanElement;
 export const btnStart = document.getElementById("btn-start") as HTMLButtonElement;
 export const startSpinner = document.getElementById("start-spinner") as HTMLSpanElement;
@@ -47,12 +45,29 @@ export const bankBadge = document.getElementById("bank-badge") as HTMLSpanElemen
 
 export function getActiveEndpointFormat(): string {
   const checked = document.querySelector<HTMLInputElement>('input[name="endpoint-format"]:checked');
-  return checked ? checked.value : "openai";
+  return checked ? checked.value : "chat_completions";
 }
 
 export function setEndpointFormatRadio(format: string): void {
+  const normalized = format === "openai" ? "chat_completions" : format;
   const radio = document.querySelector<HTMLInputElement>(
-    `input[name="endpoint-format"][value="${format}"]`
+    `input[name="endpoint-format"][value="${normalized}"]`
+  );
+  if (radio) {
+    radio.checked = true;
+  }
+}
+
+export function getActiveReasoningEffort(): string {
+  const checked = document.querySelector<HTMLInputElement>(
+    'input[name="reasoning-effort"]:checked'
+  );
+  return checked ? checked.value : "high";
+}
+
+export function setReasoningEffortRadio(effort: string): void {
+  const radio = document.querySelector<HTMLInputElement>(
+    `input[name="reasoning-effort"][value="${effort}"]`
   );
   if (radio) {
     radio.checked = true;

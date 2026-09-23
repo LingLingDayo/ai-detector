@@ -478,14 +478,38 @@ input::placeholder {
   gap: 6px;
 }
 
+.advanced-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.field-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
 .segmented-control {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
   background: var(--bg-input);
-  padding: 3px;
+  padding: 4px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
+}
+
+.segmented-control.reasoning-control {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 640px) {
+  .segmented-control {
+    grid-template-columns: 1fr;
+  }
+  .segmented-control.reasoning-control {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .segment {

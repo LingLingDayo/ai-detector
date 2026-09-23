@@ -13,13 +13,12 @@ import {
   baseUrlInput,
   apiKeyInput,
   modelNameInput,
-  temperatureInput,
-  timeoutInput,
   progressSection,
   progressTitle,
   progressStatusDesc,
   resultSection,
   getActiveEndpointFormat,
+  getActiveReasoningEffort,
 } from "./ui/dom";
 import {
   saveConfig,
@@ -52,9 +51,8 @@ async function handleTestSubmit(e: SubmitEvent): Promise<void> {
   const apiKey = apiKeyInput.value.trim();
   const model = modelNameInput.value.trim();
   const apiFormat = getActiveEndpointFormat();
-  const tempVal = temperatureInput.value.trim();
-  const temperature = tempVal !== "" ? parseFloat(tempVal) : null;
-  const timeoutSeconds = parseInt(timeoutInput.value.trim(), 10) || 180;
+  const reasoningEffort = getActiveReasoningEffort();
+  const timeoutSeconds = 60; // 默认锁定 60 秒
 
   if (!baseUrl || !apiKey) {
     alert("请填写 Base URL 和 API Key！");
@@ -99,7 +97,7 @@ async function handleTestSubmit(e: SubmitEvent): Promise<void> {
         model,
         prompt: challenge.prompt,
         apiFormat,
-        temperature,
+        reasoningEffort,
         timeoutSeconds,
       });
 
