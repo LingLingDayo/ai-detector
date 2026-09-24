@@ -147,8 +147,8 @@ defineExpose({
       required
       autocomplete="off"
       spellcheck="false"
-      placeholder="请输入或选择待测模型 ID"
-      title="待测模型 ID。可点击右侧下拉按钮或刷新按钮自动获取当前 Key 允许的模型列表"
+      placeholder="请输入或选择测试模型 ID"
+      title="测试模型 ID。可点击右侧下拉按钮或刷新按钮自动获取当前 Key 允许的模型列表"
       @input="handleInput"
     />
     <div class="combobox-actions">
@@ -206,7 +206,7 @@ defineExpose({
       <ul class="dropdown-list" id="dropdown-list">
         <template v-if="availableModels.length === 0">
           <li v-if="isFetchedFromApi" class="dropdown-empty">
-            上游未返回可用模型，可直接在上方手动输入待测模型 ID
+            上游未返回可用模型，可直接在上方手动输入测试模型 ID
           </li>
           <li v-else class="dropdown-empty">
             <div style="font-weight: 500; margin-bottom: 4px; color: var(--text-secondary)">尚未拉取模型列表</div>

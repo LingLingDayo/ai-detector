@@ -76,7 +76,7 @@ export function useProbeTest(): UseProbeTestReturn {
     }
 
     if (!model) {
-      alert("请填写或选择待测模型 ID！");
+      alert("请填写或选择测试模型 ID！");
       return;
     }
 

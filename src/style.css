@@ -173,6 +173,13 @@ body {
 /* --------------------------------------------------------------------------
    Cards
    -------------------------------------------------------------------------- */
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+}
+
 .card {
   background: var(--bg-card);
   backdrop-filter: blur(16px);
@@ -181,6 +188,11 @@ body {
   border-radius: var(--radius-lg);
   padding: 20px 22px;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+}
+
+.config-card {
+  position: relative;
+  z-index: 30;
 }
 
 .card-header {
@@ -303,6 +315,10 @@ input::placeholder {
   align-items: center;
 }
 
+.model-combobox-wrapper.combobox-open {
+  z-index: 100;
+}
+
 .model-combobox-wrapper input {
   padding-right: 68px;
 }
@@ -333,12 +349,12 @@ input::placeholder {
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 1000;
   background: #131924;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(99, 102, 241, 0.4);
   border-radius: var(--radius-md);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
-  max-height: 280px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(99, 102, 241, 0.2);
+  max-height: 320px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -634,6 +650,8 @@ input::placeholder {
    Progress
    -------------------------------------------------------------------------- */
 .progress-card {
+  position: relative;
+  z-index: 20;
   border-color: rgba(99, 102, 241, 0.3);
   animation: fadeIn var(--transition-normal);
 }
@@ -803,6 +821,8 @@ input::placeholder {
    Result
    -------------------------------------------------------------------------- */
 .result-card {
+  position: relative;
+  z-index: 10;
   animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
