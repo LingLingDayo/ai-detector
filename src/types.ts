@@ -34,6 +34,11 @@ export interface ProbeStepItem {
   state: StepStatus;
   stateText: string;
   statText: string;
+  prompt?: string;
+  answer?: string;
+  expectedCount?: number;
+  parsedNumbers?: number[];
+  error?: string;
 }
 
 export interface StatusAlertInfo {

@@ -89,21 +89,25 @@ export function useProbeTest(): UseProbeTestReturn {
     completedCount.value = 0;
     statusTitle.value = "探测测试进行中";
     statusDesc.value = "正在并发发起 3 组长整数挑战探针...";
-    steps.value = [
-      { id: 0, state: "working", stateText: "请求中...", statText: "执行" },
-      { id: 1, state: "working", stateText: "请求中...", statText: "执行" },
-      { id: 2, state: "working", stateText: "请求中...", statText: "执行" },
-    ];
-
     const challenges: Challenge[] = generateChallenges(totalCount);
     const outputs: (ProbeOutputItem | null)[] = new Array(totalCount).fill(null);
     const errors: string[] = [];
+
+    // 初始化步骤信息，包含题目内容和预期数量
+    steps.value = challenges.map((ch, idx) => ({
+      id: idx,
+      state: "working",
+      stateText: "请求中...",
+      statText: "执行",
+      prompt: ch.prompt,
+      expectedCount: ch.expected_count,
+    }));
 
     const tasks = challenges.map(async (challenge, i) => {
       const minimum = Math.max(80, Math.ceil(challenge.expected_count * 0.55));
       let accepted = false;
       let finalResponseText = "";
-      let lastParsedCount = 0;
+      let lastParsedNumbers: number[] = [];
       let lastErrMsg = "";
 
       // 最多尝试 2 次（初次执行 + 失败后最多静默重试 1 次）
@@ -121,7 +125,7 @@ export function useProbeTest(): UseProbeTestReturn {
           });
 
           const parsedNumbers = parseNumbers(response.text);
-          lastParsedCount = parsedNumbers.length;
+          lastParsedNumbers = parsedNumbers;
           finalResponseText = response.text;
 
           if (parsedNumbers.length >= minimum) {
@@ -142,18 +146,27 @@ export function useProbeTest(): UseProbeTestReturn {
             id: i,
             state: "done",
             stateText: "已采纳",
-            statText: `${lastParsedCount} 个数字`,
+            statText: `${lastParsedNumbers.length} 个数字`,
+            prompt: challenge.prompt,
+            expectedCount: challenge.expected_count,
+            answer: finalResponseText,
+            parsedNumbers: lastParsedNumbers,
           };
           outputs[i] = {
             text: finalResponseText,
             expected_count: challenge.expected_count,
           };
-        } else if (lastParsedCount > 0) {
+        } else if (lastParsedNumbers.length > 0) {
           steps.value[i] = {
             id: i,
             state: "error",
             stateText: "数字不足",
-            statText: `${lastParsedCount}/${minimum}`,
+            statText: `${lastParsedNumbers.length}/${minimum}`,
+            prompt: challenge.prompt,
+            expectedCount: challenge.expected_count,
+            answer: finalResponseText,
+            parsedNumbers: lastParsedNumbers,
+            error: lastErrMsg,
           };
           errors.push(`第 ${i + 1} 题: ${lastErrMsg}`);
         } else {
@@ -162,6 +175,10 @@ export function useProbeTest(): UseProbeTestReturn {
             state: "error",
             stateText: "失败",
             statText: "错误",
+            prompt: challenge.prompt,
+            expectedCount: challenge.expected_count,
+            answer: finalResponseText || undefined,
+            error: lastErrMsg,
           };
           errors.push(`第 ${i + 1} 题失败: ${lastErrMsg}`);
         }
