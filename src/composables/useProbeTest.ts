@@ -88,30 +88,18 @@ export function useProbeTest(): UseProbeTestReturn {
     progressPercent.value = 0;
     completedCount.value = 0;
     statusTitle.value = "探测测试进行中";
-    statusDesc.value = "正在初始化 3 组长整数挑战探针...";
+    statusDesc.value = "正在并发发起 3 组长整数挑战探针...";
     steps.value = [
-      { id: 0, state: "pending", stateText: "等待中", statText: "-" },
-      { id: 1, state: "pending", stateText: "等待中", statText: "-" },
-      { id: 2, state: "pending", stateText: "等待中", statText: "-" },
+      { id: 0, state: "working", stateText: "请求中...", statText: "执行" },
+      { id: 1, state: "working", stateText: "请求中...", statText: "执行" },
+      { id: 2, state: "working", stateText: "请求中...", statText: "执行" },
     ];
 
     const challenges: Challenge[] = generateChallenges(totalCount);
-    const outputs: ProbeOutputItem[] = [];
+    const outputs: (ProbeOutputItem | null)[] = new Array(totalCount).fill(null);
     const errors: string[] = [];
 
-    for (let i = 0; i < challenges.length; i++) {
-      const challenge = challenges[i];
-
-      // Update current step to working
-      steps.value[i] = {
-        id: i,
-        state: "working",
-        stateText: "请求中...",
-        statText: "执行",
-      };
-
-      statusDesc.value = `正在执行第 ${i + 1}/${totalCount} 题，等待模型完整序列...`;
-
+    const tasks = challenges.map(async (challenge, i) => {
       try {
         const response = await sendProbe({
           baseUrl,
@@ -134,10 +122,10 @@ export function useProbeTest(): UseProbeTestReturn {
             stateText: "已采纳",
             statText: `${parsedNumbers.length} 个数字`,
           };
-          outputs.push({
+          outputs[i] = {
             text: response.text,
             expected_count: challenge.expected_count,
-          });
+          };
         } else {
           steps.value[i] = {
             id: i,
@@ -159,20 +147,23 @@ export function useProbeTest(): UseProbeTestReturn {
           statText: "错误",
         };
         errors.push(`第 ${i + 1} 题失败: ${errMsg}`);
+      } finally {
+        completedCount.value += 1;
+        progressPercent.value = Math.round((completedCount.value / totalCount) * 100);
+        if (completedCount.value < totalCount) {
+          statusDesc.value = `已完成 ${completedCount.value}/${totalCount} 题，正在等待剩余响应...`;
+        } else {
+          statusDesc.value = "3 题测试完成，正在计算模型归因...";
+        }
       }
+    });
 
-      const finished = i + 1;
-      completedCount.value = finished;
-      progressPercent.value = Math.round((finished / totalCount) * 100);
+    await Promise.all(tasks);
 
-      statusDesc.value =
-        finished < totalCount
-          ? `第 ${finished} 题已完成，进入下一题...`
-          : "3 题测试完成，正在计算模型归因...";
-    }
+    const validOutputs = outputs.filter((item): item is ProbeOutputItem => item !== null);
 
     // Process evaluation and output results
-    if (outputs.length === 0) {
+    if (validOutputs.length === 0) {
       statusTitle.value = "未获得有效样本";
       statusDesc.value = "3 题测试均未能获取合规输出，请检查错误原因。";
       statusAlert.value = {
@@ -181,9 +172,9 @@ export function useProbeTest(): UseProbeTestReturn {
       };
     } else {
       statusTitle.value = "测试完成";
-      statusDesc.value = `成功采纳 ${outputs.length}/${totalCount} 份有效输出样本`;
+      statusDesc.value = `成功采纳 ${validOutputs.length}/${totalCount} 份有效输出样本`;
       try {
-        analysisResult.value = analyzeGlobalOutputs(outputs, unifiedBank);
+        analysisResult.value = analyzeGlobalOutputs(validOutputs, unifiedBank);
       } catch (analysisErr: unknown) {
         const errMsg =
           analysisErr instanceof Error ? analysisErr.message : String(analysisErr);
