@@ -68,7 +68,7 @@ export function useProbeTest(): UseProbeTestReturn {
     const model = config.modelName.trim();
     const apiFormat = config.apiFormat;
     const reasoningEffort = config.reasoningEffort;
-    const timeoutSeconds = 60; // 默认锁定 60 秒
+    const timeoutSeconds = 150; // 默认锁定 150 秒
 
     if (!baseUrl || !apiKey) {
       alert("请填写 Base URL 和 API Key！");
@@ -100,53 +100,71 @@ export function useProbeTest(): UseProbeTestReturn {
     const errors: string[] = [];
 
     const tasks = challenges.map(async (challenge, i) => {
+      const minimum = Math.max(80, Math.ceil(challenge.expected_count * 0.55));
+      let accepted = false;
+      let finalResponseText = "";
+      let lastParsedCount = 0;
+      let lastErrMsg = "";
+
+      // 最多尝试 2 次（初次执行 + 失败后最多静默重试 1 次）
+      const maxAttempts = 2;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          const response = await sendProbe({
+            baseUrl,
+            apiKey,
+            model,
+            prompt: challenge.prompt,
+            apiFormat,
+            reasoningEffort,
+            timeoutSeconds,
+          });
+
+          const parsedNumbers = parseNumbers(response.text);
+          lastParsedCount = parsedNumbers.length;
+          finalResponseText = response.text;
+
+          if (parsedNumbers.length >= minimum) {
+            accepted = true;
+            break;
+          } else {
+            lastErrMsg = `仅解析到 ${parsedNumbers.length} 个有效整数（需至少 ${minimum} 个）`;
+          }
+        } catch (err: unknown) {
+          lastErrMsg = err instanceof Error ? err.message : String(err);
+          console.error(`第 ${i + 1} 题第 ${attempt} 次尝试失败:`, err);
+        }
+      }
+
       try {
-        const response = await sendProbe({
-          baseUrl,
-          apiKey,
-          model,
-          prompt: challenge.prompt,
-          apiFormat,
-          reasoningEffort,
-          timeoutSeconds,
-        });
-
-        const parsedNumbers = parseNumbers(response.text);
-        const minimum = Math.max(80, Math.ceil(challenge.expected_count * 0.55));
-        const accepted = parsedNumbers.length >= minimum;
-
         if (accepted) {
           steps.value[i] = {
             id: i,
             state: "done",
             stateText: "已采纳",
-            statText: `${parsedNumbers.length} 个数字`,
+            statText: `${lastParsedCount} 个数字`,
           };
           outputs[i] = {
-            text: response.text,
+            text: finalResponseText,
             expected_count: challenge.expected_count,
           };
-        } else {
+        } else if (lastParsedCount > 0) {
           steps.value[i] = {
             id: i,
             state: "error",
             stateText: "数字不足",
-            statText: `${parsedNumbers.length}/${minimum}`,
+            statText: `${lastParsedCount}/${minimum}`,
           };
-          errors.push(
-            `第 ${i + 1} 题: 仅解析到 ${parsedNumbers.length} 个有效整数（需至少 ${minimum} 个）`
-          );
+          errors.push(`第 ${i + 1} 题: ${lastErrMsg}`);
+        } else {
+          steps.value[i] = {
+            id: i,
+            state: "error",
+            stateText: "失败",
+            statText: "错误",
+          };
+          errors.push(`第 ${i + 1} 题失败: ${lastErrMsg}`);
         }
-      } catch (err: unknown) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        console.error(`第 ${i + 1} 题请求失败:`, err);
-        steps.value[i] = {
-          id: i,
-          state: "error",
-          stateText: "失败",
-          statText: "错误",
-        };
-        errors.push(`第 ${i + 1} 题失败: ${errMsg}`);
       } finally {
         completedCount.value += 1;
         progressPercent.value = Math.round((completedCount.value / totalCount) * 100);

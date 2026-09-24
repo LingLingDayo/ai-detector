@@ -66,9 +66,9 @@ export async function sendProbe({
   prompt,
   apiFormat,
   reasoningEffort = "high",
-  timeoutSeconds = 60,
+  timeoutSeconds = 150,
 }: SendProbeOptions): Promise<ProbeResponse> {
-  const actualTimeout = timeoutSeconds || 60;
+  const actualTimeout = timeoutSeconds || 150;
 
   if (tauriInvoke) {
     return await tauriInvoke<ProbeResponse>("send_probe_request", {

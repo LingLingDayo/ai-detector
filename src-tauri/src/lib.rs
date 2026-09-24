@@ -191,7 +191,7 @@ async fn fetch_models_list(
 
 #[tauri::command]
 async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> {
-    let timeout_sec = req.timeout_seconds.unwrap_or(60).max(10);
+    let timeout_sec = req.timeout_seconds.unwrap_or(150).max(10);
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(timeout_sec))
         .build()
@@ -199,7 +199,7 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
 
     let target_url = normalize_url(&req.base_url, &req.api_format);
     let start_time = Instant::now();
-    let max_attempts = 3;
+    let max_attempts = 1;
 
     for attempt in 1..=max_attempts {
         let mut request_builder = client.post(&target_url);
