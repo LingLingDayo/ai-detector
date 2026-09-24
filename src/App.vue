@@ -30,7 +30,6 @@ const {
   steps,
   statusAlert,
   analysisResult,
-  totalBankModelsCount,
   startTest,
   resetTest,
 } = useProbeTest();
@@ -47,8 +46,8 @@ function handleResetConfig(): void {
 
 <template>
   <div class="app-container">
-    <!-- 顶部标题栏与模型库就绪状态 -->
-    <AppHeader :model-count="totalBankModelsCount" />
+    <!-- 顶部标题栏 -->
+    <AppHeader />
 
     <!-- 主体区域 -->
     <main class="app-main">
