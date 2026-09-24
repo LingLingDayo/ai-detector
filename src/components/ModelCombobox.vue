@@ -147,7 +147,7 @@ defineExpose({
       required
       autocomplete="off"
       spellcheck="false"
-      placeholder="请输入或选择待测模型 ID (例如 gpt-4o)"
+      placeholder="请输入或选择待测模型 ID"
       title="待测模型 ID。可点击右侧下拉按钮或刷新按钮自动获取当前 Key 允许的模型列表"
       @input="handleInput"
     />
