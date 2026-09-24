@@ -6,7 +6,6 @@ import AppHeader from "./components/AppHeader.vue";
 import ConfigCard from "./components/ConfigCard.vue";
 import ProgressCard from "./components/ProgressCard.vue";
 import ResultCard from "./components/ResultCard.vue";
-import AppFooter from "./components/AppFooter.vue";
 
 const {
   config,
@@ -83,8 +82,6 @@ function handleResetConfig(): void {
       <!-- 归因诊断报告卡片 -->
       <ResultCard :analysis="analysisResult" />
     </main>
-
-    <!-- 页脚版权与离线安全声明 -->
-    <AppFooter />
   </div>
 </template>
+
