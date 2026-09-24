@@ -34,6 +34,8 @@ export async function fetchRemoteModels(
   let endpoint = baseUrl.replace(/\/+$/, "");
   if (endpoint.endsWith("/chat/completions")) {
     endpoint = endpoint.replace(/\/chat\/completions$/, "/models");
+  } else if (endpoint.endsWith("/responses")) {
+    endpoint = endpoint.replace(/\/responses$/, "/models");
   } else if (endpoint.endsWith("/messages")) {
     endpoint = endpoint.replace(/\/messages$/, "/models");
   } else if (endpoint.endsWith("/v1")) {
@@ -86,7 +88,7 @@ export async function sendProbe({
   let endpoint = baseUrl.replace(/\/+$/, "");
   if (!endpoint) {
     if (apiFormat === "anthropic") endpoint = "https://api.anthropic.com";
-    else if (apiFormat === "openai_native") endpoint = "https://api.openai.com";
+    else endpoint = "https://api.openai.com";
   }
 
   if (apiFormat === "anthropic") {
@@ -95,6 +97,12 @@ export async function sendProbe({
       : endpoint.endsWith("/v1")
       ? "/messages"
       : "/v1/messages";
+  } else if (apiFormat === "responses" || apiFormat === "openai_responses") {
+    endpoint += endpoint.endsWith("/responses")
+      ? ""
+      : endpoint.endsWith("/v1")
+      ? "/responses"
+      : "/v1/responses";
   } else {
     endpoint += endpoint.endsWith("/chat/completions")
       ? ""
@@ -107,10 +115,16 @@ export async function sendProbe({
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   interface RequestBody {
     model: string;
-    messages: Array<{ role: string; content: string }>;
+    messages?: Array<{ role: string; content: string }>;
+    input?: Array<{
+      type: string;
+      role: string;
+      content: Array<{ type: string; text: string }>;
+    }>;
     max_tokens?: number;
     max_completion_tokens?: number;
     reasoning_effort?: string;
+    reasoning?: { effort: string };
     output_config?: { effort: string };
     thinking?: { type: string; budget_tokens: number };
   }
@@ -148,6 +162,22 @@ export async function sendProbe({
       bodyObj.output_config = { effort: trimmed };
       bodyObj.max_tokens = Math.max(4096, budget + 2048);
     }
+  } else if (apiFormat === "responses" || apiFormat === "openai_responses") {
+    headers["Authorization"] = `Bearer ${apiKey}`;
+    bodyObj = {
+      model,
+      input: [
+        {
+          type: "message",
+          role: "user",
+          content: [{ type: "input_text", text: prompt }],
+        },
+      ],
+    };
+    if (reasoningEffort && reasoningEffort !== "none") {
+      const trimmed = reasoningEffort.trim();
+      bodyObj.reasoning = { effort: trimmed };
+    }
   } else {
     headers["Authorization"] = `Bearer ${apiKey}`;
     bodyObj = {
@@ -176,13 +206,50 @@ export async function sendProbe({
     throw new Error(`上游接口返回错误 (HTTP ${res.status}): ${errText.slice(0, 200)}`);
   }
 
-  const json = (await res.json()) as {
-    content?: Array<{ type?: string; text?: string }>;
-    choices?: Array<{ message?: { content?: string } }>;
-  };
+  const json = (await res.json()) as any;
   let text = "";
   if (apiFormat === "anthropic") {
-    text = (json.content || []).map((c) => c.text || "").join("");
+    text = (json.content || []).map((c: any) => c.text || "").join("");
+  } else if (apiFormat === "responses" || apiFormat === "openai_responses") {
+    if (typeof json.output_text === "string" && json.output_text.trim()) {
+      text = json.output_text.trim();
+    } else if (Array.isArray(json.output)) {
+      const chunks: string[] = [];
+      for (const item of json.output) {
+        if (!item) continue;
+        if (item.type === "reasoning" || item.type === "compaction_summary" || item.type === "function_call") continue;
+        if (typeof item.text === "string" && item.text.trim()) {
+          chunks.push(item.text.trim());
+          continue;
+        }
+        if (Array.isArray(item.content)) {
+          for (const part of item.content) {
+            if (!part) continue;
+            if (part.type === "input_text" || part.type === "thinking") continue;
+            if (typeof part.text === "string" && part.text.trim()) {
+              chunks.push(part.text.trim());
+            }
+          }
+        }
+      }
+      text = chunks.join("");
+    } else if (Array.isArray(json.content)) {
+      const chunks: string[] = [];
+      for (const part of json.content) {
+        if (typeof part === "string" && part.trim()) {
+          chunks.push(part.trim());
+        } else if (part && typeof part.text === "string" && part.text.trim()) {
+          if (part.type !== "thinking" && part.type !== "redacted_thinking") {
+            chunks.push(part.text.trim());
+          }
+        }
+      }
+      text = chunks.join("");
+    } else if (typeof json.content === "string") {
+      text = json.content.trim();
+    } else if (json.choices?.[0]?.message?.content) {
+      text = json.choices[0].message.content;
+    }
   } else {
     text = json.choices?.[0]?.message?.content || "";
   }

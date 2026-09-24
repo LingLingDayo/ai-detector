@@ -32,10 +32,8 @@ fn normalize_url(base_url: &str, api_format: &str) -> String {
     let trimmed = if raw.is_empty() {
         if api_format == "anthropic" {
             "https://api.anthropic.com"
-        } else if api_format == "openai_native" {
-            "https://api.openai.com"
         } else {
-            ""
+            "https://api.openai.com"
         }
     } else {
         raw
@@ -48,6 +46,14 @@ fn normalize_url(base_url: &str, api_format: &str) -> String {
             format!("{}/messages", trimmed)
         } else {
             format!("{}/v1/messages", trimmed)
+        }
+    } else if api_format == "responses" || api_format == "openai_responses" {
+        if trimmed.ends_with("/responses") {
+            trimmed.to_string()
+        } else if trimmed.ends_with("/v1") {
+            format!("{}/responses", trimmed)
+        } else {
+            format!("{}/v1/responses", trimmed)
         }
     } else {
         if trimmed.ends_with("/chat/completions") {
@@ -110,10 +116,8 @@ async fn fetch_models_list(
     let trimmed = if raw.is_empty() {
         if api_format == "anthropic" {
             "https://api.anthropic.com"
-        } else if api_format == "openai_native" {
-            "https://api.openai.com"
         } else {
-            ""
+            "https://api.openai.com"
         }
     } else {
         raw
@@ -121,6 +125,8 @@ async fn fetch_models_list(
 
     let target_url = if trimmed.ends_with("/chat/completions") {
         format!("{}/models", trimmed.trim_end_matches("/chat/completions"))
+    } else if trimmed.ends_with("/responses") {
+        format!("{}/models", trimmed.trim_end_matches("/responses"))
     } else if trimmed.ends_with("/messages") {
         format!("{}/models", trimmed.trim_end_matches("/messages"))
     } else if trimmed.ends_with("/v1") {
@@ -247,6 +253,36 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
                 }
             }
             map
+        } else if req.api_format == "responses" || req.api_format == "openai_responses" {
+            request_builder = request_builder.header(
+                reqwest::header::AUTHORIZATION,
+                format!("Bearer {}", req.api_key.trim()),
+            );
+
+            let mut map = serde_json::json!({
+                "model": req.model.trim(),
+                "input": [
+                    {
+                        "type": "message",
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "input_text",
+                                "text": &req.prompt
+                            }
+                        ]
+                    }
+                ]
+            });
+            if let Some(effort) = &req.reasoning_effort {
+                let trimmed = effort.trim();
+                if trimmed != "none" && !trimmed.is_empty() {
+                    map["reasoning"] = serde_json::json!({
+                        "effort": trimmed
+                    });
+                }
+            }
+            map
         } else {
             request_builder = request_builder.header(
                 reqwest::header::AUTHORIZATION,
@@ -310,6 +346,66 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
                             }
                         }
                         full
+                    } else if req.api_format == "responses" || req.api_format == "openai_responses" {
+                        if let Some(output_text) = parsed.get("output_text").and_then(|o| o.as_str()) {
+                            output_text.trim().to_string()
+                        } else if let Some(outputs) = parsed.get("output").and_then(|o| o.as_array()) {
+                            let mut full = String::new();
+                            for item in outputs {
+                                let item_type = item.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                                if item_type == "reasoning" || item_type == "compaction_summary" || item_type == "function_call" {
+                                    continue;
+                                }
+                                if let Some(t) = item.get("text").and_then(|s| s.as_str()) {
+                                    full.push_str(t);
+                                } else if let Some(parts) = item.get("content").and_then(|c| c.as_array()) {
+                                    for part in parts {
+                                        let part_type = part.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                                        if part_type == "input_text" || part_type == "thinking" {
+                                            continue;
+                                        }
+                                        if let Some(t) = part.get("text").and_then(|s| s.as_str()) {
+                                            full.push_str(t);
+                                        }
+                                    }
+                                }
+                            }
+                            if full.is_empty() {
+                                parsed.get("choices")
+                                    .and_then(|c| c.get(0))
+                                    .and_then(|c0| c0.get("message"))
+                                    .and_then(|m| m.get("content"))
+                                    .and_then(|s| s.as_str())
+                                    .unwrap_or("")
+                                    .to_string()
+                            } else {
+                                full
+                            }
+                        } else if let Some(content_val) = parsed.get("content") {
+                            if let Some(s) = content_val.as_str() {
+                                s.to_string()
+                            } else if let Some(arr) = content_val.as_array() {
+                                let mut full = String::new();
+                                for part in arr {
+                                    if let Some(s) = part.as_str() {
+                                        full.push_str(s);
+                                    } else if let Some(t) = part.get("text").and_then(|s| s.as_str()) {
+                                        full.push_str(t);
+                                    }
+                                }
+                                full
+                            } else {
+                                content_val.to_string()
+                            }
+                        } else if let Some(choice_content) = parsed.get("choices")
+                            .and_then(|c| c.get(0))
+                            .and_then(|c0| c0.get("message"))
+                            .and_then(|m| m.get("content"))
+                            .and_then(|s| s.as_str()) {
+                            choice_content.to_string()
+                        } else {
+                            return Err("无法从上游 responses 响应中解析出文本内容".to_string());
+                        }
                     } else {
                         let choice = parsed
                             .get("choices")

@@ -98,7 +98,7 @@ function selectItem(model: string): void {
   emit("update:modelValue", model);
   if (model.toLowerCase().includes("claude")) {
     emit("update:apiFormat", "anthropic");
-  } else {
+  } else if (props.apiFormat !== "responses") {
     emit("update:apiFormat", "chat_completions");
   }
   closeDropdown();

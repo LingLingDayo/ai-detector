@@ -33,8 +33,12 @@ export function useConfig(): UseConfigReturn {
   let isInitializing = true;
 
   const settingsSummary = computed(() => {
-    const formatName =
-      config.apiFormat === "anthropic" ? "/v1/messages" : "/v1/chat/completions";
+    let formatName = "/v1/chat/completions";
+    if (config.apiFormat === "responses") {
+      formatName = "/v1/responses";
+    } else if (config.apiFormat === "anthropic") {
+      formatName = "/v1/messages";
+    }
 
     const effortMap: Record<string, string> = {
       none: "关闭",
@@ -87,8 +91,17 @@ export function useConfig(): UseConfigReturn {
       if (saved.apiKey !== undefined) config.apiKey = saved.apiKey;
       if (saved.modelName !== undefined) config.modelName = saved.modelName;
       if (saved.apiFormat !== undefined) {
-        config.apiFormat =
-          saved.apiFormat === "anthropic" ? "anthropic" : "chat_completions";
+        if (
+          saved.apiFormat === "responses" ||
+          saved.apiFormat === "openai_responses" ||
+          saved.apiFormat === "openai_native"
+        ) {
+          config.apiFormat = "responses";
+        } else if (saved.apiFormat === "anthropic") {
+          config.apiFormat = "anthropic";
+        } else {
+          config.apiFormat = "chat_completions";
+        }
       }
       if (saved.reasoningEffort !== undefined) {
         config.reasoningEffort = saved.reasoningEffort;

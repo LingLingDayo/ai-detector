@@ -102,7 +102,7 @@ export function useModelList(): UseModelListReturn {
     config.modelName = model;
     if (model.toLowerCase().includes("claude")) {
       config.apiFormat = "anthropic";
-    } else {
+    } else if (config.apiFormat !== "responses") {
       config.apiFormat = "chat_completions";
     }
     closeDropdown();

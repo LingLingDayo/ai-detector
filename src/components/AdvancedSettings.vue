@@ -44,7 +44,17 @@ const emit = defineEmits<{
         <div class="advanced-row">
           <label title="选择调用的 API 规范与端点路径格式">接口协议端点</label>
           <div class="segmented-control">
-            <label class="segment" title="OpenAI 规范路由，兼容绝大多数中转网关与第三方模型服务（默认）">
+            <label class="segment" title="OpenAI Responses 规范路由 (/v1/responses)">
+              <input
+                type="radio"
+                name="endpoint-format"
+                value="responses"
+                :checked="apiFormat === 'responses'"
+                @change="emit('update:apiFormat', 'responses')"
+              />
+              <span class="segment-label">/v1/responses 端点</span>
+            </label>
+            <label class="segment" title="OpenAI Chat Completions 规范路由 (/v1/chat/completions)">
               <input
                 type="radio"
                 name="endpoint-format"
@@ -54,7 +64,7 @@ const emit = defineEmits<{
               />
               <span class="segment-label">/v1/chat/completions 端点</span>
             </label>
-            <label class="segment" title="Anthropic Claude Messages 规范路由与 x-api-key 认证">
+            <label class="segment" title="Anthropic Claude Messages 规范路由与 x-api-key 认证 (/v1/messages)">
               <input
                 type="radio"
                 name="endpoint-format"
