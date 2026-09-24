@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "build:app": "npm run build && tauri build --no-bundle && node scripts/copy-release.js",
+    "build:app": "npm run build && npm run tauri build --no-bundle",
     "preview": "vite preview",
-    "tauri": "tauri",
+    "tauri": "node scripts/run-tauri.js",
     "release:copy": "node scripts/copy-release.js"
   },
   "dependencies": {
