@@ -19,8 +19,8 @@ withDefaults(
       </div>
       <div>
         <h1 class="brand-title">ModelTrace <span>AI Detector</span></h1>
-        <p class="brand-subtitle" title="基于长整数生成指纹的主动式 AI 模型归因检测">
-          AI 模型主动指纹归因探测系统
+        <p class="brand-subtitle" title="通过探针测试，检测并鉴别 API 底层实际调用的真实大模型">
+          检测与鉴别 API 背后的真实大模型
         </p>
       </div>
     </div>
