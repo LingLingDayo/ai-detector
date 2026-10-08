@@ -9,7 +9,9 @@
     "build:app": "npm run build && npm run tauri build --no-bundle",
     "preview": "vite preview",
     "tauri": "node scripts/run-tauri.js",
-    "release:copy": "node scripts/copy-release.js"
+    "release:copy": "node scripts/copy-release.js",
+    "sync": "node scripts/sync-upstream.js",
+    "sync:check": "node scripts/sync-upstream.js --check"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.2.0",
