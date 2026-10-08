@@ -3,6 +3,7 @@ import { ref, reactive, watch, nextTick } from "vue";
 import type { ConfigItem } from "../types";
 import { REASONING_EFFORT_OPTIONS } from "../constants";
 import CustomSelect, { type SelectOption } from "./CustomSelect.vue";
+import ModelCombobox from "./ModelCombobox.vue";
 
 const API_FORMAT_OPTIONS: SelectOption[] = [
   { value: "chat_completions", label: "/v1/chat/completions", description: "OpenAI 兼容" },
@@ -33,6 +34,7 @@ const emit = defineEmits<{
 }>();
 
 const nameInputRef = ref<HTMLInputElement | null>(null);
+const modalComboboxRef = ref<InstanceType<typeof ModelCombobox> | null>(null);
 const isKeyVisible = ref(false);
 const isAdvancedExpanded = ref(false);
 
@@ -47,6 +49,7 @@ const formData = reactive({
 
 function initForm(): void {
   isKeyVisible.value = false;
+  modalComboboxRef.value?.resetModelList();
   if (props.initialData) {
     formData.name = props.initialData.name || "";
     formData.baseUrl = props.initialData.baseUrl || "";
@@ -217,6 +220,8 @@ function handleSubmit(applyImmediately: boolean = false): void {
                   required
                   autocomplete="off"
                   spellcheck="false"
+                  @blur="modalComboboxRef?.triggerAutoFetch(true)"
+                  @keydown.enter="modalComboboxRef?.triggerAutoFetch(true)"
                 />
               </div>
             </div>
@@ -236,6 +241,8 @@ function handleSubmit(applyImmediately: boolean = false): void {
                   required
                   autocomplete="off"
                   spellcheck="false"
+                  @blur="modalComboboxRef?.triggerAutoFetch(true)"
+                  @keydown.enter="modalComboboxRef?.triggerAutoFetch(true)"
                 />
                 <button
                   type="button"
@@ -296,16 +303,20 @@ function handleSubmit(applyImmediately: boolean = false): void {
           </div>
 
           <!-- 高级选项内容 -->
-          <div v-if="isAdvancedExpanded" class="advanced-fields-box">
+          <div v-show="isAdvancedExpanded" class="advanced-fields-box">
             <div class="form-row">
               <div class="form-group flex-1">
                 <label for="cfg-model-name">默认测试模型 (可选)</label>
-                <input
-                  type="text"
+                <ModelCombobox
                   id="cfg-model-name"
-                  v-model="formData.modelName"
+                  ref="modalComboboxRef"
+                  v-model:model-value="formData.modelName"
+                  v-model:api-format="formData.apiFormat"
+                  :base-url="formData.baseUrl"
+                  :api-key="formData.apiKey"
                   placeholder="例如：gpt-4o, deepseek-chat..."
-                  autocomplete="off"
+                  :required="false"
+                  :auto-select-first="false"
                 />
               </div>
 

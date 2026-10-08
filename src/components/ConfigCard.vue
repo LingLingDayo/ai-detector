@@ -189,6 +189,7 @@ defineExpose({
             v-model:api-format="config.apiFormat"
             :base-url="config.baseUrl"
             :api-key="config.apiKey"
+            :required="true"
           />
         </div>
       </div>

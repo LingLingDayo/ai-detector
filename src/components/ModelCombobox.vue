@@ -2,12 +2,27 @@
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from "vue";
 import { fetchRemoteModels } from "../services/api";
 
-const props = defineProps<{
-  modelValue: string;
-  baseUrl: string;
-  apiKey: string;
-  apiFormat: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: string;
+    baseUrl: string;
+    apiKey: string;
+    apiFormat?: string;
+    id?: string;
+    placeholder?: string;
+    title?: string;
+    required?: boolean;
+    autoSelectFirst?: boolean;
+  }>(),
+  {
+    apiFormat: "chat_completions",
+    id: "model-name",
+    placeholder: "请输入或选择测试模型 ID",
+    title: "测试模型 ID。可点击右侧下拉按钮或刷新按钮自动获取当前 Key 允许的模型列表",
+    required: false,
+    autoSelectFirst: true,
+  }
+);
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
@@ -18,6 +33,7 @@ const comboboxRef = ref<HTMLDivElement | null>(null);
 const searchInputRef = ref<HTMLInputElement | null>(null);
 
 const isOpen = ref(false);
+const placement = ref<"bottom" | "top">("bottom");
 const searchQuery = ref("");
 const availableModels = ref<string[]>([]);
 const isFetchedFromApi = ref(false);
@@ -67,7 +83,21 @@ const filteredModels = computed(() => {
   return availableModels.value.filter((m) => m.toLowerCase().includes(q));
 });
 
+function calculatePlacement(): void {
+  if (!comboboxRef.value) return;
+  const rect = comboboxRef.value.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+
+  if (spaceBelow < 280 && spaceAbove > spaceBelow) {
+    placement.value = "top";
+  } else {
+    placement.value = "bottom";
+  }
+}
+
 function openDropdown(): void {
+  calculatePlacement();
   isOpen.value = true;
   searchQuery.value = "";
   if (!isFetchedFromApi.value) {
@@ -88,8 +118,8 @@ function toggleDropdown(): void {
     closeDropdown();
   } else {
     openDropdown();
-    if (!isFetchedFromApi.value && props.baseUrl.trim() && props.apiKey.trim()) {
-      void fetchModels();
+    if (!isFetchedFromApi.value && isValidBaseUrl(props.baseUrl) && isValidApiKey(props.apiKey)) {
+      void fetchModels({ autoSelectFirst: false });
     }
   }
 }
@@ -140,11 +170,6 @@ async function fetchModels(options: { autoSelectFirst?: boolean } = {}): Promise
 }
 
 function checkAndTriggerAutoFetch(immediate = false): void {
-  // 若已完成首次自动选择，或当前输入框已有模型值，则不再自动覆盖
-  if (hasAutoSelected.value || props.modelValue.trim()) {
-    return;
-  }
-
   if (debounceTimer) {
     clearTimeout(debounceTimer);
     debounceTimer = null;
@@ -154,12 +179,14 @@ function checkAndTriggerAutoFetch(immediate = false): void {
   const key = props.apiKey;
 
   if (isValidBaseUrl(url) && isValidApiKey(key)) {
+    const shouldSelectFirst = props.autoSelectFirst && !hasAutoSelected.value && !props.modelValue.trim();
     if (immediate) {
-      void fetchModels({ autoSelectFirst: true });
+      void fetchModels({ autoSelectFirst: shouldSelectFirst });
     } else {
       debounceTimer = setTimeout(() => {
-        if (!hasAutoSelected.value && !props.modelValue.trim() && isValidBaseUrl(props.baseUrl) && isValidApiKey(props.apiKey)) {
-          void fetchModels({ autoSelectFirst: true });
+        if (isValidBaseUrl(props.baseUrl) && isValidApiKey(props.apiKey)) {
+          const selectFirst = props.autoSelectFirst && !hasAutoSelected.value && !props.modelValue.trim();
+          void fetchModels({ autoSelectFirst: selectFirst });
         }
       }, 800);
     }
@@ -168,7 +195,12 @@ function checkAndTriggerAutoFetch(immediate = false): void {
 
 watch(
   [() => props.baseUrl, () => props.apiKey],
-  () => {
+  ([newUrl, newKey], [oldUrl, oldKey]) => {
+    if (newUrl !== oldUrl || newKey !== oldKey) {
+      isFetchedFromApi.value = false;
+      availableModels.value = [];
+      hasAutoSelected.value = false;
+    }
     checkAndTriggerAutoFetch(false);
   }
 );
@@ -236,22 +268,22 @@ defineExpose({
   >
     <input
       type="text"
-      id="model-name"
+      :id="id"
       :value="modelValue"
-      required
+      :required="required"
       autocomplete="off"
       spellcheck="false"
-      placeholder="请输入或选择测试模型 ID"
-      title="测试模型 ID。可点击右侧下拉按钮或刷新按钮自动获取当前 Key 允许的模型列表"
+      :placeholder="placeholder"
+      :title="title"
       @input="handleInput"
     />
     <div class="combobox-actions">
       <button
         type="button"
         class="btn-icon"
-        id="btn-fetch-models"
+        :id="id ? `${id}-btn-fetch` : 'btn-fetch-models'"
         title="点击调用 /v1/models 接口自动获取当前 Key 允许的模型列表"
-        @click.stop="() => { if (!isOpen) openDropdown(); void fetchModels(); }"
+        @click.stop="() => { if (!isOpen) openDropdown(); void fetchModels({ autoSelectFirst: false }); }"
       >
         <svg
           class="refresh-icon"
@@ -269,7 +301,7 @@ defineExpose({
       <button
         type="button"
         class="btn-icon"
-        id="btn-toggle-dropdown"
+        :id="id ? `${id}-btn-toggle` : 'btn-toggle-dropdown'"
         title="展开/收起模型选择列表"
         @click.stop="toggleDropdown"
       >
@@ -280,13 +312,17 @@ defineExpose({
     </div>
 
     <!-- 下拉菜单 -->
-    <div class="model-dropdown-menu" :class="{ hidden: !isOpen }" id="model-dropdown">
+    <div
+      class="model-dropdown-menu"
+      :class="{ hidden: !isOpen, 'is-top': placement === 'top', 'is-bottom': placement === 'bottom' }"
+      :id="id ? `${id}-dropdown` : 'model-dropdown'"
+    >
       <div class="dropdown-search-wrap">
         <input
           ref="searchInputRef"
           v-model="searchQuery"
           type="text"
-          id="dropdown-search"
+          :id="id ? `${id}-dropdown-search` : 'dropdown-search'"
           placeholder="搜索模型过滤..."
           autocomplete="off"
           spellcheck="false"
@@ -294,10 +330,10 @@ defineExpose({
           @click.stop
         />
       </div>
-      <div class="dropdown-status-bar" id="dropdown-status-bar">
+      <div class="dropdown-status-bar" :id="id ? `${id}-dropdown-status-bar` : 'dropdown-status-bar'">
         <span :style="{ color: statusColor }">{{ statusBarText }}</span>
       </div>
-      <ul class="dropdown-list" id="dropdown-list">
+      <ul class="dropdown-list" :id="id ? `${id}-dropdown-list` : 'dropdown-list'">
         <template v-if="availableModels.length === 0">
           <li v-if="isFetchedFromApi" class="dropdown-empty">
             上游未返回可用模型，可直接在上方手动输入测试模型 ID
@@ -336,6 +372,7 @@ defineExpose({
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 
   &.combobox-open {
     z-index: 100;
@@ -346,6 +383,7 @@ defineExpose({
   }
 
   input {
+    width: 100%;
     padding-right: 62px;
   }
 
@@ -368,7 +406,6 @@ defineExpose({
 
   .model-dropdown-menu {
     position: absolute;
-    top: calc(100% + 4px);
     left: 0;
     right: 0;
     z-index: 1000;
@@ -381,6 +418,16 @@ defineExpose({
     flex-direction: column;
     overflow: hidden;
     animation: fadeIn 0.15s ease-out;
+
+    &.is-bottom {
+      top: calc(100% + 4px);
+      bottom: auto;
+    }
+
+    &.is-top {
+      bottom: calc(100% + 4px);
+      top: auto;
+    }
 
     .dropdown-search-wrap {
       padding: 6px 8px;
