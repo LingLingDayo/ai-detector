@@ -211,11 +211,15 @@ const emit = defineEmits<{
               opacity: 0;
               width: 0;
               height: 0;
+              pointer-events: none;
+              outline: none;
+              border: none;
+              box-shadow: none;
 
               &:checked + .segment-label {
                 background: rgba(99, 102, 241, 0.2);
                 color: #fff;
-                border: 1px solid rgba(99, 102, 241, 0.4);
+                border-color: rgba(99, 102, 241, 0.4);
               }
             }
 
@@ -225,10 +229,19 @@ const emit = defineEmits<{
               justify-content: center;
               padding: 5px 8px;
               border-radius: var(--radius-sm);
+              border: 1px solid transparent;
               font-size: 0.76rem;
               font-weight: 500;
               color: var(--text-secondary);
-              transition: all var(--transition-fast);
+              background: transparent;
+              transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+              user-select: none;
+              box-sizing: border-box;
+
+              &:hover {
+                color: var(--text-primary);
+                background: rgba(255, 255, 255, 0.04);
+              }
             }
           }
         }
