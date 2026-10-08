@@ -10,10 +10,12 @@ const props = defineProps<{
   isOpen: boolean;
   steps: ProbeStepItem[];
   initialIndex: number;
+  isRunning?: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: "close"): void;
+  (e: "refreshSingleQuestion", index: number): void;
 }>();
 
 const activeIndex = ref(props.initialIndex);
@@ -71,6 +73,8 @@ function selectStep(idx: number): void {
           <ProbePromptSection
             :prompt="currentStep.prompt"
             :expected-count="currentStep.expectedCount"
+            :is-running="isRunning"
+            @refresh-single="emit('refreshSingleQuestion', activeIndex)"
           />
 
           <ProbeAnswerSection :step="currentStep" />

@@ -32,6 +32,8 @@ const {
   analysisResult,
   startTest,
   resetTest,
+  refreshQuestions,
+  refreshSingleQuestion,
 } = useProbeTest();
 
 onMounted(() => {
@@ -66,9 +68,9 @@ function handleResetConfig(): void {
         @reset="handleResetConfig"
       />
 
-      <!-- 探测进度卡片 -->
+      <!-- 探测题目与测试进度卡片（默认展示） -->
       <ProgressCard
-        :visible="hasStarted"
+        :visible="true"
         :title="statusTitle"
         :desc="statusDesc"
         :percent="progressPercent"
@@ -76,6 +78,9 @@ function handleResetConfig(): void {
         :total-count="totalCount"
         :steps="steps"
         :status-alert="statusAlert"
+        :is-running="isRunning"
+        @refresh-questions="refreshQuestions"
+        @refresh-single-question="refreshSingleQuestion"
       />
 
       <!-- 归因诊断报告卡片 -->

@@ -4,6 +4,11 @@ import { useClipboard } from "../../composables/useClipboard";
 const props = defineProps<{
   prompt?: string;
   expectedCount?: number;
+  isRunning?: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: "refreshSingle"): void;
 }>();
 
 const { copied: isPromptCopied, copy: copyPrompt } = useClipboard();
@@ -24,23 +29,38 @@ function handleCopy(): void {
           抽取目标：{{ expectedCount }} 个无语义整数 (1~355)
         </span>
       </div>
-      <button
-        v-if="prompt"
-        type="button"
-        class="btn-copy"
-        :class="{ copied: isPromptCopied }"
-        title="复制题目 Prompt 文本"
-        @click="handleCopy"
-      >
-        <svg v-if="!isPromptCopied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-        <svg v-else viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-        <span>{{ isPromptCopied ? "已复制" : "复制题目" }}</span>
-      </button>
+      <div class="prompt-actions">
+        <button
+          v-if="prompt"
+          type="button"
+          class="btn-action btn-refresh"
+          :disabled="isRunning"
+          title="重新抽取当前这道测试题目"
+          @click="emit('refreshSingle')"
+        >
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+          </svg>
+          <span>换一题</span>
+        </button>
+        <button
+          v-if="prompt"
+          type="button"
+          class="btn-action btn-copy"
+          :class="{ copied: isPromptCopied }"
+          title="复制题目 Prompt 文本"
+          @click="handleCopy"
+        >
+          <svg v-if="!isPromptCopied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>{{ isPromptCopied ? "已复制" : "复制题目" }}</span>
+        </button>
+      </div>
     </div>
     <div class="prompt-text-box">
       {{ prompt || "暂无题目内容（测试尚未开始）" }}
@@ -82,7 +102,13 @@ function handleCopy(): void {
       }
     }
 
-    .btn-copy {
+    .prompt-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-action {
       display: inline-flex;
       align-items: center;
       gap: 4px;
@@ -95,10 +121,15 @@ function handleCopy(): void {
       cursor: pointer;
       transition: all var(--transition-fast);
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: rgba(99, 102, 241, 0.12);
         border-color: var(--accent-primary);
         color: var(--text-primary);
+      }
+
+      &:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
       }
 
       &.copied {

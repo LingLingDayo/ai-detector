@@ -1,5 +1,9 @@
 import { ref, type Ref } from "vue";
-import { generateChallenges, type Challenge } from "../utils/challenge";
+import {
+  generateChallenges,
+  generateSingleChallenge,
+  type Challenge,
+} from "../utils/challenge";
 import {
   parseNumbers,
   analyzeGlobalOutputs,
@@ -22,11 +26,14 @@ export interface UseProbeTestReturn {
   statusTitle: Ref<string>;
   statusDesc: Ref<string>;
   steps: Ref<ProbeStepItem[]>;
+  currentChallenges: Ref<Challenge[]>;
   statusAlert: Ref<StatusAlertInfo | null>;
   analysisResult: Ref<GlobalAnalysisResult | null>;
   totalBankModelsCount: number;
   startTest: (config: ClientConfig) => Promise<void>;
   resetTest: () => void;
+  refreshQuestions: () => void;
+  refreshSingleQuestion: (index: number) => void;
 }
 
 export function useProbeTest(): UseProbeTestReturn {
@@ -35,31 +42,74 @@ export function useProbeTest(): UseProbeTestReturn {
   const progressPercent = ref(0);
   const completedCount = ref(0);
   const totalCount = 3;
-  const statusTitle = ref("探测测试进行中");
-  const statusDesc = ref("准备中...");
+  const statusTitle = ref("探测题目已就绪");
+  const statusDesc = ref("已抽取 3 道测试题目，可点击卡片预览或直接开始测试");
   const statusAlert = ref<StatusAlertInfo | null>(null);
   const analysisResult = ref<GlobalAnalysisResult | null>(null);
 
-  const initialSteps: ProbeStepItem[] = [
-    { id: 0, state: "pending", stateText: "等待中", statText: "-" },
-    { id: 1, state: "pending", stateText: "等待中", statText: "-" },
-    { id: 2, state: "pending", stateText: "等待中", statText: "-" },
-  ];
+  // 初始化首次选题
+  const currentChallenges = ref<Challenge[]>(generateChallenges(totalCount));
 
-  const steps = ref<ProbeStepItem[]>(JSON.parse(JSON.stringify(initialSteps)));
+  function createInitialSteps(challenges: Challenge[]): ProbeStepItem[] {
+    return challenges.map((ch, idx) => ({
+      id: idx,
+      state: "pending",
+      stateText: "待测试",
+      statText: `${ch.expected_count} 个数字`,
+      prompt: ch.prompt,
+      expectedCount: ch.expected_count,
+    }));
+  }
+
+  const steps = ref<ProbeStepItem[]>(createInitialSteps(currentChallenges.value));
 
   const totalBankModelsCount = unifiedBank?.models?.length || 17;
+
+  function refreshQuestions(): void {
+    if (isRunning.value) return;
+    currentChallenges.value = generateChallenges(totalCount);
+    steps.value = createInitialSteps(currentChallenges.value);
+    progressPercent.value = 0;
+    completedCount.value = 0;
+    statusTitle.value = "探测题目已刷新";
+    statusDesc.value = "已重新抽取 3 道测试题目，可点击卡片预览或直接开始测试";
+    statusAlert.value = null;
+    analysisResult.value = null;
+  }
+
+  function refreshSingleQuestion(index: number): void {
+    if (isRunning.value || index < 0 || index >= totalCount) return;
+    const otherLengths = currentChallenges.value
+      .filter((_, i) => i !== index)
+      .map((c) => c.expected_count);
+    const newCh = generateSingleChallenge(index, otherLengths);
+    currentChallenges.value[index] = newCh;
+    steps.value[index] = {
+      id: index,
+      state: "pending",
+      stateText: "待测试",
+      statText: `${newCh.expected_count} 个数字`,
+      prompt: newCh.prompt,
+      expectedCount: newCh.expected_count,
+    };
+    if (analysisResult.value) {
+      analysisResult.value = null;
+      progressPercent.value = 0;
+      completedCount.value = 0;
+    }
+  }
 
   function resetTest(): void {
     isRunning.value = false;
     hasStarted.value = false;
     progressPercent.value = 0;
     completedCount.value = 0;
-    statusTitle.value = "探测测试进行中";
-    statusDesc.value = "准备中...";
+    statusTitle.value = "探测题目已就绪";
+    statusDesc.value = "已就绪，点击开始测试发起探测";
     statusAlert.value = null;
     analysisResult.value = null;
-    steps.value = JSON.parse(JSON.stringify(initialSteps));
+    currentChallenges.value = generateChallenges(totalCount);
+    steps.value = createInitialSteps(currentChallenges.value);
   }
 
   async function startTest(config: ClientConfig): Promise<void> {
@@ -89,7 +139,13 @@ export function useProbeTest(): UseProbeTestReturn {
     completedCount.value = 0;
     statusTitle.value = "探测测试进行中";
     statusDesc.value = "正在发起测试请求...";
-    const challenges: Challenge[] = generateChallenges(totalCount);
+    // 使用当前选定好的 3 道题目（若未就绪则重新生成）
+    const challenges: Challenge[] =
+      currentChallenges.value.length === totalCount
+        ? currentChallenges.value
+        : generateChallenges(totalCount);
+    currentChallenges.value = challenges;
+
     const outputs: (ProbeOutputItem | null)[] = new Array(totalCount).fill(null);
     const errors: string[] = [];
 
@@ -232,10 +288,13 @@ export function useProbeTest(): UseProbeTestReturn {
     statusTitle,
     statusDesc,
     steps,
+    currentChallenges,
     statusAlert,
     analysisResult,
     totalBankModelsCount,
     startTest,
     resetTest,
+    refreshQuestions,
+    refreshSingleQuestion,
   };
 }
