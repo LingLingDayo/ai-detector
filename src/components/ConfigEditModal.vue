@@ -421,7 +421,13 @@ function handleSubmit(applyImmediately: boolean = false): void {
     color: var(--text-muted);
     font-size: 1.05rem;
     cursor: pointer;
-    padding: 4px 6px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
     border-radius: var(--radius-sm);
     transition: all var(--transition-fast);
 
