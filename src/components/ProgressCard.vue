@@ -14,19 +14,16 @@ defineProps<{
   statusAlert: StatusAlertInfo | null;
 }>();
 
-const selectedStep = ref<ProbeStepItem | null>(null);
 const selectedIndex = ref<number>(0);
 const isModalOpen = ref(false);
 
-function openDetail(step: ProbeStepItem, idx: number): void {
-  selectedStep.value = step;
+function openDetail(idx: number): void {
   selectedIndex.value = idx;
   isModalOpen.value = true;
 }
 
 function closeModal(): void {
   isModalOpen.value = false;
-  selectedStep.value = null;
 }
 </script>
 
@@ -58,8 +55,8 @@ function closeModal(): void {
         class="probe-step clickable"
         :class="step.state"
         :id="`step-${idx}`"
-        title="点击查看题目详情与模型回答"
-        @click="openDetail(step, idx)"
+        title="点击查看抽取的题目与模型回答"
+        @click="openDetail(idx)"
       >
         <div class="step-badge">{{ idx + 1 }}</div>
         <div class="step-info">
@@ -86,11 +83,11 @@ function closeModal(): void {
       {{ statusAlert.message }}
     </div>
 
-    <!-- 题目内容与回答弹窗 -->
+    <!-- 题目内容与模型回答弹窗 -->
     <ProbeDetailModal
       :is-open="isModalOpen"
-      :step="selectedStep"
-      :step-index="selectedIndex"
+      :steps="steps"
+      :initial-index="selectedIndex"
       @close="closeModal"
     />
   </section>
