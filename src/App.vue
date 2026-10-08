@@ -22,6 +22,7 @@ const {
   configEditModalMode,
   editingConfigItem,
   settingsSummary,
+  hasCurrentInput,
   togglePasswordVisibility,
   openConfigListModal,
   closeConfigListModal,
@@ -111,6 +112,7 @@ function handleResetConfig(): void {
       :is-open="isConfigListModalOpen"
       :configs="configList"
       :active-config-id="activeConfigId"
+      :can-save-current="hasCurrentInput"
       @close="closeConfigListModal"
       @apply="applyConfig"
       @open-create="openCreateConfigModal"

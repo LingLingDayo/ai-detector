@@ -23,6 +23,7 @@ export interface UseConfigReturn {
   configEditModalMode: Ref<"create" | "edit" | "save-current">;
   editingConfigItem: Ref<ConfigItem | null>;
   settingsSummary: ComputedRef<string>;
+  hasCurrentInput: ComputedRef<boolean>;
   togglePasswordVisibility: () => void;
   toggleAdvanced: () => void;
   openConfigListModal: () => void;
@@ -75,6 +76,10 @@ export function useConfig(): UseConfigReturn {
 
   const configListCount = computed<number>(() => {
     return configList.value.length;
+  });
+
+  const hasCurrentInput = computed<boolean>(() => {
+    return Boolean(config.baseUrl?.trim() && config.apiKey?.trim());
   });
 
   const settingsSummary = computed(() => {
@@ -355,6 +360,7 @@ export function useConfig(): UseConfigReturn {
     configEditModalMode,
     editingConfigItem,
     settingsSummary,
+    hasCurrentInput,
     togglePasswordVisibility,
     toggleAdvanced,
     openConfigListModal,

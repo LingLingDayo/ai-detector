@@ -2,11 +2,17 @@
 import { ref, computed } from "vue";
 import type { ConfigItem } from "../types";
 
-const props = defineProps<{
-  isOpen: boolean;
-  configs: ConfigItem[];
-  activeConfigId: string | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    isOpen: boolean;
+    configs: ConfigItem[];
+    activeConfigId: string | null;
+    canSaveCurrent?: boolean;
+  }>(),
+  {
+    canSaveCurrent: false,
+  }
+);
 
 const emit = defineEmits<{
   (e: "close"): void;
@@ -159,6 +165,7 @@ function handleApply(item: ConfigItem): void {
             </div>
 
             <button
+              v-if="canSaveCurrent"
               type="button"
               class="btn-save-current"
               @click="emit('openSaveCurrent')"
@@ -342,12 +349,14 @@ function handleApply(item: ConfigItem): void {
               {{
                 searchQuery
                   ? "请尝试使用其他关键词进行搜索"
-                  : "您可以将当前主表单的输入保存为新配置，或点击下方按钮添加配置"
+                  : canSaveCurrent
+                  ? "您可以将当前主表单的输入保存为新配置，或点击下方按钮添加配置"
+                  : "暂无预设配置，您可以点击下方按钮录入并添加新配置"
               }}
             </p>
             <div class="empty-actions">
               <button
-                v-if="!searchQuery"
+                v-if="!searchQuery && canSaveCurrent"
                 type="button"
                 class="btn btn-secondary btn-sm"
                 @click="emit('openSaveCurrent')"
