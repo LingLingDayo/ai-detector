@@ -153,6 +153,7 @@ function closeModal(): void {
   padding: 10px 14px;
 
   .progress-header {
+    height: 36px;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
