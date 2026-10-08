@@ -6,9 +6,9 @@ import CustomSelect, { type SelectOption } from "./CustomSelect.vue";
 import ModelCombobox from "./ModelCombobox.vue";
 
 const API_FORMAT_OPTIONS: SelectOption[] = [
-  { value: "chat_completions", label: "/v1/chat/completions", description: "OpenAI 兼容" },
-  { value: "responses", label: "/v1/responses", description: "OpenAI 原生" },
-  { value: "anthropic", label: "/v1/messages", description: "Claude 原生" },
+  { value: "chat_completions", label: "/v1/chat/completions", description: "OpenAI" },
+  { value: "responses", label: "/v1/responses", description: "OpenAI" },
+  { value: "anthropic", label: "/v1/messages", description: "Anthropic" },
 ];
 
 const REASONING_OPTIONS: SelectOption[] = REASONING_EFFORT_OPTIONS.map((opt) => ({

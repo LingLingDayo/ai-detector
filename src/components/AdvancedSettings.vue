@@ -44,7 +44,7 @@ const emit = defineEmits<{
         <div class="advanced-row">
           <label title="选择调用的 API 规范与端点路径格式">接口协议端点</label>
           <div class="segmented-control">
-            <label class="segment" title="OpenAI Responses 规范路由 (/v1/responses)">
+            <label class="segment" title="OpenAI Responses 格式">
               <input
                 type="radio"
                 name="endpoint-format"
@@ -54,7 +54,7 @@ const emit = defineEmits<{
               />
               <span class="segment-label">/v1/responses 端点</span>
             </label>
-            <label class="segment" title="OpenAI Chat Completions 规范路由 (/v1/chat/completions)">
+            <label class="segment" title="OpenAI Chat Completions 格式">
               <input
                 type="radio"
                 name="endpoint-format"
@@ -64,7 +64,7 @@ const emit = defineEmits<{
               />
               <span class="segment-label">/v1/chat/completions 端点</span>
             </label>
-            <label class="segment" title="Anthropic Claude Messages 规范路由与 x-api-key 认证 (/v1/messages)">
+            <label class="segment" title="Anthropic Messages 格式">
               <input
                 type="radio"
                 name="endpoint-format"
