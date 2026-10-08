@@ -88,7 +88,7 @@ export function useProbeTest(): UseProbeTestReturn {
     progressPercent.value = 0;
     completedCount.value = 0;
     statusTitle.value = "探测测试进行中";
-    statusDesc.value = "正在并发发起 3 组长整数挑战探针...";
+    statusDesc.value = "正在发起测试请求...";
     const challenges: Challenge[] = generateChallenges(totalCount);
     const outputs: (ProbeOutputItem | null)[] = new Array(totalCount).fill(null);
     const errors: string[] = [];

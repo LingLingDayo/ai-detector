@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { watch } from "vue";
 import type { ProbeStepItem } from "../../types";
 import { useClipboard } from "../../composables/useClipboard";
 
@@ -7,28 +7,18 @@ const props = defineProps<{
   step: ProbeStepItem;
 }>();
 
-const showNumbersPreview = ref(false);
 const { copied: isAnswerCopied, copy: copyAnswer, reset: resetAnswerCopy } = useClipboard();
-const { copied: isParsedCopied, copy: copyParsed, reset: resetParsedCopy } = useClipboard();
 
 watch(
   () => props.step.id,
   () => {
-    showNumbersPreview.value = false;
     resetAnswerCopy();
-    resetParsedCopy();
   }
 );
 
 function handleCopyAnswer(): void {
   if (props.step.answer) {
     copyAnswer(props.step.answer);
-  }
-}
-
-function handleCopyParsed(): void {
-  if (props.step.parsedNumbers && props.step.parsedNumbers.length > 0) {
-    copyParsed(props.step.parsedNumbers.join(", "));
   }
 }
 </script>
@@ -53,16 +43,6 @@ function handleCopyParsed(): void {
       </div>
       <div class="header-actions">
         <button
-          v-if="step.parsedNumbers && step.parsedNumbers.length > 0"
-          type="button"
-          class="btn-toggle-numbers"
-          :class="{ active: showNumbersPreview }"
-          title="展开/收起解析出的整数列表"
-          @click="showNumbersPreview = !showNumbersPreview"
-        >
-          <span>{{ showNumbersPreview ? "收起数字列表" : "查看解析数字" }}</span>
-        </button>
-        <button
           v-if="step.answer"
           type="button"
           class="btn-copy"
@@ -82,31 +62,7 @@ function handleCopyParsed(): void {
       </div>
     </div>
 
-    <!-- 解析出的纯数字网格预览（可选展开） -->
-    <div
-      v-if="showNumbersPreview && step.parsedNumbers && step.parsedNumbers.length > 0"
-      class="numbers-preview-box"
-    >
-      <div class="numbers-preview-header">
-        <span>有效整数序列预览（共 {{ step.parsedNumbers.length }} 个）：</span>
-        <button
-          type="button"
-          class="btn-copy-mini"
-          @click="handleCopyParsed"
-        >
-          {{ isParsedCopied ? "已复制" : "复制数字列表" }}
-        </button>
-      </div>
-      <div class="numbers-chip-grid">
-        <span
-          v-for="(num, nIdx) in step.parsedNumbers"
-          :key="nIdx"
-          class="number-chip"
-        >
-          {{ num }}
-        </span>
-      </div>
-    </div>
+
 
     <!-- 已有完整回答 -->
     <div v-if="step.answer" class="answer-text-box">
@@ -117,8 +73,8 @@ function handleCopyParsed(): void {
     <div v-else-if="step.state === 'working'" class="modal-status-placeholder working">
       <div class="status-spinner"></div>
       <div class="placeholder-text">
-        <strong>模型正在生成长整数序列...</strong>
-        <p>正在执行 API 探测请求并实时等待完整返回，请稍候。</p>
+        <strong>模型正在生成回答...</strong>
+        <p>正在请求模型并等待返回，请稍候。</p>
       </div>
     </div>
 
@@ -196,23 +152,7 @@ function handleCopyParsed(): void {
       gap: 6px;
     }
 
-    .btn-toggle-numbers {
-      padding: 3px 8px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border-subtle);
-      background: var(--bg-input);
-      color: var(--text-secondary);
-      font-size: 0.72rem;
-      cursor: pointer;
-      transition: all var(--transition-fast);
 
-      &:hover,
-      &.active {
-        background: rgba(6, 182, 212, 0.12);
-        border-color: var(--accent-secondary);
-        color: var(--accent-secondary);
-      }
-    }
 
     .btn-copy {
       display: inline-flex;
@@ -241,56 +181,7 @@ function handleCopyParsed(): void {
     }
   }
 
-  .numbers-preview-box {
-    background: rgba(10, 14, 22, 0.8);
-    border: 1px solid rgba(6, 182, 212, 0.3);
-    border-radius: var(--radius-sm);
-    padding: 10px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    animation: fadeIn 0.2s ease;
 
-    .numbers-preview-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.72rem;
-      color: var(--text-secondary);
-
-      .btn-copy-mini {
-        background: transparent;
-        border: 1px solid var(--border-subtle);
-        color: var(--accent-secondary);
-        font-size: 0.68rem;
-        padding: 1px 6px;
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-
-        &:hover {
-          background: rgba(6, 182, 212, 0.15);
-        }
-      }
-    }
-
-    .numbers-chip-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      max-height: 100px;
-      overflow-y: auto;
-
-      .number-chip {
-        background: rgba(6, 182, 212, 0.12);
-        color: #a5f3fc;
-        border: 1px solid rgba(6, 182, 212, 0.25);
-        padding: 1px 5px;
-        border-radius: 3px;
-        font-size: 0.7rem;
-        font-family: ui-monospace, SFMono-Regular, monospace;
-      }
-    }
-  }
 
   .answer-text-box {
     border: 1px solid var(--border-subtle);
