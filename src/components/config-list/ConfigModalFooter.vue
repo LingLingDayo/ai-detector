@@ -7,7 +7,7 @@ const emit = defineEmits<{
 <template>
   <div class="modal-footer list-footer">
     <span class="footer-tip">
-      💡 点击「使用配置」即可一键将该预设切换至主探测面板
+      💡 点击「应用」即可一键将该预设切换至主探测面板
     </span>
     <button type="button" class="btn btn-ghost" @click="emit('close')">
       关闭
