@@ -28,13 +28,6 @@ function maskApiKey(key?: string): string {
     <div class="card-main-row">
       <div class="card-title-group">
         <span class="item-name" :title="item.name">{{ item.name }}</span>
-        <span
-          v-if="isActive"
-          class="active-badge"
-          title="当前主界面正在使用此配置"
-        >
-          <span class="dot"></span> 当前使用中
-        </span>
       </div>
 
       <div class="card-actions">
@@ -144,32 +137,6 @@ function maskApiKey(key?: string): string {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-      }
-
-      .active-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        font-size: 0.68rem;
-        font-weight: 500;
-        height: 18px;
-        padding: 0 6px;
-        line-height: 1;
-        border-radius: 9999px;
-        background: var(--success-bg);
-        border: 1px solid rgba(16, 185, 129, 0.28);
-        color: var(--success);
-        flex-shrink: 0;
-
-        .dot {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: var(--success);
-          box-shadow: 0 0 5px var(--success);
-          flex-shrink: 0;
-        }
       }
     }
 
