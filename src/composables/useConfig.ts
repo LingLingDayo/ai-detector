@@ -87,13 +87,17 @@ export function useConfig(): UseConfigReturn {
 
     const effortMap: Record<string, string> = {
       none: "关闭",
+      minimal: "极低",
       low: "低",
       medium: "中",
       high: "高",
+      xhigh: "极高",
+      max: "极限",
+      ultra: "极致",
     };
     const effortLabel = effortMap[config.reasoningEffort] || "高";
 
-    return `${formatName} · 思考:${effortLabel}`;
+    return `${formatName} · 思考强度:${effortLabel}`;
   });
 
   function togglePasswordVisibility(): void {

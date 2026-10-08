@@ -278,7 +278,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
               >
                 <polyline points="6 9 12 15 18 9" />
               </svg>
-              <span>可选默认参数（测试模型 / 格式 / 思考强度）</span>
+              <span>可选默认参数</span>
             </button>
           </div>
 
