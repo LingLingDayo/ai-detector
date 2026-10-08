@@ -98,6 +98,26 @@ function closeModal(): void {
           <span class="step-state">{{ step.stateText }}</span>
         </div>
         <div class="step-stat">{{ step.statText }}</div>
+        <button
+          v-if="step.state === 'error'"
+          type="button"
+          class="btn-step-retry"
+          :disabled="isRunning"
+          title="重新生成该题目"
+          aria-label="重新生成该题目"
+          @click.stop="emit('refreshSingleQuestion', idx)"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -343,6 +363,32 @@ function closeModal(): void {
 
         .step-state {
           color: var(--danger);
+        }
+
+        .btn-step-retry {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(239, 68, 68, 0.12);
+          border: 1px solid rgba(239, 68, 68, 0.28);
+          color: #f87171;
+          cursor: pointer;
+          padding: 2px;
+          border-radius: var(--radius-sm);
+          flex-shrink: 0;
+          transition: all var(--transition-fast);
+
+          &:hover:not(:disabled) {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.6);
+            color: #fca5a5;
+            transform: rotate(90deg);
+          }
+
+          &:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+          }
         }
       }
     }

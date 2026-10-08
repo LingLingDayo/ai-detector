@@ -92,6 +92,9 @@ export function useProbeTest(): UseProbeTestReturn {
       prompt: newCh.prompt,
       expectedCount: newCh.expected_count,
     };
+    if (steps.value.every((s) => s.state !== "error")) {
+      statusAlert.value = null;
+    }
     if (analysisResult.value) {
       analysisResult.value = null;
       progressPercent.value = 0;
