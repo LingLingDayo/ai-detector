@@ -27,8 +27,13 @@ const comboboxRef = ref<InstanceType<typeof ModelCombobox> | null>(null);
 
 function handleReset(): void {
   emit("reset");
-  comboboxRef.value?.resetModelList();
 }
+
+defineExpose({
+  resetModelList: () => {
+    comboboxRef.value?.resetModelList();
+  },
+});
 </script>
 
 <template>

@@ -1,6 +1,7 @@
 import { ref, reactive, computed, watch, type Ref, type ComputedRef } from "vue";
 import { STORAGE_KEY, CONFIG_LIST_STORAGE_KEY, ACTIVE_CONFIG_ID_KEY } from "../constants";
 import type { ClientConfig, ConfigItem } from "../types";
+import { useConfirm } from "./useConfirm";
 
 function generateConfigId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -57,17 +58,19 @@ export interface UseConfigReturn {
   closeConfigEditModal: () => void;
   saveConfig: () => void;
   loadConfig: () => void;
-  resetConfig: () => void;
+  resetConfig: () => Promise<boolean>;
   applyConfig: (item: ConfigItem) => void;
   handleSaveConfigItem: (
     data: Omit<ConfigItem, "id" | "createdAt" | "updatedAt">,
     id?: string,
     applyImmediately?: boolean
   ) => void;
-  deleteConfigItem: (id: string) => void;
+  deleteConfigItem: (id: string) => Promise<boolean>;
 }
 
 export function useConfig(): UseConfigReturn {
+  const { confirm } = useConfirm();
+
   const config = reactive<ClientConfig>({
     baseUrl: "",
     apiKey: "",
@@ -262,11 +265,20 @@ export function useConfig(): UseConfigReturn {
     closeConfigEditModal();
   }
 
-  function deleteConfigItem(id: string): void {
+  async function deleteConfigItem(id: string): Promise<boolean> {
     const target = configList.value.find((item) => item.id === id);
     const targetName = target?.name ? `「${target.name}」` : "该配置";
-    if (!window.confirm(`确定要删除配置 ${targetName} 吗？`)) {
-      return;
+    const confirmed = await confirm({
+      type: "danger",
+      styleVariant: "spotlight",
+      title: "确认删除配置预设？",
+      message: `确定要删除配置预设 ${targetName} 吗？删除后将无法恢复。`,
+      confirmText: "确认删除",
+      cancelText: "取消",
+    });
+
+    if (!confirmed) {
+      return false;
     }
 
     configList.value = configList.value.filter((item) => item.id !== id);
@@ -274,6 +286,7 @@ export function useConfig(): UseConfigReturn {
       activeConfigId.value = null;
     }
     saveConfigListToStorage();
+    return true;
   }
 
   function loadConfig(): void {
@@ -357,23 +370,40 @@ export function useConfig(): UseConfigReturn {
     }
   }
 
-  function resetConfig(): void {
-    if (window.confirm("确定要清空当前的 Base URL 和 API Key 等表单输入吗？")) {
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch (err) {
-        console.warn("清除配置缓存失败:", err);
-      }
-      config.baseUrl = "";
-      config.apiKey = "";
-      config.modelName = "";
-      config.apiFormat = "chat_completions";
-      config.reasoningEffort = "high";
-      activeConfigId.value = null;
-      try {
-        localStorage.removeItem(ACTIVE_CONFIG_ID_KEY);
-      } catch {}
+  async function resetConfig(): Promise<boolean> {
+    const confirmed = await confirm({
+      type: "warning",
+      styleVariant: "spotlight",
+      title: "确认重置探测配置？",
+      message: "重置后将清空当前界面的 Base URL、API Key 与已选模型，已保存的配置预设不受影响。",
+      confirmText: "确认重置",
+      cancelText: "取消",
+      detailList: [
+        "清空当前输入的 Base URL 与 API Key",
+        "模型设置与推理深度恢复为默认值",
+        "已保存的配置预设列表将继续保留",
+      ],
+    });
+
+    if (!confirmed) {
+      return false;
     }
+
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (err) {
+      console.warn("清除配置缓存失败:", err);
+    }
+    config.baseUrl = "";
+    config.apiKey = "";
+    config.modelName = "";
+    config.apiFormat = "chat_completions";
+    config.reasoningEffort = "high";
+    activeConfigId.value = null;
+    try {
+      localStorage.removeItem(ACTIVE_CONFIG_ID_KEY);
+    } catch {}
+    return true;
   }
 
   // 监听表单输入变化并自动持久化当前输入

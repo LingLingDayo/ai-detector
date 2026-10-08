@@ -42,7 +42,7 @@ export function useProbeTest(): UseProbeTestReturn {
   const progressPercent = ref(0);
   const completedCount = ref(0);
   const totalCount = 3;
-  const statusTitle = ref("探测题目已就绪");
+  const statusTitle = ref("探测题目");
   const statusDesc = ref("已抽取 3 道测试题目，可点击卡片预览或直接开始测试");
   const statusAlert = ref<StatusAlertInfo | null>(null);
   const analysisResult = ref<GlobalAnalysisResult | null>(null);
@@ -72,7 +72,6 @@ export function useProbeTest(): UseProbeTestReturn {
     hasStarted.value = false;
     progressPercent.value = 0;
     completedCount.value = 0;
-    statusTitle.value = "探测题目已刷新";
     statusDesc.value = "已重新抽取 3 道测试题目，可点击卡片预览或直接开始测试";
     statusAlert.value = null;
     analysisResult.value = null;
@@ -108,7 +107,7 @@ export function useProbeTest(): UseProbeTestReturn {
     hasStarted.value = false;
     progressPercent.value = 0;
     completedCount.value = 0;
-    statusTitle.value = "探测题目已就绪";
+    statusTitle.value = "探测题目";
     statusDesc.value = "已就绪，点击开始测试发起探测";
     statusAlert.value = null;
     analysisResult.value = null;

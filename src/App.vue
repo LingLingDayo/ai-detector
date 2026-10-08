@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useConfig } from "./composables/useConfig";
 import { useProbeTest } from "./composables/useProbeTest";
 import AppHeader from "./components/AppHeader.vue";
 import ConfigCard from "./components/ConfigCard.vue";
 import ConfigListModal from "./components/ConfigListModal.vue";
 import ConfigEditModal from "./components/ConfigEditModal.vue";
+import ConfirmModal from "./components/ConfirmModal.vue";
 import ProgressCard from "./components/ProgressCard.vue";
 import ResultCard from "./components/ResultCard.vue";
+
+const configCardRef = ref<InstanceType<typeof ConfigCard> | null>(null);
 
 const {
   config,
@@ -59,9 +62,12 @@ onMounted(() => {
   loadConfig();
 });
 
-function handleResetConfig(): void {
-  resetConfig();
-  resetTest();
+async function handleResetConfig(): Promise<void> {
+  const confirmed = await resetConfig();
+  if (confirmed) {
+    resetTest();
+    configCardRef.value?.resetModelList();
+  }
 }
 </script>
 
@@ -74,6 +80,7 @@ function handleResetConfig(): void {
     <main class="app-main">
       <!-- 参数配置卡片 -->
       <ConfigCard
+        ref="configCardRef"
         :config="config"
         :active-config-name="activeConfigName"
         :config-list-count="configListCount"
@@ -131,6 +138,9 @@ function handleResetConfig(): void {
       @close="closeConfigEditModal"
       @save="handleSaveConfigItem"
     />
+
+    <!-- 全局通用公共确认弹窗 -->
+    <ConfirmModal />
   </div>
 </template>
 
