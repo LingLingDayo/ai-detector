@@ -94,11 +94,6 @@ function closeModal(): void {
         <div class="step-info">
           <div class="step-title-row">
             <strong>测试 {{ idx + 1 }}</strong>
-            <svg class="view-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-              <polyline points="15 3 21 3 21 9"></polyline>
-              <line x1="10" y1="14" x2="21" y2="3"></line>
-            </svg>
           </div>
           <span class="step-state">{{ step.stateText }}</span>
         </div>
@@ -279,13 +274,6 @@ function closeModal(): void {
             overflow: hidden;
             text-overflow: ellipsis;
           }
-
-          .view-icon {
-            color: var(--text-muted);
-            opacity: 0.5;
-            transition: opacity 0.2s, color 0.2s;
-            flex-shrink: 0;
-          }
         }
 
         .step-state {
@@ -311,11 +299,6 @@ function closeModal(): void {
           transform: translateY(-1.5px);
           border-color: var(--accent-primary);
           box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-
-          .view-icon {
-            opacity: 1;
-            color: var(--accent-primary);
-          }
         }
       }
 
