@@ -76,7 +76,7 @@ watch(
         :class="d.accepted ? 'accepted' : 'rejected'"
         :title="`预期基准: 需至少 ${d.minimum_numbers} 个有效整数`"
       >
-        挑战 {{ d.index + 1 }}: {{ d.parsed_numbers }} 个数字 · {{ d.accepted ? "计入" : "忽略" }}
+        测试 {{ d.index + 1 }}: {{ d.parsed_numbers }} 个数字 · {{ d.accepted ? "计入" : "忽略" }}
       </span>
     </div>
 

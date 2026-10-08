@@ -33,7 +33,7 @@ const emit = defineEmits<{
           @click="emit('selectStep', idx)"
         >
           <span class="tab-index">{{ idx + 1 }}</span>
-          <span class="tab-label">挑战 {{ idx + 1 }}</span>
+          <span class="tab-label">测试 {{ idx + 1 }}</span>
           <span class="tab-dot"></span>
         </button>
       </div>
@@ -41,7 +41,7 @@ const emit = defineEmits<{
     <button
       type="button"
       class="modal-close-btn"
-      title="关闭弹窗 (Esc)"
+      title="关闭弹窗"
       @click="emit('close')"
     >
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">

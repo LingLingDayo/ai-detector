@@ -147,7 +147,7 @@ function handleReset(): void {
           class="btn btn-primary"
           id="btn-start"
           :disabled="isRunning"
-          title="执行 3 轮长整数生成挑战，并在统一库中比对归因"
+          title="执行 3 轮探测测试，并在统一库中比对归因"
         >
           <span class="btn-spinner" :class="{ hidden: !isRunning }" id="start-spinner"></span>
           <span class="btn-text">开始测试 (共 3 题)</span>
