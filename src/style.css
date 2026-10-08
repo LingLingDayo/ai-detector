@@ -109,12 +109,14 @@ body {
 .badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   padding: 3px 8px;
   border-radius: 9999px;
   background: rgba(30, 41, 59, 0.6);
   border: 1px solid var(--border-subtle);
   font-size: 0.72rem;
+  line-height: 1;
   color: var(--text-secondary);
 }
 
@@ -124,6 +126,7 @@ body {
   border-radius: 50%;
   background: var(--success);
   box-shadow: 0 0 6px var(--success);
+  flex-shrink: 0;
 }
 
 .badge-success {
@@ -223,11 +226,24 @@ input::placeholder {
   border-radius: var(--radius-sm);
   font-size: 0.86rem;
   font-weight: 600;
+  line-height: 1;
   cursor: pointer;
   border: none;
   transition: all var(--transition-normal);
   font-family: inherit;
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+  }
 }
+
 
 .btn-primary {
   background: var(--accent-gradient);

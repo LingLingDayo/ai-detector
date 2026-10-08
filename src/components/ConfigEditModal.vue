@@ -457,7 +457,19 @@ function handleSubmit(applyImmediately: boolean = false): void {
     align-items: center;
     gap: 5px;
     padding: 2px 0;
+    line-height: 1;
     transition: color var(--transition-fast);
+
+    svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+    }
 
     &:hover {
       color: #a5b4fc;
@@ -471,6 +483,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
       }
     }
   }
+
 }
 
 .advanced-fields-box {

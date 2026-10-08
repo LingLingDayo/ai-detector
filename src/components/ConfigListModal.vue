@@ -446,8 +446,13 @@ function handleApply(item: ConfigItem): void {
       }
 
       .count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         font-size: 0.7rem;
-        padding: 1px 7px;
+        height: 18px;
+        padding: 0 7px;
+        line-height: 1;
         border-radius: 9999px;
         background: rgba(99, 102, 241, 0.18);
         border: 1px solid rgba(99, 102, 241, 0.35);
@@ -468,8 +473,25 @@ function handleApply(item: ConfigItem): void {
     gap: 8px;
 
     .btn-sm {
-      padding: 5px 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 26px;
+      padding: 0 10px;
       font-size: 0.78rem;
+      line-height: 1;
+
+      svg {
+        display: block;
+        flex-shrink: 0;
+      }
+
+      span {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+      }
     }
 
     .btn-close {
@@ -560,10 +582,13 @@ function handleApply(item: ConfigItem): void {
   .btn-save-current {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
-    padding: 5px 10px;
+    height: 26px;
+    padding: 0 10px;
     font-size: 0.76rem;
     font-weight: 500;
+    line-height: 1;
     color: #93c5fd;
     background: rgba(59, 130, 246, 0.12);
     border: 1px solid rgba(59, 130, 246, 0.28);
@@ -571,6 +596,17 @@ function handleApply(item: ConfigItem): void {
     cursor: pointer;
     transition: all var(--transition-fast);
     white-space: nowrap;
+
+    svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+    }
 
     &:hover {
       background: rgba(59, 130, 246, 0.22);
@@ -631,10 +667,13 @@ function handleApply(item: ConfigItem): void {
       .active-tag {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 4px;
         font-size: 0.68rem;
         font-weight: 500;
-        padding: 1px 6px;
+        height: 18px;
+        padding: 0 6px;
+        line-height: 1;
         border-radius: 9999px;
         background: var(--success-bg);
         border: 1px solid rgba(16, 185, 129, 0.3);
@@ -647,6 +686,7 @@ function handleApply(item: ConfigItem): void {
           border-radius: 50%;
           background: var(--success);
           box-shadow: 0 0 5px var(--success);
+          flex-shrink: 0;
         }
       }
     }
@@ -658,8 +698,13 @@ function handleApply(item: ConfigItem): void {
       flex-shrink: 0;
 
       .tag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 18px;
         font-size: 0.68rem;
-        padding: 2px 6px;
+        padding: 0 6px;
+        line-height: 1;
         border-radius: var(--radius-sm);
         border: 1px solid var(--border-subtle);
         background: rgba(30, 41, 59, 0.5);
@@ -754,14 +799,28 @@ function handleApply(item: ConfigItem): void {
     .btn-action {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 4px;
+      height: 24px;
+      padding: 0 8px;
       font-size: 0.74rem;
-      padding: 4px 10px;
+      line-height: 1;
       border-radius: var(--radius-sm);
       cursor: pointer;
       font-family: inherit;
       transition: all var(--transition-fast);
       border: 1px solid transparent;
+
+      svg {
+        display: block;
+        flex-shrink: 0;
+      }
+
+      span {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+      }
 
       &.btn-apply {
         background: rgba(99, 102, 241, 0.15);
@@ -807,6 +866,7 @@ function handleApply(item: ConfigItem): void {
         }
       }
     }
+
 
     .actions-right {
       display: flex;

@@ -85,8 +85,11 @@ const emit = defineEmits<{
       .step-tab-btn {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 5px;
-        padding: 3px 8px;
+        height: 24px;
+        padding: 0 8px;
+        line-height: 1;
         border-radius: calc(var(--radius-sm) - 2px);
         border: 1px solid transparent;
         background: transparent;
@@ -97,6 +100,11 @@ const emit = defineEmits<{
 
         .tab-index {
           font-weight: 700;
+          line-height: 1;
+        }
+
+        .tab-label {
+          line-height: 1;
         }
 
         .tab-dot {
@@ -105,12 +113,14 @@ const emit = defineEmits<{
           border-radius: 50%;
           background: var(--text-muted);
           opacity: 0.4;
+          flex-shrink: 0;
         }
 
         &:hover {
           color: var(--text-primary);
           background: rgba(255, 255, 255, 0.05);
         }
+
 
         &.active {
           background: var(--bg-card);

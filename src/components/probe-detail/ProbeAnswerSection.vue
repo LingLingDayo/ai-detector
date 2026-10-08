@@ -157,8 +157,11 @@ function handleCopyAnswer(): void {
     .btn-copy {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 4px;
-      padding: 3px 8px;
+      height: 24px;
+      padding: 0 8px;
+      line-height: 1;
       border-radius: var(--radius-sm);
       border: 1px solid var(--border-subtle);
       background: var(--bg-input);
@@ -166,6 +169,17 @@ function handleCopyAnswer(): void {
       font-size: 0.72rem;
       cursor: pointer;
       transition: all var(--transition-fast);
+
+      svg {
+        display: block;
+        flex-shrink: 0;
+      }
+
+      span {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+      }
 
       &:hover {
         background: rgba(99, 102, 241, 0.12);
@@ -179,6 +193,7 @@ function handleCopyAnswer(): void {
         color: var(--success);
       }
     }
+
   }
 
 

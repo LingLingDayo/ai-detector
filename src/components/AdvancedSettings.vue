@@ -136,23 +136,38 @@ const emit = defineEmits<{
     }
 
     .trigger-content {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
+      line-height: 1;
 
       .gear-icon {
         color: var(--accent-primary);
+        display: block;
+        flex-shrink: 0;
+      }
+
+      span {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
       }
 
       .settings-summary {
         font-size: 0.72rem;
         color: var(--text-muted);
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
       }
     }
 
     .chevron-icon {
+      display: block;
+      flex-shrink: 0;
       transition: transform var(--transition-normal);
     }
+
   }
 
   .accordion-panel {

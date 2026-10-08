@@ -208,12 +208,15 @@ watch(
     margin-bottom: 10px;
 
     .diag-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       padding: 2px 8px;
       border-radius: 9999px;
       font-size: 0.68rem;
-      display: inline-flex;
-      align-items: center;
+      line-height: 1;
       gap: 5px;
+
 
       &.accepted {
         background: var(--success-bg);

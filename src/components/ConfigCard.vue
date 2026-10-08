@@ -277,10 +277,13 @@ function handleReset(): void {
   .btn-header-action {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    gap: 5px;
+    height: 24px;
+    padding: 0 8px;
     font-size: 0.74rem;
     font-weight: 500;
-    padding: 3px 8px;
+    line-height: 1;
     border-radius: var(--radius-sm);
     cursor: pointer;
     font-family: inherit;
@@ -288,6 +291,17 @@ function handleReset(): void {
     background: rgba(30, 41, 59, 0.5);
     border: 1px solid var(--border-subtle);
     color: var(--text-secondary);
+
+    svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+    }
 
     &:hover {
       background: rgba(30, 41, 59, 0.9);
@@ -319,20 +333,24 @@ function handleReset(): void {
       }
 
       .config-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         font-size: 0.65rem;
         padding: 0 4px;
         min-width: 14px;
         height: 14px;
-        line-height: 14px;
-        text-align: center;
+        line-height: 1;
         border-radius: 9999px;
         background: rgba(99, 102, 241, 0.35);
         color: #fff;
         font-weight: 600;
+        margin-left: 1px;
       }
     }
   }
 }
+
 
 .config-form {
   display: flex;
