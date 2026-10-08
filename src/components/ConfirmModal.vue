@@ -217,9 +217,6 @@ onUnmounted(() => {
         <!-- 风格2：顶部横幅装饰线 -->
         <div v-if="currentStyleVariant === 'banner'" class="top-accent-bar"></div>
 
-        <!-- 弹窗顶栏/头部光晕背景 -->
-        <div class="spotlight-glow" v-if="currentStyleVariant === 'spotlight' || currentStyleVariant === 'detail'"></div>
-
         <!-- 主内容区域 -->
         <div class="confirm-content-wrapper">
           <!-- 图标徽章 -->
@@ -387,7 +384,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.04);
   animation: modalScaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   transition: all var(--transition-normal);
 }
@@ -398,89 +396,50 @@ onUnmounted(() => {
 
 /* Warning 警告主题 (琥珀黄) */
 .type-warning {
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.8), 0 0 32px rgba(245, 158, 11, 0.15);
-
-  .spotlight-glow {
-    background: radial-gradient(circle at 50% -20%, rgba(245, 158, 11, 0.22) 0%, transparent 70%);
-  }
   .icon-warning {
-    background: rgba(245, 158, 11, 0.14);
+    background: rgba(245, 158, 11, 0.12);
     color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.32);
-    box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.25);
   }
   .top-accent-bar {
-    background: linear-gradient(90deg, #f59e0b, #fbbf24, #d97706);
+    background: #f59e0b;
   }
 }
 
 /* Danger 危险主题 (绯红色) */
 .type-danger {
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.8), 0 0 32px rgba(239, 68, 68, 0.18);
-
-  .spotlight-glow {
-    background: radial-gradient(circle at 50% -20%, rgba(239, 68, 68, 0.25) 0%, transparent 70%);
-  }
   .icon-danger {
-    background: rgba(239, 68, 68, 0.15);
+    background: rgba(239, 68, 68, 0.12);
     color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.35);
-    box-shadow: 0 0 16px rgba(239, 68, 68, 0.22);
+    border: 1px solid rgba(239, 68, 68, 0.25);
   }
   .top-accent-bar {
-    background: linear-gradient(90deg, #ef4444, #f87171, #dc2626);
+    background: #ef4444;
   }
 }
 
 /* Info 信息/常规主题 (科技靛青) */
 .type-info {
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.8), 0 0 32px rgba(99, 102, 241, 0.16);
-
-  .spotlight-glow {
-    background: radial-gradient(circle at 50% -20%, rgba(99, 102, 241, 0.22) 0%, transparent 70%);
-  }
   .icon-info {
-    background: rgba(99, 102, 241, 0.14);
+    background: rgba(99, 102, 241, 0.12);
     color: #818cf8;
-    border: 1px solid rgba(99, 102, 241, 0.32);
-    box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.25);
   }
   .top-accent-bar {
-    background: linear-gradient(90deg, #6366f1, #3b82f6, #06b6d4);
+    background: #6366f1;
   }
 }
 
 /* Success 成功主题 (翡翠绿) */
 .type-success {
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.8), 0 0 32px rgba(16, 185, 129, 0.16);
-
-  .spotlight-glow {
-    background: radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.22) 0%, transparent 70%);
-  }
   .icon-success {
-    background: rgba(16, 185, 129, 0.14);
+    background: rgba(16, 185, 129, 0.12);
     color: #34d399;
-    border: 1px solid rgba(16, 185, 129, 0.32);
-    box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.25);
   }
   .top-accent-bar {
-    background: linear-gradient(90deg, #10b981, #34d399, #059669);
+    background: #10b981;
   }
-}
-
-/* 顶部背景微光 */
-.spotlight-glow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 120px;
-  pointer-events: none;
-  z-index: 1;
 }
 
 /* 顶部横幅线条 */
