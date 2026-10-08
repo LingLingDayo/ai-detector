@@ -5,16 +5,15 @@ import { REASONING_EFFORT_OPTIONS } from "../constants";
 import CustomSelect, { type SelectOption } from "./CustomSelect.vue";
 
 const API_FORMAT_OPTIONS: SelectOption[] = [
-  { value: "chat_completions", label: "/v1/chat/completions", description: "OpenAI 兼容", badge: "OpenAI" },
-  { value: "responses", label: "/v1/responses", description: "OpenAI 原生", badge: "Responses" },
-  { value: "anthropic", label: "/v1/messages", description: "Claude 原生", badge: "Claude" },
+  { value: "chat_completions", label: "/v1/chat/completions", description: "OpenAI 兼容" },
+  { value: "responses", label: "/v1/responses", description: "OpenAI 原生" },
+  { value: "anthropic", label: "/v1/messages", description: "Claude 原生" },
 ];
 
 const REASONING_OPTIONS: SelectOption[] = REASONING_EFFORT_OPTIONS.map((opt) => ({
   value: opt.value,
   label: opt.value,
   description: opt.description,
-  badge: opt.value === "high" ? "推荐" : undefined,
 }));
 
 const props = defineProps<{
