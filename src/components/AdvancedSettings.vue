@@ -105,3 +105,140 @@ const emit = defineEmits<{
     </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.accordion-item {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: rgba(17, 23, 34, 0.5);
+  overflow: hidden;
+
+  .accordion-trigger {
+    width: 100%;
+    padding: 6px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+
+    &:hover {
+      background: rgba(30, 41, 59, 0.3);
+      color: var(--text-primary);
+    }
+
+    &.open .chevron-icon {
+      transform: rotate(180deg);
+    }
+
+    .trigger-content {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      .gear-icon {
+        color: var(--accent-primary);
+      }
+
+      .settings-summary {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+      }
+    }
+
+    .chevron-icon {
+      transition: transform var(--transition-normal);
+    }
+  }
+
+  .accordion-panel {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border-subtle);
+    background: rgba(12, 16, 24, 0.5);
+
+    .advanced-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .advanced-row {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        .advanced-row-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .field-hint {
+          font-size: 0.7rem;
+          color: var(--text-muted);
+        }
+
+        .segmented-control {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 4px;
+          background: var(--bg-input);
+          padding: 3px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border-subtle);
+
+          &.reasoning-control {
+            grid-template-columns: repeat(8, 1fr);
+          }
+
+          @media (max-width: 640px) {
+            grid-template-columns: 1fr;
+
+            &.reasoning-control {
+              grid-template-columns: repeat(4, 1fr);
+            }
+          }
+
+          .segment {
+            cursor: pointer;
+            position: relative;
+
+            input {
+              position: absolute;
+              opacity: 0;
+              width: 0;
+              height: 0;
+
+              &:checked + .segment-label {
+                background: rgba(99, 102, 241, 0.2);
+                color: #fff;
+                border: 1px solid rgba(99, 102, 241, 0.4);
+              }
+            }
+
+            .segment-label {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 5px 8px;
+              border-radius: var(--radius-sm);
+              font-size: 0.76rem;
+              font-weight: 500;
+              color: var(--text-secondary);
+              transition: all var(--transition-fast);
+            }
+          }
+        }
+      }
+
+      .advanced-columns {
+        display: flex;
+        gap: 10px;
+      }
+    }
+  }
+}
+</style>

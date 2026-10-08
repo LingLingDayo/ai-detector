@@ -9,3 +9,12 @@
     </span>
   </footer>
 </template>
+
+<style lang="scss" scoped>
+.app-footer {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 8px 0 4px;
+}
+</style>

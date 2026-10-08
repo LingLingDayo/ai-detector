@@ -84,3 +84,21 @@ function handleResetConfig(): void {
   </div>
 </template>
 
+<style lang="scss" scoped>
+.app-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 12px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+}
+</style>
+

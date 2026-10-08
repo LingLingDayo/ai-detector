@@ -165,3 +165,32 @@ function handleReset(): void {
     </form>
   </section>
 </template>
+
+<style lang="scss" scoped>
+.config-card {
+  position: relative;
+  z-index: 30;
+}
+
+.auto-save-tip {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+
+  &.saved {
+    color: var(--success);
+  }
+}
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+</style>

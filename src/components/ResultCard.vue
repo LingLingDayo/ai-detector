@@ -136,3 +136,199 @@ watch(
     </div>
   </section>
 </template>
+
+<style lang="scss" scoped>
+.result-card {
+  position: relative;
+  z-index: 10;
+  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 12px 15px;
+
+  .winner-hero {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+
+    .hero-item {
+      background: rgba(17, 23, 34, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+
+      &.primary {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.08) 100%);
+        border-color: rgba(99, 102, 241, 0.4);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+
+        .hero-val {
+          background: var(--accent-gradient);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+      }
+
+      .hero-label {
+        font-size: 0.68rem;
+        color: var(--text-muted);
+        margin-bottom: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .hero-val {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1.2;
+      }
+
+      .hero-sub {
+        font-size: 0.72rem;
+        color: var(--text-secondary);
+        margin-top: 2px;
+      }
+
+      .hero-prob-text {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--success);
+      }
+    }
+  }
+
+  .diagnostics-bar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+
+    .diag-pill {
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.68rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+
+      &.accepted {
+        background: var(--success-bg);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: #6ee7b7;
+      }
+
+      &.rejected {
+        background: var(--danger-bg);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+      }
+    }
+  }
+
+  .table-container {
+    overflow-x: auto;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.8rem;
+
+      th {
+        background: rgba(17, 23, 34, 0.95);
+        color: var(--text-secondary);
+        padding: 6px 10px;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-subtle);
+        font-size: 0.72rem;
+      }
+
+      td {
+        padding: 6px 10px;
+        border-bottom: 1px solid rgba(35, 45, 63, 0.4);
+        color: var(--text-primary);
+        vertical-align: middle;
+      }
+
+      tbody tr {
+        &:hover {
+          background: rgba(30, 41, 59, 0.35);
+        }
+
+        &.winner-row {
+          background: rgba(99, 102, 241, 0.08);
+
+          .rank-pill {
+            background: var(--accent-gradient);
+            color: #fff;
+          }
+
+          .prob-val {
+            color: var(--success);
+          }
+        }
+      }
+
+      .rank-pill {
+        display: inline-flex;
+        width: 18px;
+        height: 18px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 0.68rem;
+        font-weight: 700;
+        background: rgba(30, 41, 59, 0.6);
+        color: var(--text-muted);
+      }
+
+      .family-tag {
+        font-size: 0.68rem;
+        padding: 1px 5px;
+        border-radius: var(--radius-sm);
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-secondary);
+      }
+
+      .prob-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .prob-bar-track {
+          flex: 1;
+          height: 5px;
+          background: var(--bg-input);
+          border-radius: 9999px;
+          overflow: hidden;
+
+          .prob-bar-fill {
+            height: 100%;
+            border-radius: 9999px;
+            background: var(--accent-gradient);
+          }
+        }
+
+        .prob-val {
+          min-width: 42px;
+          text-align: right;
+          font-weight: 600;
+          font-size: 0.78rem;
+        }
+      }
+
+      .similarity-val {
+        color: var(--text-secondary);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.76rem;
+      }
+    }
+  }
+}
+</style>
