@@ -14,7 +14,12 @@ export interface UseModelListReturn {
   openDropdown: () => void;
   closeDropdown: () => void;
   toggleDropdown: (config: ClientConfig) => void;
-  fetchModels: (baseUrl: string, apiKey: string, apiFormat: string) => Promise<void>;
+  fetchModels: (
+    baseUrl: string,
+    apiKey: string,
+    apiFormat: string,
+    options?: { autoSelectFirst?: boolean; config?: ClientConfig }
+  ) => Promise<void>;
   selectModel: (model: string, config: ClientConfig) => void;
   resetModels: () => void;
 }
@@ -61,7 +66,8 @@ export function useModelList(): UseModelListReturn {
   async function fetchModels(
     baseUrl: string,
     apiKey: string,
-    apiFormat: string
+    apiFormat: string,
+    options: { autoSelectFirst?: boolean; config?: ClientConfig } = {}
   ): Promise<void> {
     const trimmedUrl = baseUrl.trim();
     const trimmedKey = apiKey.trim();
@@ -84,6 +90,14 @@ export function useModelList(): UseModelListReturn {
         isFetchedFromApi.value = true;
         statusBarText.value = `已成功获取 ${list.length} 个模型`;
         statusType.value = "success";
+
+        if (options.autoSelectFirst && options.config) {
+          const firstModel = list[0];
+          options.config.modelName = firstModel;
+          if (firstModel.toLowerCase().includes("claude")) {
+            options.config.apiFormat = "anthropic";
+          }
+        }
       } else {
         statusBarText.value = "上游未返回可用模型列表，仍可手动输入";
         statusType.value = "default";

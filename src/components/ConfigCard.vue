@@ -58,6 +58,8 @@ function handleReset(): void {
               autocomplete="off"
               spellcheck="false"
               title="API 接口根路径，例如 https://api.openai.com 或中转域名"
+              @blur="comboboxRef?.triggerAutoFetch(true)"
+              @keydown.enter="comboboxRef?.triggerAutoFetch(true)"
             />
           </div>
         </div>
@@ -74,6 +76,8 @@ function handleReset(): void {
               autocomplete="off"
               spellcheck="false"
               title="API Key 访问凭据，仅存储在本地 localStorage"
+              @blur="comboboxRef?.triggerAutoFetch(true)"
+              @keydown.enter="comboboxRef?.triggerAutoFetch(true)"
             />
             <button
               type="button"

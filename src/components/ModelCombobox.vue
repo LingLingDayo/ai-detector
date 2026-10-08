@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from "vue";
 import { fetchRemoteModels } from "../services/api";
 
 const props = defineProps<{
@@ -24,6 +24,42 @@ const isFetchedFromApi = ref(false);
 const isFetching = ref(false);
 const statusBarText = ref("未获取模型，可点击右侧 ↻ 按钮自动拉取");
 const statusColor = ref<string>("");
+
+// 记录是否已完成过首次自动选择
+const hasAutoSelected = ref(false);
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+function isValidBaseUrl(url: string): boolean {
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+  if (!/^https?:\/\//i.test(trimmed)) return false;
+  try {
+    const parsed = new URL(trimmed);
+    if (!parsed.hostname) return false;
+    if (parsed.hostname.endsWith(".")) return false;
+    const isLocalhost = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+    const isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(parsed.hostname);
+    const hasDot = parsed.hostname.includes(".");
+    if (!isLocalhost && !isIp && !hasDot) return false;
+    if (!isLocalhost && !isIp) {
+      const parts = parsed.hostname.split(".");
+      const tld = parts[parts.length - 1];
+      if (tld.length < 2) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isValidApiKey(key: string): boolean {
+  const trimmed = key.trim();
+  if (!trimmed) return false;
+  // 长度至少 8 位，且不包含空白字符与中文字符
+  if (trimmed.length < 8) return false;
+  if (/[\u4e00-\u9fa5\s]/.test(trimmed)) return false;
+  return true;
+}
 
 const filteredModels = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
@@ -58,7 +94,7 @@ function toggleDropdown(): void {
   }
 }
 
-async function fetchModels(): Promise<void> {
+async function fetchModels(options: { autoSelectFirst?: boolean } = {}): Promise<void> {
   const url = props.baseUrl.trim();
   const key = props.apiKey.trim();
 
@@ -80,6 +116,15 @@ async function fetchModels(): Promise<void> {
       isFetchedFromApi.value = true;
       statusBarText.value = `已成功获取 ${list.length} 个模型`;
       statusColor.value = "var(--success)";
+
+      if (options.autoSelectFirst) {
+        hasAutoSelected.value = true;
+        const firstModel = list[0];
+        emit("update:modelValue", firstModel);
+        if (firstModel.toLowerCase().includes("claude")) {
+          emit("update:apiFormat", "anthropic");
+        }
+      }
     } else {
       statusBarText.value = "上游未返回可用模型列表，仍可手动输入";
       statusColor.value = "";
@@ -93,6 +138,40 @@ async function fetchModels(): Promise<void> {
     isFetching.value = false;
   }
 }
+
+function checkAndTriggerAutoFetch(immediate = false): void {
+  // 若已完成首次自动选择，或当前输入框已有模型值，则不再自动覆盖
+  if (hasAutoSelected.value || props.modelValue.trim()) {
+    return;
+  }
+
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+
+  const url = props.baseUrl;
+  const key = props.apiKey;
+
+  if (isValidBaseUrl(url) && isValidApiKey(key)) {
+    if (immediate) {
+      void fetchModels({ autoSelectFirst: true });
+    } else {
+      debounceTimer = setTimeout(() => {
+        if (!hasAutoSelected.value && !props.modelValue.trim() && isValidBaseUrl(props.baseUrl) && isValidApiKey(props.apiKey)) {
+          void fetchModels({ autoSelectFirst: true });
+        }
+      }, 800);
+    }
+  }
+}
+
+watch(
+  [() => props.baseUrl, () => props.apiKey],
+  () => {
+    checkAndTriggerAutoFetch(false);
+  }
+);
 
 function selectItem(model: string): void {
   emit("update:modelValue", model);
@@ -117,10 +196,17 @@ function handleDocumentClick(e: MouseEvent): void {
 
 onMounted(() => {
   document.addEventListener("click", handleDocumentClick);
+  setTimeout(() => {
+    checkAndTriggerAutoFetch(false);
+  }, 100);
 });
 
 onUnmounted(() => {
   document.removeEventListener("click", handleDocumentClick);
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
 });
 
 defineExpose({
@@ -129,7 +215,15 @@ defineExpose({
     isFetchedFromApi.value = false;
     isFetching.value = false;
     searchQuery.value = "";
+    hasAutoSelected.value = false;
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
     closeDropdown();
+  },
+  triggerAutoFetch: (immediate = true) => {
+    checkAndTriggerAutoFetch(immediate);
   },
 });
 </script>
