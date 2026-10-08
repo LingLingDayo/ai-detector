@@ -33,15 +33,14 @@ function handleCopy(): void {
         <button
           v-if="prompt"
           type="button"
-          class="btn-action btn-refresh"
+          class="btn-refresh-single"
           :disabled="isRunning"
           title="重新抽取当前这道测试题目"
           @click="emit('refreshSingle')"
         >
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
           </svg>
-          <span>换一题</span>
         </button>
         <button
           v-if="prompt"
@@ -106,6 +105,29 @@ function handleCopy(): void {
       display: flex;
       align-items: center;
       gap: 6px;
+    }
+
+    .btn-refresh-single {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      transition: color var(--transition-fast), transform var(--transition-fast);
+
+      &:hover:not(:disabled) {
+        color: var(--text-primary);
+        transform: rotate(45deg);
+      }
+
+      &:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
     }
 
     .btn-action {

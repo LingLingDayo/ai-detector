@@ -47,23 +47,21 @@ function closeModal(): void {
           <h2 id="progress-title">{{ title }}</h2>
           <button
             type="button"
-            class="btn-refresh-questions"
+            class="btn-refresh-icon"
             :disabled="isRunning"
             title="重新随机抽取一组题目 (3 道不同测试题目)"
             @click="emit('refreshQuestions')"
           >
             <svg
-              class="refresh-icon"
               viewBox="0 0 24 24"
-              width="12"
-              height="12"
+              width="13"
+              height="13"
               fill="none"
               stroke="currentColor"
               stroke-width="2"
             >
               <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
             </svg>
-            <span>刷新题目</span>
           </button>
         </div>
         <span class="progress-status-desc" id="progress-status-desc">{{ desc }}</span>
@@ -161,39 +159,26 @@ function closeModal(): void {
         line-height: 1.2;
       }
 
-      .btn-refresh-questions {
+      .btn-refresh-icon {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        padding: 2px 7px;
-        border-radius: var(--radius-sm);
-        border: 1px solid var(--border-subtle);
-        background: var(--bg-input);
-        color: var(--text-secondary);
-        font-size: 0.7rem;
-        font-weight: 500;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
         cursor: pointer;
-        transition: all var(--transition-fast);
+        padding: 2px;
+        border-radius: var(--radius-sm);
+        transition: color var(--transition-fast), transform var(--transition-fast);
 
         &:hover:not(:disabled) {
-          background: rgba(99, 102, 241, 0.12);
-          border-color: var(--accent-primary);
           color: var(--text-primary);
+          transform: rotate(45deg);
         }
 
         &:disabled {
-          opacity: 0.45;
+          opacity: 0.35;
           cursor: not-allowed;
-        }
-
-        .refresh-icon {
-          color: var(--text-muted);
-          transition: transform 0.2s ease;
-        }
-
-        &:hover:not(:disabled) .refresh-icon {
-          color: var(--accent-primary);
-          transform: rotate(45deg);
         }
       }
 
