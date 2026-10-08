@@ -299,7 +299,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
               <div class="form-group flex-1">
                 <label for="cfg-api-format">接口格式</label>
                 <select id="cfg-api-format" v-model="formData.apiFormat" class="custom-select">
-                  <option value="chat_completions">/v1/chat/completions (标准)</option>
+                  <option value="chat_completions">/v1/chat/completions (OpenAI 兼容)</option>
                   <option value="responses">/v1/responses (OpenAI 原生)</option>
                   <option value="anthropic">/v1/messages (Claude 原生)</option>
                 </select>
