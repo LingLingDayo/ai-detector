@@ -13,6 +13,23 @@ import ResultCard from "./components/ResultCard.vue";
 const configCardRef = ref<InstanceType<typeof ConfigCard> | null>(null);
 
 const {
+  isRunning,
+  hasStarted,
+  progressPercent,
+  completedCount,
+  totalCount,
+  statusTitle,
+  statusDesc,
+  steps,
+  statusAlert,
+  analysisResult,
+  startTest,
+  resetTest,
+  refreshQuestions,
+  refreshSingleQuestion,
+} = useProbeTest();
+
+const {
   config,
   configList,
   activeConfigId,
@@ -39,24 +56,12 @@ const {
   applyConfig,
   handleSaveConfigItem,
   deleteConfigItem,
-} = useConfig();
-
-const {
-  isRunning,
-  hasStarted,
-  progressPercent,
-  completedCount,
-  totalCount,
-  statusTitle,
-  statusDesc,
-  steps,
-  statusAlert,
-  analysisResult,
-  startTest,
-  resetTest,
-  refreshQuestions,
-  refreshSingleQuestion,
-} = useProbeTest();
+} = useConfig({
+  onApply: () => {
+    resetTest();
+    configCardRef.value?.resetModelList();
+  },
+});
 
 onMounted(() => {
   loadConfig();

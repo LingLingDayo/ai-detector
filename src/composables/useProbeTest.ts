@@ -50,6 +50,8 @@ export function useProbeTest(): UseProbeTestReturn {
   // 初始化首次选题
   const currentChallenges = ref<Challenge[]>(generateChallenges(totalCount));
 
+  let currentRunId = 0;
+
   function createInitialSteps(challenges: Challenge[]): ProbeStepItem[] {
     return challenges.map((ch, idx) => ({
       id: idx,
@@ -103,6 +105,7 @@ export function useProbeTest(): UseProbeTestReturn {
   }
 
   function resetTest(): void {
+    currentRunId += 1;
     isRunning.value = false;
     hasStarted.value = false;
     progressPercent.value = 0;
@@ -132,6 +135,8 @@ export function useProbeTest(): UseProbeTestReturn {
       alert("请填写或选择测试模型 ID！");
       return;
     }
+
+    const runId = ++currentRunId;
 
     // Reset UI state for new test run
     isRunning.value = true;
@@ -172,6 +177,7 @@ export function useProbeTest(): UseProbeTestReturn {
       // 最多尝试 2 次（初次执行 + 失败后最多静默重试 1 次）
       const maxAttempts = 2;
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        if (runId !== currentRunId) return;
         try {
           const response = await sendProbe({
             baseUrl,
@@ -182,6 +188,8 @@ export function useProbeTest(): UseProbeTestReturn {
             reasoningEffort,
             timeoutSeconds,
           });
+
+          if (runId !== currentRunId) return;
 
           const parsedNumbers = parseNumbers(response.text);
           lastParsedNumbers = parsedNumbers;
@@ -194,10 +202,13 @@ export function useProbeTest(): UseProbeTestReturn {
             lastErrMsg = `仅解析到 ${parsedNumbers.length} 个有效整数（需至少 ${minimum} 个）`;
           }
         } catch (err: unknown) {
+          if (runId !== currentRunId) return;
           lastErrMsg = err instanceof Error ? err.message : String(err);
           console.error(`第 ${i + 1} 题第 ${attempt} 次尝试失败:`, err);
         }
       }
+
+      if (runId !== currentRunId) return;
 
       try {
         if (accepted) {
@@ -242,17 +253,21 @@ export function useProbeTest(): UseProbeTestReturn {
           errors.push(`第 ${i + 1} 题失败: ${lastErrMsg}`);
         }
       } finally {
-        completedCount.value += 1;
-        progressPercent.value = Math.round((completedCount.value / totalCount) * 100);
-        if (completedCount.value < totalCount) {
-          statusDesc.value = `已完成 ${completedCount.value}/${totalCount} 题，正在等待剩余响应...`;
-        } else {
-          statusDesc.value = "3 题测试完成，正在计算模型归因...";
+        if (runId === currentRunId) {
+          completedCount.value += 1;
+          progressPercent.value = Math.round((completedCount.value / totalCount) * 100);
+          if (completedCount.value < totalCount) {
+            statusDesc.value = `已完成 ${completedCount.value}/${totalCount} 题，正在等待剩余响应...`;
+          } else {
+            statusDesc.value = "3 题测试完成，正在计算模型归因...";
+          }
         }
       }
     });
 
     await Promise.all(tasks);
+
+    if (runId !== currentRunId) return;
 
     const validOutputs = outputs.filter((item): item is ProbeOutputItem => item !== null);
 
@@ -270,6 +285,7 @@ export function useProbeTest(): UseProbeTestReturn {
       try {
         analysisResult.value = analyzeGlobalOutputs(validOutputs, unifiedBank);
       } catch (analysisErr: unknown) {
+        if (runId !== currentRunId) return;
         const errMsg =
           analysisErr instanceof Error ? analysisErr.message : String(analysisErr);
         statusAlert.value = {

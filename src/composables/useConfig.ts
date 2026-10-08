@@ -31,6 +31,10 @@ export function isConfigEqual(current: ClientConfig, item: ConfigItem): boolean 
   );
 }
 
+export interface UseConfigOptions {
+  onApply?: (item: ConfigItem) => void;
+}
+
 export interface UseConfigReturn {
   config: ClientConfig;
   configList: Ref<ConfigItem[]>;
@@ -68,7 +72,7 @@ export interface UseConfigReturn {
   deleteConfigItem: (id: string) => Promise<boolean>;
 }
 
-export function useConfig(): UseConfigReturn {
+export function useConfig(options?: UseConfigOptions): UseConfigReturn {
   const { confirm } = useConfirm();
 
   const config = reactive<ClientConfig>({
@@ -225,6 +229,7 @@ export function useConfig(): UseConfigReturn {
     activeConfigId.value = item.id;
     saveConfig();
     saveConfigListToStorage();
+    options?.onApply?.(item);
   }
 
   function handleSaveConfigItem(
