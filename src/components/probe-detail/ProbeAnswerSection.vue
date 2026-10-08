@@ -57,7 +57,7 @@ function handleCopyAnswer(): void {
           <svg v-else viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          <span>{{ isAnswerCopied ? "已复制" : "复制回答" }}</span>
+          <span>{{ isAnswerCopied ? "已复制" : "复制" }}</span>
         </button>
       </div>
     </div>
