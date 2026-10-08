@@ -11,7 +11,7 @@ import logoUrl from "../assets/logo.png";
       <div>
         <h1 class="brand-title">ModelTrace <span>AI Detector</span></h1>
         <p class="brand-subtitle" title="通过探针测试，检测并鉴别 API 底层实际调用的真实大模型">
-          检测与鉴别 API 背后的真实大模型
+          检测与鉴别 API 背后的真实模型
         </p>
       </div>
     </div>

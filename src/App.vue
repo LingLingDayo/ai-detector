@@ -112,7 +112,7 @@ async function handleResetConfig(): Promise<void> {
         @refresh-single-question="refreshSingleQuestion"
       />
 
-      <!-- 归因诊断报告卡片 -->
+      <!-- 探测诊断报告卡片 -->
       <ResultCard :analysis="analysisResult" />
     </main>
 

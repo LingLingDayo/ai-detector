@@ -169,7 +169,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
                     ? "为当前填写的接口参数指定一个名称，方便日后一键切换"
                     : mode === "edit"
                     ? "修改配置预设的名称与连接参数"
-                    : "录入新的大模型 API 接口连接信息"
+                    : "录入新的模型 API 接口连接信息"
                 }}
               </p>
             </div>

@@ -32,7 +32,7 @@ watch(
     id="result-section"
   >
     <div class="card-header">
-      <h2>归因诊断报告</h2>
+      <h2>探测诊断报告</h2>
       <span class="badge badge-success" title="3 题探针已完成分析与概率校准">测试已完成</span>
     </div>
 
