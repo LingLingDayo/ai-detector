@@ -6,6 +6,19 @@ export interface ClientConfig {
   reasoningEffort: string;
 }
 
+export interface ConfigItem {
+  id: string;
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+  apiFormat?: string;
+  modelName?: string;
+  reasoningEffort?: string;
+  createdAt?: number;
+  updatedAt?: number;
+}
+
+
 export interface SendProbeOptions {
   baseUrl: string;
   apiKey: string;

@@ -6,11 +6,11 @@ import AdvancedSettings from "./AdvancedSettings.vue";
 
 const props = defineProps<{
   config: ClientConfig;
+  activeConfigName?: string;
+  configListCount?: number;
   isRunning: boolean;
   isPasswordVisible: boolean;
   isAdvancedOpen: boolean;
-  saveTipText: string;
-  isSaveTipActive: boolean;
   settingsSummary: string;
 }>();
 
@@ -19,6 +19,8 @@ const emit = defineEmits<{
   (e: "update:isAdvancedOpen", value: boolean): void;
   (e: "submit"): void;
   (e: "reset"): void;
+  (e: "open-save-config"): void;
+  (e: "open-config-list"): void;
 }>();
 
 const comboboxRef = ref<InstanceType<typeof ModelCombobox> | null>(null);
@@ -32,15 +34,68 @@ function handleReset(): void {
 <template>
   <section class="card config-card">
     <div class="card-header">
-      <h2>探测参数配置</h2>
-      <span
-        class="auto-save-tip"
-        :class="{ saved: isSaveTipActive }"
-        id="save-tip"
-        title="输入内容会在本地实时自动持久化"
-      >
-        {{ saveTipText }}
-      </span>
+      <div class="header-title-group">
+        <h2>探测参数配置</h2>
+        <span
+          v-if="activeConfigName"
+          class="active-config-tag"
+          :title="`当前应用配置：${activeConfigName}`"
+        >
+          <span class="active-dot"></span>
+          {{ activeConfigName }}
+        </span>
+      </div>
+
+      <div class="header-actions-group">
+        <button
+          type="button"
+          class="btn-header-action btn-save-config"
+          id="btn-save-config"
+          title="将当前填写的接口参数与密钥保存为配置预设"
+          @click="emit('open-save-config')"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
+          </svg>
+          <span>保存配置</span>
+        </button>
+
+        <button
+          type="button"
+          class="btn-header-action btn-config-list"
+          id="btn-config-list"
+          title="管理与切换已保存的配置预设列表"
+          @click="emit('open-config-list')"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+          </svg>
+          <span>配置列表</span>
+          <span v-if="configListCount !== undefined && configListCount > 0" class="config-count-badge">
+            {{ configListCount }}
+          </span>
+        </button>
+      </div>
     </div>
 
     <form id="test-form" class="config-form" @submit.prevent="emit('submit')">
@@ -151,7 +206,7 @@ function handleReset(): void {
           class="btn btn-primary"
           id="btn-start"
           :disabled="isRunning"
-          title="执行 3 轮探测测试，并在统一库中比对归因"
+          title="执行 3 轮探测，并在统一库中比对归因"
         >
           <span class="btn-spinner" :class="{ hidden: !isRunning }" id="start-spinner"></span>
           <span class="btn-text">开始测试 (共 3 题)</span>
@@ -176,13 +231,106 @@ function handleReset(): void {
   z-index: 30;
 }
 
-.auto-save-tip {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  transition: color var(--transition-fast);
+.header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 
-  &.saved {
-    color: var(--success);
+  h2 {
+    font-size: 0.94rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .active-config-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    padding: 1px 7px;
+    border-radius: 9999px;
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    color: #a5b4fc;
+    font-weight: 500;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    .active-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #818cf8;
+      box-shadow: 0 0 4px #818cf8;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.header-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .btn-header-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.74rem;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all var(--transition-fast);
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+
+    &:hover {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: rgba(99, 102, 241, 0.4);
+      color: var(--text-primary);
+    }
+
+    &.btn-save-config {
+      color: #93c5fd;
+      background: rgba(59, 130, 246, 0.08);
+      border-color: rgba(59, 130, 246, 0.22);
+
+      &:hover {
+        background: rgba(59, 130, 246, 0.18);
+        border-color: rgba(59, 130, 246, 0.45);
+        color: #bfdbfe;
+      }
+    }
+
+    &.btn-config-list {
+      color: #c7d2fe;
+      background: rgba(99, 102, 241, 0.1);
+      border-color: rgba(99, 102, 241, 0.25);
+
+      &:hover {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: rgba(99, 102, 241, 0.5);
+        color: #e0e7ff;
+      }
+
+      .config-count-badge {
+        font-size: 0.65rem;
+        padding: 0 4px;
+        min-width: 14px;
+        height: 14px;
+        line-height: 14px;
+        text-align: center;
+        border-radius: 9999px;
+        background: rgba(99, 102, 241, 0.35);
+        color: #fff;
+        font-weight: 600;
+      }
+    }
   }
 }
 

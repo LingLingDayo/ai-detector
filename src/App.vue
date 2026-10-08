@@ -4,19 +4,36 @@ import { useConfig } from "./composables/useConfig";
 import { useProbeTest } from "./composables/useProbeTest";
 import AppHeader from "./components/AppHeader.vue";
 import ConfigCard from "./components/ConfigCard.vue";
+import ConfigListModal from "./components/ConfigListModal.vue";
+import ConfigEditModal from "./components/ConfigEditModal.vue";
 import ProgressCard from "./components/ProgressCard.vue";
 import ResultCard from "./components/ResultCard.vue";
 
 const {
   config,
+  configList,
+  activeConfigId,
+  activeConfigName,
+  configListCount,
   isPasswordVisible,
   isAdvancedOpen,
-  saveTipText,
-  isSaveTipActive,
+  isConfigListModalOpen,
+  isConfigEditModalOpen,
+  configEditModalMode,
+  editingConfigItem,
   settingsSummary,
   togglePasswordVisibility,
+  openConfigListModal,
+  closeConfigListModal,
+  openSaveCurrentModal,
+  openCreateConfigModal,
+  openEditConfigModal,
+  closeConfigEditModal,
   loadConfig,
   resetConfig,
+  applyConfig,
+  handleSaveConfigItem,
+  deleteConfigItem,
 } = useConfig();
 
 const {
@@ -56,16 +73,18 @@ function handleResetConfig(): void {
       <!-- 参数配置卡片 -->
       <ConfigCard
         :config="config"
+        :active-config-name="activeConfigName"
+        :config-list-count="configListCount"
         :is-running="isRunning"
         :is-password-visible="isPasswordVisible"
         :is-advanced-open="isAdvancedOpen"
-        :save-tip-text="saveTipText"
-        :is-save-tip-active="isSaveTipActive"
         :settings-summary="settingsSummary"
         @toggle-password="togglePasswordVisibility"
         @update:is-advanced-open="(v) => (isAdvancedOpen = v)"
         @submit="() => startTest(config)"
         @reset="handleResetConfig"
+        @open-save-config="openSaveCurrentModal"
+        @open-config-list="openConfigListModal"
       />
 
       <!-- 探测题目与测试进度卡片（默认展示） -->
@@ -86,6 +105,28 @@ function handleResetConfig(): void {
       <!-- 归因诊断报告卡片 -->
       <ResultCard :analysis="analysisResult" />
     </main>
+
+    <!-- 配置列表弹窗 -->
+    <ConfigListModal
+      :is-open="isConfigListModalOpen"
+      :configs="configList"
+      :active-config-id="activeConfigId"
+      @close="closeConfigListModal"
+      @apply="applyConfig"
+      @open-create="openCreateConfigModal"
+      @open-edit="openEditConfigModal"
+      @open-save-current="openSaveCurrentModal"
+      @delete="deleteConfigItem"
+    />
+
+    <!-- 添加 / 编辑 / 保存当前配置弹窗 -->
+    <ConfigEditModal
+      :is-open="isConfigEditModalOpen"
+      :mode="configEditModalMode"
+      :initial-data="editingConfigItem"
+      @close="closeConfigEditModal"
+      @save="handleSaveConfigItem"
+    />
   </div>
 </template>
 
@@ -106,4 +147,5 @@ function handleResetConfig(): void {
   position: relative;
 }
 </style>
+
 

@@ -1,4 +1,7 @@
 export const STORAGE_KEY = "modeltrace_client_config";
+export const CONFIG_LIST_STORAGE_KEY = "modeltrace_config_list";
+export const ACTIVE_CONFIG_ID_KEY = "modeltrace_active_config_id";
+
 
 export const REASONING_EFFORT_OPTIONS = [
   { label: "none", value: "none", description: "关闭思考" },

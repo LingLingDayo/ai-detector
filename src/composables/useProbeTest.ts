@@ -140,7 +140,7 @@ export function useProbeTest(): UseProbeTestReturn {
     analysisResult.value = null;
     progressPercent.value = 0;
     completedCount.value = 0;
-    statusTitle.value = "探测测试进行中";
+    statusTitle.value = "探测进行中";
     statusDesc.value = "正在发起测试请求...";
     // 使用当前选定好的 3 道题目（若未就绪则重新生成）
     const challenges: Challenge[] =
