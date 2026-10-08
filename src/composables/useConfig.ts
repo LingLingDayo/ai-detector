@@ -9,6 +9,27 @@ function generateConfigId(): string {
   return `cfg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+export function isConfigEqual(current: ClientConfig, item: ConfigItem): boolean {
+  const normCurrentBaseUrl = (current.baseUrl || "").trim();
+  const normItemBaseUrl = (item.baseUrl || "").trim();
+  const normCurrentApiKey = (current.apiKey || "").trim();
+  const normItemApiKey = (item.apiKey || "").trim();
+  const normCurrentModel = (current.modelName || "").trim();
+  const normItemModel = (item.modelName || "").trim();
+  const normCurrentFormat = current.apiFormat || "chat_completions";
+  const normItemFormat = item.apiFormat || "chat_completions";
+  const normCurrentEffort = current.reasoningEffort || "high";
+  const normItemEffort = item.reasoningEffort || "high";
+
+  return (
+    normCurrentBaseUrl === normItemBaseUrl &&
+    normCurrentApiKey === normItemApiKey &&
+    normCurrentModel === normItemModel &&
+    normCurrentFormat === normItemFormat &&
+    normCurrentEffort === normItemEffort
+  );
+}
+
 export interface UseConfigReturn {
   config: ClientConfig;
   configList: Ref<ConfigItem[]>;
@@ -24,6 +45,8 @@ export interface UseConfigReturn {
   editingConfigItem: Ref<ConfigItem | null>;
   settingsSummary: ComputedRef<string>;
   hasCurrentInput: ComputedRef<boolean>;
+  isCurrentConfigSaved: ComputedRef<boolean>;
+  canSaveCurrent: ComputedRef<boolean>;
   togglePasswordVisibility: () => void;
   toggleAdvanced: () => void;
   openConfigListModal: () => void;
@@ -80,6 +103,18 @@ export function useConfig(): UseConfigReturn {
 
   const hasCurrentInput = computed<boolean>(() => {
     return Boolean(config.baseUrl?.trim() && config.apiKey?.trim());
+  });
+
+  const isCurrentConfigSaved = computed<boolean>(() => {
+    if (!config.baseUrl?.trim() || !config.apiKey?.trim()) return false;
+    return configList.value.some((item) => isConfigEqual(config, item));
+  });
+
+  const canSaveCurrent = computed<boolean>(() => {
+    return (
+      Boolean(config.baseUrl?.trim() && config.apiKey?.trim()) &&
+      !isCurrentConfigSaved.value
+    );
   });
 
   const settingsSummary = computed(() => {
@@ -361,6 +396,8 @@ export function useConfig(): UseConfigReturn {
     editingConfigItem,
     settingsSummary,
     hasCurrentInput,
+    isCurrentConfigSaved,
+    canSaveCurrent,
     togglePasswordVisibility,
     toggleAdvanced,
     openConfigListModal,
