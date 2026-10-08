@@ -135,6 +135,7 @@ function closeModal(): void {
         font-size: 1.1rem;
         font-weight: 700;
         background: var(--accent-gradient);
+        background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         line-height: 1.1;

@@ -62,6 +62,7 @@ import logoUrl from "../assets/logo.png";
 
       span {
         background: var(--accent-gradient);
+        background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
       }
