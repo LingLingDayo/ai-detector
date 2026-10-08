@@ -314,7 +314,6 @@ function handleSubmit(applyImmediately: boolean = false): void {
                   v-model:api-format="formData.apiFormat"
                   :base-url="formData.baseUrl"
                   :api-key="formData.apiKey"
-                  placeholder="例如：gpt-4o, deepseek-chat..."
                   :required="false"
                   :auto-select-first="false"
                 />
