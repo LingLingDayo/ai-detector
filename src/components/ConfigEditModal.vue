@@ -2,6 +2,20 @@
 import { ref, reactive, watch, nextTick } from "vue";
 import type { ConfigItem } from "../types";
 import { REASONING_EFFORT_OPTIONS } from "../constants";
+import CustomSelect, { type SelectOption } from "./CustomSelect.vue";
+
+const API_FORMAT_OPTIONS: SelectOption[] = [
+  { value: "chat_completions", label: "/v1/chat/completions", description: "OpenAI 兼容", badge: "OpenAI" },
+  { value: "responses", label: "/v1/responses", description: "OpenAI 原生", badge: "Responses" },
+  { value: "anthropic", label: "/v1/messages", description: "Claude 原生", badge: "Claude" },
+];
+
+const REASONING_OPTIONS: SelectOption[] = REASONING_EFFORT_OPTIONS.map((opt) => ({
+  value: opt.value,
+  label: opt.value,
+  description: opt.description,
+  badge: opt.value === "high" ? "推荐" : undefined,
+}));
 
 const props = defineProps<{
   isOpen: boolean;
@@ -298,26 +312,22 @@ function handleSubmit(applyImmediately: boolean = false): void {
 
               <div class="form-group flex-1">
                 <label for="cfg-api-format">接口格式</label>
-                <select id="cfg-api-format" v-model="formData.apiFormat" class="custom-select">
-                  <option value="chat_completions">/v1/chat/completions (OpenAI 兼容)</option>
-                  <option value="responses">/v1/responses (OpenAI 原生)</option>
-                  <option value="anthropic">/v1/messages (Claude 原生)</option>
-                </select>
+                <CustomSelect
+                  id="cfg-api-format"
+                  v-model="formData.apiFormat"
+                  :options="API_FORMAT_OPTIONS"
+                />
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group flex-1">
                 <label for="cfg-reasoning-effort">默认思考强度</label>
-                <select id="cfg-reasoning-effort" v-model="formData.reasoningEffort" class="custom-select">
-                  <option
-                    v-for="opt in REASONING_EFFORT_OPTIONS"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.value }} - {{ opt.description }}
-                  </option>
-                </select>
+                <CustomSelect
+                  id="cfg-reasoning-effort"
+                  v-model="formData.reasoningEffort"
+                  :options="REASONING_OPTIONS"
+                />
               </div>
             </div>
           </div>
@@ -500,29 +510,6 @@ function handleSubmit(applyImmediately: boolean = false): void {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.custom-select {
-  width: 100%;
-  padding: 6px 10px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-size: 0.82rem;
-  outline: none;
-  font-family: inherit;
-  transition: all var(--transition-fast);
-
-  &:focus {
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px var(--border-glow);
-  }
-
-  option {
-    background: #111723;
-    color: #f8fafc;
-  }
 }
 
 .modal-footer {
