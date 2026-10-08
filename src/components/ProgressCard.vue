@@ -14,10 +14,12 @@ const props = withDefaults(
     steps: ProbeStepItem[];
     statusAlert: StatusAlertInfo | null;
     isRunning?: boolean;
+    hasStarted?: boolean;
   }>(),
   {
     visible: true,
     isRunning: false,
+    hasStarted: false,
   }
 );
 
@@ -66,13 +68,13 @@ function closeModal(): void {
         </div>
         <span class="progress-status-desc" id="progress-status-desc">{{ desc }}</span>
       </div>
-      <div class="progress-numeric">
+      <div v-if="hasStarted" class="progress-numeric">
         <span id="progress-percent">{{ percent }}%</span>
         <small id="progress-count-text">完成 {{ completedCount }}/{{ totalCount }} 题</small>
       </div>
     </div>
 
-    <div class="progress-bar-track">
+    <div class="progress-bar-track" :class="{ 'has-border': hasStarted }">
       <div
         class="progress-bar-fill"
         id="progress-bar-fill"
@@ -234,7 +236,12 @@ function closeModal(): void {
     border-radius: 9999px;
     overflow: hidden;
     margin-bottom: 8px;
-    border: 1px solid var(--border-subtle);
+    border: 1px solid transparent;
+    transition: border-color var(--transition-normal);
+
+    &.has-border {
+      border-color: var(--border-subtle);
+    }
 
     .progress-bar-fill {
       height: 100%;

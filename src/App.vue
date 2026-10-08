@@ -99,6 +99,7 @@ function handleResetConfig(): void {
         :steps="steps"
         :status-alert="statusAlert"
         :is-running="isRunning"
+        :has-started="hasStarted"
         @refresh-questions="refreshQuestions"
         @refresh-single-question="refreshSingleQuestion"
       />

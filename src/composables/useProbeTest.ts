@@ -69,6 +69,7 @@ export function useProbeTest(): UseProbeTestReturn {
     if (isRunning.value) return;
     currentChallenges.value = generateChallenges(totalCount);
     steps.value = createInitialSteps(currentChallenges.value);
+    hasStarted.value = false;
     progressPercent.value = 0;
     completedCount.value = 0;
     statusTitle.value = "探测题目已刷新";
