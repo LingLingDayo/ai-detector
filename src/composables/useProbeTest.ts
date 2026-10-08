@@ -48,7 +48,7 @@ export function useProbeTest(): UseProbeTestReturn {
 
   const steps = ref<ProbeStepItem[]>(JSON.parse(JSON.stringify(initialSteps)));
 
-  const totalBankModelsCount = unifiedBank?.models?.length || 13;
+  const totalBankModelsCount = unifiedBank?.models?.length || 17;
 
   function resetTest(): void {
     isRunning.value = false;
