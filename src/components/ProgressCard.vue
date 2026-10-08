@@ -277,6 +277,7 @@ function closeModal(): void {
         justify-content: center;
         font-size: 0.68rem;
         font-weight: 700;
+        line-height: 1;
         background: var(--bg-input);
         color: var(--text-muted);
         border: 1px solid var(--border-subtle);
@@ -336,6 +337,7 @@ function closeModal(): void {
 
         .step-badge {
           background: var(--accent-primary);
+          border-color: transparent;
           color: #fff;
           box-shadow: 0 0 6px rgba(99, 102, 241, 0.5);
         }
@@ -351,6 +353,7 @@ function closeModal(): void {
 
         .step-badge {
           background: var(--success);
+          border-color: transparent;
           color: #fff;
         }
 
@@ -366,6 +369,7 @@ function closeModal(): void {
 
         .step-badge {
           background: var(--danger);
+          border-color: transparent;
           color: #fff;
         }
 
