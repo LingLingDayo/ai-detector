@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch } from "vue";
 import type { ProbeStepItem } from "../types";
 import ProbeModalHeader from "./probe-detail/ProbeModalHeader.vue";
 import ProbePromptSection from "./probe-detail/ProbePromptSection.vue";
@@ -43,30 +43,6 @@ function selectStep(idx: number): void {
     activeIndex.value = idx;
   }
 }
-
-function handleKeydown(e: KeyboardEvent): void {
-  if (!props.isOpen) return;
-
-  if (e.key === "Escape") {
-    emit("close");
-  } else if (e.key === "ArrowLeft") {
-    if (activeIndex.value > 0) {
-      selectStep(activeIndex.value - 1);
-    }
-  } else if (e.key === "ArrowRight") {
-    if (activeIndex.value < props.steps.length - 1) {
-      selectStep(activeIndex.value + 1);
-    }
-  }
-}
-
-onMounted(() => {
-  window.addEventListener("keydown", handleKeydown);
-});
-
-onUnmounted(() => {
-  window.removeEventListener("keydown", handleKeydown);
-});
 </script>
 
 <template>

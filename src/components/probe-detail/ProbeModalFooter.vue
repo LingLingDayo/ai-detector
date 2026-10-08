@@ -12,9 +12,6 @@ const emit = defineEmits<{
 
 <template>
   <div class="probe-modal-footer">
-    <div class="footer-shortcuts-hint">
-      <span>支持使用键盘 <strong>← / →</strong> 键快速切换题目，<strong>Esc</strong> 键关闭</span>
-    </div>
     <div class="footer-actions">
       <button
         type="button"
@@ -49,17 +46,8 @@ const emit = defineEmits<{
   border-top: 1px solid var(--border-subtle);
   background: rgba(17, 23, 34, 0.75);
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-
-  .footer-shortcuts-hint {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-
-    strong {
-      color: var(--text-secondary);
-    }
-  }
 
   .footer-actions {
     display: flex;
