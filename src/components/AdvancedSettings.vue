@@ -199,9 +199,9 @@ const emit = defineEmits<{
         .segmented-control {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 4px;
+          gap: 3px;
           background: var(--bg-input);
-          padding: 3px;
+          padding: 2px;
           border-radius: var(--radius-sm);
           border: 1px solid var(--border-subtle);
 
@@ -233,8 +233,10 @@ const emit = defineEmits<{
 
               &:checked + .segment-label {
                 background: rgba(99, 102, 241, 0.2);
-                color: #fff;
-                border-color: rgba(99, 102, 241, 0.4);
+                color: #ffffff;
+                font-weight: 600;
+                border-color: rgba(99, 102, 241, 0.5);
+                box-shadow: 0 1px 6px rgba(99, 102, 241, 0.2);
               }
             }
 
@@ -242,11 +244,12 @@ const emit = defineEmits<{
               display: flex;
               align-items: center;
               justify-content: center;
-              padding: 5px 8px;
-              border-radius: var(--radius-sm);
+              padding: 3.5px 8px;
+              border-radius: calc(var(--radius-sm) - 2px);
               border: 1px solid transparent;
               font-size: 0.76rem;
               font-weight: 500;
+              line-height: 1.25;
               color: var(--text-secondary);
               background: transparent;
               transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
