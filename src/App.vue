@@ -55,6 +55,7 @@ const {
   applyConfig,
   handleSaveConfigItem,
   deleteConfigItem,
+  swapConfigItems,
 } = useConfig({
   onApply: () => {
     resetTest();
@@ -131,6 +132,7 @@ async function handleResetConfig(): Promise<void> {
       @open-edit="openEditConfigModal"
       @open-save-current="openSaveCurrentModal"
       @delete="deleteConfigItem"
+      @swap="({ sourceId, targetId }) => swapConfigItems(sourceId, targetId)"
     />
 
     <!-- 添加 / 编辑 / 保存当前配置弹窗 -->

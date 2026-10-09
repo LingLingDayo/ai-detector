@@ -26,9 +26,52 @@ const emit = defineEmits<{
   (e: "openEdit", item: ConfigItem): void;
   (e: "openSaveCurrent"): void;
   (e: "delete", id: string): void;
+  (e: "swap", payload: { sourceId: string; targetId: string }): void;
 }>();
 
 const searchQuery = ref("");
+const draggedId = ref<string | null>(null);
+const dragOverId = ref<string | null>(null);
+
+function handleDragStart(e: DragEvent, id: string): void {
+  draggedId.value = id;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
+  }
+}
+
+function handleDragOver(e: DragEvent, id: string): void {
+  if (!draggedId.value || draggedId.value === id) return;
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = "move";
+  }
+  dragOverId.value = id;
+}
+
+function handleDragEnter(id: string): void {
+  if (!draggedId.value || draggedId.value === id) return;
+  dragOverId.value = id;
+}
+
+function handleDragLeave(id: string): void {
+  if (dragOverId.value === id) {
+    dragOverId.value = null;
+  }
+}
+
+function handleDrop(targetId: string): void {
+  const sourceId = draggedId.value;
+  if (sourceId && sourceId !== targetId) {
+    emit("swap", { sourceId, targetId });
+  }
+  cleanupDrag();
+}
+
+function cleanupDrag(): void {
+  draggedId.value = null;
+  dragOverId.value = null;
+}
 
 const filteredConfigs = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
@@ -74,9 +117,17 @@ const filteredConfigs = computed(() => {
               :key="item.id"
               :item="item"
               :is-active="item.id === activeConfigId"
+              :is-dragging="draggedId === item.id"
+              :is-drag-over="dragOverId === item.id && draggedId !== item.id"
               @apply="emit('apply', $event)"
               @open-edit="emit('openEdit', $event)"
               @delete="emit('delete', $event)"
+              @dragstart="handleDragStart"
+              @dragover="handleDragOver"
+              @dragenter="handleDragEnter"
+              @dragleave="handleDragLeave"
+              @drop="handleDrop"
+              @dragend="cleanupDrag"
             />
           </div>
 

@@ -1,15 +1,29 @@
 <script setup lang="ts">
 import type { ConfigItem } from "../../types";
 
-defineProps<{
-  item: ConfigItem;
-  isActive: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    item: ConfigItem;
+    isActive: boolean;
+    isDragging?: boolean;
+    isDragOver?: boolean;
+  }>(),
+  {
+    isDragging: false,
+    isDragOver: false,
+  }
+);
 
 const emit = defineEmits<{
   (e: "apply", item: ConfigItem): void;
   (e: "openEdit", item: ConfigItem): void;
   (e: "delete", id: string): void;
+  (e: "dragstart", event: DragEvent, id: string): void;
+  (e: "dragover", event: DragEvent, id: string): void;
+  (e: "dragenter", id: string): void;
+  (e: "dragleave", id: string): void;
+  (e: "drop", id: string): void;
+  (e: "dragend"): void;
 }>();
 
 function maskApiKey(key?: string): string {
@@ -22,11 +36,32 @@ function maskApiKey(key?: string): string {
 <template>
   <div
     class="config-item-card"
-    :class="{ 'is-active': isActive }"
+    :class="{
+      'is-active': isActive,
+      'is-dragging': isDragging,
+      'is-drag-over': isDragOver
+    }"
+    draggable="true"
+    @dragstart="emit('dragstart', $event, item.id)"
+    @dragover.prevent="emit('dragover', $event, item.id)"
+    @dragenter.prevent="emit('dragenter', item.id)"
+    @dragleave="emit('dragleave', item.id)"
+    @drop.prevent="emit('drop', item.id)"
+    @dragend="emit('dragend')"
   >
     <!-- 主信息与操作栏 -->
     <div class="card-main-row">
       <div class="card-title-group">
+        <span class="drag-handle" title="按住拖拽可交换不同配置位置">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+            <circle cx="9" cy="6" r="1.5" />
+            <circle cx="15" cy="6" r="1.5" />
+            <circle cx="9" cy="12" r="1.5" />
+            <circle cx="15" cy="12" r="1.5" />
+            <circle cx="9" cy="18" r="1.5" />
+            <circle cx="15" cy="18" r="1.5" />
+          </svg>
+        </span>
         <span class="item-name" :title="item.name">{{ item.name }}</span>
       </div>
 
@@ -117,6 +152,23 @@ function maskApiKey(key?: string): string {
     box-shadow: inset 3px 0 0 var(--success), 0 0 12px rgba(16, 185, 129, 0.06);
   }
 
+  &.is-dragging {
+    opacity: 0.35;
+    border-style: dashed;
+    border-color: rgba(99, 102, 241, 0.6);
+  }
+
+  &.is-drag-over {
+    border-color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 14px rgba(99, 102, 241, 0.3);
+    transform: translateY(-1px);
+  }
+
+  &:active .drag-handle {
+    cursor: grabbing;
+  }
+
   .card-main-row {
     display: flex;
     align-items: center;
@@ -129,6 +181,22 @@ function maskApiKey(key?: string): string {
       gap: 8px;
       min-width: 0;
       flex: 1;
+
+      .drag-handle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        cursor: grab;
+        opacity: 0.35;
+        transition: opacity var(--transition-fast), color var(--transition-fast);
+        flex-shrink: 0;
+
+        &:hover {
+          opacity: 1;
+          color: var(--accent-primary);
+        }
+      }
 
       .item-name {
         font-size: 0.88rem;

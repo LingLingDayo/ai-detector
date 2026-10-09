@@ -70,6 +70,7 @@ export interface UseConfigReturn {
     applyImmediately?: boolean
   ) => void;
   deleteConfigItem: (id: string) => Promise<boolean>;
+  swapConfigItems: (sourceId: string, targetId: string) => void;
 }
 
 export function useConfig(options?: UseConfigOptions): UseConfigReturn {
@@ -294,6 +295,19 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     return true;
   }
 
+  function swapConfigItems(sourceId: string, targetId: string): void {
+    const sourceIdx = configList.value.findIndex((c) => c.id === sourceId);
+    const targetIdx = configList.value.findIndex((c) => c.id === targetId);
+    if (sourceIdx !== -1 && targetIdx !== -1 && sourceIdx !== targetIdx) {
+      const nextList = [...configList.value];
+      const temp = nextList[sourceIdx];
+      nextList[sourceIdx] = nextList[targetIdx];
+      nextList[targetIdx] = temp;
+      configList.value = nextList;
+      saveConfigListToStorage();
+    }
+  }
+
   function loadConfig(): void {
     try {
       // 1. 读取保存的配置列表
@@ -447,6 +461,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     applyConfig,
     handleSaveConfigItem,
     deleteConfigItem,
+    swapConfigItems,
   };
 }
 

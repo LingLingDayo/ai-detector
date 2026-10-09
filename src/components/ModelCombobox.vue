@@ -41,9 +41,42 @@ const isFetching = ref(false);
 const statusBarText = ref("未获取模型，可点击右侧 ↻ 按钮自动拉取");
 const statusColor = ref<string>("");
 
+const draggedModel = ref<string | null>(null);
+const dragOverModel = ref<string | null>(null);
+let isDragHappening = false;
+
 // 记录是否已完成过首次自动选择
 const hasAutoSelected = ref(false);
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+function getModelStorageKey(url: string): string {
+  const clean = (url || "").trim().toLowerCase().replace(/\/+$/, "");
+  return clean ? `modeltrace_models_${encodeURIComponent(clean)}` : "modeltrace_models_default";
+}
+
+function saveModelsToStorage(models: string[]): void {
+  try {
+    const key = getModelStorageKey(props.baseUrl);
+    localStorage.setItem(key, JSON.stringify(models));
+  } catch (err) {
+    console.warn("保存模型列表失败:", err);
+  }
+}
+
+function loadSavedModels(url: string): string[] | null {
+  try {
+    const key = getModelStorageKey(url);
+    const data = localStorage.getItem(key);
+    if (!data) return null;
+    const parsed = JSON.parse(data);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
 
 function isValidBaseUrl(url: string): boolean {
   const trimmed = url.trim();
@@ -101,8 +134,16 @@ function openDropdown(): void {
   isOpen.value = true;
   searchQuery.value = "";
   if (!isFetchedFromApi.value) {
-    statusBarText.value = "未获取模型，可点击右侧 ↻ 按钮自动拉取";
-    statusColor.value = "";
+    const saved = loadSavedModels(props.baseUrl);
+    if (saved && saved.length > 0) {
+      availableModels.value = saved;
+      isFetchedFromApi.value = true;
+      statusBarText.value = `已加载本地保存的 ${saved.length} 个模型（拖动可交换排序）`;
+      statusColor.value = "";
+    } else {
+      statusBarText.value = "未获取模型，可点击右侧 ↻ 按钮自动拉取";
+      statusColor.value = "";
+    }
   }
   nextTick(() => {
     searchInputRef.value?.focus();
@@ -142,14 +183,28 @@ async function fetchModels(options: { autoSelectFirst?: boolean } = {}): Promise
   try {
     const list = await fetchRemoteModels(url, key, props.apiFormat);
     if (list && list.length > 0) {
-      availableModels.value = list;
+      // 保留用户已排好的顺序，过滤远端已移除的，新模型追加到末尾
+      const saved = loadSavedModels(url);
+      let mergedList: string[];
+      if (saved && saved.length > 0) {
+        const remoteSet = new Set(list);
+        const savedSet = new Set(saved);
+        const retained = saved.filter((m) => remoteSet.has(m));
+        const newlyAdded = list.filter((m) => !savedSet.has(m));
+        mergedList = [...retained, ...newlyAdded];
+      } else {
+        mergedList = list;
+      }
+
+      availableModels.value = mergedList;
+      saveModelsToStorage(mergedList);
       isFetchedFromApi.value = true;
-      statusBarText.value = `已成功获取 ${list.length} 个模型`;
+      statusBarText.value = `已成功获取 ${mergedList.length} 个模型（拖动可交换排序）`;
       statusColor.value = "var(--success)";
 
       if (options.autoSelectFirst) {
         hasAutoSelected.value = true;
-        const firstModel = list[0];
+        const firstModel = mergedList[0];
         emit("update:modelValue", firstModel);
         if (firstModel.toLowerCase().includes("claude")) {
           emit("update:apiFormat", "anthropic");
@@ -193,19 +248,95 @@ function checkAndTriggerAutoFetch(immediate = false): void {
   }
 }
 
+function onDragStart(event: DragEvent, model: string): void {
+  draggedModel.value = model;
+  isDragHappening = true;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", model);
+  }
+}
+
+function onDragOver(event: DragEvent, model: string): void {
+  if (!draggedModel.value || draggedModel.value === model) return;
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = "move";
+  }
+  dragOverModel.value = model;
+}
+
+function onDragEnter(model: string): void {
+  if (!draggedModel.value || draggedModel.value === model) return;
+  dragOverModel.value = model;
+}
+
+function onDragLeave(model: string): void {
+  if (dragOverModel.value === model) {
+    dragOverModel.value = null;
+  }
+}
+
+function onDrop(targetModel: string): void {
+  const sourceModel = draggedModel.value;
+  if (!sourceModel || sourceModel === targetModel) {
+    cleanupDrag();
+    return;
+  }
+
+  const sourceIdx = availableModels.value.indexOf(sourceModel);
+  const targetIdx = availableModels.value.indexOf(targetModel);
+
+  if (sourceIdx !== -1 && targetIdx !== -1) {
+    const nextList = [...availableModels.value];
+    const temp = nextList[sourceIdx];
+    nextList[sourceIdx] = nextList[targetIdx];
+    nextList[targetIdx] = temp;
+    availableModels.value = nextList;
+    saveModelsToStorage(nextList);
+
+    statusBarText.value = `已交换「${sourceModel}」与「${targetModel}」顺序并保存`;
+    statusColor.value = "var(--success)";
+  }
+
+  cleanupDrag();
+}
+
+function cleanupDrag(): void {
+  draggedModel.value = null;
+  dragOverModel.value = null;
+  setTimeout(() => {
+    isDragHappening = false;
+  }, 120);
+}
+
+function onDragEnd(): void {
+  cleanupDrag();
+}
+
 watch(
   [() => props.baseUrl, () => props.apiKey],
   ([newUrl, newKey], [oldUrl, oldKey]) => {
     if (newUrl !== oldUrl || newKey !== oldKey) {
-      isFetchedFromApi.value = false;
-      availableModels.value = [];
       hasAutoSelected.value = false;
+      const saved = loadSavedModels(newUrl || "");
+      if (saved && saved.length > 0) {
+        availableModels.value = saved;
+        isFetchedFromApi.value = true;
+        statusBarText.value = `已加载本地保存的 ${saved.length} 个模型（拖动可交换排序）`;
+        statusColor.value = "";
+      } else {
+        isFetchedFromApi.value = false;
+        availableModels.value = [];
+        statusBarText.value = "未获取模型，可点击右侧 ↻ 按钮自动拉取";
+        statusColor.value = "";
+      }
     }
     checkAndTriggerAutoFetch(false);
   }
 );
 
 function selectItem(model: string): void {
+  if (isDragHappening) return;
   emit("update:modelValue", model);
   if (model.toLowerCase().includes("claude")) {
     emit("update:apiFormat", "anthropic");
@@ -228,6 +359,13 @@ function handleDocumentClick(e: MouseEvent): void {
 
 onMounted(() => {
   document.addEventListener("click", handleDocumentClick);
+  const saved = loadSavedModels(props.baseUrl);
+  if (saved && saved.length > 0) {
+    availableModels.value = saved;
+    isFetchedFromApi.value = true;
+    statusBarText.value = `已加载本地保存的 ${saved.length} 个模型（拖动可交换排序）`;
+    statusColor.value = "";
+  }
   setTimeout(() => {
     checkAndTriggerAutoFetch(false);
   }, 100);
@@ -243,8 +381,18 @@ onUnmounted(() => {
 
 defineExpose({
   resetModelList: () => {
-    availableModels.value = [];
-    isFetchedFromApi.value = false;
+    const saved = loadSavedModels(props.baseUrl);
+    if (saved && saved.length > 0) {
+      availableModels.value = saved;
+      isFetchedFromApi.value = true;
+      statusBarText.value = `已加载本地保存的 ${saved.length} 个模型（拖动可交换排序）`;
+      statusColor.value = "";
+    } else {
+      availableModels.value = [];
+      isFetchedFromApi.value = false;
+      statusBarText.value = "未获取模型，可点击右侧 ↻ 按钮自动拉取";
+      statusColor.value = "";
+    }
     isFetching.value = false;
     searchQuery.value = "";
     hasAutoSelected.value = false;
@@ -355,11 +503,34 @@ defineExpose({
             v-for="m in filteredModels"
             :key="m"
             class="dropdown-item"
-            :class="{ selected: m === modelValue }"
+            :class="{
+              selected: m === modelValue,
+              'is-dragging': draggedModel === m,
+              'is-drag-over': dragOverModel === m && draggedModel !== m
+            }"
+            draggable="true"
+            @dragstart="onDragStart($event, m)"
+            @dragover.prevent="onDragOver($event, m)"
+            @dragenter.prevent="onDragEnter(m)"
+            @dragleave="onDragLeave(m)"
+            @drop.prevent="onDrop(m)"
+            @dragend="onDragEnd"
             @click="selectItem(m)"
           >
-            <span>{{ m }}</span>
-            <span v-if="m === modelValue" style="font-size: 0.75rem">✓</span>
+            <div class="item-left-group">
+              <span class="drag-grip" title="按住拖拽交换模型位置">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                  <circle cx="8" cy="6" r="1.5" />
+                  <circle cx="16" cy="6" r="1.5" />
+                  <circle cx="8" cy="12" r="1.5" />
+                  <circle cx="16" cy="12" r="1.5" />
+                  <circle cx="8" cy="18" r="1.5" />
+                  <circle cx="16" cy="18" r="1.5" />
+                </svg>
+              </span>
+              <span class="model-name-text">{{ m }}</span>
+            </div>
+            <span v-if="m === modelValue" class="selected-check">✓</span>
           </li>
         </template>
       </ul>
@@ -481,17 +652,80 @@ defineExpose({
         display: flex;
         align-items: center;
         justify-content: space-between;
-        transition: background var(--transition-fast), color var(--transition-fast);
+        transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast), transform var(--transition-fast);
+        border: 1px solid transparent;
+        border-radius: var(--radius-sm);
+        margin: 1px 4px;
+        user-select: none;
+
+        .item-left-group {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          min-width: 0;
+          flex: 1;
+
+          .drag-grip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            cursor: grab;
+            opacity: 0.35;
+            transition: opacity var(--transition-fast), color var(--transition-fast);
+            flex-shrink: 0;
+
+            &:hover {
+              opacity: 1;
+              color: var(--accent-primary);
+            }
+          }
+
+          .model-name-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+
+        .selected-check {
+          font-size: 0.75rem;
+          color: var(--accent-primary);
+          flex-shrink: 0;
+          margin-left: 6px;
+        }
 
         &:hover,
         &.active {
           background: rgba(99, 102, 241, 0.15);
           color: #fff;
+
+          .drag-grip {
+            opacity: 0.85;
+          }
+        }
+
+        &:active .drag-grip {
+          cursor: grabbing;
         }
 
         &.selected {
           color: var(--accent-primary);
           font-weight: 600;
+        }
+
+        &.is-dragging {
+          opacity: 0.35;
+          background: rgba(99, 102, 241, 0.15);
+          border: 1px dashed rgba(99, 102, 241, 0.6);
+        }
+
+        &.is-drag-over {
+          background: rgba(99, 102, 241, 0.28);
+          border: 1px solid var(--accent-primary);
+          box-shadow: 0 0 10px rgba(99, 102, 241, 0.35);
+          transform: translateY(-1px);
+          color: #fff;
         }
       }
 
