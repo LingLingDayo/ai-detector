@@ -51,7 +51,7 @@ const emit = defineEmits<{
         <div class="advanced-row">
           <div class="advanced-row-header">
             <label title="配置请求方式：流式传输或全量同步传输">请求传输模式</label>
-            <span class="field-hint">{{ stream !== false ? '首次响应 90s' : '超时锁定 240s' }}</span>
+            <span class="field-hint">{{ stream !== false ? '首包超时 90s' : '全量超时 240s' }}</span>
           </div>
           <div class="segmented-control stream-control">
             <label class="segment" title="流式请求（默认模式，首次响应限时 90 秒，完整生成后返回结果）">
@@ -62,7 +62,7 @@ const emit = defineEmits<{
                 :checked="stream !== false"
                 @change="emit('update:stream', true)"
               />
-              <span class="segment-label">流式请求 (默认)</span>
+              <span class="segment-label">流式请求</span>
             </label>
             <label class="segment" title="同步请求（传统全量响应，超时锁定 240 秒）">
               <input

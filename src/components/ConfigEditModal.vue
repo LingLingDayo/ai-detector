@@ -18,7 +18,7 @@ const REASONING_OPTIONS: SelectOption[] = REASONING_EFFORT_OPTIONS.map((opt) => 
 }));
 
 const STREAM_OPTIONS: SelectOption[] = [
-  { value: "stream", label: "流式请求 (默认)", description: "首包超时 90s" },
+  { value: "stream", label: "流式请求", description: "首包超时 90s" },
   { value: "sync", label: "同步请求", description: "全量超时 240s" },
 ];
 
