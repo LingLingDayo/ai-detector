@@ -83,14 +83,12 @@ onMounted(() => {
   loadConfig();
 });
 
-function handleStartProbe(): void {
-  activeMode.value = "probe";
-  startTest(config);
-}
-
-function handleStartPelican(): void {
-  activeMode.value = "pelican";
-  startPelicanTest(config);
+function handleStartTest(): void {
+  if (activeMode.value === "probe") {
+    startTest(config);
+  } else {
+    startPelicanTest(config);
+  }
 }
 
 async function handleResetConfig(): Promise<void> {
@@ -123,8 +121,8 @@ async function handleResetConfig(): Promise<void> {
         :settings-summary="settingsSummary"
         @toggle-password="togglePasswordVisibility"
         @update:is-advanced-open="(v) => (isAdvancedOpen = v)"
-        @submit="handleStartProbe"
-        @start-pelican="handleStartPelican"
+        @update:active-mode="(v) => (activeMode = v)"
+        @submit="handleStartTest"
         @reset="handleResetConfig"
         @open-save-config="openSaveCurrentModal"
         @open-config-list="openConfigListModal"

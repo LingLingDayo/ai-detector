@@ -768,7 +768,7 @@ function handleDownloadSvg(): void {
 
 /* 主展示容器 */
 .display-container {
-  min-height: 280px;
+  min-height: 420px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   overflow: hidden;

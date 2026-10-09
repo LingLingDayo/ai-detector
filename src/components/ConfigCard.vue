@@ -24,23 +24,14 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "toggle-password"): void;
   (e: "update:isAdvancedOpen", value: boolean): void;
+  (e: "update:activeMode", value: "probe" | "pelican"): void;
   (e: "submit"): void;
-  (e: "start-pelican"): void;
   (e: "reset"): void;
   (e: "open-save-config"): void;
   (e: "open-config-list"): void;
 }>();
 
 const comboboxRef = ref<InstanceType<typeof ModelCombobox> | null>(null);
-
-function handlePelicanClick(): void {
-  const form = document.getElementById("test-form") as HTMLFormElement | null;
-  if (form && !form.checkValidity()) {
-    form.reportValidity();
-    return;
-  }
-  emit("start-pelican");
-}
 
 function handleReset(): void {
   emit("reset");
@@ -219,6 +210,66 @@ defineExpose({
         @update:reasoning-effort="(v) => (config.reasoningEffort = v)"
       />
 
+      <!-- 测试方式 Tab 选项 -->
+      <div class="test-mode-tabs" role="tablist">
+        <button
+          type="button"
+          class="tab-item"
+          :class="{ active: activeMode === 'probe' }"
+          :disabled="isRunning || isPelicanRunning"
+          role="tab"
+          :aria-selected="activeMode === 'probe'"
+          title="三道随机题目探测，并在统一库中比对模型归因"
+          @click="emit('update:activeMode', 'probe')"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="22" y1="12" x2="18" y2="12" />
+            <line x1="6" y1="12" x2="2" y2="12" />
+            <line x1="12" y1="6" x2="12" y2="2" />
+            <line x1="12" y1="22" x2="12" y2="18" />
+          </svg>
+          <span>模型测试</span>
+        </button>
+
+        <button
+          type="button"
+          class="tab-item"
+          :class="{ active: activeMode === 'pelican' }"
+          :disabled="isRunning || isPelicanRunning"
+          role="tab"
+          :aria-selected="activeMode === 'pelican'"
+          title="生成自行车鹈鹕 SVG 矢量图，直观测试模型是否降智"
+          @click="emit('update:activeMode', 'pelican')"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="5.5" cy="17.5" r="3.5" />
+            <circle cx="18.5" cy="17.5" r="3.5" />
+            <path d="M15 6a3 3 0 1 0-3-3" />
+            <path d="M12 17.5V14l-3-3 4-3 3 3h3" />
+          </svg>
+          <span>鹈鹕测试</span>
+        </button>
+      </div>
+
       <!-- 操作按钮 -->
       <div class="form-actions">
         <button
@@ -226,22 +277,16 @@ defineExpose({
           class="btn btn-primary"
           id="btn-start"
           :disabled="isRunning || isPelicanRunning"
-          title="执行 3 轮探测，并在统一库中比对归因"
+          :title="activeMode === 'probe' ? '执行 3 轮探测，并在统一库中比对归因' : '发起鹈鹕测试，让 AI 绘制骑自行车 SVG'"
         >
-          <span class="btn-spinner" :class="{ hidden: !isRunning }" id="start-spinner"></span>
-          <span class="btn-text">开始测试 (共 3 题)</span>
-        </button>
-        <button
-          type="button"
-          class="btn btn-pelican"
-          id="btn-pelican"
-          :class="{ active: activeMode === 'pelican' }"
-          :disabled="isRunning || isPelicanRunning"
-          title="进行鹈鹕测试 (生成自行车鹈鹕 SVG，直观测试模型是否降智)"
-          @click="handlePelicanClick"
-        >
-          <span class="btn-spinner" :class="{ hidden: !isPelicanRunning }" id="pelican-spinner"></span>
-          <span class="btn-text">鹈鹕测试</span>
+          <span
+            class="btn-spinner"
+            :class="{ hidden: !(activeMode === 'probe' ? isRunning : isPelicanRunning) }"
+            id="start-spinner"
+          ></span>
+          <span class="btn-text">
+            {{ activeMode === 'probe' ? '开始测试 (共 3 题)' : '开始测试' }}
+          </span>
         </button>
         <button
           type="button"
@@ -375,47 +420,66 @@ defineExpose({
   gap: 8px;
 }
 
+.test-mode-tabs {
+  display: flex;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 4px;
+  margin-top: 2px;
+
+  .tab-item {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: calc(var(--radius-sm) - 1px);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: inherit;
+
+    svg {
+      opacity: 0.75;
+      transition: opacity var(--transition-fast);
+      flex-shrink: 0;
+    }
+
+    &:hover:not(:disabled):not(.active) {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    &.active {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: rgba(99, 102, 241, 0.5);
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+
+      svg {
+        opacity: 1;
+        color: #818cf8;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+}
+
 .form-actions {
   display: flex;
   gap: 8px;
   margin-top: 2px;
-
-  .btn-pelican {
-    flex: 0 0 92px;
-    width: 92px;
-    padding: 7px 6px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: #c7d2fe;
-    background: rgba(99, 102, 241, 0.12);
-    border: 1px solid rgba(99, 102, 241, 0.32);
-    white-space: nowrap;
-    letter-spacing: 0.3px;
-
-    &:hover:not(:disabled) {
-      background: rgba(99, 102, 241, 0.22);
-      border-color: rgba(99, 102, 241, 0.55);
-      color: #ffffff;
-      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.2);
-      transform: translateY(-1px);
-    }
-
-    &.active {
-      background: rgba(99, 102, 241, 0.26);
-      border-color: #818cf8;
-      color: #ffffff;
-      box-shadow: 0 0 10px rgba(99, 102, 241, 0.35);
-    }
-
-    &:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-      transform: none;
-    }
-  }
 }
 </style>
