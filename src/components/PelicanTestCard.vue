@@ -15,7 +15,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "retry"): void;
-  (e: "switch-to-probe"): void;
 }>();
 
 const { copied: promptCopied, copy: copyPrompt } = useClipboard();
@@ -74,7 +73,7 @@ function handleDownloadSvg(): void {
               <path d="M12 17.5V14l-3-3 4-3 3 3h3" />
             </svg>
           </div>
-          <h2>鹈鹕测试 (Pelican Test)</h2>
+          <h2>鹈鹕测试</h2>
           <span class="pelican-badge">模型降智直观测试</span>
         </div>
         <p class="subtitle">
@@ -104,28 +103,6 @@ function handleDownloadSvg(): void {
           </svg>
           <span>重新生成</span>
         </button>
-
-        <button
-          type="button"
-          class="btn-header-action btn-switch-back"
-          title="切回题目探测与诊断模式"
-          @click="emit('switch-to-probe')"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
-          <span>返回常规测试</span>
-        </button>
       </div>
     </div>
 
@@ -146,7 +123,7 @@ function handleDownloadSvg(): void {
             <polyline points="4 17 10 11 4 5" />
             <line x1="12" y1="19" x2="20" y2="19" />
           </svg>
-          测试提示词 (Prompt)
+          测试提示词
         </span>
         <button
           type="button"
@@ -521,18 +498,6 @@ function handleDownloadSvg(): void {
     opacity: 0.5;
     cursor: not-allowed;
   }
-
-  &.btn-switch-back {
-    color: #94a3b8;
-    background: rgba(15, 23, 42, 0.6);
-    border-color: rgba(71, 85, 105, 0.35);
-
-    &:hover {
-      color: #f1f5f9;
-      border-color: #64748b;
-      background: rgba(30, 41, 59, 0.8);
-    }
-  }
 }
 
 /* 提示词模块 */
@@ -558,7 +523,6 @@ function handleDownloadSvg(): void {
     font-size: 0.72rem;
     font-weight: 600;
     color: #94a3b8;
-    text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 

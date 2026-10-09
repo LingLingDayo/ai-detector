@@ -160,7 +160,6 @@ async function handleResetConfig(): Promise<void> {
         :error-message="pelicanErrorMsg"
         :has-tested="hasPelicanTested"
         @retry="() => startPelicanTest(config)"
-        @switch-to-probe="activeMode = 'probe'"
       />
     </main>
 

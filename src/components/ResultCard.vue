@@ -176,7 +176,6 @@ watch(
         font-size: 0.68rem;
         color: var(--text-muted);
         margin-bottom: 2px;
-        text-transform: uppercase;
         letter-spacing: 0.04em;
       }
 
