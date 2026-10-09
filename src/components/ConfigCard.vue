@@ -222,22 +222,6 @@ defineExpose({
           title="三道随机题目探测，并在统一库中比对模型归因"
           @click="emit('update:activeMode', 'probe')"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="22" y1="12" x2="18" y2="12" />
-            <line x1="6" y1="12" x2="2" y2="12" />
-            <line x1="12" y1="6" x2="12" y2="2" />
-            <line x1="12" y1="22" x2="12" y2="18" />
-          </svg>
           <span>模型测试</span>
         </button>
 
@@ -251,21 +235,6 @@ defineExpose({
           title="生成自行车鹈鹕 SVG 矢量图，直观测试模型是否降智"
           @click="emit('update:activeMode', 'pelican')"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="5.5" cy="17.5" r="3.5" />
-            <circle cx="18.5" cy="17.5" r="3.5" />
-            <path d="M15 6a3 3 0 1 0-3-3" />
-            <path d="M12 17.5V14l-3-3 4-3 3 3h3" />
-          </svg>
           <span>鹈鹕测试</span>
         </button>
       </div>
@@ -425,32 +394,26 @@ defineExpose({
   background: rgba(15, 23, 42, 0.7);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  padding: 3px;
-  gap: 4px;
-  margin-top: 2px;
+  padding: 2px;
+  gap: 3px;
+  margin-top: 1px;
 
   .tab-item {
     flex: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: calc(var(--radius-sm) - 1px);
+    padding: 3.5px 8px;
+    border-radius: calc(var(--radius-sm) - 2px);
     background: transparent;
     border: 1px solid transparent;
     color: var(--text-secondary);
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     font-weight: 500;
+    line-height: 1.25;
     cursor: pointer;
     transition: all var(--transition-fast);
     font-family: inherit;
-
-    svg {
-      opacity: 0.75;
-      transition: opacity var(--transition-fast);
-      flex-shrink: 0;
-    }
 
     &:hover:not(:disabled):not(.active) {
       color: var(--text-primary);
@@ -462,12 +425,7 @@ defineExpose({
       border-color: rgba(99, 102, 241, 0.5);
       color: #ffffff;
       font-weight: 600;
-      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
-
-      svg {
-        opacity: 1;
-        color: #818cf8;
-      }
+      box-shadow: 0 1px 6px rgba(99, 102, 241, 0.2);
     }
 
     &:disabled {
