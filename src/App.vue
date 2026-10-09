@@ -40,6 +40,9 @@ const {
   testedModel,
   errorMsg: pelicanErrorMsg,
   hasTested: hasPelicanTested,
+  pelicanPrompt,
+  setPelicanPrompt,
+  resetPelicanPrompt,
   startPelicanTest,
   resetPelicanTest,
 } = usePelicanTest();
@@ -159,6 +162,9 @@ async function handleResetConfig(): Promise<void> {
         :model-name="testedModel || config.modelName"
         :error-message="pelicanErrorMsg"
         :has-tested="hasPelicanTested"
+        :prompt="pelicanPrompt"
+        @update:prompt="setPelicanPrompt"
+        @reset-prompt="resetPelicanPrompt"
         @retry="() => startPelicanTest(config)"
       />
     </main>

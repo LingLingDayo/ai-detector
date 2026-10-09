@@ -1,9 +1,11 @@
 import { ref, type Ref } from "vue";
 import { sendProbe } from "../services/api";
 import type { ClientConfig } from "../types";
+import { PELICAN_PROMPT_STORAGE_KEY } from "../constants";
 
-export const PELICAN_PROMPT =
+export const DEFAULT_PELICAN_PROMPT =
   "Generate an SVG of a pelican riding a bicycle. Reply with the SVG code only.";
+export const PELICAN_PROMPT = DEFAULT_PELICAN_PROMPT;
 
 export interface PelicanTestState {
   isPelicanRunning: Ref<boolean>;
@@ -13,6 +15,9 @@ export interface PelicanTestState {
   testedModel: Ref<string>;
   errorMsg: Ref<string | null>;
   hasTested: Ref<boolean>;
+  pelicanPrompt: Ref<string>;
+  setPelicanPrompt: (newPrompt: string) => void;
+  resetPelicanPrompt: () => void;
   startPelicanTest: (config: ClientConfig) => Promise<void>;
   resetPelicanTest: () => void;
 }
@@ -50,6 +55,18 @@ export function extractSvgFromText(text: string): { svg: string; hasSvg: boolean
   return { svg: "", hasSvg: false };
 }
 
+function loadInitialPelicanPrompt(): string {
+  try {
+    const saved = localStorage.getItem(PELICAN_PROMPT_STORAGE_KEY);
+    if (saved && saved.trim()) {
+      return saved;
+    }
+  } catch {
+    // 忽略存储读取异常
+  }
+  return DEFAULT_PELICAN_PROMPT;
+}
+
 export function usePelicanTest(): PelicanTestState {
   const isPelicanRunning = ref(false);
   const pelicanSvg = ref("");
@@ -58,6 +75,26 @@ export function usePelicanTest(): PelicanTestState {
   const testedModel = ref("");
   const errorMsg = ref<string | null>(null);
   const hasTested = ref(false);
+  const pelicanPrompt = ref(loadInitialPelicanPrompt());
+
+  function setPelicanPrompt(newPrompt: string): void {
+    const trimmed = newPrompt.trim();
+    const finalPrompt = trimmed || DEFAULT_PELICAN_PROMPT;
+    pelicanPrompt.value = finalPrompt;
+    try {
+      if (finalPrompt === DEFAULT_PELICAN_PROMPT) {
+        localStorage.removeItem(PELICAN_PROMPT_STORAGE_KEY);
+      } else {
+        localStorage.setItem(PELICAN_PROMPT_STORAGE_KEY, finalPrompt);
+      }
+    } catch {
+      // 忽略存储写入异常
+    }
+  }
+
+  function resetPelicanPrompt(): void {
+    setPelicanPrompt(DEFAULT_PELICAN_PROMPT);
+  }
 
   async function startPelicanTest(config: ClientConfig): Promise<void> {
     if (isPelicanRunning.value) return;
@@ -84,11 +121,12 @@ export function usePelicanTest(): PelicanTestState {
     const isStream = config.stream !== false;
     const timeoutSeconds = isStream ? 90 : 240;
     try {
+      const promptToSend = pelicanPrompt.value.trim() || DEFAULT_PELICAN_PROMPT;
       const res = await sendProbe({
         baseUrl: config.baseUrl,
         apiKey: config.apiKey,
         model: config.modelName,
-        prompt: PELICAN_PROMPT,
+        prompt: promptToSend,
         apiFormat: config.apiFormat || "openai",
         reasoningEffort: config.reasoningEffort || "high",
         stream: isStream,
@@ -136,6 +174,9 @@ export function usePelicanTest(): PelicanTestState {
     testedModel,
     errorMsg,
     hasTested,
+    pelicanPrompt,
+    setPelicanPrompt,
+    resetPelicanPrompt,
     startPelicanTest,
     resetPelicanTest,
   };
