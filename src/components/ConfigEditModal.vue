@@ -315,7 +315,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
           <div v-show="isAdvancedExpanded" class="advanced-fields-box">
             <div class="form-row">
               <div class="form-group flex-1">
-                <label for="cfg-model-name">默认测试模型</label>
+                <label for="cfg-model-name">默认模型</label>
                 <ModelCombobox
                   id="cfg-model-name"
                   ref="modalComboboxRef"
@@ -329,7 +329,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
               </div>
 
               <div class="form-group flex-1">
-                <label for="cfg-api-format">接口格式</label>
+                <label for="cfg-api-format">请求接口</label>
                 <CustomSelect
                   id="cfg-api-format"
                   v-model="formData.apiFormat"
@@ -340,7 +340,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
 
             <div class="form-row">
               <div class="form-group flex-1">
-                <label for="cfg-reasoning-effort">默认思考强度</label>
+                <label for="cfg-reasoning-effort">思考强度</label>
                 <CustomSelect
                   id="cfg-reasoning-effort"
                   v-model="formData.reasoningEffort"
@@ -349,7 +349,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
               </div>
 
               <div class="form-group flex-1">
-                <label for="cfg-stream-mode">请求传输模式</label>
+                <label for="cfg-stream-mode">请求模式</label>
                 <CustomSelect
                   id="cfg-stream-mode"
                   :model-value="formData.stream ? 'stream' : 'sync'"

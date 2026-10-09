@@ -50,7 +50,7 @@ const emit = defineEmits<{
         <!-- 请求传输模式 (流式 / 同步) -->
         <div class="advanced-row">
           <div class="advanced-row-header">
-            <label title="配置请求方式：流式传输或全量同步传输">请求传输模式</label>
+            <label title="配置请求方式：流式传输或全量同步传输">请求模式</label>
             <span class="field-hint">{{ stream !== false ? '首包超时 90s' : '全量超时 240s' }}</span>
           </div>
           <div class="segmented-control stream-control">
@@ -79,7 +79,7 @@ const emit = defineEmits<{
 
         <!-- 端点协议选择 -->
         <div class="advanced-row">
-          <label title="选择调用的 API 规范与端点路径格式">接口协议端点</label>
+          <label title="选择调用的 API 规范与端点路径格式">请求接口</label>
           <div class="segmented-control">
             <label class="segment" title="OpenAI Responses 格式">
               <input
