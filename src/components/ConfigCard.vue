@@ -186,7 +186,7 @@ defineExpose({
       <div class="form-row">
         <div class="form-group flex-1 model-select-group">
           <label for="model-name" title="指定要测试的模型 ID，支持手动输入或从下方下拉获取列表中选择">
-            测试模型 (Model)
+            测试模型
           </label>
           <ModelCombobox
             ref="comboboxRef"

@@ -306,7 +306,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
           <div v-show="isAdvancedExpanded" class="advanced-fields-box">
             <div class="form-row">
               <div class="form-group flex-1">
-                <label for="cfg-model-name">默认测试模型 (可选)</label>
+                <label for="cfg-model-name">默认测试模型</label>
                 <ModelCombobox
                   id="cfg-model-name"
                   ref="modalComboboxRef"

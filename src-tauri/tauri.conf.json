@@ -14,10 +14,10 @@
       {
         "title": "ModelTrace AI Detector",
         "label": "main",
-        "width": 860,
-        "height": 640,
-        "minWidth": 860,
-        "minHeight": 640,
+        "width": 780,
+        "height": 560,
+        "minWidth": 780,
+        "minHeight": 560,
         "resizable": true,
         "fullscreen": false,
         "center": true
