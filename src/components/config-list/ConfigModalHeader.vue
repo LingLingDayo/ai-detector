@@ -1,8 +1,4 @@
 <script setup lang="ts">
-defineProps<{
-  totalCount: number;
-}>();
-
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "openCreate"): void;
@@ -27,10 +23,7 @@ const emit = defineEmits<{
         </svg>
       </div>
       <div>
-        <div class="title-with-badge">
-          <h3>配置列表</h3>
-          <span class="count-badge">{{ totalCount }} 个</span>
-        </div>
+        <h3>配置列表</h3>
         <p class="header-subtitle">管理、切换及编辑您的所有 API 接口与密钥配置</p>
       </div>
     </div>
@@ -87,30 +80,10 @@ const emit = defineEmits<{
       flex-shrink: 0;
     }
 
-    .title-with-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      h3 {
-        font-size: 0.98rem;
-        font-weight: 600;
-        color: #fff;
-      }
-
-      .count-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.7rem;
-        height: 18px;
-        padding: 0 7px;
-        line-height: 1;
-        border-radius: 9999px;
-        background: rgba(99, 102, 241, 0.18);
-        border: 1px solid rgba(99, 102, 241, 0.35);
-        color: #a5b4fc;
-      }
+    h3 {
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: #fff;
     }
 
     .header-subtitle {

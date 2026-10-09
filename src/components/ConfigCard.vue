@@ -7,7 +7,6 @@ import AdvancedSettings from "./AdvancedSettings.vue";
 const props = defineProps<{
   config: ClientConfig;
   activeConfigName?: string;
-  configListCount?: number;
   isRunning: boolean;
   isPasswordVisible: boolean;
   isAdvancedOpen: boolean;
@@ -96,9 +95,6 @@ defineExpose({
             <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
           </svg>
           <span>配置列表</span>
-          <span v-if="configListCount !== undefined && configListCount > 0" class="config-count-badge">
-            {{ configListCount }}
-          </span>
         </button>
       </div>
     </div>
@@ -336,22 +332,6 @@ defineExpose({
         background: rgba(99, 102, 241, 0.2);
         border-color: rgba(99, 102, 241, 0.5);
         color: #e0e7ff;
-      }
-
-      .config-count-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.65rem;
-        padding: 0 4px;
-        min-width: 14px;
-        height: 14px;
-        line-height: 1;
-        border-radius: 9999px;
-        background: rgba(99, 102, 241, 0.35);
-        color: #fff;
-        font-weight: 600;
-        margin-left: 1px;
       }
     }
   }

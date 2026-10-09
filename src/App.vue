@@ -34,7 +34,6 @@ const {
   configList,
   activeConfigId,
   activeConfigName,
-  configListCount,
   isPasswordVisible,
   isAdvancedOpen,
   isConfigListModalOpen,
@@ -88,7 +87,6 @@ async function handleResetConfig(): Promise<void> {
         ref="configCardRef"
         :config="config"
         :active-config-name="activeConfigName"
-        :config-list-count="configListCount"
         :is-running="isRunning"
         :is-password-visible="isPasswordVisible"
         :is-advanced-open="isAdvancedOpen"

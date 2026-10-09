@@ -54,7 +54,6 @@ const filteredConfigs = computed(() => {
       <div class="config-modal-dialog list-dialog" role="dialog" aria-modal="true">
         <!-- 弹窗顶栏 -->
         <ConfigModalHeader
-          :total-count="configs.length"
           @open-create="emit('openCreate')"
           @close="emit('close')"
         />
