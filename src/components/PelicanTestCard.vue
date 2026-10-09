@@ -310,8 +310,8 @@ function handleDownloadSvg(): void {
       </div>
     </div>
 
-    <!-- 主展示区 -->
-    <div class="display-container">
+    <!-- 主展示区（测试开始后展示） -->
+    <div v-if="hasTested || isRunning" class="display-container">
       <!-- 加载中态 -->
       <div v-if="isRunning" class="loading-state">
         <div class="radar-spinner"></div>
@@ -319,28 +319,6 @@ function handleDownloadSvg(): void {
           <p class="loading-title">正在调用模型绘制鹈鹕骑自行车...</p>
           <p class="loading-desc">SVG 生成通常耗时 5 ~ 30 秒，请稍候</p>
         </div>
-      </div>
-
-      <!-- 未开始态 -->
-      <div v-else-if="!hasTested" class="empty-state">
-        <div class="empty-icon-wrap">
-          <svg
-            viewBox="0 0 24 24"
-            width="32"
-            height="32"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-        </div>
-        <p class="empty-title">尚未发起鹈鹕测试</p>
-        <p class="empty-desc">点击上方【鹈鹕测试】按钮即可发送绘制请求</p>
       </div>
 
       <!-- 渲染成功态 -->
@@ -477,16 +455,31 @@ function handleDownloadSvg(): void {
 .btn-header-action {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 4px 9px;
+  height: 24px;
+  padding: 0 8px;
   border-radius: var(--radius-sm);
   background: rgba(30, 41, 59, 0.6);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   font-size: 0.74rem;
   font-weight: 500;
+  line-height: 1;
   cursor: pointer;
+  font-family: inherit;
   transition: all var(--transition-fast);
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+  }
 
   &:hover:not(:disabled) {
     background: rgba(30, 41, 59, 0.95);
@@ -772,34 +765,6 @@ function handleDownloadSvg(): void {
     font-size: 0.74rem;
     color: var(--text-muted);
     margin-top: 3px;
-  }
-}
-
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 40px 20px;
-  text-align: center;
-  color: var(--text-muted);
-
-  .empty-icon-wrap {
-    opacity: 0.4;
-    margin-bottom: 2px;
-  }
-
-  .empty-title {
-    font-size: 0.84rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-  }
-
-  .empty-desc {
-    font-size: 0.74rem;
-    color: var(--text-muted);
   }
 }
 
