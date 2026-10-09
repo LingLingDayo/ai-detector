@@ -13,6 +13,7 @@ pub struct ProbeRequest {
     #[serde(default = "default_api_format")]
     pub api_format: String,
     pub reasoning_effort: Option<String>,
+    pub stream: Option<bool>,
     pub timeout_seconds: Option<u64>,
 }
 
@@ -189,13 +190,279 @@ async fn fetch_models_list(
     Ok(models)
 }
 
+fn parse_non_streaming_json(parsed: &serde_json::Value, api_format: &str) -> Result<String, String> {
+    if api_format == "anthropic" {
+        if let Some(stop_reason) = parsed.get("stop_reason").and_then(|s| s.as_str()) {
+            if stop_reason == "refusal" {
+                return Err("模型拒绝生成数值，本次回答无效".to_string());
+            }
+            if stop_reason == "max_tokens" {
+                return Err("回答因达到 max_tokens 上限被截断，本次回答无效".to_string());
+            }
+        }
+        let mut full = String::new();
+        if let Some(blocks) = parsed.get("content").and_then(|c| c.as_array()) {
+            for block in blocks {
+                if block.get("type").and_then(|t| t.as_str()) == Some("text") {
+                    if let Some(t) = block.get("text").and_then(|s| s.as_str()) {
+                        full.push_str(t);
+                    }
+                }
+            }
+        }
+        Ok(full)
+    } else if api_format == "responses" || api_format == "openai_responses" {
+        if let Some(output_text) = parsed.get("output_text").and_then(|o| o.as_str()) {
+            Ok(output_text.trim().to_string())
+        } else if let Some(outputs) = parsed.get("output").and_then(|o| o.as_array()) {
+            let mut full = String::new();
+            for item in outputs {
+                let item_type = item.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                if item_type == "reasoning"
+                    || item_type == "compaction_summary"
+                    || item_type == "function_call"
+                {
+                    continue;
+                }
+                if let Some(t) = item.get("text").and_then(|s| s.as_str()) {
+                    full.push_str(t);
+                } else if let Some(parts) = item.get("content").and_then(|c| c.as_array()) {
+                    for part in parts {
+                        let part_type = part.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                        if part_type == "input_text" || part_type == "thinking" {
+                            continue;
+                        }
+                        if let Some(t) = part.get("text").and_then(|s| s.as_str()) {
+                            full.push_str(t);
+                        }
+                    }
+                }
+            }
+            if full.is_empty() {
+                Ok(parsed
+                    .get("choices")
+                    .and_then(|c| c.get(0))
+                    .and_then(|c0| c0.get("message"))
+                    .and_then(|m| m.get("content"))
+                    .and_then(|s| s.as_str())
+                    .unwrap_or("")
+                    .to_string())
+            } else {
+                Ok(full)
+            }
+        } else if let Some(content_val) = parsed.get("content") {
+            if let Some(s) = content_val.as_str() {
+                Ok(s.to_string())
+            } else if let Some(arr) = content_val.as_array() {
+                let mut full = String::new();
+                for part in arr {
+                    if let Some(s) = part.as_str() {
+                        full.push_str(s);
+                    } else if let Some(t) = part.get("text").and_then(|s| s.as_str()) {
+                        full.push_str(t);
+                    }
+                }
+                Ok(full)
+            } else {
+                Ok(content_val.to_string())
+            }
+        } else if let Some(choice_content) = parsed
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c0| c0.get("message"))
+            .and_then(|m| m.get("content"))
+            .and_then(|s| s.as_str())
+        {
+            Ok(choice_content.to_string())
+        } else {
+            Err("无法从上游 responses 响应中解析出文本内容".to_string())
+        }
+    } else {
+        let choice = parsed
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .ok_or_else(|| "响应中缺少 choices 数据".to_string())?;
+
+        if let Some(reason) = choice.get("finish_reason").and_then(|r| r.as_str()) {
+            if reason == "length" {
+                return Err("回答被长度截断（finish_reason: length），本次回答无效".to_string());
+            }
+            if reason == "content_filter" {
+                return Err("回答触发内容安全拦截（content_filter），本次回答无效".to_string());
+            }
+        }
+
+        let message = choice
+            .get("message")
+            .ok_or_else(|| "响应中缺少 message 数据".to_string())?;
+
+        let content_val = message
+            .get("content")
+            .ok_or_else(|| "响应中缺少 content 内容".to_string())?;
+
+        if let Some(s) = content_val.as_str() {
+            Ok(s.to_string())
+        } else if let Some(arr) = content_val.as_array() {
+            let mut combined = String::new();
+            for item in arr {
+                if let Some(t) = item.get("text").and_then(|s| s.as_str()) {
+                    combined.push_str(t);
+                }
+            }
+            Ok(combined)
+        } else {
+            Ok(content_val.to_string())
+        }
+    }
+}
+
+fn parse_streaming_body(body: &str, api_format: &str) -> Result<String, String> {
+    let mut content_accum = String::new();
+    let mut finish_reason: Option<String> = None;
+    let mut found_sse_data = false;
+
+    for line in body.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with(':') {
+            continue;
+        }
+
+        if let Some(data_str) = trimmed.strip_prefix("data:") {
+            let data_str = data_str.trim();
+            if data_str == "[DONE]" {
+                continue;
+            }
+            found_sse_data = true;
+
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(data_str) {
+                if let Some(err) = val.get("error") {
+                    let msg = err
+                        .get("message")
+                        .and_then(|m| m.as_str())
+                        .unwrap_or("上游返回错误");
+                    return Err(msg.to_string());
+                }
+
+                if api_format == "anthropic" {
+                    let event_type = val.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                    if event_type == "content_block_delta" {
+                        if let Some(delta) = val.get("delta") {
+                            let delta_type =
+                                delta.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                            if delta_type == "text_delta" {
+                                if let Some(text) = delta.get("text").and_then(|s| s.as_str()) {
+                                    content_accum.push_str(text);
+                                }
+                            }
+                        }
+                    } else if event_type == "message_delta" {
+                        if let Some(stop_reason) = val
+                            .get("delta")
+                            .and_then(|d| d.get("stop_reason"))
+                            .and_then(|s| s.as_str())
+                        {
+                            if stop_reason == "refusal" {
+                                return Err("模型拒绝生成数值，本次回答无效".to_string());
+                            }
+                            if stop_reason == "max_tokens" {
+                                return Err("回答因达到 max_tokens 上限被截断，本次回答无效".to_string());
+                            }
+                        }
+                    }
+                } else if api_format == "responses" || api_format == "openai_responses" {
+                    let val_type = val.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                    if val_type == "response.output_text.delta" {
+                        if let Some(delta) = val.get("delta").and_then(|d| d.as_str()) {
+                            content_accum.push_str(delta);
+                        } else if let Some(delta_obj) = val.get("delta") {
+                            if let Some(t) = delta_obj.get("text").and_then(|s| s.as_str()) {
+                                content_accum.push_str(t);
+                            }
+                        }
+                    } else if let Some(delta_str) = val.get("delta").and_then(|d| d.as_str()) {
+                        content_accum.push_str(delta_str);
+                    } else if let Some(output_text) = val.get("output_text").and_then(|o| o.as_str()) {
+                        content_accum.push_str(output_text);
+                    } else if let Some(text) = val.get("text").and_then(|t| t.as_str()) {
+                        content_accum.push_str(text);
+                    } else if let Some(choices) = val.get("choices").and_then(|c| c.as_array()) {
+                        if let Some(choice) = choices.get(0) {
+                            if let Some(r) = choice.get("finish_reason").and_then(|s| s.as_str()) {
+                                finish_reason = Some(r.to_string());
+                            }
+                            if let Some(delta) = choice.get("delta") {
+                                if let Some(content) = delta.get("content").and_then(|c| c.as_str()) {
+                                    content_accum.push_str(content);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // chat_completions
+                    if let Some(choices) = val.get("choices").and_then(|c| c.as_array()) {
+                        if let Some(choice) = choices.get(0) {
+                            if let Some(r) = choice.get("finish_reason").and_then(|s| s.as_str()) {
+                                finish_reason = Some(r.to_string());
+                            }
+                            if let Some(delta) = choice.get("delta") {
+                                if let Some(content) = delta.get("content").and_then(|c| c.as_str()) {
+                                    content_accum.push_str(content);
+                                } else if let Some(parts) = delta.get("content").and_then(|c| c.as_array()) {
+                                    for part in parts {
+                                        if let Some(t) = part.get("text").and_then(|s| s.as_str()) {
+                                            content_accum.push_str(t);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if let Some(reason) = finish_reason {
+        if reason == "length" {
+            return Err("回答被长度截断（finish_reason: length），本次回答无效".to_string());
+        }
+        if reason == "content_filter" {
+            return Err("回答触发内容安全拦截（content_filter），本次回答无效".to_string());
+        }
+    }
+
+    if !found_sse_data || content_accum.is_empty() {
+        if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(body) {
+            return parse_non_streaming_json(&parsed, api_format);
+        }
+    }
+
+    if content_accum.is_empty() {
+        return Err("流式响应未包含有效文本内容".to_string());
+    }
+
+    Ok(content_accum)
+}
+
 #[tauri::command]
 async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> {
-    let timeout_sec = req.timeout_seconds.unwrap_or(150).max(10);
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(timeout_sec))
-        .build()
-        .map_err(|e| format!("构建 HTTP 客户端失败: {}", e))?;
+    let is_stream = req.stream.unwrap_or(true);
+    let default_timeout = if is_stream { 90 } else { 240 };
+    let timeout_sec = req.timeout_seconds.unwrap_or(default_timeout).max(5);
+
+    let client = if is_stream {
+        // 流式请求：不设置单一总超时限制（以避免长文本生成被中断），由首包超时与分片超时保护
+        reqwest::Client::builder()
+            .connect_timeout(Duration::from_secs(30))
+            .build()
+            .map_err(|e| format!("构建 HTTP 客户端失败: {}", e))?
+    } else {
+        // 同步请求：客户端默认超时 240 秒
+        reqwest::Client::builder()
+            .timeout(Duration::from_secs(timeout_sec))
+            .build()
+            .map_err(|e| format!("构建 HTTP 客户端失败: {}", e))?
+    };
 
     let target_url = normalize_url(&req.base_url, &req.api_format);
     let start_time = Instant::now();
@@ -206,8 +473,16 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
 
         request_builder = request_builder
             .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT)
-            .header(reqwest::header::CONTENT_TYPE, "application/json")
-            .header(reqwest::header::ACCEPT, "application/json");
+            .header(reqwest::header::CONTENT_TYPE, "application/json");
+
+        if is_stream {
+            request_builder = request_builder.header(
+                reqwest::header::ACCEPT,
+                "text/event-stream, application/json",
+            );
+        } else {
+            request_builder = request_builder.header(reqwest::header::ACCEPT, "application/json");
+        }
 
         let body_value = if req.api_format == "anthropic" {
             request_builder = request_builder
@@ -225,6 +500,9 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
                     { "role": "user", "content": &req.prompt }
                 ]
             });
+            if is_stream {
+                map["stream"] = serde_json::json!(true);
+            }
             if let Some(effort) = &req.reasoning_effort {
                 let trimmed = effort.trim();
                 if trimmed != "none" && !trimmed.is_empty() {
@@ -274,6 +552,9 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
                     }
                 ]
             });
+            if is_stream {
+                map["stream"] = serde_json::json!(true);
+            }
             if let Some(effort) = &req.reasoning_effort {
                 let trimmed = effort.trim();
                 if trimmed != "none" && !trimmed.is_empty() {
@@ -295,6 +576,9 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
                     { "role": "user", "content": &req.prompt }
                 ]
             });
+            if is_stream {
+                map["stream"] = serde_json::json!(true);
+            }
             if let Some(effort) = &req.reasoning_effort {
                 let trimmed = effort.trim();
                 if trimmed != "none" && !trimmed.is_empty() {
@@ -310,167 +594,137 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
 
         request_builder = request_builder.json(&body_value);
 
-        match request_builder.send().await {
-            Ok(resp) => {
-                let status = resp.status();
-                if status.is_success() {
-                    let text = resp
-                        .text()
-                        .await
-                        .map_err(|e| format!("读取上游响应失败: {}", e))?;
+        if is_stream {
+            let first_response_timeout = Duration::from_secs(timeout_sec);
+            let send_res = tokio::time::timeout(first_response_timeout, request_builder.send()).await;
 
-                    let duration_ms = start_time.elapsed().as_millis() as u64;
-
-                    let parsed: serde_json::Value = serde_json::from_str(&text)
-                        .map_err(|e| format!("上游未返回有效 JSON 数据: {}", e))?;
-
-                    let content = if req.api_format == "anthropic" {
-                        if let Some(stop_reason) =
-                            parsed.get("stop_reason").and_then(|s| s.as_str())
-                        {
-                            if stop_reason == "refusal" {
-                                return Err("模型拒绝生成数值，本次回答无效".to_string());
-                            }
-                            if stop_reason == "max_tokens" {
-                                return Err("回答因达到 max_tokens 上限被截断，本次回答无效".to_string());
-                            }
-                        }
-                        let mut full = String::new();
-                        if let Some(blocks) = parsed.get("content").and_then(|c| c.as_array()) {
-                            for block in blocks {
-                                if block.get("type").and_then(|t| t.as_str()) == Some("text") {
-                                    if let Some(t) = block.get("text").and_then(|s| s.as_str()) {
-                                        full.push_str(t);
-                                    }
-                                }
-                            }
-                        }
-                        full
-                    } else if req.api_format == "responses" || req.api_format == "openai_responses" {
-                        if let Some(output_text) = parsed.get("output_text").and_then(|o| o.as_str()) {
-                            output_text.trim().to_string()
-                        } else if let Some(outputs) = parsed.get("output").and_then(|o| o.as_array()) {
-                            let mut full = String::new();
-                            for item in outputs {
-                                let item_type = item.get("type").and_then(|t| t.as_str()).unwrap_or("");
-                                if item_type == "reasoning" || item_type == "compaction_summary" || item_type == "function_call" {
-                                    continue;
-                                }
-                                if let Some(t) = item.get("text").and_then(|s| s.as_str()) {
-                                    full.push_str(t);
-                                } else if let Some(parts) = item.get("content").and_then(|c| c.as_array()) {
-                                    for part in parts {
-                                        let part_type = part.get("type").and_then(|t| t.as_str()).unwrap_or("");
-                                        if part_type == "input_text" || part_type == "thinking" {
-                                            continue;
-                                        }
-                                        if let Some(t) = part.get("text").and_then(|s| s.as_str()) {
-                                            full.push_str(t);
-                                        }
-                                    }
-                                }
-                            }
-                            if full.is_empty() {
-                                parsed.get("choices")
-                                    .and_then(|c| c.get(0))
-                                    .and_then(|c0| c0.get("message"))
-                                    .and_then(|m| m.get("content"))
-                                    .and_then(|s| s.as_str())
-                                    .unwrap_or("")
-                                    .to_string()
-                            } else {
-                                full
-                            }
-                        } else if let Some(content_val) = parsed.get("content") {
-                            if let Some(s) = content_val.as_str() {
-                                s.to_string()
-                            } else if let Some(arr) = content_val.as_array() {
-                                let mut full = String::new();
-                                for part in arr {
-                                    if let Some(s) = part.as_str() {
-                                        full.push_str(s);
-                                    } else if let Some(t) = part.get("text").and_then(|s| s.as_str()) {
-                                        full.push_str(t);
-                                    }
-                                }
-                                full
-                            } else {
-                                content_val.to_string()
-                            }
-                        } else if let Some(choice_content) = parsed.get("choices")
-                            .and_then(|c| c.get(0))
-                            .and_then(|c0| c0.get("message"))
-                            .and_then(|m| m.get("content"))
-                            .and_then(|s| s.as_str()) {
-                            choice_content.to_string()
-                        } else {
-                            return Err("无法从上游 responses 响应中解析出文本内容".to_string());
-                        }
-                    } else {
-                        let choice = parsed
-                            .get("choices")
-                            .and_then(|c| c.get(0))
-                            .ok_or_else(|| "响应中缺少 choices 数据".to_string())?;
-
-                        if let Some(reason) = choice.get("finish_reason").and_then(|r| r.as_str()) {
-                            if reason == "length" {
-                                return Err("回答被长度截断（finish_reason: length），本次回答无效".to_string());
-                            }
-                            if reason == "content_filter" {
-                                return Err("回答触发内容安全拦截（content_filter），本次回答无效".to_string());
-                            }
-                        }
-
-                        let message = choice
-                            .get("message")
-                            .ok_or_else(|| "响应中缺少 message 数据".to_string())?;
-
-                        let content_val = message
-                            .get("content")
-                            .ok_or_else(|| "响应中缺少 content 内容".to_string())?;
-
-                        if let Some(s) = content_val.as_str() {
-                            s.to_string()
-                        } else if let Some(arr) = content_val.as_array() {
-                            let mut combined = String::new();
-                            for item in arr {
-                                if let Some(t) = item.get("text").and_then(|s| s.as_str()) {
-                                    combined.push_str(t);
-                                }
-                            }
-                            combined
-                        } else {
-                            content_val.to_string()
-                        }
-                    };
-
-                    return Ok(ProbeResponse {
-                        text: content,
-                        raw_status: status.as_u16(),
-                        duration_ms,
-                    });
-                } else {
-                    let err_body = resp.text().await.unwrap_or_default();
-                    let err_msg = compact_error(&err_body, status);
-
-                    let status_code = status.as_u16();
-                    let retryable = status_code == 408
-                        || status_code == 429
-                        || (status_code >= 500 && status_code <= 504);
-
-                    if retryable && attempt < max_attempts {
+            let mut resp = match send_res {
+                Ok(Ok(r)) => r,
+                Ok(Err(e)) => {
+                    if attempt < max_attempts {
                         tokio::time::sleep(Duration::from_millis(1000 * attempt)).await;
                         continue;
                     }
-                    return Err(format!("接口请求异常 ({}): {}", status_code, err_msg));
+                    return Err(format!("无法连接上游接口: {}", e));
                 }
-            }
-            Err(e) => {
-                if attempt < max_attempts {
+                Err(_) => {
+                    return Err(format!(
+                        "流式请求首次响应超时（{} 秒内未收到上游响应）",
+                        timeout_sec
+                    ));
+                }
+            };
+
+            let status = resp.status();
+            if !status.is_success() {
+                let err_body = resp.text().await.unwrap_or_default();
+                let err_msg = compact_error(&err_body, status);
+                let status_code = status.as_u16();
+                let retryable = status_code == 408
+                    || status_code == 429
+                    || (status_code >= 500 && status_code <= 504);
+
+                if retryable && attempt < max_attempts {
                     tokio::time::sleep(Duration::from_millis(1000 * attempt)).await;
                     continue;
                 }
-                return Err(format!("无法连接上游接口: {}", e));
+                return Err(format!("接口请求异常 ({}): {}", status_code, err_msg));
+            }
+
+            // 确保首包在剩余的首次响应时限内到达
+            let elapsed_since_start = start_time.elapsed();
+            let first_chunk_timeout = if elapsed_since_start < first_response_timeout {
+                first_response_timeout - elapsed_since_start
+            } else {
+                Duration::from_millis(100)
+            };
+
+            let first_chunk_res = tokio::time::timeout(first_chunk_timeout, resp.chunk()).await;
+            let first_chunk = match first_chunk_res {
+                Ok(Ok(Some(bytes))) => bytes,
+                Ok(Ok(None)) => {
+                    return Err("上游返回了空流响应".to_string());
+                }
+                Ok(Err(e)) => return Err(format!("读取上游流式首包数据失败: {}", e)),
+                Err(_) => {
+                    return Err(format!(
+                        "流式请求首次响应超时（{} 秒内未收到模型首包响应）",
+                        timeout_sec
+                    ));
+                }
+            };
+
+            let mut raw_bytes = Vec::new();
+            raw_bytes.extend_from_slice(&first_chunk);
+
+            // 读取后续数据分片，每个分片之间设置 90 秒空闲超时防止连接死锁
+            loop {
+                let chunk_res = tokio::time::timeout(Duration::from_secs(90), resp.chunk()).await;
+                match chunk_res {
+                    Ok(Ok(Some(bytes))) => {
+                        raw_bytes.extend_from_slice(&bytes);
+                    }
+                    Ok(Ok(None)) => break,
+                    Ok(Err(e)) => return Err(format!("读取上游流式响应数据中断: {}", e)),
+                    Err(_) => {
+                        return Err("上游流式响应传输中断（90 秒内未收到后续数据分片）".to_string())
+                    }
+                }
+            }
+
+            let duration_ms = start_time.elapsed().as_millis() as u64;
+            let text_body = String::from_utf8_lossy(&raw_bytes);
+            let content = parse_streaming_body(&text_body, &req.api_format)?;
+
+            return Ok(ProbeResponse {
+                text: content,
+                raw_status: status.as_u16(),
+                duration_ms,
+            });
+        } else {
+            match request_builder.send().await {
+                Ok(resp) => {
+                    let status = resp.status();
+                    if status.is_success() {
+                        let text = resp
+                            .text()
+                            .await
+                            .map_err(|e| format!("读取上游响应失败: {}", e))?;
+
+                        let duration_ms = start_time.elapsed().as_millis() as u64;
+                        let parsed: serde_json::Value = serde_json::from_str(&text)
+                            .map_err(|e| format!("上游未返回有效 JSON 数据: {}", e))?;
+
+                        let content = parse_non_streaming_json(&parsed, &req.api_format)?;
+
+                        return Ok(ProbeResponse {
+                            text: content,
+                            raw_status: status.as_u16(),
+                            duration_ms,
+                        });
+                    } else {
+                        let err_body = resp.text().await.unwrap_or_default();
+                        let err_msg = compact_error(&err_body, status);
+
+                        let status_code = status.as_u16();
+                        let retryable = status_code == 408
+                            || status_code == 429
+                            || (status_code >= 500 && status_code <= 504);
+
+                        if retryable && attempt < max_attempts {
+                            tokio::time::sleep(Duration::from_millis(1000 * attempt)).await;
+                            continue;
+                        }
+                        return Err(format!("接口请求异常 ({}): {}", status_code, err_msg));
+                    }
+                }
+                Err(e) => {
+                    if attempt < max_attempts {
+                        tokio::time::sleep(Duration::from_millis(1000 * attempt)).await;
+                        continue;
+                    }
+                    return Err(format!("无法连接上游接口: {}", e));
+                }
             }
         }
     }
