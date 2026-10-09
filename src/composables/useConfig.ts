@@ -21,13 +21,16 @@ export function isConfigEqual(current: ClientConfig, item: ConfigItem): boolean 
   const normItemFormat = item.apiFormat || "chat_completions";
   const normCurrentEffort = current.reasoningEffort || "high";
   const normItemEffort = item.reasoningEffort || "high";
+  const normCurrentStream = current.stream !== false;
+  const normItemStream = item.stream !== false;
 
   return (
     normCurrentBaseUrl === normItemBaseUrl &&
     normCurrentApiKey === normItemApiKey &&
     normCurrentModel === normItemModel &&
     normCurrentFormat === normItemFormat &&
-    normCurrentEffort === normItemEffort
+    normCurrentEffort === normItemEffort &&
+    normCurrentStream === normItemStream
   );
 }
 
@@ -82,6 +85,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     apiFormat: "chat_completions",
     modelName: "",
     reasoningEffort: "high",
+    stream: true,
   });
 
   const configList = ref<ConfigItem[]>([]);
@@ -144,8 +148,9 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
       ultra: "极致",
     };
     const effortLabel = effortMap[config.reasoningEffort] || "高";
+    const streamLabel = config.stream !== false ? "流式" : "同步";
 
-    return `${formatName} · 思考强度:${effortLabel}`;
+    return `${formatName} · ${streamLabel} · 思考强度:${effortLabel}`;
   });
 
   function togglePasswordVisibility(): void {
@@ -174,6 +179,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
       apiFormat: config.apiFormat,
       modelName: config.modelName,
       reasoningEffort: config.reasoningEffort,
+      stream: config.stream !== false,
     };
     isConfigEditModalOpen.value = true;
   }
@@ -227,6 +233,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     if (item.reasoningEffort) {
       config.reasoningEffort = item.reasoningEffort;
     }
+    config.stream = item.stream !== false;
     activeConfigId.value = item.id;
     saveConfig();
     saveConfigListToStorage();
@@ -345,6 +352,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
           apiFormat: savedConfig.apiFormat || "chat_completions",
           modelName: savedConfig.modelName || "",
           reasoningEffort: savedConfig.reasoningEffort || "high",
+          stream: savedConfig.stream !== false,
           createdAt: Date.now(),
           updatedAt: Date.now(),
         };
@@ -382,6 +390,11 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
       if (savedConfig.reasoningEffort !== undefined) {
         config.reasoningEffort = savedConfig.reasoningEffort;
       }
+      if (savedConfig.stream !== undefined) {
+        config.stream = savedConfig.stream !== false;
+      } else {
+        config.stream = true;
+      }
     } catch (err) {
       console.warn("加载本地配置失败:", err);
     } finally {
@@ -418,6 +431,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     config.modelName = "";
     config.apiFormat = "chat_completions";
     config.reasoningEffort = "high";
+    config.stream = true;
     activeConfigId.value = null;
     try {
       localStorage.removeItem(ACTIVE_CONFIG_ID_KEY);

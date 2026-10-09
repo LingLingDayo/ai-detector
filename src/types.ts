@@ -4,6 +4,7 @@ export interface ClientConfig {
   apiFormat: string;
   modelName: string;
   reasoningEffort: string;
+  stream?: boolean;
 }
 
 export interface ConfigItem {
@@ -14,6 +15,7 @@ export interface ConfigItem {
   apiFormat?: string;
   modelName?: string;
   reasoningEffort?: string;
+  stream?: boolean;
   createdAt?: number;
   updatedAt?: number;
 }
@@ -26,6 +28,7 @@ export interface SendProbeOptions {
   prompt: string;
   apiFormat: string;
   reasoningEffort?: string;
+  stream?: boolean;
   timeoutSeconds?: number;
 }
 

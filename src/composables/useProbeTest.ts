@@ -124,7 +124,8 @@ export function useProbeTest(): UseProbeTestReturn {
     const model = config.modelName.trim();
     const apiFormat = config.apiFormat;
     const reasoningEffort = config.reasoningEffort;
-    const timeoutSeconds = 150; // 默认锁定 150 秒
+    const isStream = config.stream !== false;
+    const timeoutSeconds = isStream ? 90 : 240;
 
     if (!baseUrl || !apiKey) {
       alert("请填写 Base URL 和 API Key！");
@@ -186,6 +187,7 @@ export function useProbeTest(): UseProbeTestReturn {
             prompt: challenge.prompt,
             apiFormat,
             reasoningEffort,
+            stream: isStream,
             timeoutSeconds,
           });
 

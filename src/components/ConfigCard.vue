@@ -205,9 +205,11 @@ defineExpose({
         :summary="settingsSummary"
         :api-format="config.apiFormat"
         :reasoning-effort="config.reasoningEffort"
+        :stream="config.stream"
         @update:is-open="(v) => emit('update:isAdvancedOpen', v)"
         @update:api-format="(v) => (config.apiFormat = v)"
         @update:reasoning-effort="(v) => (config.reasoningEffort = v)"
+        @update:stream="(v) => (config.stream = v)"
       />
 
       <!-- 测试方式 Tab 选项 -->

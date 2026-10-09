@@ -1,17 +1,24 @@
 <script setup lang="ts">
 import { REASONING_EFFORT_OPTIONS } from "../constants";
 
-const props = defineProps<{
-  isOpen: boolean;
-  summary: string;
-  apiFormat: string;
-  reasoningEffort: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    isOpen: boolean;
+    summary: string;
+    apiFormat: string;
+    reasoningEffort: string;
+    stream?: boolean;
+  }>(),
+  {
+    stream: true,
+  }
+);
 
 const emit = defineEmits<{
   (e: "update:isOpen", value: boolean): void;
   (e: "update:apiFormat", value: string): void;
   (e: "update:reasoningEffort", value: string): void;
+  (e: "update:stream", value: boolean): void;
 }>();
 </script>
 
@@ -40,6 +47,36 @@ const emit = defineEmits<{
 
     <div class="accordion-panel" :class="{ hidden: !isOpen }" id="advanced-panel">
       <div class="advanced-grid">
+        <!-- 请求传输模式 (流式 / 同步) -->
+        <div class="advanced-row">
+          <div class="advanced-row-header">
+            <label title="配置请求方式：流式传输或全量同步传输">请求传输模式</label>
+            <span class="field-hint">{{ stream !== false ? '首次响应 90s' : '超时锁定 240s' }}</span>
+          </div>
+          <div class="segmented-control stream-control">
+            <label class="segment" title="流式请求（默认模式，首次响应限时 90 秒，完整生成后返回结果）">
+              <input
+                type="radio"
+                name="request-stream"
+                :value="true"
+                :checked="stream !== false"
+                @change="emit('update:stream', true)"
+              />
+              <span class="segment-label">流式请求 (默认)</span>
+            </label>
+            <label class="segment" title="同步请求（传统全量响应，超时锁定 240 秒）">
+              <input
+                type="radio"
+                name="request-stream"
+                :value="false"
+                :checked="stream === false"
+                @change="emit('update:stream', false)"
+              />
+              <span class="segment-label">同步请求</span>
+            </label>
+          </div>
+        </div>
+
         <!-- 端点协议选择 -->
         <div class="advanced-row">
           <label title="选择调用的 API 规范与端点路径格式">接口协议端点</label>
@@ -81,7 +118,6 @@ const emit = defineEmits<{
         <div class="advanced-row">
           <div class="advanced-row-header">
             <label title="配置模型的深度思考与推理强度">思考强度</label>
-            <span class="field-hint">超时锁定 150s</span>
           </div>
           <div class="segmented-control reasoning-control">
             <label
@@ -209,11 +245,19 @@ const emit = defineEmits<{
             grid-template-columns: repeat(8, 1fr);
           }
 
+          &.stream-control {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
           @media (max-width: 640px) {
             grid-template-columns: 1fr;
 
             &.reasoning-control {
               grid-template-columns: repeat(4, 1fr);
+            }
+
+            &.stream-control {
+              grid-template-columns: repeat(2, 1fr);
             }
           }
 

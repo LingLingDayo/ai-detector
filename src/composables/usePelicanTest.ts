@@ -81,6 +81,8 @@ export function usePelicanTest(): PelicanTestState {
     testedModel.value = config.modelName;
 
     const startTime = Date.now();
+    const isStream = config.stream !== false;
+    const timeoutSeconds = isStream ? 90 : 240;
     try {
       const res = await sendProbe({
         baseUrl: config.baseUrl,
@@ -89,7 +91,8 @@ export function usePelicanTest(): PelicanTestState {
         prompt: PELICAN_PROMPT,
         apiFormat: config.apiFormat || "openai",
         reasoningEffort: config.reasoningEffort || "high",
-        timeoutSeconds: 150,
+        stream: isStream,
+        timeoutSeconds,
       });
 
       rawResponseText.value = res.text || "";

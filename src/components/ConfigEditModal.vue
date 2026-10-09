@@ -17,6 +17,11 @@ const REASONING_OPTIONS: SelectOption[] = REASONING_EFFORT_OPTIONS.map((opt) => 
   description: opt.description,
 }));
 
+const STREAM_OPTIONS: SelectOption[] = [
+  { value: "stream", label: "流式请求 (默认)", description: "首包超时 90s" },
+  { value: "sync", label: "同步请求", description: "全量超时 240s" },
+];
+
 const props = defineProps<{
   isOpen: boolean;
   mode: "create" | "edit" | "save-current";
@@ -45,6 +50,7 @@ const formData = reactive({
   apiFormat: "chat_completions",
   modelName: "",
   reasoningEffort: "high",
+  stream: true,
 });
 
 function initForm(): void {
@@ -57,8 +63,9 @@ function initForm(): void {
     formData.apiFormat = props.initialData.apiFormat || "chat_completions";
     formData.modelName = props.initialData.modelName || "";
     formData.reasoningEffort = props.initialData.reasoningEffort || "high";
-    // 如果有设置过模型或非默认格式，自动展开高级设置
-    if (formData.modelName || formData.apiFormat !== "chat_completions") {
+    formData.stream = props.initialData.stream !== false;
+    // 如果有设置过模型、非默认格式或非默认传输方式，自动展开更多设置
+    if (formData.modelName || formData.apiFormat !== "chat_completions" || !formData.stream) {
       isAdvancedExpanded.value = true;
     } else {
       isAdvancedExpanded.value = false;
@@ -70,6 +77,7 @@ function initForm(): void {
     formData.apiFormat = "chat_completions";
     formData.modelName = "";
     formData.reasoningEffort = "high";
+    formData.stream = true;
     isAdvancedExpanded.value = false;
   }
 }
@@ -108,6 +116,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
       apiFormat: formData.apiFormat,
       modelName: formData.modelName.trim(),
       reasoningEffort: formData.reasoningEffort,
+      stream: formData.stream,
     },
     props.mode === "edit" ? props.initialData?.id : undefined,
     applyImmediately
@@ -298,7 +307,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
               >
                 <polyline points="6 9 12 15 18 9" />
               </svg>
-              <span>可选默认参数</span>
+              <span>更多设置</span>
             </button>
           </div>
 
@@ -336,6 +345,16 @@ function handleSubmit(applyImmediately: boolean = false): void {
                   id="cfg-reasoning-effort"
                   v-model="formData.reasoningEffort"
                   :options="REASONING_OPTIONS"
+                />
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="cfg-stream-mode">请求传输模式</label>
+                <CustomSelect
+                  id="cfg-stream-mode"
+                  :model-value="formData.stream ? 'stream' : 'sync'"
+                  :options="STREAM_OPTIONS"
+                  @update:model-value="(val) => (formData.stream = val === 'stream')"
                 />
               </div>
             </div>
