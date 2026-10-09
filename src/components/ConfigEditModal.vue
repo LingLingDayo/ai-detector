@@ -329,6 +329,18 @@ function handleSubmit(applyImmediately: boolean = false): void {
               </div>
 
               <div class="form-group flex-1">
+                <label for="cfg-stream-mode">请求模式</label>
+                <CustomSelect
+                  id="cfg-stream-mode"
+                  :model-value="formData.stream ? 'stream' : 'sync'"
+                  :options="STREAM_OPTIONS"
+                  @update:model-value="(val) => (formData.stream = val === 'stream')"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
                 <label for="cfg-api-format">请求接口</label>
                 <CustomSelect
                   id="cfg-api-format"
@@ -336,25 +348,13 @@ function handleSubmit(applyImmediately: boolean = false): void {
                   :options="API_FORMAT_OPTIONS"
                 />
               </div>
-            </div>
 
-            <div class="form-row">
               <div class="form-group flex-1">
                 <label for="cfg-reasoning-effort">思考强度</label>
                 <CustomSelect
                   id="cfg-reasoning-effort"
                   v-model="formData.reasoningEffort"
                   :options="REASONING_OPTIONS"
-                />
-              </div>
-
-              <div class="form-group flex-1">
-                <label for="cfg-stream-mode">请求模式</label>
-                <CustomSelect
-                  id="cfg-stream-mode"
-                  :model-value="formData.stream ? 'stream' : 'sync'"
-                  :options="STREAM_OPTIONS"
-                  @update:model-value="(val) => (formData.stream = val === 'stream')"
                 />
               </div>
             </div>

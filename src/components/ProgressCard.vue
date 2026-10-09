@@ -381,8 +381,8 @@ function closeModal(): void {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: rgba(239, 68, 68, 0.12);
-          border: 1px solid rgba(239, 68, 68, 0.28);
+          background: transparent;
+          border: none;
           color: #f87171;
           cursor: pointer;
           padding: 2px;
@@ -391,8 +391,7 @@ function closeModal(): void {
           transition: all var(--transition-fast);
 
           &:hover:not(:disabled) {
-            background: rgba(239, 68, 68, 0.25);
-            border-color: rgba(239, 68, 68, 0.6);
+            background: transparent;
             color: #fca5a5;
             transform: rotate(90deg);
           }
