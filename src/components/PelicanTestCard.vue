@@ -158,7 +158,7 @@ function handleDownloadSvg(): void {
           >
             <polyline points="20 6 9 17 4 12" />
           </svg>
-          <span>{{ promptCopied ? "已复制" : "复制提示词" }}</span>
+          <span>{{ promptCopied ? "已复制" : "复制" }}</span>
         </button>
       </div>
       <div class="prompt-content">
@@ -527,10 +527,22 @@ function handleDownloadSvg(): void {
     border: none;
     color: #94a3b8;
     font-size: 0.72rem;
+    line-height: 1;
     cursor: pointer;
     padding: 2px 5px;
     border-radius: 3px;
     transition: all var(--transition-fast);
+
+    svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+    }
 
     &:hover {
       color: #f8fafc;
