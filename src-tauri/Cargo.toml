@@ -1,13 +1,13 @@
 [package]
-name = "modeltrace-ai-detector"
+name = "ai-detector"
 version = "0.1.0"
-description = "ModelTrace AI Detector"
+description = "AI Detector"
 authors = ["Antigravity"]
 edition = "2021"
 rust-version = "1.77.2"
 
 [lib]
-name = "modeltrace_ai_detector_lib"
+name = "ai_detector_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

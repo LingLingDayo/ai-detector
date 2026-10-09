@@ -44,8 +44,8 @@ export function copyReleaseArtifacts(options = {}) {
     }
   }
 
-  const chineseProductName = "ModelTrace模型检测工具";
-  const standardEnglishName = "ModelTrace-AI-Detector";
+  const chineseProductName = "AI模型检测工具";
+  const standardEnglishName = "AI-Detector";
   const bundleDir = options.bundleDir || path.resolve(rootDir, "src-tauri/target/release/bundle");
   const releaseBinDir = options.releaseBinDir || path.resolve(rootDir, "src-tauri/target/release");
 
@@ -72,6 +72,12 @@ export function copyReleaseArtifacts(options = {}) {
 
   // 2. 检查 target/release 目录下的可执行文件
   const possibleBinaries = [
+    "ai-detector.exe",
+    "ai-detector",
+    "AI-Detector.exe",
+    "AI-Detector",
+    "AI Detector.exe",
+    "AI Detector",
     "modeltrace-ai-detector.exe",
     "modeltrace-ai-detector",
     "ModelTrace-AI-Detector.exe",

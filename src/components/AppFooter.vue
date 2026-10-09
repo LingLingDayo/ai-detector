@@ -5,7 +5,7 @@
 <template>
   <footer class="app-footer">
     <span title="本工具仅对指纹库内的模型进行归因分析，测试结果仅供技术参考">
-      ModelTrace AI Detector · 纯本地运行 · 凭据不离开本机
+      AI Detector · 纯本地运行 · 凭据不离开本机
     </span>
   </footer>
 </template>
