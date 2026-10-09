@@ -15,6 +15,7 @@ export interface PelicanTestState {
   testedModel: Ref<string>;
   errorMsg: Ref<string | null>;
   hasTested: Ref<boolean>;
+  hasResult: Ref<boolean>;
   pelicanPrompt: Ref<string>;
   setPelicanPrompt: (newPrompt: string) => void;
   resetPelicanPrompt: () => void;
@@ -75,6 +76,7 @@ export function usePelicanTest(): PelicanTestState {
   const testedModel = ref("");
   const errorMsg = ref<string | null>(null);
   const hasTested = ref(false);
+  const hasResult = ref(false);
   const pelicanPrompt = ref(loadInitialPelicanPrompt());
 
   function setPelicanPrompt(newPrompt: string): void {
@@ -142,6 +144,7 @@ export function usePelicanTest(): PelicanTestState {
       } else {
         errorMsg.value = "模型未返回有效的 SVG 格式代码";
       }
+      hasResult.value = true;
     } catch (err: unknown) {
       const message =
         err instanceof Error
@@ -151,6 +154,7 @@ export function usePelicanTest(): PelicanTestState {
           : "请求异常，请检查网络或配置";
       errorMsg.value = message;
       durationMs.value = Date.now() - startTime;
+      hasResult.value = true;
     } finally {
       isPelicanRunning.value = false;
     }
@@ -164,6 +168,7 @@ export function usePelicanTest(): PelicanTestState {
     testedModel.value = "";
     errorMsg.value = null;
     hasTested.value = false;
+    hasResult.value = false;
   }
 
   return {
@@ -174,6 +179,7 @@ export function usePelicanTest(): PelicanTestState {
     testedModel,
     errorMsg,
     hasTested,
+    hasResult,
     pelicanPrompt,
     setPelicanPrompt,
     resetPelicanPrompt,

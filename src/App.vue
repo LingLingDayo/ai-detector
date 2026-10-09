@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useConfig } from "./composables/useConfig";
 import { useProbeTest } from "./composables/useProbeTest";
 import { usePelicanTest } from "./composables/usePelicanTest";
@@ -18,6 +18,7 @@ const activeMode = ref<"probe" | "pelican">("probe");
 const {
   isRunning,
   hasStarted,
+  hasResult: hasProbeResult,
   progressPercent,
   completedCount,
   totalCount,
@@ -40,12 +41,17 @@ const {
   testedModel,
   errorMsg: pelicanErrorMsg,
   hasTested: hasPelicanTested,
+  hasResult: hasPelicanResult,
   pelicanPrompt,
   setPelicanPrompt,
   resetPelicanPrompt,
   startPelicanTest,
   resetPelicanTest,
 } = usePelicanTest();
+
+const hasActiveResult = computed(() => {
+  return activeMode.value === "probe" ? hasProbeResult.value : hasPelicanResult.value;
+});
 
 const {
   config,
@@ -119,6 +125,7 @@ async function handleResetConfig(): Promise<void> {
         :is-running="isRunning"
         :is-pelican-running="isPelicanRunning"
         :active-mode="activeMode"
+        :has-result="hasActiveResult"
         :is-password-visible="isPasswordVisible"
         :is-advanced-open="isAdvancedOpen"
         :settings-summary="settingsSummary"
@@ -165,7 +172,6 @@ async function handleResetConfig(): Promise<void> {
         :prompt="pelicanPrompt"
         @update:prompt="setPelicanPrompt"
         @reset-prompt="resetPelicanPrompt"
-        @retry="() => startPelicanTest(config)"
       />
     </main>
 

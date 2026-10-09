@@ -11,6 +11,7 @@ const props = withDefaults(
     isRunning: boolean;
     isPelicanRunning?: boolean;
     activeMode?: "probe" | "pelican";
+    hasResult?: boolean;
     isPasswordVisible: boolean;
     isAdvancedOpen: boolean;
     settingsSummary: string;
@@ -18,6 +19,7 @@ const props = withDefaults(
   {
     isPelicanRunning: false,
     activeMode: "probe",
+    hasResult: false,
   }
 );
 
@@ -248,7 +250,11 @@ defineExpose({
           class="btn btn-primary"
           id="btn-start"
           :disabled="isRunning || isPelicanRunning"
-          :title="activeMode === 'probe' ? '执行 3 轮探测，并在统一库中比对归因' : '发起鹈鹕测试，让 AI 绘制骑自行车 SVG'"
+          :title="
+            hasResult
+              ? (activeMode === 'probe' ? '重新执行 3 轮探测并计算模型归因' : '重新发起鹈鹕测试，让 AI 重新绘制 SVG')
+              : (activeMode === 'probe' ? '执行 3 轮探测，并在统一库中比对归因' : '发起鹈鹕测试，让 AI 绘制骑自行车 SVG')
+          "
         >
           <span
             class="btn-spinner"
@@ -256,7 +262,7 @@ defineExpose({
             id="start-spinner"
           ></span>
           <span class="btn-text">
-            {{ activeMode === 'probe' ? '开始测试 (共 3 题)' : '开始测试' }}
+            {{ hasResult ? '重新生成' : (activeMode === 'probe' ? '开始测试 (共 3 题)' : '开始测试') }}
           </span>
         </button>
         <button

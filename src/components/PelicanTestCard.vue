@@ -20,7 +20,6 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (e: "retry"): void;
   (e: "update:prompt", value: string): void;
   (e: "reset-prompt"): void;
 }>();
@@ -128,30 +127,6 @@ function handleDownloadSvg(): void {
         <p class="subtitle">
           让 AI 绘制“鹈鹕骑自行车”SVG 图像。本测试不自动判定结果，请根据下方矢量图生成质量自行评估模型状态。
         </p>
-      </div>
-
-      <div class="header-actions">
-        <button
-          type="button"
-          class="btn-header-action"
-          :disabled="isRunning"
-          title="重新发起鹈鹕测试请求"
-          @click="emit('retry')"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-          </svg>
-          <span>重新生成</span>
-        </button>
       </div>
     </div>
 
@@ -464,7 +439,7 @@ function handleDownloadSvg(): void {
         <div class="radar-spinner"></div>
         <div class="loading-text">
           <p class="loading-title">正在调用模型绘制鹈鹕骑自行车...</p>
-          <p class="loading-desc">SVG 生成通常耗时 5 ~ 30 秒，请稍候</p>
+          <p class="loading-desc">SVG 生成通常耗时 10 ~ 60 秒，请稍候</p>
         </div>
       </div>
 
@@ -592,53 +567,6 @@ function handleDownloadSvg(): void {
   }
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.btn-header-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  height: 24px;
-  padding: 0 8px;
-  border-radius: var(--radius-sm);
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  font-weight: 500;
-  line-height: 1;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all var(--transition-fast);
-
-  svg {
-    display: block;
-    flex-shrink: 0;
-  }
-
-  span {
-    display: inline-flex;
-    align-items: center;
-    line-height: 1;
-  }
-
-  &:hover:not(:disabled) {
-    background: rgba(30, 41, 59, 0.95);
-    border-color: rgba(99, 102, 241, 0.4);
-    color: var(--text-primary);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
 
 /* 提示词模块 */
 .prompt-box {

@@ -20,6 +20,7 @@ const unifiedBank = rawUnifiedBank as unknown as UnifiedBank;
 export interface UseProbeTestReturn {
   isRunning: Ref<boolean>;
   hasStarted: Ref<boolean>;
+  hasResult: Ref<boolean>;
   progressPercent: Ref<number>;
   completedCount: Ref<number>;
   totalCount: number;
@@ -39,6 +40,7 @@ export interface UseProbeTestReturn {
 export function useProbeTest(): UseProbeTestReturn {
   const isRunning = ref(false);
   const hasStarted = ref(false);
+  const hasResult = ref(false);
   const progressPercent = ref(0);
   const completedCount = ref(0);
   const totalCount = 3;
@@ -72,6 +74,7 @@ export function useProbeTest(): UseProbeTestReturn {
     currentChallenges.value = generateChallenges(totalCount);
     steps.value = createInitialSteps(currentChallenges.value);
     hasStarted.value = false;
+    hasResult.value = false;
     progressPercent.value = 0;
     completedCount.value = 0;
     statusDesc.value = "已重新抽取 3 道测试题目，可点击卡片预览或直接开始测试";
@@ -101,6 +104,7 @@ export function useProbeTest(): UseProbeTestReturn {
       analysisResult.value = null;
       progressPercent.value = 0;
       completedCount.value = 0;
+      hasResult.value = false;
     }
   }
 
@@ -108,6 +112,7 @@ export function useProbeTest(): UseProbeTestReturn {
     currentRunId += 1;
     isRunning.value = false;
     hasStarted.value = false;
+    hasResult.value = false;
     progressPercent.value = 0;
     completedCount.value = 0;
     statusTitle.value = "探测题目";
@@ -298,11 +303,13 @@ export function useProbeTest(): UseProbeTestReturn {
     }
 
     isRunning.value = false;
+    hasResult.value = true;
   }
 
   return {
     isRunning,
     hasStarted,
+    hasResult,
     progressPercent,
     completedCount,
     totalCount,
