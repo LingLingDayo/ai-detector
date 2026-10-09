@@ -4,25 +4,43 @@ import type { ClientConfig } from "../types";
 import ModelCombobox from "./ModelCombobox.vue";
 import AdvancedSettings from "./AdvancedSettings.vue";
 
-const props = defineProps<{
-  config: ClientConfig;
-  activeConfigName?: string;
-  isRunning: boolean;
-  isPasswordVisible: boolean;
-  isAdvancedOpen: boolean;
-  settingsSummary: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    config: ClientConfig;
+    activeConfigName?: string;
+    isRunning: boolean;
+    isPelicanRunning?: boolean;
+    activeMode?: "probe" | "pelican";
+    isPasswordVisible: boolean;
+    isAdvancedOpen: boolean;
+    settingsSummary: string;
+  }>(),
+  {
+    isPelicanRunning: false,
+    activeMode: "probe",
+  }
+);
 
 const emit = defineEmits<{
   (e: "toggle-password"): void;
   (e: "update:isAdvancedOpen", value: boolean): void;
   (e: "submit"): void;
+  (e: "start-pelican"): void;
   (e: "reset"): void;
   (e: "open-save-config"): void;
   (e: "open-config-list"): void;
 }>();
 
 const comboboxRef = ref<InstanceType<typeof ModelCombobox> | null>(null);
+
+function handlePelicanClick(): void {
+  const form = document.getElementById("test-form") as HTMLFormElement | null;
+  if (form && !form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+  emit("start-pelican");
+}
 
 function handleReset(): void {
   emit("reset");
@@ -207,7 +225,7 @@ defineExpose({
           type="submit"
           class="btn btn-primary"
           id="btn-start"
-          :disabled="isRunning"
+          :disabled="isRunning || isPelicanRunning"
           title="执行 3 轮探测，并在统一库中比对归因"
         >
           <span class="btn-spinner" :class="{ hidden: !isRunning }" id="start-spinner"></span>
@@ -215,8 +233,21 @@ defineExpose({
         </button>
         <button
           type="button"
+          class="btn btn-pelican"
+          id="btn-pelican"
+          :class="{ active: activeMode === 'pelican' }"
+          :disabled="isRunning || isPelicanRunning"
+          title="进行鹈鹕测试 (生成自行车鹈鹕 SVG，直观测试模型是否降智)"
+          @click="handlePelicanClick"
+        >
+          <span class="btn-spinner" :class="{ hidden: !isPelicanRunning }" id="pelican-spinner"></span>
+          <span class="btn-text">鹈鹕测试</span>
+        </button>
+        <button
+          type="button"
           class="btn btn-ghost"
           id="btn-reset"
+          :disabled="isRunning || isPelicanRunning"
           title="清空已保存的 Base URL 与 Key 等本地配置"
           @click="handleReset"
         >
@@ -348,5 +379,43 @@ defineExpose({
   display: flex;
   gap: 8px;
   margin-top: 2px;
+
+  .btn-pelican {
+    flex: 0 0 92px;
+    width: 92px;
+    padding: 7px 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #c7d2fe;
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.32);
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+
+    &:hover:not(:disabled) {
+      background: rgba(99, 102, 241, 0.22);
+      border-color: rgba(99, 102, 241, 0.55);
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.2);
+      transform: translateY(-1px);
+    }
+
+    &.active {
+      background: rgba(99, 102, 241, 0.26);
+      border-color: #818cf8;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.35);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
 }
 </style>

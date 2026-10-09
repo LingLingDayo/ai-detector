@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useConfig } from "./composables/useConfig";
 import { useProbeTest } from "./composables/useProbeTest";
+import { usePelicanTest } from "./composables/usePelicanTest";
 import AppHeader from "./components/AppHeader.vue";
 import ConfigCard from "./components/ConfigCard.vue";
 import ConfigListModal from "./components/ConfigListModal.vue";
@@ -9,8 +10,10 @@ import ConfigEditModal from "./components/ConfigEditModal.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
 import ProgressCard from "./components/ProgressCard.vue";
 import ResultCard from "./components/ResultCard.vue";
+import PelicanTestCard from "./components/PelicanTestCard.vue";
 
 const configCardRef = ref<InstanceType<typeof ConfigCard> | null>(null);
+const activeMode = ref<"probe" | "pelican">("probe");
 
 const {
   isRunning,
@@ -28,6 +31,18 @@ const {
   refreshQuestions,
   refreshSingleQuestion,
 } = useProbeTest();
+
+const {
+  isPelicanRunning,
+  pelicanSvg,
+  rawResponseText,
+  durationMs,
+  testedModel,
+  errorMsg: pelicanErrorMsg,
+  hasTested: hasPelicanTested,
+  startPelicanTest,
+  resetPelicanTest,
+} = usePelicanTest();
 
 const {
   config,
@@ -59,6 +74,7 @@ const {
 } = useConfig({
   onApply: () => {
     resetTest();
+    resetPelicanTest();
     configCardRef.value?.resetModelList();
   },
 });
@@ -67,10 +83,21 @@ onMounted(() => {
   loadConfig();
 });
 
+function handleStartProbe(): void {
+  activeMode.value = "probe";
+  startTest(config);
+}
+
+function handleStartPelican(): void {
+  activeMode.value = "pelican";
+  startPelicanTest(config);
+}
+
 async function handleResetConfig(): Promise<void> {
   const confirmed = await resetConfig();
   if (confirmed) {
     resetTest();
+    resetPelicanTest();
     configCardRef.value?.resetModelList();
   }
 }
@@ -89,35 +116,54 @@ async function handleResetConfig(): Promise<void> {
         :config="config"
         :active-config-name="activeConfigName"
         :is-running="isRunning"
+        :is-pelican-running="isPelicanRunning"
+        :active-mode="activeMode"
         :is-password-visible="isPasswordVisible"
         :is-advanced-open="isAdvancedOpen"
         :settings-summary="settingsSummary"
         @toggle-password="togglePasswordVisibility"
         @update:is-advanced-open="(v) => (isAdvancedOpen = v)"
-        @submit="() => startTest(config)"
+        @submit="handleStartProbe"
+        @start-pelican="handleStartPelican"
         @reset="handleResetConfig"
         @open-save-config="openSaveCurrentModal"
         @open-config-list="openConfigListModal"
       />
 
-      <!-- 探测题目与测试进度卡片（默认展示） -->
-      <ProgressCard
-        :visible="true"
-        :title="statusTitle"
-        :desc="statusDesc"
-        :percent="progressPercent"
-        :completed-count="completedCount"
-        :total-count="totalCount"
-        :steps="steps"
-        :status-alert="statusAlert"
-        :is-running="isRunning"
-        :has-started="hasStarted"
-        @refresh-questions="refreshQuestions"
-        @refresh-single-question="refreshSingleQuestion"
-      />
+      <!-- 常规探测题目与测试进度卡片（常规模式展示） -->
+      <template v-if="activeMode === 'probe'">
+        <ProgressCard
+          :visible="true"
+          :title="statusTitle"
+          :desc="statusDesc"
+          :percent="progressPercent"
+          :completed-count="completedCount"
+          :total-count="totalCount"
+          :steps="steps"
+          :status-alert="statusAlert"
+          :is-running="isRunning"
+          :has-started="hasStarted"
+          @refresh-questions="refreshQuestions"
+          @refresh-single-question="refreshSingleQuestion"
+        />
 
-      <!-- 探测诊断报告卡片 -->
-      <ResultCard :analysis="analysisResult" />
+        <!-- 探测诊断报告卡片 -->
+        <ResultCard :analysis="analysisResult" />
+      </template>
+
+      <!-- 鹈鹕测试模式卡片（点击鹈鹕测试后切换展示） -->
+      <PelicanTestCard
+        v-else-if="activeMode === 'pelican'"
+        :is-running="isPelicanRunning"
+        :svg="pelicanSvg"
+        :raw-text="rawResponseText"
+        :duration-ms="durationMs"
+        :model-name="testedModel || config.modelName"
+        :error-message="pelicanErrorMsg"
+        :has-tested="hasPelicanTested"
+        @retry="() => startPelicanTest(config)"
+        @switch-to-probe="activeMode = 'probe'"
+      />
     </main>
 
     <!-- 配置列表弹窗 -->
