@@ -522,16 +522,19 @@ function handleDownloadSvg(): void {
   .btn-copy-prompt {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
+    height: 20px;
+    padding: 0 5px;
     background: transparent;
     border: none;
     color: #94a3b8;
     font-size: 0.72rem;
     line-height: 1;
     cursor: pointer;
-    padding: 2px 5px;
     border-radius: 3px;
     transition: all var(--transition-fast);
+    font-family: inherit;
 
     svg {
       display: block;
@@ -542,6 +545,7 @@ function handleDownloadSvg(): void {
       display: inline-flex;
       align-items: center;
       line-height: 1;
+      transform: translateY(1px);
     }
 
     &:hover {

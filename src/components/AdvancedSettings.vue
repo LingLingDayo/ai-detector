@@ -81,7 +81,7 @@ const emit = defineEmits<{
         <div class="advanced-row">
           <div class="advanced-row-header">
             <label title="配置模型的深度思考与推理强度">思考强度</label>
-            <span class="field-hint">默认 high · 超时锁定 150s</span>
+            <span class="field-hint">超时锁定 150s</span>
           </div>
           <div class="segmented-control reasoning-control">
             <label
