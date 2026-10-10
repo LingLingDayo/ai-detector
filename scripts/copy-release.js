@@ -44,6 +44,22 @@ export function copyReleaseArtifacts(options = {}) {
     }
   }
 
+  let productName = options.productName;
+  if (!productName) {
+    try {
+      const tauriConfPath = path.resolve(rootDir, "src-tauri/tauri.conf.json");
+      if (fs.existsSync(tauriConfPath)) {
+        const tauriConf = JSON.parse(fs.readFileSync(tauriConfPath, "utf-8"));
+        productName = tauriConf.productName;
+      }
+    } catch {
+      productName = "AI模型检测器";
+    }
+  }
+  if (!productName) {
+    productName = "AI模型检测器";
+  }
+
   const chineseProductName = "AI模型检测器";
   const standardEnglishName = "AI-Detector";
   const bundleDir = options.bundleDir || path.resolve(rootDir, "src-tauri/target/release/bundle");
@@ -55,18 +71,34 @@ export function copyReleaseArtifacts(options = {}) {
 
   const candidateFileMap = new Map();
 
-  // 1. 扫描 bundle 目录安装包（如果生成了的话）
-  if (fs.existsSync(bundleDir)) {
-    const allBundleFiles = getAllFiles(bundleDir);
-    const validExtensions = new Set([".exe", ".msi", ".deb", ".appimage", ".dmg", ".pkg", ".zip", ".tar.gz"]);
+  // 1. 扫描 bundle 目录安装包（NSIS / MSI 等）
+  const possibleBundleDirs = [
+    bundleDir,
+    path.resolve(rootDir, "src-tauri/target/release/bundle"),
+    path.resolve(rootDir, "target/release/bundle"),
+  ];
 
-    for (const filePath of allBundleFiles) {
-      const ext = path.extname(filePath).toLowerCase();
-      const filename = path.basename(filePath);
+  for (const dir of possibleBundleDirs) {
+    if (fs.existsSync(dir)) {
+      const allBundleFiles = getAllFiles(dir);
+      const validExtensions = new Set([".exe", ".msi", ".deb", ".appimage", ".dmg", ".pkg"]);
 
-      if (validExtensions.has(ext)) {
-        candidateFileMap.set(filename, filePath);
+      for (const filePath of allBundleFiles) {
+        const ext = path.extname(filePath).toLowerCase();
+        const filename = path.basename(filePath);
+
+        // 仅收集安装包文件（排除非安装包以及旧版本残留）
+        if (validExtensions.has(ext)) {
+          if (version) {
+            if (filename.includes(version)) {
+              candidateFileMap.set(filename, filePath);
+            }
+          } else {
+            candidateFileMap.set(filename, filePath);
+          }
+        }
       }
+      break;
     }
   }
 
@@ -78,6 +110,10 @@ export function copyReleaseArtifacts(options = {}) {
     "AI-Detector",
     "AI Detector.exe",
     "AI Detector",
+    `${chineseProductName}.exe`,
+    chineseProductName,
+    `${productName}.exe`,
+    productName,
     "modeltrace-ai-detector.exe",
     "modeltrace-ai-detector",
     "ModelTrace-AI-Detector.exe",
@@ -102,20 +138,20 @@ export function copyReleaseArtifacts(options = {}) {
     }
   }
 
-  // 3. 规范化归档名称
+  // 3. 规范化归档名称（同时提供英文规范名与中文名直接执行程序）
   if (foundBinPath) {
     const ext = path.extname(foundBinName) || (process.platform === "win32" ? ".exe" : "");
-    // 规范英文包名（推荐：连字符无空格格式）
+    // 规范英文包名（连字符无空格格式，例如 AI-Detector.exe）
     const standardBinName = `${standardEnglishName}${ext}`;
     candidateFileMap.set(standardBinName, foundBinPath);
 
-    // 中文名称执行程序
+    // 中文名称执行程序（例如 AI模型检测器.exe）
     const chineseBinName = `${chineseProductName}${ext}`;
     candidateFileMap.set(chineseBinName, foundBinPath);
   }
 
   if (candidateFileMap.size === 0) {
-    console.warn(`\x1b[33m[发布归档] 未在 release 产物目录中找到生成的可执行文件。\x1b[0m`);
+    console.warn(`\x1b[33m[发布归档] 未在 release 产物目录中找到生成的可执行文件或安装包。\x1b[0m`);
     return { success: false, copiedFiles: [] };
   }
 
