@@ -20,9 +20,9 @@ const emit = defineEmits<{
   (e: "delete", id: string): void;
   (e: "dragstart", event: DragEvent, id: string): void;
   (e: "dragover", event: DragEvent, id: string): void;
-  (e: "dragenter", id: string): void;
-  (e: "dragleave", id: string): void;
-  (e: "drop", id: string): void;
+  (e: "dragenter", event: DragEvent, id: string): void;
+  (e: "dragleave", event: DragEvent, id: string): void;
+  (e: "drop", event: DragEvent, id: string): void;
   (e: "dragend"): void;
 }>();
 
@@ -44,35 +44,27 @@ function maskApiKey(key?: string): string {
     draggable="true"
     @dragstart="emit('dragstart', $event, item.id)"
     @dragover.prevent="emit('dragover', $event, item.id)"
-    @dragenter.prevent="emit('dragenter', item.id)"
-    @dragleave="emit('dragleave', item.id)"
-    @drop.prevent="emit('drop', item.id)"
+    @dragenter.prevent="emit('dragenter', $event, item.id)"
+    @dragleave="emit('dragleave', $event, item.id)"
+    @drop.prevent="emit('drop', $event, item.id)"
     @dragend="emit('dragend')"
   >
     <!-- 主信息与操作栏 -->
     <div class="card-main-row">
       <div class="card-title-group">
-        <span class="drag-handle" title="按住拖拽可交换不同配置位置">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-            <circle cx="9" cy="6" r="1.5" />
-            <circle cx="15" cy="6" r="1.5" />
-            <circle cx="9" cy="12" r="1.5" />
-            <circle cx="15" cy="12" r="1.5" />
-            <circle cx="9" cy="18" r="1.5" />
-            <circle cx="15" cy="18" r="1.5" />
-          </svg>
-        </span>
         <span class="item-name" :title="item.name">{{ item.name }}</span>
       </div>
 
-      <div class="card-actions">
+      <div class="card-actions" @mousedown.stop>
         <button
           type="button"
           class="btn-action btn-apply"
           :class="{ 'is-applied': isActive }"
           :disabled="isActive"
           :title="isActive ? '当前正在使用此配置' : '应用此配置到主界面'"
-          @click="emit('apply', item)"
+          draggable="false"
+          @dragstart.stop.prevent
+          @click.stop="emit('apply', item)"
         >
           <svg
             v-if="isActive"
@@ -92,7 +84,9 @@ function maskApiKey(key?: string): string {
           type="button"
           class="btn-action btn-edit"
           title="编辑此配置"
-          @click="emit('openEdit', item)"
+          draggable="false"
+          @dragstart.stop.prevent
+          @click.stop="emit('openEdit', item)"
         >
           <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
@@ -104,7 +98,9 @@ function maskApiKey(key?: string): string {
           type="button"
           class="btn-action btn-delete"
           title="删除此配置"
-          @click="emit('delete', item.id)"
+          draggable="false"
+          @dragstart.stop.prevent
+          @click.stop="emit('delete', item.id)"
         >
           <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6" />
@@ -139,11 +135,17 @@ function maskApiKey(key?: string): string {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  cursor: grab;
+  user-select: none;
   transition: all var(--transition-fast);
 
   &:hover {
     border-color: rgba(99, 102, 241, 0.35);
     background: rgba(20, 28, 43, 0.75);
+  }
+
+  &:active {
+    cursor: grabbing;
   }
 
   &.is-active {
@@ -154,19 +156,15 @@ function maskApiKey(key?: string): string {
 
   &.is-dragging {
     opacity: 0.35;
+    cursor: grabbing;
     border-style: dashed;
     border-color: rgba(99, 102, 241, 0.6);
   }
 
   &.is-drag-over {
     border-color: var(--accent-primary);
-    background: rgba(99, 102, 241, 0.15);
+    background: rgba(99, 102, 241, 0.18);
     box-shadow: 0 0 14px rgba(99, 102, 241, 0.3);
-    transform: translateY(-1px);
-  }
-
-  &:active .drag-handle {
-    cursor: grabbing;
   }
 
   .card-main-row {
@@ -181,22 +179,6 @@ function maskApiKey(key?: string): string {
       gap: 8px;
       min-width: 0;
       flex: 1;
-
-      .drag-handle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-muted);
-        cursor: grab;
-        opacity: 0.35;
-        transition: opacity var(--transition-fast), color var(--transition-fast);
-        flex-shrink: 0;
-
-        &:hover {
-          opacity: 1;
-          color: var(--accent-primary);
-        }
-      }
 
       .item-name {
         font-size: 0.88rem;

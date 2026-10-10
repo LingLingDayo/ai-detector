@@ -19,15 +19,10 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: "select", model: string): void;
-  (e: "swap", sourceModel: string, targetModel: string): void;
 }>();
 
 const searchInputRef = ref<HTMLInputElement | null>(null);
 const searchQuery = ref("");
-
-const draggedModel = ref<string | null>(null);
-const dragOverModel = ref<string | null>(null);
-let isDragHappening = false;
 
 const filteredModels = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
@@ -48,59 +43,7 @@ watch(
 );
 
 function handleSelect(model: string): void {
-  if (isDragHappening) return;
   emit("select", model);
-}
-
-function onDragStart(event: DragEvent, model: string): void {
-  draggedModel.value = model;
-  isDragHappening = true;
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", model);
-  }
-}
-
-function onDragOver(event: DragEvent, model: string): void {
-  if (!draggedModel.value || draggedModel.value === model) return;
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = "move";
-  }
-  dragOverModel.value = model;
-}
-
-function onDragEnter(model: string): void {
-  if (!draggedModel.value || draggedModel.value === model) return;
-  dragOverModel.value = model;
-}
-
-function onDragLeave(model: string): void {
-  if (dragOverModel.value === model) {
-    dragOverModel.value = null;
-  }
-}
-
-function cleanupDrag(): void {
-  draggedModel.value = null;
-  dragOverModel.value = null;
-  setTimeout(() => {
-    isDragHappening = false;
-  }, 120);
-}
-
-function onDrop(targetModel: string): void {
-  const sourceModel = draggedModel.value;
-  if (!sourceModel || sourceModel === targetModel) {
-    cleanupDrag();
-    return;
-  }
-
-  emit("swap", sourceModel, targetModel);
-  cleanupDrag();
-}
-
-function onDragEnd(): void {
-  cleanupDrag();
 }
 
 defineExpose({
@@ -154,33 +97,10 @@ defineExpose({
           v-for="m in filteredModels"
           :key="m"
           class="dropdown-item"
-          :class="{
-            selected: m === modelValue,
-            'is-dragging': draggedModel === m,
-            'is-drag-over': dragOverModel === m && draggedModel !== m
-          }"
-          draggable="true"
-          @dragstart="onDragStart($event, m)"
-          @dragover.prevent="onDragOver($event, m)"
-          @dragenter.prevent="onDragEnter(m)"
-          @dragleave="onDragLeave(m)"
-          @drop.prevent="onDrop(m)"
-          @dragend="onDragEnd"
+          :class="{ selected: m === modelValue }"
           @click="handleSelect(m)"
         >
-          <div class="item-left-group">
-            <span class="drag-grip" title="按住拖拽交换模型位置">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                <circle cx="8" cy="6" r="1.5" />
-                <circle cx="16" cy="6" r="1.5" />
-                <circle cx="8" cy="12" r="1.5" />
-                <circle cx="16" cy="12" r="1.5" />
-                <circle cx="8" cy="18" r="1.5" />
-                <circle cx="16" cy="18" r="1.5" />
-              </svg>
-            </span>
-            <span class="model-name-text">{{ m }}</span>
-          </div>
+          <span class="model-name-text">{{ m }}</span>
           <span v-if="m === modelValue" class="selected-check">✓</span>
         </li>
       </template>
@@ -266,40 +186,17 @@ defineExpose({
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast), transform var(--transition-fast);
-      border: 1px solid transparent;
+      transition: background var(--transition-fast), color var(--transition-fast);
       border-radius: var(--radius-sm);
       margin: 1px 4px;
       user-select: none;
 
-      .item-left-group {
-        display: flex;
-        align-items: center;
-        gap: 6px;
+      .model-name-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         min-width: 0;
         flex: 1;
-
-        .drag-grip {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--text-muted);
-          cursor: grab;
-          opacity: 0.35;
-          transition: opacity var(--transition-fast), color var(--transition-fast);
-          flex-shrink: 0;
-
-          &:hover {
-            opacity: 1;
-            color: var(--accent-primary);
-          }
-        }
-
-        .model-name-text {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
       }
 
       .selected-check {
@@ -313,33 +210,11 @@ defineExpose({
       &.active {
         background: rgba(99, 102, 241, 0.15);
         color: #fff;
-
-        .drag-grip {
-          opacity: 0.85;
-        }
-      }
-
-      &:active .drag-grip {
-        cursor: grabbing;
       }
 
       &.selected {
         color: var(--accent-primary);
         font-weight: 600;
-      }
-
-      &.is-dragging {
-        opacity: 0.35;
-        background: rgba(99, 102, 241, 0.15);
-        border: 1px dashed rgba(99, 102, 241, 0.6);
-      }
-
-      &.is-drag-over {
-        background: rgba(99, 102, 241, 0.28);
-        border: 1px solid var(--accent-primary);
-        box-shadow: 0 0 10px rgba(99, 102, 241, 0.35);
-        transform: translateY(-1px);
-        color: #fff;
       }
     }
 

@@ -43,7 +43,6 @@ const {
   statusColor,
   fetchModels,
   checkAndTriggerAutoFetch,
-  swapModels,
   selectModel,
   resetModelList,
 } = useModelFetch({
@@ -181,7 +180,6 @@ defineExpose({
       :status-bar-text="statusBarText"
       :status-color="statusColor"
       @select="handleSelect"
-      @swap="swapModels"
     />
   </div>
 </template>

@@ -37,7 +37,7 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
     if (saved && saved.length > 0) {
       availableModels.value = saved;
       isFetchedFromApi.value = true;
-      statusBarText.value = `已加载本地保存的 ${saved.length} 个模型（拖动可交换排序）`;
+      statusBarText.value = `已加载本地保存的 ${saved.length} 个模型`;
       statusColor.value = "";
     } else {
       availableModels.value = [];
@@ -73,7 +73,7 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
         availableModels.value = mergedList;
         saveModelsToStorage(url, mergedList);
         isFetchedFromApi.value = true;
-        statusBarText.value = `已成功获取 ${mergedList.length} 个模型（拖动可交换排序）`;
+        statusBarText.value = `已成功获取 ${mergedList.length} 个模型`;
         statusColor.value = "var(--success)";
 
         if (options.autoSelectFirst) {
@@ -121,24 +121,6 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
           }
         }, 800);
       }
-    }
-  }
-
-  function swapModels(sourceModel: string, targetModel: string): void {
-    const props = getProps();
-    const sourceIdx = availableModels.value.indexOf(sourceModel);
-    const targetIdx = availableModels.value.indexOf(targetModel);
-
-    if (sourceIdx !== -1 && targetIdx !== -1) {
-      const nextList = [...availableModels.value];
-      const temp = nextList[sourceIdx];
-      nextList[sourceIdx] = nextList[targetIdx];
-      nextList[targetIdx] = temp;
-      availableModels.value = nextList;
-      saveModelsToStorage(props.baseUrl, nextList);
-
-      statusBarText.value = `已交换「${sourceModel}」与「${targetModel}」顺序并保存`;
-      statusColor.value = "var(--success)";
     }
   }
 
@@ -197,7 +179,6 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
     loadInitialModels,
     fetchModels,
     checkAndTriggerAutoFetch,
-    swapModels,
     selectModel,
     resetModelList,
   };

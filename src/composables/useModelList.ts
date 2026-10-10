@@ -22,7 +22,6 @@ export interface UseModelListReturn {
   ) => Promise<void>;
   selectModel: (model: string, config: ClientConfig) => void;
   resetModels: () => void;
-  swapModels: (sourceModel: string, targetModel: string, baseUrl?: string) => void;
 }
 
 export function useModelList(): UseModelListReturn {
@@ -123,25 +122,6 @@ export function useModelList(): UseModelListReturn {
     closeDropdown();
   }
 
-  function swapModels(sourceModel: string, targetModel: string, baseUrl?: string): void {
-    const sIdx = availableModels.value.indexOf(sourceModel);
-    const tIdx = availableModels.value.indexOf(targetModel);
-    if (sIdx !== -1 && tIdx !== -1 && sIdx !== tIdx) {
-      const next = [...availableModels.value];
-      const temp = next[sIdx];
-      next[sIdx] = next[tIdx];
-      next[tIdx] = temp;
-      availableModels.value = next;
-      const clean = (baseUrl || "").trim().toLowerCase().replace(/\/+$/, "");
-      const key = clean ? `modeltrace_models_${encodeURIComponent(clean)}` : "modeltrace_models_default";
-      try {
-        localStorage.setItem(key, JSON.stringify(next));
-      } catch (err) {
-        console.warn("保存模型列表失败:", err);
-      }
-    }
-  }
-
   function resetModels(): void {
     availableModels.value = [];
     isFetchedFromApi.value = false;
@@ -167,6 +147,5 @@ export function useModelList(): UseModelListReturn {
     fetchModels,
     selectModel,
     resetModels,
-    swapModels,
   };
 }

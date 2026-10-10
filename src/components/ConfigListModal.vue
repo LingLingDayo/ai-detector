@@ -42,6 +42,7 @@ function handleDragStart(e: DragEvent, id: string): void {
 }
 
 function handleDragOver(e: DragEvent, id: string): void {
+  e.preventDefault();
   if (!draggedId.value || draggedId.value === id) return;
   if (e.dataTransfer) {
     e.dataTransfer.dropEffect = "move";
@@ -49,19 +50,26 @@ function handleDragOver(e: DragEvent, id: string): void {
   dragOverId.value = id;
 }
 
-function handleDragEnter(id: string): void {
+function handleDragEnter(e: DragEvent, id: string): void {
+  e.preventDefault();
   if (!draggedId.value || draggedId.value === id) return;
   dragOverId.value = id;
 }
 
-function handleDragLeave(id: string): void {
+function handleDragLeave(e: DragEvent, id: string): void {
+  const currentTarget = e.currentTarget as HTMLElement | null;
+  const relatedTarget = e.relatedTarget as Node | null;
+  if (currentTarget && relatedTarget && currentTarget.contains(relatedTarget)) {
+    return;
+  }
   if (dragOverId.value === id) {
     dragOverId.value = null;
   }
 }
 
-function handleDrop(targetId: string): void {
-  const sourceId = draggedId.value;
+function handleDrop(e: DragEvent, targetId: string): void {
+  e.preventDefault();
+  const sourceId = draggedId.value || e.dataTransfer?.getData("text/plain");
   if (sourceId && sourceId !== targetId) {
     emit("swap", { sourceId, targetId });
   }
