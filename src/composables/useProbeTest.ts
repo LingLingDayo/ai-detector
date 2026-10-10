@@ -32,6 +32,7 @@ export interface UseProbeTestReturn {
   analysisResult: Ref<GlobalAnalysisResult | null>;
   totalBankModelsCount: number;
   startTest: (config: ClientConfig) => Promise<void>;
+  cancelTest: () => void;
   resetTest: () => void;
   refreshQuestions: () => void;
   refreshSingleQuestion: (index: number) => void;
@@ -53,6 +54,7 @@ export function useProbeTest(): UseProbeTestReturn {
   const currentChallenges = ref<Challenge[]>(generateChallenges(totalCount));
 
   let currentRunId = 0;
+  let abortController: AbortController | null = null;
 
   function createInitialSteps(challenges: Challenge[]): ProbeStepItem[] {
     return challenges.map((ch, idx) => ({
@@ -108,8 +110,33 @@ export function useProbeTest(): UseProbeTestReturn {
     }
   }
 
+  function cancelTest(): void {
+    if (!isRunning.value) return;
+    currentRunId += 1;
+    abortController?.abort();
+    abortController = null;
+    isRunning.value = false;
+
+    steps.value = steps.value.map((s) => {
+      if (s.state === "working" || s.state === "pending") {
+        return {
+          ...s,
+          state: "cancelled",
+          stateText: "已取消",
+          statText: "已中断",
+        };
+      }
+      return s;
+    });
+
+    statusTitle.value = "测试已取消";
+    statusDesc.value = "测试已中断，再次点击开始按钮重新测试";
+  }
+
   function resetTest(): void {
     currentRunId += 1;
+    abortController?.abort();
+    abortController = null;
     isRunning.value = false;
     hasStarted.value = false;
     hasResult.value = false;
@@ -143,6 +170,8 @@ export function useProbeTest(): UseProbeTestReturn {
     }
 
     const runId = ++currentRunId;
+    abortController?.abort();
+    abortController = new AbortController();
 
     // Reset UI state for new test run
     isRunning.value = true;
@@ -194,6 +223,7 @@ export function useProbeTest(): UseProbeTestReturn {
             reasoningEffort,
             stream: isStream,
             timeoutSeconds,
+            signal: abortController?.signal,
           });
 
           if (runId !== currentRunId) return;
@@ -304,6 +334,7 @@ export function useProbeTest(): UseProbeTestReturn {
 
     isRunning.value = false;
     hasResult.value = true;
+    abortController = null;
   }
 
   return {
@@ -321,6 +352,7 @@ export function useProbeTest(): UseProbeTestReturn {
     analysisResult,
     totalBankModelsCount,
     startTest,
+    cancelTest,
     resetTest,
     refreshQuestions,
     refreshSingleQuestion,

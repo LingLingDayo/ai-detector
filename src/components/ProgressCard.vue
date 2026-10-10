@@ -402,6 +402,22 @@ function closeModal(): void {
           }
         }
       }
+
+      &.cancelled {
+        border-color: rgba(245, 158, 11, 0.4);
+        background: rgba(245, 158, 11, 0.06);
+
+        .step-badge {
+          background: rgba(245, 158, 11, 0.2);
+          border-color: rgba(245, 158, 11, 0.4);
+          color: #fbbf24;
+        }
+
+        .step-state,
+        .step-stat {
+          color: #fbbf24;
+        }
+      }
     }
   }
 

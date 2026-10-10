@@ -266,6 +266,7 @@ export async function sendProbe({
   reasoningEffort = "high",
   stream = true,
   timeoutSeconds,
+  signal,
 }: SendProbeOptions): Promise<ProbeResponse> {
   const isStream = stream !== false;
   const actualTimeout = timeoutSeconds ?? (isStream ? 90 : 240);
@@ -403,6 +404,14 @@ export async function sendProbe({
   }
 
   const controller = new AbortController();
+  if (signal) {
+    if (signal.aborted) {
+      throw new DOMException("The user aborted a request.", "AbortError");
+    }
+    signal.addEventListener("abort", () => {
+      controller.abort();
+    });
+  }
   let firstResponseReceived = false;
   const timeoutTimer = setTimeout(() => {
     if (!firstResponseReceived) {

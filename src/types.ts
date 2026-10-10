@@ -30,6 +30,7 @@ export interface SendProbeOptions {
   reasoningEffort?: string;
   stream?: boolean;
   timeoutSeconds?: number;
+  signal?: AbortSignal;
 }
 
 export interface ProbeResponse {
@@ -43,7 +44,7 @@ export type TauriInvokeFn = <T = unknown>(
   args?: Record<string, unknown>
 ) => Promise<T>;
 
-export type StepStatus = "pending" | "working" | "done" | "error";
+export type StepStatus = "pending" | "working" | "done" | "error" | "cancelled";
 
 export interface ProbeStepItem {
   id: number;

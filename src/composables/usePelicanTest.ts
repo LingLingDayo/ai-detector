@@ -30,6 +30,7 @@ export interface PelicanTestState {
   setPelicanPrompt: (newPrompt: string) => void;
   resetPelicanPrompt: () => void;
   startPelicanTest: (config: ClientConfig) => Promise<void>;
+  cancelPelicanTest: () => void;
   resetPelicanTest: () => void;
 }
 
@@ -178,6 +179,18 @@ export function usePelicanTest(): PelicanTestState {
     setPelicanPrompt(DEFAULT_PELICAN_PROMPT);
   }
 
+  let currentRunId = 0;
+  let abortController: AbortController | null = null;
+
+  function cancelPelicanTest(): void {
+    if (!isPelicanRunning.value) return;
+    currentRunId += 1;
+    abortController?.abort();
+    abortController = null;
+    isPelicanRunning.value = false;
+    errorMsg.value = "测试已取消，再次点击开始按钮重新测试";
+  }
+
   async function startPelicanTest(config: ClientConfig): Promise<void> {
     if (isPelicanRunning.value) return;
 
@@ -192,9 +205,14 @@ export function usePelicanTest(): PelicanTestState {
       return;
     }
 
+    const runId = ++currentRunId;
+    abortController?.abort();
+    abortController = new AbortController();
+
     isPelicanRunning.value = true;
     errorMsg.value = null;
     hasTested.value = true;
+    hasResult.value = false;
     pelicanSvg.value = "";
     pelicanContent.value = "";
     pelicanContentType.value = "svg";
@@ -215,7 +233,10 @@ export function usePelicanTest(): PelicanTestState {
         reasoningEffort: config.reasoningEffort || "high",
         stream: isStream,
         timeoutSeconds,
+        signal: abortController?.signal,
       });
+
+      if (runId !== currentRunId) return;
 
       rawResponseText.value = res.text || "";
       durationMs.value = res.duration_ms || Date.now() - startTime;
@@ -230,6 +251,7 @@ export function usePelicanTest(): PelicanTestState {
       }
       hasResult.value = true;
     } catch (err: unknown) {
+      if (runId !== currentRunId) return;
       const message =
         err instanceof Error
           ? err.message
@@ -240,11 +262,17 @@ export function usePelicanTest(): PelicanTestState {
       durationMs.value = Date.now() - startTime;
       hasResult.value = true;
     } finally {
-      isPelicanRunning.value = false;
+      if (runId === currentRunId) {
+        isPelicanRunning.value = false;
+        abortController = null;
+      }
     }
   }
 
   function resetPelicanTest(): void {
+    currentRunId += 1;
+    abortController?.abort();
+    abortController = null;
     isPelicanRunning.value = false;
     pelicanSvg.value = "";
     pelicanContent.value = "";
@@ -272,6 +300,7 @@ export function usePelicanTest(): PelicanTestState {
     setPelicanPrompt,
     resetPelicanPrompt,
     startPelicanTest,
+    cancelPelicanTest,
     resetPelicanTest,
   };
 }

@@ -28,6 +28,7 @@ const {
   statusAlert,
   analysisResult,
   startTest,
+  cancelTest,
   resetTest,
   refreshQuestions,
   refreshSingleQuestion,
@@ -48,6 +49,7 @@ const {
   setPelicanPrompt,
   resetPelicanPrompt,
   startPelicanTest,
+  cancelPelicanTest,
   resetPelicanTest,
 } = usePelicanTest();
 
@@ -94,10 +96,26 @@ onMounted(() => {
   loadConfig();
 });
 
+function handleCancelTest(): void {
+  if (activeMode.value === "probe") {
+    cancelTest();
+  } else {
+    cancelPelicanTest();
+  }
+}
+
 function handleStartTest(): void {
   if (activeMode.value === "probe") {
+    if (isRunning.value) {
+      cancelTest();
+      return;
+    }
     startTest(config);
   } else {
+    if (isPelicanRunning.value) {
+      cancelPelicanTest();
+      return;
+    }
     startPelicanTest(config);
   }
 }
@@ -135,6 +153,7 @@ async function handleResetConfig(): Promise<void> {
         @update:is-advanced-open="(v) => (isAdvancedOpen = v)"
         @update:active-mode="(v) => (activeMode = v)"
         @submit="handleStartTest"
+        @cancel="handleCancelTest"
         @reset="handleResetConfig"
         @open-save-config="openSaveCurrentModal"
         @open-config-list="openConfigListModal"

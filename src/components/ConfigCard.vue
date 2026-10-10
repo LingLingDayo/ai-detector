@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import type { ClientConfig } from "../types";
 import ModelCombobox from "./ModelCombobox.vue";
 import AdvancedSettings from "./AdvancedSettings.vue";
@@ -28,12 +28,28 @@ const emit = defineEmits<{
   (e: "update:isAdvancedOpen", value: boolean): void;
   (e: "update:activeMode", value: "probe" | "pelican"): void;
   (e: "submit"): void;
+  (e: "cancel"): void;
   (e: "reset"): void;
   (e: "open-save-config"): void;
   (e: "open-config-list"): void;
 }>();
 
 const comboboxRef = ref<InstanceType<typeof ModelCombobox> | null>(null);
+
+const isCurrentRunning = computed(() => {
+  return props.activeMode === "probe" ? props.isRunning : Boolean(props.isPelicanRunning);
+});
+
+const isOtherRunning = computed(() => {
+  return props.activeMode === "probe" ? Boolean(props.isPelicanRunning) : props.isRunning;
+});
+
+function handleStartButtonClick(e: MouseEvent): void {
+  if (isCurrentRunning.value) {
+    e.preventDefault();
+    emit("cancel");
+  }
+}
 
 function handleReset(): void {
   emit("reset");
@@ -246,23 +262,33 @@ defineExpose({
       <!-- 操作按钮 -->
       <div class="form-actions">
         <button
-          type="submit"
+          :type="isCurrentRunning ? 'button' : 'submit'"
           class="btn btn-primary"
+          :class="{ 'btn-cancel': isCurrentRunning }"
           id="btn-start"
-          :disabled="isRunning || isPelicanRunning"
+          :disabled="isOtherRunning"
           :title="
-            hasResult
+            isCurrentRunning
+              ? '点击取消当前正在进行的测试'
+              : hasResult
               ? (activeMode === 'probe' ? '重新执行 3 轮探测并计算模型归因' : '重新发起鹈鹕测试，让 AI 重新绘制 SVG')
               : (activeMode === 'probe' ? '执行 3 轮探测，并在统一库中比对归因' : '发起鹈鹕测试，让 AI 绘制骑自行车 SVG')
           "
+          @click="handleStartButtonClick"
         >
           <span
             class="btn-spinner"
-            :class="{ hidden: !(activeMode === 'probe' ? isRunning : isPelicanRunning) }"
+            :class="{ hidden: !isCurrentRunning }"
             id="start-spinner"
           ></span>
           <span class="btn-text">
-            {{ hasResult ? '重新生成' : (activeMode === 'probe' ? '开始测试 (共 3 题)' : '开始测试') }}
+            {{
+              isCurrentRunning
+                ? '取消测试'
+                : hasResult
+                ? '重新生成'
+                : (activeMode === 'probe' ? '开始测试 (共 3 题)' : '开始测试')
+            }}
           </span>
         </button>
         <button
@@ -447,5 +473,21 @@ defineExpose({
   display: flex;
   gap: 8px;
   margin-top: 2px;
+
+  .btn-cancel {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(239, 68, 68, 0.35);
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+      box-shadow: 0 5px 16px rgba(239, 68, 68, 0.5);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+  }
 }
 </style>
