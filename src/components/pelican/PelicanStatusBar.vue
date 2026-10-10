@@ -1,14 +1,26 @@
 <script setup lang="ts">
-defineProps<{
-  isRunning: boolean;
-  errorMessage: string | null;
-  svg: string;
-  modelName: string;
-  durationMs: number;
-  bgTheme: "dark" | "checker";
-  showCode: boolean;
-  svgCopied: boolean;
-}>();
+import { computed } from "vue";
+import type { PelicanContentType } from "../../composables/usePelicanTest";
+
+const props = withDefaults(
+  defineProps<{
+    isRunning: boolean;
+    errorMessage: string | null;
+    svg?: string;
+    content?: string;
+    contentType?: PelicanContentType;
+    modelName: string;
+    durationMs: number;
+    bgTheme: "dark" | "checker";
+    showCode: boolean;
+    svgCopied: boolean;
+  }>(),
+  {
+    svg: "",
+    content: "",
+    contentType: "svg",
+  }
+);
 
 const emit = defineEmits<{
   (e: "update:bgTheme", value: "dark" | "checker"): void;
@@ -16,6 +28,9 @@ const emit = defineEmits<{
   (e: "copy-svg"): void;
   (e: "download-svg"): void;
 }>();
+
+const displayContent = computed(() => props.content || props.svg || "");
+const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG"));
 </script>
 
 <template>
@@ -23,19 +38,19 @@ const emit = defineEmits<{
     <div class="status-left">
       <span v-if="isRunning" class="state-pill running">
         <span class="state-spinner"></span>
-        正在生成 SVG 图形...
+        正在生成图形...
       </span>
       <span v-else-if="errorMessage" class="state-pill error">
         <span class="dot error"></span>
         请求异常
       </span>
-      <span v-else-if="svg" class="state-pill success">
+      <span v-else-if="displayContent" class="state-pill success">
         <span class="dot success"></span>
-        SVG 渲染就绪
+        {{ typeUpper }} 渲染就绪
       </span>
       <span v-else class="state-pill warning">
         <span class="dot warning"></span>
-        未提取到有效 SVG
+        未提取到有效 {{ typeUpper }}
       </span>
 
       <span v-if="modelName" class="meta-item">
@@ -47,7 +62,7 @@ const emit = defineEmits<{
     </div>
 
     <!-- 背景样式与视图切换 -->
-    <div v-if="svg && !isRunning" class="view-controls">
+    <div v-if="displayContent && !isRunning" class="view-controls">
       <div class="bg-switch-group">
         <button
           type="button"
@@ -72,7 +87,7 @@ const emit = defineEmits<{
       <button
         type="button"
         class="ctrl-btn"
-        title="复制 SVG 源码"
+        :title="`复制 ${typeUpper} 源码`"
         @click="emit('copy-svg')"
       >
         <svg
@@ -102,13 +117,13 @@ const emit = defineEmits<{
         >
           <polyline points="20 6 9 17 4 12" />
         </svg>
-        <span>{{ svgCopied ? "已复制" : "复制 SVG" }}</span>
+        <span>{{ svgCopied ? "已复制" : `复制 ${typeUpper}` }}</span>
       </button>
 
       <button
         type="button"
         class="ctrl-btn"
-        title="下载 SVG 矢量文件"
+        :title="`下载 ${typeUpper} 文件`"
         @click="emit('download-svg')"
       >
         <svg
@@ -125,14 +140,14 @@ const emit = defineEmits<{
           <polyline points="7 10 12 15 17 10" />
           <line x1="12" y1="15" x2="12" y2="3" />
         </svg>
-        <span>下载 SVG</span>
+        <span>下载 {{ typeUpper }}</span>
       </button>
 
       <button
         type="button"
         class="ctrl-btn"
         :class="{ active: showCode }"
-        title="查看或折叠 SVG 源码"
+        :title="`查看或折叠 ${typeUpper} 源码`"
         @click="emit('update:showCode', !showCode)"
       >
         <svg

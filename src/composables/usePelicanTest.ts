@@ -7,9 +7,19 @@ export const DEFAULT_PELICAN_PROMPT =
   "Generate an SVG of a pelican riding a bicycle. Reply with the SVG code only.";
 export const PELICAN_PROMPT = DEFAULT_PELICAN_PROMPT;
 
+export type PelicanContentType = "svg" | "html";
+
+export interface RenderableContent {
+  content: string;
+  contentType: PelicanContentType;
+  hasContent: boolean;
+}
+
 export interface PelicanTestState {
   isPelicanRunning: Ref<boolean>;
   pelicanSvg: Ref<string>;
+  pelicanContent: Ref<string>;
+  pelicanContentType: Ref<PelicanContentType>;
   rawResponseText: Ref<string>;
   durationMs: Ref<number>;
   testedModel: Ref<string>;
@@ -23,37 +33,105 @@ export interface PelicanTestState {
   resetPelicanTest: () => void;
 }
 
-export function extractSvgFromText(text: string): { svg: string; hasSvg: boolean } {
-  if (!text) return { svg: "", hasSvg: false };
+export function isPureSvg(str: string): boolean {
+  const trimmed = str.trim();
+  if (trimmed.startsWith("<?xml")) {
+    const svgIdx = trimmed.indexOf("<svg");
+    return svgIdx !== -1 && trimmed.endsWith("</svg>");
+  }
+  return /^<svg[\s\S]*<\/svg>$/i.test(trimmed);
+}
 
-  // 1. 优先尝试从 markdown 代码块中提取包含 <svg ... </svg> 的内容
-  const codeBlockRegex = /```(?:xml|svg|html)?\s*([\s\S]*?)```/gi;
+export function isHtmlDocumentOrSnippet(str: string): boolean {
+  const trimmed = str.trim();
+  if (/<!DOCTYPE\s+html|<html[\s>]/i.test(trimmed)) {
+    return true;
+  }
+  if (/<(?:head|body|canvas|style|script|div|main|section|article)[\s>]/i.test(trimmed)) {
+    return true;
+  }
+  return false;
+}
+
+export function extractRenderableContent(text: string): RenderableContent {
+  if (!text || !text.trim()) {
+    return { content: "", contentType: "svg", hasContent: false };
+  }
+
+  const trimmedText = text.trim();
+
+  // 1. 优先尝试从 markdown 代码块中提取
+  const codeBlockRegex = /```(?:xml|svg|html|htm)?\s*([\s\S]*?)```/gi;
   let match: RegExpExecArray | null;
-  while ((match = codeBlockRegex.exec(text)) !== null) {
+  while ((match = codeBlockRegex.exec(trimmedText)) !== null) {
     const blockContent = match[1].trim();
+    if (!blockContent) continue;
+
+    // 1.1 如果代码块内容本身就是纯 SVG
+    if (isPureSvg(blockContent)) {
+      return { content: blockContent, contentType: "svg", hasContent: true };
+    }
+
+    // 1.2 如果代码块是完整 HTML 或富 HTML 片段
+    if (isHtmlDocumentOrSnippet(blockContent)) {
+      const svgMatch = blockContent.match(/<svg[\s\S]*?<\/svg>/i);
+      const hasOtherHtmlTags = /<(?:!DOCTYPE|html|head|body|canvas|style|script|div|span|p|section|main)[\s>]/i.test(blockContent);
+      if (svgMatch && !hasOtherHtmlTags) {
+        return { content: svgMatch[0].trim(), contentType: "svg", hasContent: true };
+      }
+      return { content: blockContent, contentType: "html", hasContent: true };
+    }
+
+    // 1.3 代码块中包含内嵌的 <svg ... </svg>
     const svgMatch = blockContent.match(/<svg[\s\S]*?<\/svg>/i);
     if (svgMatch) {
-      return { svg: svgMatch[0].trim(), hasSvg: true };
-    }
-    if (blockContent.startsWith("<svg") && blockContent.includes("</svg>")) {
-      return { svg: blockContent, hasSvg: true };
+      return { content: svgMatch[0].trim(), contentType: "svg", hasContent: true };
     }
   }
 
-  // 2. 全文正则匹配首个完整的 <svg ... </svg>
-  const directSvgMatch = text.match(/<svg[\s\S]*?<\/svg>/i);
+  // 2. 全文正则匹配完整 HTML 文档 (<!DOCTYPE html> 或 <html>...</html>)
+  const fullHtmlMatch = trimmedText.match(/(?:<!DOCTYPE\s+html[\s\S]*?<\/html>|<html[\s\S]*?<\/html>)/i);
+  if (fullHtmlMatch) {
+    return { content: fullHtmlMatch[0].trim(), contentType: "html", hasContent: true };
+  }
+
+  // 3. 全文匹配独立完整的 <svg ... </svg>
+  const directSvgMatch = trimmedText.match(/<svg[\s\S]*?<\/svg>/i);
   if (directSvgMatch) {
-    return { svg: directSvgMatch[0].trim(), hasSvg: true };
+    if (isHtmlDocumentOrSnippet(trimmedText) && /<(?:!DOCTYPE|html|head|body|canvas|style|script|div)[\s>]/i.test(trimmedText)) {
+      return { content: trimmedText, contentType: "html", hasContent: true };
+    }
+    return { content: directSvgMatch[0].trim(), contentType: "svg", hasContent: true };
   }
 
-  // 3. 容错处理：若存在 <svg 开头但由于截断未闭合
-  const openSvgIndex = text.indexOf("<svg");
+  // 4. 全文匹配富 HTML 片段（包含 style/div/canvas/script 等且包含对应闭合标签）
+  if (isHtmlDocumentOrSnippet(trimmedText)) {
+    const hasClosingTag = /<\/(?:html|body|div|style|script|canvas|svg|section|main)>/i.test(trimmedText);
+    if (hasClosingTag) {
+      return { content: trimmedText, contentType: "html", hasContent: true };
+    }
+  }
+
+  // 5. 容错处理：由于流式输出或截断未闭合的 <svg 或 <html / <!DOCTYPE html
+  const openHtmlIndex = trimmedText.search(/<!DOCTYPE\s+html|<html/i);
+  if (openHtmlIndex !== -1) {
+    return { content: trimmedText.substring(openHtmlIndex).trim(), contentType: "html", hasContent: true };
+  }
+
+  const openSvgIndex = trimmedText.indexOf("<svg");
   if (openSvgIndex !== -1) {
-    const candidate = text.substring(openSvgIndex).trim();
-    return { svg: candidate, hasSvg: true };
+    return { content: trimmedText.substring(openSvgIndex).trim(), contentType: "svg", hasContent: true };
   }
 
-  return { svg: "", hasSvg: false };
+  return { content: "", contentType: "svg", hasContent: false };
+}
+
+export function extractSvgFromText(text: string): { svg: string; hasSvg: boolean } {
+  const res = extractRenderableContent(text);
+  return {
+    svg: res.content,
+    hasSvg: res.hasContent,
+  };
 }
 
 function loadInitialPelicanPrompt(): string {
@@ -71,6 +149,8 @@ function loadInitialPelicanPrompt(): string {
 export function usePelicanTest(): PelicanTestState {
   const isPelicanRunning = ref(false);
   const pelicanSvg = ref("");
+  const pelicanContent = ref("");
+  const pelicanContentType = ref<PelicanContentType>("svg");
   const rawResponseText = ref("");
   const durationMs = ref(0);
   const testedModel = ref("");
@@ -116,6 +196,8 @@ export function usePelicanTest(): PelicanTestState {
     errorMsg.value = null;
     hasTested.value = true;
     pelicanSvg.value = "";
+    pelicanContent.value = "";
+    pelicanContentType.value = "svg";
     rawResponseText.value = "";
     testedModel.value = config.modelName;
 
@@ -138,11 +220,13 @@ export function usePelicanTest(): PelicanTestState {
       rawResponseText.value = res.text || "";
       durationMs.value = res.duration_ms || Date.now() - startTime;
 
-      const { svg, hasSvg } = extractSvgFromText(res.text || "");
-      if (hasSvg) {
-        pelicanSvg.value = svg;
+      const { content, contentType, hasContent } = extractRenderableContent(res.text || "");
+      if (hasContent) {
+        pelicanContent.value = content;
+        pelicanSvg.value = content;
+        pelicanContentType.value = contentType;
       } else {
-        errorMsg.value = "模型未返回有效的 SVG 格式代码";
+        errorMsg.value = "模型未返回有效的 SVG 或 HTML 代码";
       }
       hasResult.value = true;
     } catch (err: unknown) {
@@ -163,6 +247,8 @@ export function usePelicanTest(): PelicanTestState {
   function resetPelicanTest(): void {
     isPelicanRunning.value = false;
     pelicanSvg.value = "";
+    pelicanContent.value = "";
+    pelicanContentType.value = "svg";
     rawResponseText.value = "";
     durationMs.value = 0;
     testedModel.value = "";
@@ -174,6 +260,8 @@ export function usePelicanTest(): PelicanTestState {
   return {
     isPelicanRunning,
     pelicanSvg,
+    pelicanContent,
+    pelicanContentType,
     rawResponseText,
     durationMs,
     testedModel,

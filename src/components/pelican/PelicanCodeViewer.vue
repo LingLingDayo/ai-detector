@@ -1,23 +1,38 @@
 <script setup lang="ts">
-defineProps<{
-  svg: string;
-  svgCopied: boolean;
-}>();
+import { computed } from "vue";
+import type { PelicanContentType } from "../../composables/usePelicanTest";
+
+const props = withDefaults(
+  defineProps<{
+    svg?: string;
+    content?: string;
+    contentType?: PelicanContentType;
+    svgCopied: boolean;
+  }>(),
+  {
+    svg: "",
+    content: "",
+    contentType: "svg",
+  }
+);
 
 const emit = defineEmits<{
   (e: "copy-svg"): void;
 }>();
+
+const displayContent = computed(() => props.content || props.svg || "");
+const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG"));
 </script>
 
 <template>
   <div class="code-viewer-box">
     <div class="code-viewer-header">
-      <span>SVG 源码 ({{ svg.length }} 字符)</span>
+      <span>{{ typeUpper }} 源码 ({{ displayContent.length }} 字符)</span>
       <button type="button" class="btn-copy-code" @click="emit('copy-svg')">
         {{ svgCopied ? "已复制 ✓" : "复制代码" }}
       </button>
     </div>
-    <pre class="code-pre"><code>{{ svg }}</code></pre>
+    <pre class="code-pre"><code>{{ displayContent }}</code></pre>
   </div>
 </template>
 

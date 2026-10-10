@@ -36,6 +36,8 @@ const {
 const {
   isPelicanRunning,
   pelicanSvg,
+  pelicanContent,
+  pelicanContentType,
   rawResponseText,
   durationMs,
   testedModel,
@@ -164,6 +166,8 @@ async function handleResetConfig(): Promise<void> {
         v-else-if="activeMode === 'pelican'"
         :is-running="isPelicanRunning"
         :svg="pelicanSvg"
+        :content="pelicanContent"
+        :content-type="pelicanContentType"
         :raw-text="rawResponseText"
         :duration-ms="durationMs"
         :model-name="testedModel || config.modelName"

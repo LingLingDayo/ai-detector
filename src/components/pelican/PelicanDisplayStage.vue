@@ -1,10 +1,94 @@
 <script setup lang="ts">
-defineProps<{
-  isRunning: boolean;
-  svg: string;
-  rawText: string;
-  bgTheme: "dark" | "checker";
-}>();
+import { computed } from "vue";
+import type { PelicanContentType } from "../../composables/usePelicanTest";
+
+const props = withDefaults(
+  defineProps<{
+    isRunning: boolean;
+    content?: string;
+    svg?: string;
+    contentType?: PelicanContentType;
+    rawText: string;
+    bgTheme: "dark" | "checker";
+  }>(),
+  {
+    content: "",
+    svg: "",
+    contentType: "svg",
+  }
+);
+
+const displayContent = computed(() => props.content || props.svg || "");
+
+const wrappedHtml = computed(() => {
+  if (!displayContent.value) return "";
+  const raw = displayContent.value.trim();
+
+  // 如果已经包含完整 <html> 或 <!DOCTYPE html>
+  if (/<!DOCTYPE\s+html|<html[\s>]/i.test(raw)) {
+    const styleInjection = `
+<style id="__pelican_injected_style">
+  html {
+    background-color: transparent !important;
+  }
+  body {
+    background-color: transparent !important;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  svg, canvas, img {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+  }
+</style>
+`;
+    if (/<head[\s>]/i.test(raw)) {
+      return raw.replace(/<head[\s>]/i, (m) => `${m}${styleInjection}`);
+    }
+    return `${styleInjection}${raw}`;
+  }
+
+  // 如果是 HTML 代码片段，包裹为标准 HTML 文档
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    html {
+      background-color: transparent !important;
+    }
+    body {
+      margin: 0;
+      padding: 16px;
+      min-height: 100vh;
+      background-color: transparent !important;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #e2e8f0;
+      overflow: auto;
+    }
+    svg, canvas, img {
+      max-width: 100%;
+      max-height: 90vh;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  ${raw}
+</body>
+</html>`;
+});
 </script>
 
 <template>
@@ -14,26 +98,43 @@ defineProps<{
       <div class="radar-spinner"></div>
       <div class="loading-text">
         <p class="loading-title">正在调用模型绘制鹈鹕骑自行车...</p>
-        <p class="loading-desc">SVG 生成通常耗时 10 ~ 60 秒，请稍候</p>
+        <p class="loading-desc">图形生成通常耗时 10 ~ 60 秒，请稍候</p>
       </div>
     </div>
 
     <!-- 渲染成功态 -->
     <div
-      v-else-if="svg"
-      class="svg-stage"
+      v-else-if="displayContent"
+      class="display-stage svg-stage"
       :class="bgTheme"
     >
+      <!-- SVG 渲染 -->
       <div
+        v-if="contentType === 'svg'"
         class="svg-render-viewport"
-        v-html="svg"
+        v-html="displayContent"
       ></div>
+
+      <!-- HTML 渲染 -->
+      <div
+        v-else-if="contentType === 'html'"
+        class="html-render-viewport"
+      >
+        <iframe
+          class="html-render-frame"
+          :srcdoc="wrappedHtml"
+          sandbox="allow-scripts allow-same-origin"
+          title="Pelican HTML Render Viewport"
+          frameborder="0"
+          scrolling="auto"
+        ></iframe>
+      </div>
     </div>
 
-    <!-- 未提取出 SVG 且有原始返回文本态 -->
+    <!-- 未提取出 SVG/HTML 且有原始返回文本态 -->
     <div v-else-if="rawText" class="fallback-text-box">
       <div class="fallback-tip">
-        未能解析出标准 <code>&lt;svg&gt;</code> 标签，以下为模型返回的原始内容：
+        未能解析出标准 <code>&lt;svg&gt;</code> 或 <code>HTML</code> 结构，以下为模型返回的原始内容：
       </div>
       <pre class="raw-response-pre">{{ rawText }}</pre>
     </div>
@@ -84,7 +185,7 @@ defineProps<{
   }
 }
 
-.svg-stage {
+.display-stage {
   width: 100%;
   height: 100%;
   min-height: 340px;
@@ -129,6 +230,26 @@ defineProps<{
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
     user-select: none;
   }
+}
+
+.html-render-viewport {
+  width: 100%;
+  height: 460px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+.html-render-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  display: block;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
 }
 
 .fallback-text-box {

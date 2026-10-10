@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useClipboard } from "../composables/useClipboard";
-import { DEFAULT_PELICAN_PROMPT } from "../composables/usePelicanTest";
+import { DEFAULT_PELICAN_PROMPT, type PelicanContentType } from "../composables/usePelicanTest";
 import PelicanHeader from "./pelican/PelicanHeader.vue";
 import PelicanPromptBox from "./pelican/PelicanPromptBox.vue";
 import PelicanStatusBar from "./pelican/PelicanStatusBar.vue";
@@ -12,7 +12,9 @@ import PelicanRawResponse from "./pelican/PelicanRawResponse.vue";
 const props = withDefaults(
   defineProps<{
     isRunning: boolean;
-    svg: string;
+    svg?: string;
+    content?: string;
+    contentType?: PelicanContentType;
     rawText: string;
     durationMs: number;
     modelName: string;
@@ -21,6 +23,9 @@ const props = withDefaults(
     prompt?: string;
   }>(),
   {
+    svg: "",
+    content: "",
+    contentType: "svg",
     prompt: DEFAULT_PELICAN_PROMPT,
   }
 );
@@ -35,20 +40,25 @@ const { copied: svgCopied, copy: copySvg } = useClipboard();
 const showCode = ref(false);
 const bgTheme = ref<"dark" | "checker">("dark");
 
-function handleCopySvg(): void {
-  if (props.svg) {
-    copySvg(props.svg);
+const displayContent = computed(() => props.content || props.svg || "");
+
+function handleCopyContent(): void {
+  if (displayContent.value) {
+    copySvg(displayContent.value);
   }
 }
 
-function handleDownloadSvg(): void {
-  if (!props.svg) return;
-  const blob = new Blob([props.svg], { type: "image/svg+xml;charset=utf-8" });
+function handleDownloadContent(): void {
+  if (!displayContent.value) return;
+  const isHtml = props.contentType === "html";
+  const mimeType = isHtml ? "text/html;charset=utf-8" : "image/svg+xml;charset=utf-8";
+  const ext = isHtml ? "html" : "svg";
+  const blob = new Blob([displayContent.value], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   const cleanModel = (props.modelName || "model").replace(/[^a-zA-Z0-9_-]/g, "_");
   a.href = url;
-  a.download = `pelican-${cleanModel}-${Date.now()}.svg`;
+  a.download = `pelican-${cleanModel}-${Date.now()}.${ext}`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -73,7 +83,9 @@ function handleDownloadSvg(): void {
       v-if="hasTested || isRunning"
       :is-running="isRunning"
       :error-message="errorMessage"
-      :svg="svg"
+      :svg="displayContent"
+      :content="displayContent"
+      :content-type="contentType"
       :model-name="modelName"
       :duration-ms="durationMs"
       :bg-theme="bgTheme"
@@ -81,8 +93,8 @@ function handleDownloadSvg(): void {
       :svg-copied="svgCopied"
       @update:bg-theme="bgTheme = $event"
       @update:show-code="showCode = $event"
-      @copy-svg="handleCopySvg"
-      @download-svg="handleDownloadSvg"
+      @copy-svg="handleCopyContent"
+      @download-svg="handleDownloadContent"
     />
 
     <!-- 错误警告提示 -->
@@ -98,22 +110,26 @@ function handleDownloadSvg(): void {
     <PelicanDisplayStage
       v-if="hasTested || isRunning"
       :is-running="isRunning"
-      :svg="svg"
+      :svg="displayContent"
+      :content="displayContent"
+      :content-type="contentType"
       :raw-text="rawText"
       :bg-theme="bgTheme"
     />
 
-    <!-- 可折叠的 SVG 源码展示区 -->
+    <!-- 可折叠的源码展示区 -->
     <PelicanCodeViewer
-      v-if="showCode && svg && !isRunning"
-      :svg="svg"
+      v-if="showCode && displayContent && !isRunning"
+      :svg="displayContent"
+      :content="displayContent"
+      :content-type="contentType"
       :svg-copied="svgCopied"
-      @copy-svg="handleCopySvg"
+      @copy-svg="handleCopyContent"
     />
 
     <!-- 可折叠的完整模型原始文本展示区 -->
     <PelicanRawResponse
-      v-if="svg && rawText && rawText !== svg && !isRunning"
+      v-if="displayContent && rawText && rawText !== displayContent && !isRunning"
       :raw-text="rawText"
     />
   </section>
