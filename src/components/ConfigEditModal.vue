@@ -38,6 +38,7 @@ const emit = defineEmits<{
   ): void;
 }>();
 
+const formRef = ref<HTMLFormElement | null>(null);
 const nameInputRef = ref<HTMLInputElement | null>(null);
 const modalComboboxRef = ref<InstanceType<typeof ModelCombobox> | null>(null);
 const isKeyVisible = ref(false);
@@ -97,6 +98,11 @@ watch(
 );
 
 function handleSubmit(applyImmediately: boolean = false): void {
+  if (formRef.value && !formRef.value.checkValidity()) {
+    formRef.value.reportValidity();
+    return;
+  }
+
   const trimmedName = formData.name.trim();
   const trimmedBaseUrl = formData.baseUrl.trim();
   const trimmedApiKey = formData.apiKey.trim();
@@ -193,9 +199,15 @@ function handleSubmit(applyImmediately: boolean = false): void {
           </button>
         </div>
 
-        <!-- 弹窗表单 -->
-        <form class="modal-body form-content" @submit.prevent="handleSubmit(false)">
-          <!-- 配置名称 -->
+        <!-- 弹窗表单容器 -->
+        <form
+          ref="formRef"
+          class="modal-form-wrapper"
+          @submit.prevent="handleSubmit(false)"
+        >
+          <!-- 弹窗主体（可滚动区域） -->
+          <div class="modal-body form-content">
+            <!-- 配置名称 -->
           <div class="form-group">
             <label for="cfg-name">
               配置名称 <span class="required">*</span>
@@ -360,7 +372,9 @@ function handleSubmit(applyImmediately: boolean = false): void {
             </div>
           </div>
 
-          <!-- 弹窗底部操作栏 -->
+          </div>
+
+          <!-- 弹窗底部操作栏（固定显示） -->
           <div class="modal-footer">
             <button type="button" class="btn btn-ghost" @click="emit('close')">
               取消
@@ -421,6 +435,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
   padding: 14px 18px;
   border-bottom: 1px solid var(--border-subtle);
   background: rgba(18, 24, 38, 0.95);
+  flex-shrink: 0;
 
   .header-title-group {
     display: flex;
@@ -476,12 +491,22 @@ function handleSubmit(applyImmediately: boolean = false): void {
   }
 }
 
+.modal-form-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .modal-body {
   padding: 16px 18px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1;
+  min-height: 0;
 }
 
 .required {
@@ -545,9 +570,10 @@ function handleSubmit(applyImmediately: boolean = false): void {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 8px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 12px 18px;
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(18, 24, 38, 0.95);
+  flex-shrink: 0;
 
   .footer-action-right {
     display: flex;
