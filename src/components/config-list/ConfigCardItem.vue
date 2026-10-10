@@ -135,17 +135,13 @@ function maskApiKey(key?: string): string {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  cursor: grab;
+  cursor: default;
   user-select: none;
   transition: all var(--transition-fast);
 
   &:hover {
     border-color: rgba(99, 102, 241, 0.35);
     background: rgba(20, 28, 43, 0.75);
-  }
-
-  &:active {
-    cursor: grabbing;
   }
 
   &.is-active {
@@ -156,7 +152,6 @@ function maskApiKey(key?: string): string {
 
   &.is-dragging {
     opacity: 0.35;
-    cursor: grabbing;
     border-style: dashed;
     border-color: rgba(99, 102, 241, 0.6);
   }
