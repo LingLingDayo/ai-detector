@@ -67,7 +67,7 @@ export function useProbeTest(): UseProbeTestReturn {
 
   const steps = ref<ProbeStepItem[]>(createInitialSteps(currentChallenges.value));
 
-  const totalBankModelsCount = unifiedBank?.models?.length || 17;
+  const totalBankModelsCount = unifiedBank?.models?.length || 18;
 
   function refreshQuestions(): void {
     if (isRunning.value) return;
