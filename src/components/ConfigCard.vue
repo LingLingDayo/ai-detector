@@ -16,12 +16,14 @@ const props = withDefaults(
     isAdvancedOpen: boolean;
     settingsSummary: string;
     isConfigModified?: boolean;
+    isCurrentConfigSaved?: boolean;
   }>(),
   {
     isPelicanRunning: false,
     activeMode: "probe",
     hasResult: false,
     isConfigModified: false,
+    isCurrentConfigSaved: false,
   }
 );
 
@@ -81,6 +83,7 @@ defineExpose({
 
       <div class="header-actions-group">
         <button
+          v-if="!isCurrentConfigSaved"
           type="button"
           class="btn-header-action btn-save-config"
           id="btn-save-config"

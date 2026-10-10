@@ -70,6 +70,7 @@ const {
   editingConfigItem,
   settingsSummary,
   hasCurrentInput,
+  isCurrentConfigSaved,
   canSaveCurrent,
   isConfigModified,
   togglePasswordVisibility,
@@ -151,6 +152,7 @@ async function handleResetConfig(): Promise<void> {
         :is-advanced-open="isAdvancedOpen"
         :settings-summary="settingsSummary"
         :is-config-modified="isConfigModified"
+        :is-current-config-saved="isCurrentConfigSaved"
         @toggle-password="togglePasswordVisibility"
         @update:is-advanced-open="(v) => (isAdvancedOpen = v)"
         @update:active-mode="(v) => (activeMode = v)"
