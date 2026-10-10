@@ -5,7 +5,7 @@ import {
   type ConfirmType,
   type ConfirmStyleVariant,
   type ConfirmButtonVariant,
-} from "../composables/useConfirm";
+} from "../../composables/useConfirm";
 
 const { confirmState, handleConfirm: stateConfirm, handleCancel: stateCancel } = useConfirm();
 

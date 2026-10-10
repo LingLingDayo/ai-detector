@@ -7,7 +7,7 @@ import AppHeader from "./components/AppHeader.vue";
 import ConfigCard from "./components/ConfigCard.vue";
 import ConfigListModal from "./components/ConfigListModal.vue";
 import ConfigEditModal from "./components/ConfigEditModal.vue";
-import ConfirmModal from "./components/ConfirmModal.vue";
+import ConfirmModal from "./components/common/ConfirmModal.vue";
 import ProgressCard from "./components/ProgressCard.vue";
 import ResultCard from "./components/ResultCard.vue";
 import PelicanTestCard from "./components/PelicanTestCard.vue";

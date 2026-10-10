@@ -2,7 +2,7 @@
 import { ref, reactive, watch, nextTick } from "vue";
 import type { ConfigItem } from "../types";
 import { REASONING_EFFORT_OPTIONS } from "../constants";
-import CustomSelect, { type SelectOption } from "./CustomSelect.vue";
+import CustomSelect, { type SelectOption } from "./common/CustomSelect.vue";
 import ModelCombobox from "./ModelCombobox.vue";
 
 const API_FORMAT_OPTIONS: SelectOption[] = [
