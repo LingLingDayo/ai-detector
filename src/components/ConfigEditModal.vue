@@ -73,7 +73,7 @@ function initForm(): void {
     }
   } else {
     formData.name = "";
-    formData.baseUrl = "https://api.openai.com";
+    formData.baseUrl = "";
     formData.apiKey = "";
     formData.apiFormat = "chat_completions";
     formData.modelName = "";
