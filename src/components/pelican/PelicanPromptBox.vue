@@ -114,7 +114,7 @@ watch(
           <button
             type="button"
             class="btn-prompt-action cancel"
-            title="取消编辑 (Esc)"
+            title="取消编辑"
             @click="cancelEditing"
           >
             <span>取消</span>
@@ -122,7 +122,7 @@ watch(
           <button
             type="button"
             class="btn-prompt-action save"
-            title="保存提示词 (Ctrl+Enter)"
+            title="保存提示词"
             @click="savePrompt"
           >
             <svg
@@ -213,12 +213,8 @@ watch(
         class="prompt-textarea"
         rows="3"
         placeholder="输入自定义测试提示词..."
-        @keydown.esc="cancelEditing"
-        @keydown.ctrl.enter="savePrompt"
-        @keydown.meta.enter="savePrompt"
       />
       <div class="prompt-edit-footer">
-        <span class="prompt-edit-hint">按 <code>Ctrl+Enter</code> 快速保存，<code>Esc</code> 取消</span>
         <span class="prompt-char-count">{{ editingPrompt.length }} 字符</span>
       </div>
     </div>
@@ -402,21 +398,11 @@ watch(
 
 .prompt-edit-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   font-size: 0.68rem;
   color: #64748b;
   padding: 0 2px;
-
-  .prompt-edit-hint {
-    code {
-      font-size: 0.68rem;
-      color: #94a3b8;
-      background: rgba(255, 255, 255, 0.06);
-      padding: 1px 4px;
-      border-radius: 3px;
-    }
-  }
 
   .prompt-char-count {
     color: #64748b;
