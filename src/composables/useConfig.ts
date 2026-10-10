@@ -10,6 +10,19 @@ function generateConfigId(): string {
   return `cfg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+export function isSameConfigIdentity(
+  urlA: string | undefined,
+  keyA: string | undefined,
+  urlB: string | undefined,
+  keyB: string | undefined
+): boolean {
+  const normUrlA = (urlA || "").trim();
+  const normKeyA = (keyA || "").trim();
+  const normUrlB = (urlB || "").trim();
+  const normKeyB = (keyB || "").trim();
+  return Boolean(normUrlA && normKeyA && normUrlA === normUrlB && normKeyA === normKeyB);
+}
+
 export function isConfigEqual(current: ClientConfig, item: ConfigItem): boolean {
   const normCurrentBaseUrl = (current.baseUrl || "").trim();
   const normItemBaseUrl = (item.baseUrl || "").trim();
@@ -55,6 +68,8 @@ export interface UseConfigReturn {
   hasCurrentInput: ComputedRef<boolean>;
   isCurrentConfigSaved: ComputedRef<boolean>;
   canSaveCurrent: ComputedRef<boolean>;
+  matchedConfigItem: ComputedRef<ConfigItem | undefined>;
+  isConfigModified: ComputedRef<boolean>;
   togglePasswordVisibility: () => void;
   toggleAdvanced: () => void;
   openConfigListModal: () => void;
@@ -122,6 +137,32 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     return configList.value.some((item) => isConfigEqual(config, item));
   });
 
+  const matchedConfigItem = computed<ConfigItem | undefined>(() => {
+    const curBaseUrl = (config.baseUrl || "").trim();
+    const curApiKey = (config.apiKey || "").trim();
+    if (!curBaseUrl || !curApiKey) return undefined;
+
+    // 优先匹配当前活跃的配置项
+    if (activeConfigId.value) {
+      const activeItem = configList.value.find((item) => item.id === activeConfigId.value);
+      if (
+        activeItem &&
+        isSameConfigIdentity(curBaseUrl, curApiKey, activeItem.baseUrl, activeItem.apiKey)
+      ) {
+        return activeItem;
+      }
+    }
+
+    return configList.value.find((item) =>
+      isSameConfigIdentity(curBaseUrl, curApiKey, item.baseUrl, item.apiKey)
+    );
+  });
+
+  const isConfigModified = computed<boolean>(() => {
+    if (!matchedConfigItem.value) return false;
+    return !isConfigEqual(config, matchedConfigItem.value);
+  });
+
   const canSaveCurrent = computed<boolean>(() => {
     return (
       Boolean(config.baseUrl?.trim() && config.apiKey?.trim()) &&
@@ -170,10 +211,11 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
   }
 
   function openSaveCurrentModal(): void {
+    const matched = matchedConfigItem.value;
     configEditModalMode.value = "save-current";
     editingConfigItem.value = {
-      id: "",
-      name: activeConfigName.value || "",
+      id: matched?.id || "",
+      name: matched?.name || activeConfigName.value || "",
       baseUrl: config.baseUrl,
       apiKey: config.apiKey,
       apiFormat: config.apiFormat,
@@ -461,6 +503,8 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     hasCurrentInput,
     isCurrentConfigSaved,
     canSaveCurrent,
+    matchedConfigItem,
+    isConfigModified,
     togglePasswordVisibility,
     toggleAdvanced,
     openConfigListModal,

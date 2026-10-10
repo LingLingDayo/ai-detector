@@ -15,11 +15,13 @@ const props = withDefaults(
     isPasswordVisible: boolean;
     isAdvancedOpen: boolean;
     settingsSummary: string;
+    isConfigModified?: boolean;
   }>(),
   {
     isPelicanRunning: false,
     activeMode: "probe",
     hasResult: false,
+    isConfigModified: false,
   }
 );
 
@@ -82,7 +84,7 @@ defineExpose({
           type="button"
           class="btn-header-action btn-save-config"
           id="btn-save-config"
-          title="将当前填写的接口参数与密钥保存为配置预设"
+          :title="isConfigModified ? '将修改后的参数更新到配置预设' : '将当前填写的接口参数与密钥保存为配置预设'"
           @click="emit('open-save-config')"
         >
           <svg
@@ -99,7 +101,7 @@ defineExpose({
             <polyline points="17 21 17 13 7 13 7 21" />
             <polyline points="7 3 7 8 15 8" />
           </svg>
-          <span>保存配置</span>
+          <span>{{ isConfigModified ? "更新配置" : "保存配置" }}</span>
         </button>
 
         <button

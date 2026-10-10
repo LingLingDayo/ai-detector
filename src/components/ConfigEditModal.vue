@@ -124,7 +124,9 @@ function handleSubmit(applyImmediately: boolean = false): void {
       reasoningEffort: formData.reasoningEffort,
       stream: formData.stream,
     },
-    props.mode === "edit" ? props.initialData?.id : undefined,
+    props.mode === "edit" || (props.mode === "save-current" && props.initialData?.id)
+      ? props.initialData?.id
+      : undefined,
     applyImmediately
   );
 }
@@ -174,14 +176,14 @@ function handleSubmit(applyImmediately: boolean = false): void {
                   mode === "edit"
                     ? "编辑配置预设"
                     : mode === "save-current"
-                    ? "保存当前配置"
+                    ? (initialData?.id ? "更新配置预设" : "保存当前配置")
                     : "添加新配置"
                 }}
               </h3>
               <p class="header-subtitle">
                 {{
                   mode === "save-current"
-                    ? "为当前填写的接口参数指定一个名称，方便日后一键切换"
+                    ? (initialData?.id ? "将当前修改后的参数更新至该配置预设" : "为当前填写的接口参数指定一个名称，方便日后一键切换")
                     : mode === "edit"
                     ? "修改配置预设的名称与连接参数"
                     : "录入新的模型 API 接口连接信息"
