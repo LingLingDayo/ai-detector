@@ -1,0 +1,132 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: '手动指定的发布版本 Tag (例如 v1.0.0)'
+        required: false
+        default: ''
+
+# 赋予工作流发布 Release 和写入仓库内容的权限
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build Windows Application & Publish Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Run Build Verification & Typecheck
+        run: npm run build
+
+      - name: Extract Changelog for Release
+        id: extract_changelog
+        shell: pwsh
+        run: |
+          $targetTag = "${{ github.event.inputs.tag_name }}"
+          if ([string]::IsNullOrWhiteSpace($targetTag)) {
+            $targetTag = "${{ github.ref_name }}"
+          }
+          Write-Host "Extracting changelog for tag: $targetTag"
+          node scripts/extract-changelog.js CHANGELOG.md RELEASE_NOTES.md $targetTag
+
+      - name: Build Tauri Application
+        run: npm run tauri build
+        env:
+          CI: true
+
+      - name: Prepare Release Artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist-release | Out-Null
+
+          # 1. 收集 NSIS 安装程序 (*-setup.exe 或 *.exe)
+          Get-ChildItem -Path "src-tauri/target/release/bundle/nsis/*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination "dist-release/$($_.Name)"
+            Write-Host "Collected NSIS Installer: $($_.Name)"
+          }
+
+          # 2. 收集 MSI 安装程序 (*.msi)
+          Get-ChildItem -Path "src-tauri/target/release/bundle/msi/*.msi" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination "dist-release/$($_.Name)"
+            Write-Host "Collected MSI Installer: $($_.Name)"
+          }
+
+          # 3. 收集编译生成的独立可执行文件
+          Get-ChildItem -Path "src-tauri/target/release/*.exe" -Exclude "*.pdb" | Where-Object {
+            $_.Name -notmatch "tauri" -and $_.Name -notmatch "build"
+          } | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination "dist-release/$($_.Name)"
+            Write-Host "Collected Standalone Executable: $($_.Name)"
+
+            # 同时提供应用中文名与英文规范名的便携版独立程序
+            if ($_.Name -ne "AI模型检测器.exe") {
+              Copy-Item -Path $_.FullName -Destination "dist-release/AI模型检测器.exe"
+              Write-Host "Created Standalone Copy: AI模型检测器.exe"
+            }
+            if ($_.Name -ne "AI-Detector.exe") {
+              Copy-Item -Path $_.FullName -Destination "dist-release/AI-Detector.exe"
+              Write-Host "Created Standalone Copy: AI-Detector.exe"
+            }
+          }
+
+          # 4. 同步 release/ 目录下生成的产物 (如有)
+          if (Test-Path "release") {
+            Get-ChildItem -Path "release/*" -Include "*.exe", "*.msi" -ErrorAction SilentlyContinue | ForEach-Object {
+              if (-not (Test-Path "dist-release/$($_.Name)")) {
+                Copy-Item -Path $_.FullName -Destination "dist-release/$($_.Name)"
+                Write-Host "Collected Extra Artifact from release/: $($_.Name)"
+              }
+            }
+          }
+
+          # 5. 生成 SHA256 校验和清单
+          $checksumFile = "dist-release/checksums-sha256.txt"
+          Get-ChildItem -Path "dist-release" -File | Where-Object { $_.Name -ne "checksums-sha256.txt" } | ForEach-Object {
+            $hash = (Get-FileHash -Path $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)" | Out-File -FilePath $checksumFile -Append -Encoding utf8
+          }
+
+          Write-Host "`n=== Release Artifacts Summary ==="
+          Get-ChildItem -Path dist-release | Format-Table Name, Length
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          name: 'AI 模型检测器 ${{ github.event.inputs.tag_name || github.ref_name }}'
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+          files: dist-release/*

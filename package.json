@@ -10,6 +10,9 @@
     "preview": "vite preview",
     "tauri": "node scripts/run-tauri.js",
     "release:copy": "node scripts/copy-release.js",
+    "release:tag": "node scripts/release-tag.js",
+    "changelog:extract": "node scripts/extract-changelog.js",
+    "test:changelog": "node --test scripts/__tests__/extract-changelog.test.js",
     "sync": "node scripts/sync-upstream.js",
     "sync:check": "node scripts/sync-upstream.js --check"
   },

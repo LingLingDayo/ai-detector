@@ -110,6 +110,9 @@ npm run build
 
 # 构建桌面端安装包 (输出至 src-tauri/target/release/bundle)
 npm run build:app
+
+# 单独将产物归档至 release/ 目录
+npm run release:copy
 ```
 
 ---
