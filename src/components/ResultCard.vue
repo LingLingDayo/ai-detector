@@ -1,33 +1,18 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from "vue";
 import type { GlobalAnalysisResult } from "../utils/fingerprint";
 
-const props = defineProps<{
+defineProps<{
   analysis: GlobalAnalysisResult | null;
 }>();
-
-const resultSectionRef = ref<HTMLElement | null>(null);
 
 function percentFormat(val: number): string {
   return `${(val * 100).toFixed(1)}%`;
 }
-
-watch(
-  () => props.analysis,
-  (newVal) => {
-    if (newVal) {
-      nextTick(() => {
-        resultSectionRef.value?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    }
-  }
-);
 </script>
 
 <template>
   <section
     v-if="analysis"
-    ref="resultSectionRef"
     class="card result-card"
     id="result-section"
   >

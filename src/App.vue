@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch, nextTick, onMounted } from "vue";
 import { useConfig } from "./composables/useConfig";
 import { useProbeTest } from "./composables/useProbeTest";
 import { usePelicanTest } from "./composables/usePelicanTest";
@@ -130,6 +130,58 @@ async function handleResetConfig(): Promise<void> {
     configCardRef.value?.resetModelList();
   }
 }
+
+function scrollToBottom(): void {
+  nextTick(() => {
+    const doScroll = () => {
+      const scrollHeight = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight
+      );
+      window.scrollTo({
+        top: scrollHeight,
+        behavior: "smooth",
+      });
+      if (document.documentElement.scrollTop !== undefined) {
+        document.documentElement.scrollTo?.({
+          top: scrollHeight,
+          behavior: "smooth",
+        });
+      }
+      if (document.body && document.body.scrollTop !== undefined) {
+        document.body.scrollTo?.({
+          top: scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    };
+
+    requestAnimationFrame(() => {
+      doScroll();
+      setTimeout(doScroll, 120);
+    });
+  });
+}
+
+// 常规探测测试结束自动滚动到底部
+watch(
+  () => isRunning.value,
+  (running, wasRunning) => {
+    if (wasRunning && !running && hasProbeResult.value && activeMode.value === "probe") {
+      scrollToBottom();
+    }
+  }
+);
+
+// 鹈鹕测试结束自动滚动到底部
+watch(
+  () => isPelicanRunning.value,
+  (running, wasRunning) => {
+    if (wasRunning && !running && hasPelicanResult.value && activeMode.value === "pelican") {
+      scrollToBottom();
+    }
+  }
+);
 </script>
 
 <template>

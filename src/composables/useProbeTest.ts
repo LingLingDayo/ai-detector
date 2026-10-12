@@ -176,6 +176,7 @@ export function useProbeTest(): UseProbeTestReturn {
     // Reset UI state for new test run
     isRunning.value = true;
     hasStarted.value = true;
+    hasResult.value = false;
     statusAlert.value = null;
     analysisResult.value = null;
     progressPercent.value = 0;
