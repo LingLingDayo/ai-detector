@@ -151,17 +151,31 @@ function main() {
     }
   } catch {}
 
+  let currentBranch = 'master';
+  try {
+    currentBranch = runGit('git branch --show-current') || 'master';
+  } catch {}
+
   if (isPush) {
-    console.log(`\n📤 正在推送 Tag 到远程仓库 (${remote})...`);
+    console.log(`\n📤 正在推送当前分支 (${currentBranch}) 到远程仓库 (${remote})...`);
+    try {
+      runGit(`git push ${remote} ${currentBranch}`);
+      console.log(`   ✓ 分支 ${currentBranch} 推送成功！`);
+    } catch (e) {
+      console.warn(`   ⚠️  分支推送提示: ${e.message}`);
+    }
+
+    console.log(`\n📤 正在推送 Tag (${targetTag}) 到远程仓库 (${remote})...`);
     runGit(`git push ${remote} ${targetTag}`);
-    console.log(`   ✓ Tag 已成功推送到 ${remote}！`);
+    console.log(`   ✓ Tag ${targetTag} 已成功推送到 ${remote}！`);
     console.log(`\n🎉 GitHub Actions 自动发版工作流已被触发！`);
     console.log(`可以在 GitHub 仓库的 "Actions" 标签页查看编译与发布进度。`);
   } else {
     console.log(`\n💡 本地 Tag 已准备就绪！`);
-    console.log(`推送 Tag 将自动触发 GitHub Actions 编译发版流程，请执行:`);
-    console.log(`\n   git push ${remote} ${targetTag}\n`);
-    console.log(`（提示: 下次可直接添加 --push 参数一键自动推送: npm run release:tag -- --push）`);
+    console.log(`请确保同时推送当前分支代码与发版 Tag 到远程仓库 (${remote}):`);
+    console.log(`\n   git push ${remote} ${currentBranch}`);
+    console.log(`   git push ${remote} ${targetTag}\n`);
+    console.log(`（提示: 下次可直接添加 --push 参数一键自动推送分支与 Tag: npm run release:tag -- --push）`);
   }
 }
 
