@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch, onUnmounted } from "vue";
 import type { ClientConfig } from "../types";
 import ModelCombobox from "./ModelCombobox.vue";
 import AdvancedSettings from "./AdvancedSettings.vue";
@@ -34,6 +34,7 @@ const emit = defineEmits<{
   (e: "submit"): void;
   (e: "cancel"): void;
   (e: "reset"): void;
+  (e: "update-config"): void;
   (e: "open-save-config"): void;
   (e: "open-config-list"): void;
 }>();
@@ -59,6 +60,53 @@ function handleReset(): void {
   emit("reset");
 }
 
+const isJustUpdated = ref(false);
+let updatedTimer: number | null = null;
+
+function handleSaveButtonClick(): void {
+  if (isJustUpdated.value) return;
+
+  if (props.isConfigModified) {
+    emit("update-config");
+    isJustUpdated.value = true;
+    if (updatedTimer) {
+      clearTimeout(updatedTimer);
+    }
+    updatedTimer = window.setTimeout(() => {
+      isJustUpdated.value = false;
+      updatedTimer = null;
+    }, 1200);
+  } else {
+    emit("open-save-config");
+  }
+}
+
+watch(
+  () => [
+    props.config.baseUrl,
+    props.config.apiKey,
+    props.config.modelName,
+    props.config.apiFormat,
+    props.config.reasoningEffort,
+    props.config.stream,
+  ],
+  () => {
+    if (isJustUpdated.value) {
+      isJustUpdated.value = false;
+      if (updatedTimer) {
+        clearTimeout(updatedTimer);
+        updatedTimer = null;
+      }
+    }
+  }
+);
+
+onUnmounted(() => {
+  if (updatedTimer) {
+    clearTimeout(updatedTimer);
+  }
+});
+
 defineExpose({
   resetModelList: () => {
     comboboxRef.value?.resetModelList();
@@ -83,14 +131,36 @@ defineExpose({
 
       <div class="header-actions-group">
         <button
-          v-if="!isCurrentConfigSaved"
+          v-if="!isCurrentConfigSaved || isJustUpdated"
           type="button"
           class="btn-header-action btn-save-config"
+          :class="{ 'btn-updated-success': isJustUpdated }"
           id="btn-save-config"
-          :title="isConfigModified ? '将修改后的参数更新到配置预设' : '将当前填写的接口参数与密钥保存为配置预设'"
-          @click="emit('open-save-config')"
+          :title="
+            isJustUpdated
+              ? '配置已成功更新'
+              : isConfigModified
+              ? '将修改后的参数直接更新到配置预设'
+              : '将当前填写的接口参数与密钥保存为配置预设'
+          "
+          :disabled="isJustUpdated"
+          @click="handleSaveButtonClick"
         >
           <svg
+            v-if="isJustUpdated"
+            viewBox="0 0 24 24"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <svg
+            v-else
             viewBox="0 0 24 24"
             width="13"
             height="13"
@@ -104,7 +174,7 @@ defineExpose({
             <polyline points="17 21 17 13 7 13 7 21" />
             <polyline points="7 3 7 8 15 8" />
           </svg>
-          <span>{{ isConfigModified ? "更新配置" : "保存配置" }}</span>
+          <span>{{ isJustUpdated ? "已更新" : (isConfigModified ? "更新配置" : "保存配置") }}</span>
         </button>
 
         <button
@@ -400,10 +470,17 @@ defineExpose({
       background: rgba(59, 130, 246, 0.08);
       border-color: rgba(59, 130, 246, 0.22);
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: rgba(59, 130, 246, 0.18);
         border-color: rgba(59, 130, 246, 0.45);
         color: #bfdbfe;
+      }
+
+      &.btn-updated-success {
+        color: #34d399;
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.35);
+        cursor: default;
       }
     }
 

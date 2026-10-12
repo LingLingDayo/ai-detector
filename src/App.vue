@@ -80,6 +80,7 @@ const {
   openCreateConfigModal,
   openEditConfigModal,
   closeConfigEditModal,
+  updateCurrentConfig,
   loadConfig,
   resetConfig,
   applyConfig,
@@ -97,6 +98,13 @@ const {
 onMounted(() => {
   loadConfig();
 });
+
+function handleUpdateConfig(): void {
+  const success = updateCurrentConfig();
+  if (!success) {
+    openSaveCurrentModal();
+  }
+}
 
 function handleCancelTest(): void {
   if (activeMode.value === "probe") {
@@ -211,6 +219,7 @@ watch(
         @submit="handleStartTest"
         @cancel="handleCancelTest"
         @reset="handleResetConfig"
+        @update-config="handleUpdateConfig"
         @open-save-config="openSaveCurrentModal"
         @open-config-list="openConfigListModal"
       />

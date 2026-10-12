@@ -78,6 +78,7 @@ export interface UseConfigReturn {
   openCreateConfigModal: () => void;
   openEditConfigModal: (item: ConfigItem) => void;
   closeConfigEditModal: () => void;
+  updateCurrentConfig: () => boolean;
   saveConfig: () => void;
   loadConfig: () => void;
   resetConfig: () => Promise<boolean>;
@@ -241,6 +242,40 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
   function closeConfigEditModal(): void {
     isConfigEditModalOpen.value = false;
     editingConfigItem.value = null;
+  }
+
+  function updateCurrentConfig(): boolean {
+    const target = matchedConfigItem.value;
+    if (!target) return false;
+
+    const index = configList.value.findIndex((item) => item.id === target.id);
+    if (index === -1) return false;
+
+    const trimmedBaseUrl = (config.baseUrl || "").trim();
+    const trimmedApiKey = (config.apiKey || "").trim();
+    const trimmedModelName = (config.modelName || "").trim();
+
+    config.baseUrl = trimmedBaseUrl;
+    config.apiKey = trimmedApiKey;
+    config.modelName = trimmedModelName;
+
+    const now = Date.now();
+    const updatedItem: ConfigItem = {
+      ...configList.value[index],
+      baseUrl: trimmedBaseUrl,
+      apiKey: trimmedApiKey,
+      apiFormat: config.apiFormat || "chat_completions",
+      modelName: trimmedModelName,
+      reasoningEffort: config.reasoningEffort || "high",
+      stream: config.stream !== false,
+      updatedAt: now,
+    };
+
+    configList.value.splice(index, 1, updatedItem);
+    activeConfigId.value = updatedItem.id;
+    saveConfig();
+    saveConfigListToStorage();
+    return true;
   }
 
   function saveConfigListToStorage(): void {
@@ -513,6 +548,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     openCreateConfigModal,
     openEditConfigModal,
     closeConfigEditModal,
+    updateCurrentConfig,
     saveConfig,
     loadConfig,
     resetConfig,
