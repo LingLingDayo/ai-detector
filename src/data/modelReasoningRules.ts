@@ -67,10 +67,9 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
   {
     vendor: "OpenAI GPT-5.6",
     model: "GPT-5.6 Sol",
-    supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max", "ultra"],
+    supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
     allowDisableReasoning: true,
-    notes: "多Agent并行模式（独立于effort）",
   },
   {
     vendor: "OpenAI GPT-5.6",

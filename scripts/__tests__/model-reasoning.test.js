@@ -52,7 +52,7 @@ test("精确匹配与前缀匹配", () => {
   // OpenAI 模型测试
   const solRule = findModelReasoningRule("gpt-5.6-sol");
   assert.equal(solRule?.model, "GPT-5.6 Sol");
-  assert.ok(solRule?.supportedEfforts.includes("ultra"));
+  assert.deepEqual(solRule?.supportedEfforts, ["none", "low", "medium", "high", "xhigh", "max"]);
   assert.equal(solRule?.defaultEffort, "medium");
 
   const astraRule = findModelReasoningRule("openai/gpt-6-astra-preview");
@@ -81,7 +81,7 @@ test("表格全部 14 个模型的思考强度与默认值完全对齐需求表"
     {
       vendor: "OpenAI GPT-5.6",
       model: "GPT-5.6 Sol",
-      supported: ["none", "low", "medium", "high", "xhigh", "max", "ultra"],
+      supported: ["none", "low", "medium", "high", "xhigh", "max"],
       defaultEffort: "medium",
       allowDisable: true,
     },
