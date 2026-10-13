@@ -40,8 +40,18 @@ const emit = defineEmits<{
         <span>更多设置</span>
         <span class="settings-summary" id="settings-summary">{{ summary }}</span>
       </div>
-      <svg class="chevron-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="6 9 12 15 18 9"></polyline>
+      <svg
+        class="chevron-icon"
+        viewBox="0 0 24 24"
+        width="14"
+        height="14"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <polyline points="6 9 12 15 18 9" />
       </svg>
     </button>
 
@@ -201,7 +211,12 @@ const emit = defineEmits<{
     .chevron-icon {
       display: block;
       flex-shrink: 0;
-      transition: transform var(--transition-normal);
+      color: var(--text-muted);
+      transition: transform var(--transition-normal), color var(--transition-fast);
+    }
+
+    &:hover .chevron-icon {
+      color: var(--text-primary);
     }
 
   }
