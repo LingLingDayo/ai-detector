@@ -186,7 +186,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
       medium: "中",
       high: "高",
       xhigh: "极高",
-      max: "极限",
+      max: "最高",
       ultra: "极致",
     };
     const effortLabel = effortMap[config.reasoningEffort] || "高";
