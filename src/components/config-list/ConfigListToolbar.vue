@@ -36,9 +36,13 @@ const emit = defineEmits<{
         v-if="modelValue"
         type="button"
         class="btn-clear-search"
+        title="清空搜索"
         @click="emit('update:modelValue', '')"
       >
-        ✕
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
       </button>
     </div>
 
@@ -105,12 +109,23 @@ const emit = defineEmits<{
     .btn-clear-search {
       position: absolute;
       right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 0.75rem;
       cursor: pointer;
-      padding: 2px 4px;
+      padding: 3px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      transition: color var(--transition-fast);
+
+      svg {
+        display: block;
+        flex-shrink: 0;
+      }
 
       &:hover {
         color: #fff;

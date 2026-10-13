@@ -47,7 +47,10 @@ const emit = defineEmits<{
         title="关闭弹窗 (Esc)"
         @click="emit('close')"
       >
-        ✕
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
       </button>
     </div>
   </div>
@@ -124,7 +127,6 @@ const emit = defineEmits<{
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 1.05rem;
       cursor: pointer;
       width: 28px;
       height: 28px;
@@ -132,9 +134,13 @@ const emit = defineEmits<{
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      line-height: 1;
       border-radius: var(--radius-sm);
       transition: all var(--transition-fast);
+
+      svg {
+        display: block;
+        flex-shrink: 0;
+      }
 
       &:hover {
         color: #fff;
