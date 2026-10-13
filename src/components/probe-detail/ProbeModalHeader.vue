@@ -101,10 +101,12 @@ const emit = defineEmits<{
         .tab-index {
           font-weight: 700;
           line-height: 1;
+          transform: translateY(1px);
         }
 
         .tab-label {
           line-height: 1;
+          transform: translateY(1px);
         }
 
         .tab-dot {
