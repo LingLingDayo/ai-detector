@@ -168,7 +168,8 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "high", "max"],
     defaultEffort: "high",
     allowDisableReasoning: true,
-    notes: "无ultra",
+    notes: "无ultra，官方别名 deepseek-flash",
+    patterns: ["deepseek-flash"],
   },
 
   // ==================== xAI Grok ====================

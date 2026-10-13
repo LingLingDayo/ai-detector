@@ -65,6 +65,15 @@ test("精确匹配与前缀匹配", () => {
   assert.equal(grokRule?.model, "Grok-4.6");
   assert.equal(grokRule?.defaultEffort, "high");
   assert.deepEqual(grokRule?.supportedEfforts, ["low", "medium", "high", "xhigh"]);
+
+  // DeepSeek 别名测试 (deepseek-flash 与 DeepSeek-V4.1-Flash 等价)
+  const flashAliasRule = findModelReasoningRule("deepseek-flash");
+  assert.equal(flashAliasRule?.model, "DeepSeek-V4.1-Flash");
+  assert.equal(flashAliasRule?.defaultEffort, "high");
+  assert.deepEqual(flashAliasRule?.supportedEfforts, ["none", "low", "high", "max"]);
+
+  const slashFlashRule = findModelReasoningRule("deepseek/deepseek-flash");
+  assert.equal(slashFlashRule?.model, "DeepSeek-V4.1-Flash");
 });
 
 test("表格全部 14 个模型的思考强度与默认值完全对齐需求表", () => {
