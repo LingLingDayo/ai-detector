@@ -138,7 +138,7 @@ defineExpose({
     <div class="combobox-actions">
       <button
         type="button"
-        class="btn-icon"
+        class="btn-icon btn-action-fetch"
         :id="id ? `${id}-btn-fetch` : 'btn-fetch-models'"
         title="点击调用 /v1/models 接口自动获取当前 Key 允许的模型列表"
         @click.stop="() => { if (!isOpen) openDropdown(); void fetchModels({ autoSelectFirst: false }); }"
@@ -147,24 +147,36 @@ defineExpose({
           class="refresh-icon"
           :class="{ spinning: isFetching }"
           viewBox="0 0 24 24"
-          width="15"
-          height="15"
+          width="14"
+          height="14"
           fill="none"
           stroke="currentColor"
           stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
           <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
         </svg>
       </button>
       <button
         type="button"
-        class="btn-icon"
+        class="btn-icon btn-action-toggle"
         :id="id ? `${id}-btn-toggle` : 'btn-toggle-dropdown'"
         title="展开/收起模型选择列表"
         @click.stop="toggleDropdown"
       >
-        <svg class="dropdown-chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"></polyline>
+        <svg
+          class="dropdown-chevron"
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
     </div>
@@ -201,15 +213,55 @@ defineExpose({
 
   input {
     width: 100%;
-    padding-right: 62px;
+    padding-right: 56px;
   }
 
   .combobox-actions {
     position: absolute;
-    right: 5px;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
+
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: color var(--transition-fast), background-color var(--transition-fast);
+
+      svg {
+        display: block;
+        flex-shrink: 0;
+      }
+
+      &.btn-action-fetch {
+        width: 18px;
+        height: 18px;
+        padding: 0;
+        border-radius: var(--radius-sm);
+
+        &:hover {
+          color: var(--text-primary);
+          background: rgba(255, 255, 255, 0.08);
+        }
+      }
+
+      &.btn-action-toggle {
+        width: 14px;
+        height: 14px;
+        padding: 0;
+
+        &:hover {
+          color: var(--text-primary);
+        }
+      }
+    }
   }
 
   .refresh-icon.spinning {
