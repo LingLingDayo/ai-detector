@@ -1,3 +1,8 @@
+import pkg from "../package.json";
+
+export const APP_VERSION = `v${pkg.version}`;
+export const GITHUB_REPO_URL = "https://github.com/LingLingDayo/ai-detector";
+
 export const STORAGE_KEY = "modeltrace_client_config";
 export const CONFIG_LIST_STORAGE_KEY = "modeltrace_config_list";
 export const ACTIVE_CONFIG_ID_KEY = "modeltrace_active_config_id";

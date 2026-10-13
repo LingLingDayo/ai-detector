@@ -526,3 +526,30 @@ export async function sendProbe({
     clearTimeout(timeoutTimer);
   }
 }
+
+/**
+ * 在系统默认浏览器中打开外部链接
+ * 优先使用 Tauri 桌面接口，若处于标准 Web 环境则使用 window.open 回退
+ */
+export async function openExternalUrl(url: string): Promise<void> {
+  const trimmed = url.trim();
+  if (!trimmed) return;
+
+  if (isTauriApp()) {
+    try {
+      if (!tauriInvoke) {
+        await initTauri();
+      }
+      if (tauriInvoke) {
+        await tauriInvoke("open_external_url", { url: trimmed });
+        return;
+      }
+    } catch (err) {
+      console.warn("Tauri open_external_url 调用失败，回退到浏览器打开:", err);
+    }
+  }
+
+  // 纯 Web 环境或 Tauri 调用失败时的兜底方案
+  window.open(trimmed, "_blank", "noopener,noreferrer");
+}
+

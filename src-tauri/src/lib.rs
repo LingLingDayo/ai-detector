@@ -829,11 +829,49 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
     Err("达到最大重试次数，仍未获得响应".to_string())
 }
 
+#[tauri::command]
+fn open_external_url(url: String) -> Result<(), String> {
+    let trimmed = url.trim();
+    if !trimmed.starts_with("http://") && !trimmed.starts_with("https://") {
+        return Err("仅支持打开 http 或 https 协议链接".to_string());
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("rundll32")
+            .args(["url.dll,FileProtocolHandler", trimmed])
+            .spawn()
+            .map_err(|e| format!("打开系统浏览器失败: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(trimmed)
+            .spawn()
+            .map_err(|e| format!("打开系统浏览器失败: {}", e))?;
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(trimmed)
+            .spawn()
+            .map_err(|e| format!("打开系统浏览器失败: {}", e))?;
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::default().build())
-        .invoke_handler(tauri::generate_handler![send_probe_request, fetch_models_list])
+        .invoke_handler(tauri::generate_handler![
+            send_probe_request,
+            fetch_models_list,
+            open_external_url
+        ])
         .run(tauri::generate_context!())
         .expect("运行 Tauri 桌面应用时发生异常");
 }
