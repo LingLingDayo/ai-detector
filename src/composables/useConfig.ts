@@ -1,5 +1,10 @@
 import { ref, reactive, computed, watch, type Ref, type ComputedRef } from "vue";
-import { STORAGE_KEY, CONFIG_LIST_STORAGE_KEY, ACTIVE_CONFIG_ID_KEY } from "../constants";
+import {
+  STORAGE_KEY,
+  CONFIG_LIST_STORAGE_KEY,
+  ACTIVE_CONFIG_ID_KEY,
+  resolveValidReasoningEffort,
+} from "../constants";
 import type { ClientConfig, ConfigItem } from "../types";
 import { useConfirm } from "./useConfirm";
 
@@ -266,7 +271,10 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
       apiKey: trimmedApiKey,
       apiFormat: config.apiFormat || "chat_completions",
       modelName: trimmedModelName,
-      reasoningEffort: config.reasoningEffort || "high",
+      reasoningEffort: resolveValidReasoningEffort(
+        trimmedModelName,
+        config.reasoningEffort || "high"
+      ),
       stream: config.stream !== false,
       updatedAt: now,
     };
@@ -307,9 +315,8 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     if (item.apiFormat) {
       config.apiFormat = item.apiFormat;
     }
-    if (item.reasoningEffort) {
-      config.reasoningEffort = item.reasoningEffort;
-    }
+    const targetEffort = item.reasoningEffort || "high";
+    config.reasoningEffort = resolveValidReasoningEffort(item.modelName, targetEffort);
     config.stream = item.stream !== false;
     activeConfigId.value = item.id;
     saveConfig();
@@ -323,13 +330,18 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     applyImmediately: boolean = false
   ): void {
     const now = Date.now();
+    const sanitizedData = {
+      ...data,
+      reasoningEffort: resolveValidReasoningEffort(data.modelName, data.reasoningEffort),
+    };
+
     if (id) {
       // 编辑已有项
       const index = configList.value.findIndex((item) => item.id === id);
       if (index !== -1) {
         const updatedItem: ConfigItem = {
           ...configList.value[index],
-          ...data,
+          ...sanitizedData,
           updatedAt: now,
         };
         configList.value.splice(index, 1, updatedItem);
@@ -341,7 +353,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
       // 新建项
       const newId = generateConfigId();
       const newItem: ConfigItem = {
-        ...data,
+        ...sanitizedData,
         id: newId,
         createdAt: now,
         updatedAt: now,
@@ -465,7 +477,12 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
         }
       }
       if (savedConfig.reasoningEffort !== undefined) {
-        config.reasoningEffort = savedConfig.reasoningEffort;
+        config.reasoningEffort = resolveValidReasoningEffort(
+          config.modelName,
+          savedConfig.reasoningEffort
+        );
+      } else {
+        config.reasoningEffort = resolveValidReasoningEffort(config.modelName, "high");
       }
       if (savedConfig.stream !== undefined) {
         config.stream = savedConfig.stream !== false;
@@ -510,6 +527,17 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     } catch {}
     return true;
   }
+
+  // 监听模型变动，限定思考强度到指定支持档位
+  watch(
+    () => config.modelName,
+    (newModel) => {
+      const validEffort = resolveValidReasoningEffort(newModel, config.reasoningEffort);
+      if (validEffort !== config.reasoningEffort) {
+        config.reasoningEffort = validEffort;
+      }
+    }
+  );
 
   // 监听表单输入变化并自动持久化当前输入
   watch(config, () => {

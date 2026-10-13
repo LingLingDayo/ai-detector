@@ -29,6 +29,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
   (e: "update:apiFormat", value: string): void;
+  (e: "update:reasoningEffort", value: string): void;
 }>();
 
 const comboboxRef = ref<HTMLDivElement | null>(null);

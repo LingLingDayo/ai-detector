@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive, watch, nextTick } from "vue";
+import { ref, reactive, computed, watch, nextTick } from "vue";
 import type { ConfigItem } from "../types";
-import { REASONING_EFFORT_OPTIONS } from "../constants";
+import {
+  findModelReasoningRule,
+  getReasoningOptionsForModel,
+  resolveValidReasoningEffort,
+} from "../constants";
 import CustomSelect, { type SelectOption } from "./common/CustomSelect.vue";
 import ModelCombobox from "./ModelCombobox.vue";
 
@@ -10,12 +14,6 @@ const API_FORMAT_OPTIONS: SelectOption[] = [
   { value: "responses", label: "/v1/responses", description: "OpenAI" },
   { value: "anthropic", label: "/v1/messages", description: "Anthropic" },
 ];
-
-const REASONING_OPTIONS: SelectOption[] = REASONING_EFFORT_OPTIONS.map((opt) => ({
-  value: opt.value,
-  label: opt.value,
-  description: opt.description,
-}));
 
 const STREAM_OPTIONS: SelectOption[] = [
   { value: "stream", label: "流式请求", description: "首包超时 90s" },
@@ -54,6 +52,27 @@ const formData = reactive({
   stream: true,
 });
 
+const matchedRule = computed(() => findModelReasoningRule(formData.modelName));
+
+const reasoningOptions = computed<SelectOption[]>(() => {
+  return getReasoningOptionsForModel(formData.modelName).map((opt) => ({
+    value: opt.value,
+    label: opt.value,
+    description: opt.isDefault ? `${opt.description} (默认)` : opt.description,
+  }));
+});
+
+// 监听模型变动并限定思考强度
+watch(
+  () => formData.modelName,
+  (newModel) => {
+    const validEffort = resolveValidReasoningEffort(newModel, formData.reasoningEffort);
+    if (validEffort !== formData.reasoningEffort) {
+      formData.reasoningEffort = validEffort;
+    }
+  }
+);
+
 function initForm(): void {
   isKeyVisible.value = false;
   modalComboboxRef.value?.resetModelList();
@@ -63,7 +82,10 @@ function initForm(): void {
     formData.apiKey = props.initialData.apiKey || "";
     formData.apiFormat = props.initialData.apiFormat || "chat_completions";
     formData.modelName = props.initialData.modelName || "";
-    formData.reasoningEffort = props.initialData.reasoningEffort || "high";
+    formData.reasoningEffort = resolveValidReasoningEffort(
+      props.initialData.modelName,
+      props.initialData.reasoningEffort || "high"
+    );
     formData.stream = props.initialData.stream !== false;
     // 如果有设置过模型、非默认格式或非默认传输方式，自动展开更多设置
     if (formData.modelName || formData.apiFormat !== "chat_completions" || !formData.stream) {
@@ -338,6 +360,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
                   ref="modalComboboxRef"
                   v-model:model-value="formData.modelName"
                   v-model:api-format="formData.apiFormat"
+                  v-model:reasoning-effort="formData.reasoningEffort"
                   :base-url="formData.baseUrl"
                   :api-key="formData.apiKey"
                   :required="false"
@@ -367,11 +390,20 @@ function handleSubmit(applyImmediately: boolean = false): void {
               </div>
 
               <div class="form-group flex-1">
-                <label for="cfg-reasoning-effort">思考强度</label>
+                <div class="field-label-with-hint">
+                  <label for="cfg-reasoning-effort">思考强度</label>
+                  <span
+                    v-if="matchedRule"
+                    class="field-hint-tag"
+                    :title="matchedRule.notes ? `${matchedRule.notes} (默认: ${matchedRule.defaultEffort})` : `默认: ${matchedRule.defaultEffort}`"
+                  >
+                    {{ matchedRule.model }} 限定 {{ reasoningOptions.length }} 档
+                  </span>
+                </div>
                 <CustomSelect
                   id="cfg-reasoning-effort"
                   v-model="formData.reasoningEffort"
-                  :options="REASONING_OPTIONS"
+                  :options="reasoningOptions"
                 />
               </div>
             </div>
@@ -571,6 +603,17 @@ function handleSubmit(applyImmediately: boolean = false): void {
   display: flex;
   flex-direction: column;
   gap: 10px;
+
+  .field-label-with-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .field-hint-tag {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+  }
 }
 
 .modal-footer {

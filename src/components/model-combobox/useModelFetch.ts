@@ -1,5 +1,6 @@
 import { ref, watch, onMounted, onUnmounted } from "vue";
 import { fetchRemoteModels } from "../../services/api";
+import { findModelReasoningRule } from "../../data/modelReasoningRules";
 import {
   saveModelsToStorage,
   loadSavedModels,
@@ -19,6 +20,7 @@ export interface UseModelFetchOptions {
   emit: {
     (e: "update:modelValue", value: string): void;
     (e: "update:apiFormat", value: string): void;
+    (e: "update:reasoningEffort", value: string): void;
   };
 }
 
@@ -83,6 +85,10 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
           if (firstModel.toLowerCase().includes("claude")) {
             emit("update:apiFormat", "anthropic");
           }
+          const matchedRule = findModelReasoningRule(firstModel);
+          if (matchedRule) {
+            emit("update:reasoningEffort", matchedRule.defaultEffort);
+          }
         }
       } else {
         availableModels.value = [];
@@ -132,6 +138,10 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
       emit("update:apiFormat", "anthropic");
     } else if (props.apiFormat !== "responses") {
       emit("update:apiFormat", "chat_completions");
+    }
+    const matchedRule = findModelReasoningRule(model);
+    if (matchedRule) {
+      emit("update:reasoningEffort", matchedRule.defaultEffort);
     }
   }
 

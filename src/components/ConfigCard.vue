@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from "vue";
 import type { ClientConfig } from "../types";
+import { resolveValidReasoningEffort } from "../constants";
 import ModelCombobox from "./ModelCombobox.vue";
 import AdvancedSettings from "./AdvancedSettings.vue";
 
@@ -40,6 +41,17 @@ const emit = defineEmits<{
 }>();
 
 const comboboxRef = ref<InstanceType<typeof ModelCombobox> | null>(null);
+
+// 监听当前选定模型变更，自动将思考强度限定或修正到合法档位
+watch(
+  () => props.config.modelName,
+  (newModel) => {
+    const validEffort = resolveValidReasoningEffort(newModel, props.config.reasoningEffort);
+    if (validEffort !== props.config.reasoningEffort) {
+      props.config.reasoningEffort = validEffort;
+    }
+  }
+);
 
 const isCurrentRunning = computed(() => {
   return props.activeMode === "probe" ? props.isRunning : Boolean(props.isPelicanRunning);
@@ -285,6 +297,7 @@ defineExpose({
             ref="comboboxRef"
             v-model:model-value="config.modelName"
             v-model:api-format="config.apiFormat"
+            v-model:reasoning-effort="config.reasoningEffort"
             :base-url="config.baseUrl"
             :api-key="config.apiKey"
             :required="true"
@@ -298,6 +311,7 @@ defineExpose({
         :summary="settingsSummary"
         :api-format="config.apiFormat"
         :reasoning-effort="config.reasoningEffort"
+        :model-name="config.modelName"
         :stream="config.stream"
         @update:is-open="(v) => emit('update:isAdvancedOpen', v)"
         @update:api-format="(v) => (config.apiFormat = v)"

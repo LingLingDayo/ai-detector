@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { REASONING_EFFORT_OPTIONS } from "../constants";
+import { computed } from "vue";
+import {
+  findModelReasoningRule,
+  getReasoningOptionsForModel,
+} from "../constants";
 
 const props = withDefaults(
   defineProps<{
@@ -8,9 +12,11 @@ const props = withDefaults(
     apiFormat: string;
     reasoningEffort: string;
     stream?: boolean;
+    modelName?: string;
   }>(),
   {
     stream: true,
+    modelName: "",
   }
 );
 
@@ -20,6 +26,9 @@ const emit = defineEmits<{
   (e: "update:reasoningEffort", value: string): void;
   (e: "update:stream", value: boolean): void;
 }>();
+
+const matchedRule = computed(() => findModelReasoningRule(props.modelName));
+const effortOptions = computed(() => getReasoningOptionsForModel(props.modelName));
 </script>
 
 <template>
@@ -128,13 +137,23 @@ const emit = defineEmits<{
         <div class="advanced-row">
           <div class="advanced-row-header">
             <label title="配置模型的深度思考与推理强度">思考强度</label>
+            <span
+              v-if="matchedRule"
+              class="field-hint"
+              :title="matchedRule.notes ? `${matchedRule.notes} (默认: ${matchedRule.defaultEffort})` : `默认: ${matchedRule.defaultEffort}`"
+            >
+              {{ matchedRule.model }} 限定 {{ effortOptions.length }} 档
+            </span>
           </div>
-          <div class="segmented-control reasoning-control">
+          <div
+            class="segmented-control reasoning-control"
+            :style="{ '--reasoning-cols': effortOptions.length }"
+          >
             <label
-              v-for="opt in REASONING_EFFORT_OPTIONS"
+              v-for="opt in effortOptions"
               :key="opt.value"
               class="segment"
-              :title="opt.value === 'high' ? `${opt.description} (默认)` : opt.description"
+              :title="opt.isDefault ? `${opt.description} (默认)` : opt.description"
             >
               <input
                 type="radio"
@@ -257,7 +276,7 @@ const emit = defineEmits<{
           border: 1px solid var(--border-subtle);
 
           &.reasoning-control {
-            grid-template-columns: repeat(8, 1fr);
+            grid-template-columns: repeat(var(--reasoning-cols, 8), 1fr);
           }
 
           &.stream-control {
