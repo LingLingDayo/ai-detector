@@ -487,11 +487,6 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
       message: "重置后将清空当前界面的 Base URL、API Key 与已选模型，已保存的配置预设不受影响。",
       confirmText: "确认重置",
       cancelText: "取消",
-      detailList: [
-        "清空当前输入的 Base URL 与 API Key",
-        "模型设置与推理深度恢复为默认值",
-        "已保存的配置预设列表将继续保留",
-      ],
     });
 
     if (!confirmed) {

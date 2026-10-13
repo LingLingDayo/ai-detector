@@ -104,11 +104,6 @@ const currentHighlightTag = computed<string>(() => {
   return (props.useGlobalState ? confirmState.highlightTag : "") || "";
 });
 
-const currentDetailList = computed<string[]>(() => {
-  if (props.detailList !== undefined) return props.detailList;
-  return props.useGlobalState ? confirmState.detailList ?? [] : [];
-});
-
 const isShowCancel = computed<boolean>(() => {
   if (props.showCancel !== undefined) return props.showCancel;
   return props.useGlobalState ? confirmState.showCancel !== false : true;
@@ -214,71 +209,103 @@ onUnmounted(() => {
         aria-modal="true"
         :aria-labelledby="'confirm-dialog-title'"
       >
-        <!-- 风格2：顶部横幅装饰线 -->
-        <div v-if="currentStyleVariant === 'banner'" class="top-accent-bar"></div>
+        <!-- 弹窗顶栏：左标题 + 右关闭按钮（图2结构，深色系质感） -->
+        <div class="confirm-header">
+          <div class="title-wrap">
+            <h3 id="confirm-dialog-title" class="dialog-title">
+              <slot name="title">{{ currentTitle }}</slot>
+            </h3>
+            <span v-if="currentHighlightTag" class="highlight-tag">
+              {{ currentHighlightTag }}
+            </span>
+          </div>
 
-        <!-- 主内容区域 -->
-        <div class="confirm-content-wrapper">
-          <!-- 图标徽章 -->
-          <div class="icon-wrapper" :class="`icon-${currentType}`">
+          <button
+            type="button"
+            class="btn-close"
+            title="关闭 (Esc)"
+            @click="onCancel"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- 弹窗主体：左图标 + 右说明正文（图2左右排版，移除多余细则说明框） -->
+        <div class="confirm-body">
+          <!-- 左侧警示图标 -->
+          <div class="icon-col" :class="`icon-${currentType}`">
             <slot name="icon">
-              <!-- Warning Icon -->
+              <!-- Warning Icon (图2同款明黄警示三角) -->
               <svg
                 v-if="currentType === 'warning'"
                 viewBox="0 0 24 24"
-                width="24"
-                height="24"
+                width="22"
+                height="22"
                 fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+                stroke="#f59e0b"
+                stroke-width="2.2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                 <line x1="12" y1="9" x2="12" y2="13" />
                 <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
 
-              <!-- Danger Icon -->
+              <!-- Danger Icon (危险警示三角) -->
               <svg
                 v-else-if="currentType === 'danger'"
                 viewBox="0 0 24 24"
-                width="24"
-                height="24"
+                width="22"
+                height="22"
                 fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+                stroke="#ef4444"
+                stroke-width="2.2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M12 9v4M12 17h.01M5.07 19h13.86a2 2 0 0 0 1.74-2.98L13.74 4.5a2 2 0 0 0-3.48 0L3.33 16.02A2 2 0 0 0 5.07 19z" />
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
 
               <!-- Success Icon -->
               <svg
                 v-else-if="currentType === 'success'"
                 viewBox="0 0 24 24"
-                width="24"
-                height="24"
+                width="22"
+                height="22"
                 fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+                stroke="#10b981"
+                stroke-width="2.2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="16 9 10 15 8 13" />
               </svg>
 
               <!-- Info / Default Icon -->
               <svg
                 v-else
                 viewBox="0 0 24 24"
-                width="24"
-                height="24"
+                width="22"
+                height="22"
                 fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+                stroke="#38bdf8"
+                stroke-width="2.2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
@@ -289,47 +316,15 @@ onUnmounted(() => {
             </slot>
           </div>
 
-          <!-- 文本与说明区 -->
-          <div class="text-container">
-            <div class="title-row">
-              <h3 id="confirm-dialog-title" class="dialog-title">
-                <slot name="title">{{ currentTitle }}</slot>
-              </h3>
-              <span v-if="currentHighlightTag" class="highlight-tag">
-                {{ currentHighlightTag }}
-              </span>
-            </div>
-
+          <!-- 右侧正文描述 -->
+          <div class="content-col">
             <div class="dialog-message" v-if="currentMessage || $slots.default">
               <slot>{{ currentMessage }}</slot>
-            </div>
-
-            <!-- 风格3/附带细则列表 (detail) -->
-            <div
-              v-if="currentDetailList.length > 0 || $slots.detail"
-              class="confirm-detail-box"
-            >
-              <slot name="detail">
-                <div class="detail-header">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                  <span>本次操作影响范围：</span>
-                </div>
-                <ul class="detail-list">
-                  <li v-for="(item, idx) in currentDetailList" :key="idx" class="detail-item">
-                    <span class="detail-bullet"></span>
-                    <span>{{ item }}</span>
-                  </li>
-                </ul>
-              </slot>
             </div>
           </div>
         </div>
 
-        <!-- 底部操作按钮组 -->
+        <!-- 底部操作按钮组：右对齐精致按钮（严格等高 32px，像素级一致） -->
         <div class="confirm-footer">
           <slot name="footer">
             <button
@@ -363,7 +358,7 @@ onUnmounted(() => {
 .confirm-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(4, 7, 13, 0.85);
+  background: rgba(4, 7, 13, 0.82);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -371,454 +366,252 @@ onUnmounted(() => {
   justify-content: center;
   z-index: 10000;
   padding: 16px;
-  animation: fadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 弹窗主体 */
+/* 弹窗主体卡片 (项目纯正深色系 + 桌面紧凑经典排版) */
 .confirm-modal-dialog {
   position: relative;
-  background: #0f1623;
-  border-radius: var(--radius-lg);
+  background: #101726;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
   width: 100%;
-  max-width: 440px;
+  max-width: 420px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.04);
-  animation: modalScaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  transition: all var(--transition-normal);
+  padding: 18px 20px 16px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  animation: modalScaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
 }
 
-/* --------------------------------------------------------------------------
-   语义主题风格配色 (Types: warning / danger / info / success)
-   -------------------------------------------------------------------------- */
+/* 弹窗顶栏 */
+.confirm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
 
-/* Warning 警告主题 (琥珀黄) */
-.type-warning {
-  .icon-warning {
-    background: rgba(245, 158, 11, 0.12);
-    color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.25);
-  }
-  .top-accent-bar {
-    background: #f59e0b;
-  }
-}
-
-/* Danger 危险主题 (绯红色) */
-.type-danger {
-  .icon-danger {
-    background: rgba(239, 68, 68, 0.12);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.25);
-  }
-  .top-accent-bar {
-    background: #ef4444;
-  }
-}
-
-/* Info 信息/常规主题 (科技靛青) */
-.type-info {
-  .icon-info {
-    background: rgba(99, 102, 241, 0.12);
-    color: #818cf8;
-    border: 1px solid rgba(99, 102, 241, 0.25);
-  }
-  .top-accent-bar {
-    background: #6366f1;
-  }
-}
-
-/* Success 成功主题 (翡翠绿) */
-.type-success {
-  .icon-success {
-    background: rgba(16, 185, 129, 0.12);
-    color: #34d399;
-    border: 1px solid rgba(16, 185, 129, 0.25);
-  }
-  .top-accent-bar {
-    background: #10b981;
-  }
-}
-
-/* 顶部横幅线条 */
-.top-accent-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  z-index: 2;
-}
-
-/* --------------------------------------------------------------------------
-   视觉形态风格 (Style Variants: spotlight / banner / detail / minimal)
-   -------------------------------------------------------------------------- */
-
-/* 1. 聚光灯居中风格 (默认 spotlight) */
-.variant-spotlight {
-  .confirm-content-wrapper {
-    padding: 24px 22px 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    position: relative;
-    z-index: 2;
-  }
-
-  .icon-wrapper {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
+  .title-wrap {
     display: flex;
     align-items: center;
-    justify-content: center;
-    margin-bottom: 14px;
-    flex-shrink: 0;
-  }
-
-  .title-row {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
+    gap: 8px;
   }
 
   .dialog-title {
-    font-size: 1.05rem;
+    font-size: 15px;
     font-weight: 600;
-    color: #fff;
+    color: #f8fafc;
+    margin: 0;
+    line-height: 1.4;
     letter-spacing: -0.01em;
   }
 
-  .dialog-message {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    line-height: 1.5;
+  .highlight-tag {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
   }
 
-  .confirm-footer {
-    padding: 12px 22px 20px;
+  .btn-close {
+    background: transparent;
+    border: none;
+    padding: 4px;
+    border-radius: 4px;
+    color: #64748b;
+    cursor: pointer;
     display: flex;
-    gap: 10px;
+    align-items: center;
     justify-content: center;
-    position: relative;
-    z-index: 2;
+    transition: all 0.15s ease;
 
-    .btn {
-      flex: 1;
-      padding: 9px 16px;
-      font-size: 0.88rem;
+    &:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.08);
     }
   }
 }
 
-/* 2. 横幅工整左右风格 (banner) */
-.variant-banner {
-  .confirm-content-wrapper {
-    padding: 20px 20px 14px;
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 14px;
-    position: relative;
-    z-index: 2;
-  }
+/* 弹窗主体：左图标 + 右说明正文 */
+.confirm-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
 
-  .icon-wrapper {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+  .icon-col {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
     margin-top: 2px;
-  }
-
-  .text-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .title-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .dialog-title {
-    font-size: 0.98rem;
-    font-weight: 600;
-    color: #fff;
-  }
-
-  .dialog-message {
-    font-size: 0.83rem;
-    color: var(--text-secondary);
-    line-height: 1.45;
-  }
-
-  .confirm-footer {
-    padding: 12px 20px 16px;
-    background: rgba(0, 0, 0, 0.18);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-
-    .btn {
-      min-width: 84px;
-      padding: 7px 14px;
-      font-size: 0.84rem;
-    }
-  }
-}
-
-/* 3. 详细细则/影响范围卡片风格 (detail) */
-.variant-detail {
-  max-width: 480px;
-
-  .confirm-content-wrapper {
-    padding: 22px 22px 14px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    position: relative;
-    z-index: 2;
-  }
-
-  .icon-wrapper {
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-    flex-shrink: 0;
-  }
-
-  .title-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 6px;
-    flex-wrap: wrap;
-  }
-
-  .dialog-title {
-    font-size: 1.02rem;
-    font-weight: 600;
-    color: #fff;
-  }
-
-  .dialog-message {
-    font-size: 0.84rem;
-    color: var(--text-secondary);
-    line-height: 1.45;
-    margin-bottom: 12px;
-  }
-
-  .confirm-detail-box {
-    width: 100%;
-    background: rgba(14, 20, 31, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius-sm);
-    padding: 10px 12px;
-    text-align: left;
-    margin-top: 4px;
-  }
-
-  .detail-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.76rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-  }
-
-  .detail-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-
-  .detail-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 7px;
-    font-size: 0.78rem;
-    color: var(--text-secondary);
-    line-height: 1.4;
-  }
-
-  .detail-bullet {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--text-muted);
-    margin-top: 6px;
-    flex-shrink: 0;
-  }
-
-  .confirm-footer {
-    padding: 12px 22px 18px;
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    position: relative;
-    z-index: 2;
-
-    .btn {
-      flex: 1;
-      padding: 8px 16px;
-      font-size: 0.86rem;
-    }
-  }
-}
-
-/* 4. 极简清爽紧凑风格 (minimal) */
-.variant-minimal {
-  max-width: 380px;
-
-  .confirm-content-wrapper {
-    padding: 18px 18px 12px;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .icon-wrapper {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
 
     svg {
-      width: 18px;
-      height: 18px;
+      display: block;
+      width: 22px;
+      height: 22px;
     }
   }
 
-  .text-container {
+  .content-col {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .dialog-title {
-    font-size: 0.92rem;
-    font-weight: 600;
-    color: #fff;
+    min-width: 0;
   }
 
   .dialog-message {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    line-height: 1.4;
+    font-size: 13.5px;
+    color: #94a3b8;
+    line-height: 1.55;
+    word-break: break-word;
   }
+}
 
-  .confirm-footer {
-    padding: 10px 18px 14px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
+/* 底部操作按钮组（右对齐，严格等高 32px） */
+.confirm-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
 
-    .btn {
-      padding: 6px 12px;
-      font-size: 0.82rem;
+  .btn {
+    box-sizing: border-box;
+    height: 32px;
+    min-width: 72px;
+    padding: 0 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease;
+    border: 1px solid transparent; // 统一 1px 边框基准，彻底消除边框导致的高度差！
+    outline: none;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
   }
-}
 
-/* 标签徽章 */
-.highlight-tag {
-  display: inline-block;
-  padding: 1px 7px;
-  border-radius: 4px;
-  font-size: 0.72rem;
-  font-weight: 500;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: var(--text-primary);
-}
+  /* 取消按钮（深色沉浸中性灰） */
+  .btn-cancel {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
 
-/* --------------------------------------------------------------------------
-   按钮样式
-   -------------------------------------------------------------------------- */
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+    }
 
-.btn-cancel {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: var(--text-secondary);
+    &:active:not(:disabled) {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  }
 
-  &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.22);
-    color: var(--text-primary);
+  /* 确认重置 / 警告按钮（饱满橙黄，高度与取消严格一致） */
+  .btn-warning {
+    background: #f59e0b;
+    border: 1px solid #f59e0b;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background: #d97706;
+      border-color: #d97706;
+    }
+
+    &:active:not(:disabled) {
+      background: #b45309;
+      border-color: #b45309;
+    }
+  }
+
+  /* 危险操作按钮（绯红） */
+  .btn-danger {
+    background: #ef4444;
+    border: 1px solid #ef4444;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background: #dc2626;
+      border-color: #dc2626;
+    }
+
+    &:active:not(:disabled) {
+      background: #b91c1c;
+      border-color: #b91c1c;
+    }
+  }
+
+  /* 成功操作按钮（翡翠绿） */
+  .btn-success {
+    background: #10b981;
+    border: 1px solid #10b981;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background: #059669;
+      border-color: #059669;
+    }
+
+    &:active:not(:disabled) {
+      background: #047857;
+      border-color: #047857;
+    }
+  }
+
+  /* 主要操作按钮（靛青蓝） */
+  .btn-primary {
+    background: #6366f1;
+    border: 1px solid #6366f1;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background: #4f46e5;
+      border-color: #4f46e5;
+    }
+
+    &:active:not(:disabled) {
+      background: #4338ca;
+      border-color: #4338ca;
+    }
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.06);
+      color: #ffffff;
+    }
+  }
+
+  .btn-spinner {
+    width: 13px;
+    height: 13px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
   }
 }
 
-.btn-warning {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: #fff;
-  box-shadow: 0 3px 12px rgba(245, 158, 11, 0.35);
-
-  &:hover:not(:disabled) {
-    background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-    box-shadow: 0 5px 16px rgba(245, 158, 11, 0.5);
-    transform: translateY(-1px);
-  }
-}
-
-.btn-danger {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: #fff;
-  box-shadow: 0 3px 12px rgba(239, 68, 68, 0.35);
-
-  &:hover:not(:disabled) {
-    background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
-    box-shadow: 0 5px 16px rgba(239, 68, 68, 0.5);
-    transform: translateY(-1px);
-  }
-}
-
-.btn-success {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #fff;
-  box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35);
-
-  &:hover:not(:disabled) {
-    background: linear-gradient(135deg, #34d399 0%, #059669 100%);
-    box-shadow: 0 5px 16px rgba(16, 185, 129, 0.5);
-    transform: translateY(-1px);
-  }
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-subtle);
-
-  &:hover:not(:disabled) {
-    color: var(--text-primary);
-    border-color: var(--text-secondary);
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

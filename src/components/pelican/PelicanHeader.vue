@@ -28,7 +28,7 @@
         <span class="pelican-badge">模型降智直观测试</span>
       </div>
       <p class="subtitle">
-        让 AI 绘制“鹈鹕骑自行车”SVG / HTML 图像。本测试不自动判定结果，请根据下方图形生成质量自行评估模型状态。
+        让 AI 绘制“鹈鹕骑自行车”SVG 图像。本测试不自动判定结果，请根据下方图形生成质量自行评估模型状态。
       </p>
     </div>
   </div>
