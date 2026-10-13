@@ -457,6 +457,7 @@ defineExpose({
       display: inline-flex;
       align-items: center;
       line-height: 1;
+      transform: translateY(1px);
     }
 
     &:hover {
