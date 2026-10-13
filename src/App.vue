@@ -364,10 +364,6 @@ function handleOpenGithub(): void {
       transition: transform var(--transition-fast);
     }
 
-    .version-text {
-      line-height: 1;
-    }
-
     &:hover {
       opacity: 1;
       color: var(--text-secondary);

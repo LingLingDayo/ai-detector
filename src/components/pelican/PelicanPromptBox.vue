@@ -276,7 +276,7 @@ watch(
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 2px;
     height: 20px;
     padding: 0 6px;
     background: transparent;
