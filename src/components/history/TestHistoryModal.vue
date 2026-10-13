@@ -71,10 +71,22 @@ function getPureSvgContent(rawContent: string): string {
   if (!rawContent) return "";
   const trimmed = rawContent.trim();
   const svgMatch = trimmed.match(/<svg[\s\S]*?<\/svg>/i);
-  if (svgMatch) {
-    return svgMatch[0];
-  }
-  return trimmed;
+  let svg = svgMatch ? svgMatch[0] : trimmed;
+
+  // 保证 SVG 在充满裁剪时不拉伸变形：强制 preserveAspectRatio="xMidYMid slice"
+  svg = svg.replace(/<svg\b([^>]*)>/i, (_match, attrs) => {
+    let newAttrs = attrs;
+    if (!/preserveAspectRatio=/i.test(newAttrs)) {
+      newAttrs += ' preserveAspectRatio="xMidYMid slice"';
+    } else {
+      newAttrs = newAttrs.replace(
+        /preserveAspectRatio=["'][^"']*["']/i,
+        'preserveAspectRatio="xMidYMid slice"'
+      );
+    }
+    return `<svg ${newAttrs}>`;
+  });
+  return svg;
 }
 </script>
 
@@ -113,8 +125,34 @@ function getPureSvgContent(rawContent: string): string {
             </div>
             <h3 id="test-history-title">测试历史记录</h3>
 
-            <!-- 扩展性 Tab 切换菜单：当前支持“鹈鹕测试”，预留无缝挂载“模型测试” -->
+            <!-- 扩展性 Tab 切换菜单：模型测试在左边，鹈鹕测试在右边 -->
             <nav class="history-tabs-nav" role="tablist" aria-label="测试类型切换">
+              <button
+                type="button"
+                role="tab"
+                class="tab-btn"
+                :class="{ active: activeTab === 'probe' }"
+                :aria-selected="activeTab === 'probe'"
+                @click="activeTab = 'probe'"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" />
+                  <path d="M12 6a6 6 0 1 0 6 6" />
+                  <circle cx="12" cy="12" r="2" />
+                </svg>
+                <span>模型测试</span>
+                <span class="tab-badge plan-tag">待接入</span>
+              </button>
+
               <button
                 type="button"
                 role="tab"
@@ -142,32 +180,6 @@ function getPureSvgContent(rawContent: string): string {
                 <span v-if="pelicanTotalCount > 0" class="tab-badge">
                   {{ pelicanTotalCount }}
                 </span>
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                class="tab-btn"
-                :class="{ active: activeTab === 'probe' }"
-                :aria-selected="activeTab === 'probe'"
-                @click="activeTab = 'probe'"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="13"
-                  height="13"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" />
-                  <path d="M12 6a6 6 0 1 0 6 6" />
-                  <circle cx="12" cy="12" r="2" />
-                </svg>
-                <span>模型测试</span>
-                <span class="tab-badge plan-tag">待接入</span>
               </button>
             </nav>
           </div>
@@ -256,23 +268,20 @@ function getPureSvgContent(rawContent: string): string {
                 :key="item.id"
                 class="pelican-card-item"
               >
-                <!-- 左上角显示调用模型的一个类似 tag 的东西 -->
+                <!-- 1. 图片展示区域（纯原生矢量 SVG 渲染，占满卡片，自动裁剪且不拉伸变形） -->
+                <div
+                  class="image-stage"
+                  @click="emit('apply-pelican', item)"
+                  title="点击将此图片载入主界面查看"
+                >
+                  <div
+                    class="svg-viewport"
+                    v-html="getPureSvgContent(item.content)"
+                  ></div>
+                </div>
+
+                <!-- 2. 左上角显示调用模型名（更通透透明，无 icon） -->
                 <div class="model-tag" :title="item.modelName">
-                  <svg
-                    class="model-tag-icon"
-                    viewBox="0 0 24 24"
-                    width="11"
-                    height="11"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                    <path d="M2 17l10 5 10-5" />
-                    <path d="M2 12l10 5 10-5" />
-                  </svg>
                   <span class="model-tag-text">{{ item.modelName }}</span>
                 </div>
 
@@ -359,19 +368,7 @@ function getPureSvgContent(rawContent: string): string {
                   </div>
                 </div>
 
-                <!-- 图片展示区域（纯原生矢量 SVG 渲染，无 iframe 性能开销与事件拦截） -->
-                <div
-                  class="image-stage"
-                  @click="emit('apply-pelican', item)"
-                  title="点击将此图片载入主界面查看"
-                >
-                  <div
-                    class="svg-viewport"
-                    v-html="getPureSvgContent(item.content)"
-                  ></div>
-                </div>
-
-                <!-- 卡片底栏快捷操作 -->
+                <!-- 4. 浮于图片上方的底栏快捷操作（默认隐藏，hover 时显现） -->
                 <footer class="card-footer">
                   <span class="time-label">{{ formatHistoryTime(item.createdAt) }}</span>
                   <div class="footer-btns">
@@ -703,28 +700,24 @@ function getPureSvgContent(rawContent: string): string {
   }
 }
 
-/* 单张卡片项 */
+/* 单张卡片项：固定接近 4:3 比例，占满整张卡片，多出裁剪，不拉伸变形 */
 .pelican-card-item {
   position: relative;
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: #090e1a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-md);
+  aspect-ratio: 4 / 3;
   overflow: visible; /* 保证 hover 浮层正常弹出不被裁切 */
   transition: all 0.22s ease;
-  display: flex;
-  flex-direction: column;
+  display: block;
 
   &:hover {
     border-color: rgba(99, 102, 241, 0.45);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-
-    .image-stage {
-      background: radial-gradient(circle at center, #1b263b 0%, #0d121d 100%);
-    }
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
   }
 }
 
-/* 左上角模型 Tag */
+/* 左上角模型名：更通透半透明，无 icon，默认显示 */
 .model-tag {
   position: absolute;
   top: 10px;
@@ -732,24 +725,18 @@ function getPureSvgContent(rawContent: string): string {
   z-index: 10;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: 9999px;
-  background: rgba(17, 24, 39, 0.85);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  color: #c7d2fe;
-  font-size: 0.7rem;
+  background: rgba(15, 23, 42, 0.38); /* 更加透明轻盈 */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(241, 245, 249, 0.88);
+  font-size: 0.68rem;
   font-weight: 500;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  max-width: 60%;
-  pointer-events: auto;
-
-  .model-tag-icon {
-    flex-shrink: 0;
-    color: #818cf8;
-  }
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  max-width: 65%;
+  pointer-events: none; /* 穿透不遮挡图片点击 */
 
   .model-tag-text {
     overflow: hidden;
@@ -758,12 +745,16 @@ function getPureSvgContent(rawContent: string): string {
   }
 }
 
-/* 右上角信息 icon 与 Hover 详细信息浮层 */
+/* 右上角信息 icon 与 Hover 详细信息浮层：默认隐藏，只有 hover 卡片时显示 */
 .info-icon-wrapper {
   position: absolute;
   top: 10px;
   right: 10px;
   z-index: 25;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-3px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 
   .info-action-btn {
     width: 26px;
@@ -881,19 +872,26 @@ function getPureSvgContent(rawContent: string): string {
   }
 }
 
-/* 图片展示主舞台 */
+/* 卡片 hover 时展示右上角详情 icon */
+.pelican-card-item:hover .info-icon-wrapper,
+.info-icon-wrapper:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* 图片展示主舞台：占满整张卡片全部，内部裁切溢出，SVG 充满且保持宽高比不拉伸变形 */
 .image-stage {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: 220px;
-  background: radial-gradient(circle at center, #151e2e 0%, #0a0e17 100%);
-  border-top-left-radius: var(--radius-md);
-  border-top-right-radius: var(--radius-md);
+  height: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden; /* 多出的部分裁剪，不拉伸变形 */
+  background: radial-gradient(circle at center, #162035 0%, #090e1a 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  position: relative;
-  overflow: hidden;
   cursor: pointer;
   transition: background 0.2s ease;
 
@@ -905,33 +903,39 @@ function getPureSvgContent(rawContent: string): string {
     justify-content: center;
 
     :deep(svg) {
-      max-width: 100%;
-      max-height: 100%;
-      width: auto;
-      height: auto;
-      object-fit: contain;
+      width: 100%;
+      height: 100%;
       display: block;
-      margin: 0 auto;
-      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+      object-fit: cover;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
       user-select: none;
     }
   }
 }
 
-/* 卡片底栏 */
+/* 卡片底栏操作区：浮在图片上方，默认隐藏，只有 hover 时才显示 */
 .card-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 15;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  background: rgba(15, 23, 42, 0.8);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 18px 12px 10px;
+  background: linear-gradient(to top, rgba(9, 14, 26, 0.94) 0%, rgba(9, 14, 26, 0.62) 65%, transparent 100%);
   border-bottom-left-radius: var(--radius-md);
   border-bottom-right-radius: var(--radius-md);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 
   .time-label {
     font-size: 0.68rem;
-    color: var(--text-muted);
+    color: rgba(226, 232, 240, 0.75);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   }
 
   .footer-btns {
@@ -943,9 +947,11 @@ function getPureSvgContent(rawContent: string): string {
       width: 24px;
       height: 24px;
       border-radius: var(--radius-sm);
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: var(--text-secondary);
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -953,17 +959,24 @@ function getPureSvgContent(rawContent: string): string {
       transition: all 0.18s ease;
 
       &:hover {
-        background: rgba(99, 102, 241, 0.15);
-        border-color: rgba(99, 102, 241, 0.35);
-        color: #c7d2fe;
+        background: rgba(99, 102, 241, 0.25);
+        border-color: rgba(99, 102, 241, 0.5);
+        color: #fff;
       }
 
       &.delete-tool-btn:hover {
-        background: rgba(239, 68, 68, 0.18);
-        border-color: rgba(239, 68, 68, 0.4);
+        background: rgba(239, 68, 68, 0.25);
+        border-color: rgba(239, 68, 68, 0.5);
         color: #fca5a5;
       }
     }
   }
+}
+
+/* 卡片 hover 时显示底栏 */
+.pelican-card-item:hover .card-footer {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 </style>
