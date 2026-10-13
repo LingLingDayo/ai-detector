@@ -70,7 +70,7 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max", "ultra"],
     defaultEffort: "medium",
     allowDisableReasoning: true,
-    notes: "ultra 为多Agent并行模式（独立于effort）",
+    notes: "多Agent并行模式（独立于effort）",
   },
   {
     vendor: "OpenAI GPT-5.6",
@@ -78,7 +78,6 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
     allowDisableReasoning: true,
-    notes: "无ultra",
   },
   {
     vendor: "OpenAI GPT-5.6",
@@ -86,7 +85,6 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
     allowDisableReasoning: true,
-    notes: "无ultra",
   },
 
   // ==================== OpenAI GPT-6 ====================
@@ -96,7 +94,6 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
     allowDisableReasoning: false,
-    notes: "无ultra",
   },
   {
     vendor: "OpenAI GPT-6",
@@ -104,7 +101,6 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
     allowDisableReasoning: true,
-    notes: "无ultra",
   },
   {
     vendor: "OpenAI GPT-6",
@@ -112,7 +108,6 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
     allowDisableReasoning: true,
-    notes: "无ultra",
   },
 
   // ==================== OpenAI GPT-6.1 ====================
@@ -122,7 +117,6 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
     allowDisableReasoning: false,
-    notes: "无ultra",
   },
 
   // ==================== Zhipu GLM-5.3 ====================
@@ -132,7 +126,7 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
     allowDisableReasoning: false,
-    notes: "无ultra，强制思考",
+    notes: "强制思考",
   },
   {
     vendor: "Zhipu GLM-5.3",
@@ -140,7 +134,7 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
     allowDisableReasoning: false,
-    notes: "无ultra，强制思考",
+    notes: "强制思考",
   },
 
   // ==================== Moonshot Kimi ====================
@@ -150,7 +144,7 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
     allowDisableReasoning: false,
-    notes: "无ultra，强制思考",
+    notes: "强制思考",
   },
 
   // ==================== DeepSeek ====================
@@ -160,7 +154,6 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "high", "max"],
     defaultEffort: "high",
     allowDisableReasoning: true,
-    notes: "无ultra",
   },
   {
     vendor: "DeepSeek",
@@ -168,7 +161,7 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "high", "max"],
     defaultEffort: "high",
     allowDisableReasoning: true,
-    notes: "无ultra，官方别名 deepseek-flash",
+    notes: "官方别名 deepseek-flash",
     patterns: ["deepseek-flash"],
   },
 
@@ -179,7 +172,6 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["low", "medium", "high", "xhigh"],
     defaultEffort: "high",
     allowDisableReasoning: false,
-    notes: "无ultra",
   },
   {
     vendor: "xAI Grok",
@@ -187,7 +179,6 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["low", "medium", "high", "xhigh"],
     defaultEffort: "high",
     allowDisableReasoning: false,
-    notes: "无ultra",
   },
 ] as const;
 
