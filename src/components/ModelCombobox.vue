@@ -218,7 +218,7 @@ defineExpose({
 
   .combobox-actions {
     position: absolute;
-    right: 10px;
+    right: 11px;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
