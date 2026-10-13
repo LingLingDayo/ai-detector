@@ -334,8 +334,8 @@ function handleOpenGithub(): void {
 
 .app-version-badge {
   position: fixed;
-  right: 12px;
-  bottom: 8px;
+  right: 10px;
+  bottom: 4px;
   z-index: 50;
   display: flex;
   align-items: center;
