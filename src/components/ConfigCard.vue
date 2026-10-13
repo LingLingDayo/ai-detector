@@ -18,6 +18,7 @@ const props = withDefaults(
     settingsSummary: string;
     isConfigModified?: boolean;
     isCurrentConfigSaved?: boolean;
+    historyCount?: number;
   }>(),
   {
     isPelicanRunning: false,
@@ -25,6 +26,7 @@ const props = withDefaults(
     hasResult: false,
     isConfigModified: false,
     isCurrentConfigSaved: false,
+    historyCount: 0,
   }
 );
 
@@ -38,6 +40,7 @@ const emit = defineEmits<{
   (e: "update-config"): void;
   (e: "open-save-config"): void;
   (e: "open-config-list"): void;
+  (e: "open-history"): void;
 }>();
 
 const comboboxRef = ref<InstanceType<typeof ModelCombobox> | null>(null);
@@ -209,6 +212,32 @@ defineExpose({
             <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
           </svg>
           <span>配置列表</span>
+        </button>
+
+        <button
+          type="button"
+          class="btn-header-action btn-history"
+          id="btn-history"
+          title="查看历史测试结果（鹈鹕测试、模型测试）"
+          @click="emit('open-history')"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span>历史记录</span>
+          <span v-if="historyCount && historyCount > 0" class="btn-count-dot">
+            {{ historyCount }}
+          </span>
         </button>
       </div>
     </div>
@@ -507,6 +536,31 @@ defineExpose({
         background: rgba(99, 102, 241, 0.2);
         border-color: rgba(99, 102, 241, 0.5);
         color: #e0e7ff;
+      }
+    }
+
+    &.btn-history {
+      color: #cbd5e1;
+      background: rgba(148, 163, 184, 0.08);
+      border-color: rgba(148, 163, 184, 0.2);
+
+      &:hover {
+        background: rgba(99, 102, 241, 0.18);
+        border-color: rgba(99, 102, 241, 0.45);
+        color: #e0e7ff;
+      }
+
+      .btn-count-dot {
+        font-size: 0.65rem;
+        padding: 0 4px;
+        height: 14px;
+        line-height: 14px;
+        border-radius: 9999px;
+        background: rgba(99, 102, 241, 0.35);
+        color: #c7d2fe;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
     }
   }

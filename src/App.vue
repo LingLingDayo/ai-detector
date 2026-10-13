@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick, onMounted } from "vue";
 import { useConfig } from "./composables/useConfig";
 import { useProbeTest } from "./composables/useProbeTest";
 import { usePelicanTest } from "./composables/usePelicanTest";
+import type { PelicanHistoryItem } from "./types";
 import AppHeader from "./components/AppHeader.vue";
 import ConfigCard from "./components/ConfigCard.vue";
 import ConfigListModal from "./components/ConfigListModal.vue";
@@ -11,11 +12,13 @@ import ConfirmModal from "./components/common/ConfirmModal.vue";
 import ProgressCard from "./components/ProgressCard.vue";
 import ResultCard from "./components/ResultCard.vue";
 import PelicanTestCard from "./components/PelicanTestCard.vue";
+import TestHistoryModal from "./components/history/TestHistoryModal.vue";
 import { APP_VERSION, GITHUB_REPO_URL } from "./constants";
 import { openExternalUrl } from "./services/api";
 
 const configCardRef = ref<InstanceType<typeof ConfigCard> | null>(null);
 const activeMode = ref<"probe" | "pelican">("probe");
+const isHistoryModalOpen = ref(false);
 
 const {
   isRunning,
@@ -48,11 +51,14 @@ const {
   hasTested: hasPelicanTested,
   hasResult: hasPelicanResult,
   pelicanPrompt,
+  pelicanHistoryList,
   setPelicanPrompt,
   resetPelicanPrompt,
   startPelicanTest,
   cancelPelicanTest,
   resetPelicanTest,
+  deletePelicanHistoryItem,
+  clearPelicanHistory,
 } = usePelicanTest();
 
 const hasActiveResult = computed(() => {
@@ -74,6 +80,7 @@ const {
   hasCurrentInput,
   isCurrentConfigSaved,
   canSaveCurrent,
+  matchedConfigItem,
   isConfigModified,
   togglePasswordVisibility,
   openConfigListModal,
@@ -128,8 +135,24 @@ function handleStartTest(): void {
       cancelPelicanTest();
       return;
     }
-    startPelicanTest(config);
+    const currentSavedName =
+      matchedConfigItem.value?.name ||
+      (isCurrentConfigSaved.value ? activeConfigName.value : undefined);
+    startPelicanTest(config, currentSavedName);
   }
+}
+
+function handleApplyPelicanHistoryItem(item: PelicanHistoryItem): void {
+  pelicanContent.value = item.content;
+  pelicanSvg.value = item.content;
+  pelicanContentType.value = item.contentType;
+  testedModel.value = item.modelName;
+  rawResponseText.value = item.content;
+  durationMs.value = item.durationMs || 0;
+  hasPelicanTested.value = true;
+  hasPelicanResult.value = true;
+  activeMode.value = "pelican";
+  isHistoryModalOpen.value = false;
 }
 
 async function handleResetConfig(): Promise<void> {
@@ -219,6 +242,7 @@ function handleOpenGithub(): void {
         :settings-summary="settingsSummary"
         :is-config-modified="isConfigModified"
         :is-current-config-saved="isCurrentConfigSaved"
+        :history-count="pelicanHistoryList.length"
         @toggle-password="togglePasswordVisibility"
         @update:is-advanced-open="(v) => (isAdvancedOpen = v)"
         @update:active-mode="(v) => (activeMode = v)"
@@ -228,6 +252,7 @@ function handleOpenGithub(): void {
         @update-config="handleUpdateConfig"
         @open-save-config="openSaveCurrentModal"
         @open-config-list="openConfigListModal"
+        @open-history="isHistoryModalOpen = true"
       />
 
       <!-- 常规探测题目与测试进度卡片（常规模式展示） -->
@@ -291,6 +316,17 @@ function handleOpenGithub(): void {
       :initial-data="editingConfigItem"
       @close="closeConfigEditModal"
       @save="handleSaveConfigItem"
+    />
+
+    <!-- 统一测试历史记录弹窗（包含鹈鹕测试与模型测试 Tab 架构） -->
+    <TestHistoryModal
+      :is-open="isHistoryModalOpen"
+      :initial-tab="activeMode === 'pelican' ? 'pelican' : 'probe'"
+      :pelican-list="pelicanHistoryList"
+      @close="isHistoryModalOpen = false"
+      @delete-pelican="deletePelicanHistoryItem"
+      @clear-pelican="clearPelicanHistory"
+      @apply-pelican="handleApplyPelicanHistoryItem"
     />
 
     <!-- 全局通用公共确认弹窗 -->

@@ -62,3 +62,17 @@ export interface StatusAlertInfo {
   message: string;
   type: "error" | "warning";
 }
+
+export interface PelicanHistoryItem {
+  id: string;
+  createdAt: number;
+  configName?: string;
+  baseUrl: string;
+  apiKey: string;
+  modelName: string;
+  reasoningEffort: string;
+  contentType: "svg" | "html";
+  content: string;
+  durationMs?: number;
+  prompt?: string;
+}

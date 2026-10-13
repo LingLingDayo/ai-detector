@@ -1,7 +1,11 @@
 import { ref, type Ref, onScopeDispose } from "vue";
 import { sendProbe } from "../services/api";
-import type { ClientConfig } from "../types";
-import { PELICAN_PROMPT_STORAGE_KEY } from "../constants";
+import type { ClientConfig, PelicanHistoryItem } from "../types";
+import {
+  PELICAN_PROMPT_STORAGE_KEY,
+  PELICAN_HISTORY_STORAGE_KEY,
+} from "../constants";
+import { maskApiKey } from "../utils/pelicanFormatters";
 
 export const DEFAULT_PELICAN_PROMPT =
   "Generate an SVG of a pelican riding a bicycle. Reply with the SVG code only.";
@@ -27,11 +31,14 @@ export interface PelicanTestState {
   hasTested: Ref<boolean>;
   hasResult: Ref<boolean>;
   pelicanPrompt: Ref<string>;
+  pelicanHistoryList: Ref<PelicanHistoryItem[]>;
   setPelicanPrompt: (newPrompt: string) => void;
   resetPelicanPrompt: () => void;
-  startPelicanTest: (config: ClientConfig) => Promise<void>;
+  startPelicanTest: (config: ClientConfig, configName?: string) => Promise<void>;
   cancelPelicanTest: () => void;
   resetPelicanTest: () => void;
+  deletePelicanHistoryItem: (id: string) => void;
+  clearPelicanHistory: () => void;
 }
 
 export function isPureSvg(str: string): boolean {
@@ -147,6 +154,40 @@ function loadInitialPelicanPrompt(): string {
   return DEFAULT_PELICAN_PROMPT;
 }
 
+const MAX_PELICAN_HISTORY_COUNT = 60;
+
+function loadInitialPelicanHistory(): PelicanHistoryItem[] {
+  try {
+    const raw = localStorage.getItem(PELICAN_HISTORY_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.filter(
+        (item): item is PelicanHistoryItem =>
+          Boolean(item && typeof item.content === "string" && item.content.trim().length > 0)
+      );
+    }
+  } catch (err) {
+    console.error("加载鹈鹕测试历史记录失败:", err);
+  }
+  return [];
+}
+
+function persistPelicanHistory(list: PelicanHistoryItem[]): void {
+  try {
+    localStorage.setItem(PELICAN_HISTORY_STORAGE_KEY, JSON.stringify(list));
+  } catch (err) {
+    console.error("保存鹈鹕测试历史记录失败:", err);
+  }
+}
+
+function generateHistoryId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `hist_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export function usePelicanTest(): PelicanTestState {
   const isPelicanRunning = ref(false);
   const pelicanSvg = ref("");
@@ -159,6 +200,33 @@ export function usePelicanTest(): PelicanTestState {
   const hasTested = ref(false);
   const hasResult = ref(false);
   const pelicanPrompt = ref(loadInitialPelicanPrompt());
+  const pelicanHistoryList = ref<PelicanHistoryItem[]>(loadInitialPelicanHistory());
+
+  function addPelicanHistoryItem(item: Omit<PelicanHistoryItem, "id" | "createdAt">): void {
+    const newItem: PelicanHistoryItem = {
+      ...item,
+      id: generateHistoryId(),
+      createdAt: Date.now(),
+    };
+    const updated = [newItem, ...pelicanHistoryList.value].slice(0, MAX_PELICAN_HISTORY_COUNT);
+    pelicanHistoryList.value = updated;
+    persistPelicanHistory(updated);
+  }
+
+  function deletePelicanHistoryItem(id: string): void {
+    const updated = pelicanHistoryList.value.filter((item) => item.id !== id);
+    pelicanHistoryList.value = updated;
+    persistPelicanHistory(updated);
+  }
+
+  function clearPelicanHistory(): void {
+    pelicanHistoryList.value = [];
+    try {
+      localStorage.removeItem(PELICAN_HISTORY_STORAGE_KEY);
+    } catch {
+      // 忽略存储删除异常
+    }
+  }
 
   function setPelicanPrompt(newPrompt: string): void {
     const trimmed = newPrompt.trim();
@@ -204,7 +272,10 @@ export function usePelicanTest(): PelicanTestState {
     errorMsg.value = "测试已取消，再次点击开始按钮重新测试";
   }
 
-  async function startPelicanTest(config: ClientConfig): Promise<void> {
+  async function startPelicanTest(
+    config: ClientConfig,
+    configName?: string
+  ): Promise<void> {
     if (isPelicanRunning.value) return;
 
     if (!config.baseUrl?.trim() || !config.apiKey?.trim()) {
@@ -267,6 +338,19 @@ export function usePelicanTest(): PelicanTestState {
         pelicanContent.value = content;
         pelicanSvg.value = content;
         pelicanContentType.value = contentType;
+
+        // 仅在成功生成时归档至历史记录（存储时直接脱敏省略中间部分）
+        addPelicanHistoryItem({
+          configName: configName?.trim() || undefined,
+          baseUrl: config.baseUrl,
+          apiKey: maskApiKey(config.apiKey),
+          modelName: config.modelName,
+          reasoningEffort: config.reasoningEffort || "high",
+          contentType,
+          content,
+          durationMs: durationMs.value,
+          prompt: promptToSend,
+        });
       } else {
         errorMsg.value = "模型未返回有效的 SVG 或 HTML 代码";
       }
@@ -326,10 +410,13 @@ export function usePelicanTest(): PelicanTestState {
     hasTested,
     hasResult,
     pelicanPrompt,
+    pelicanHistoryList,
     setPelicanPrompt,
     resetPelicanPrompt,
     startPelicanTest,
     cancelPelicanTest,
     resetPelicanTest,
+    deletePelicanHistoryItem,
+    clearPelicanHistory,
   };
 }
