@@ -29,6 +29,7 @@ const emit = defineEmits<{
 
 const displayContent = computed(() => props.content || props.svg || "");
 const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG"));
+const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
 </script>
 
 <template>
@@ -54,8 +55,8 @@ const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG")
       <span v-if="modelName" class="meta-item">
         模型: <strong>{{ modelName }}</strong>
       </span>
-      <span v-if="durationMs > 0" class="meta-item">
-        耗时: <strong>{{ (durationMs / 1000).toFixed(2) }}s</strong>
+      <span v-if="durationMs > 0 || isRunning" class="meta-item">
+        耗时: <strong>{{ durationSeconds }}s</strong>
       </span>
     </div>
 
@@ -225,6 +226,7 @@ const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG")
     strong {
       color: var(--text-primary);
       font-weight: 500;
+      font-variant-numeric: tabular-nums;
     }
   }
 }

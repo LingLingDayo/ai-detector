@@ -1,4 +1,4 @@
-import { ref, type Ref } from "vue";
+import { ref, type Ref, onScopeDispose } from "vue";
 import { sendProbe } from "../services/api";
 import type { ClientConfig } from "../types";
 import { PELICAN_PROMPT_STORAGE_KEY } from "../constants";
@@ -181,12 +181,25 @@ export function usePelicanTest(): PelicanTestState {
 
   let currentRunId = 0;
   let abortController: AbortController | null = null;
+  let timerId: ReturnType<typeof setInterval> | null = null;
+  let testStartTime = 0;
+
+  function stopTimer(): void {
+    if (timerId !== null) {
+      clearInterval(timerId);
+      timerId = null;
+    }
+  }
 
   function cancelPelicanTest(): void {
     if (!isPelicanRunning.value) return;
     currentRunId += 1;
+    stopTimer();
     abortController?.abort();
     abortController = null;
+    if (testStartTime > 0) {
+      durationMs.value = Date.now() - testStartTime;
+    }
     isPelicanRunning.value = false;
     errorMsg.value = "测试已取消，再次点击开始按钮重新测试";
   }
@@ -209,6 +222,10 @@ export function usePelicanTest(): PelicanTestState {
     abortController?.abort();
     abortController = new AbortController();
 
+    stopTimer();
+    testStartTime = Date.now();
+    durationMs.value = 0;
+
     isPelicanRunning.value = true;
     errorMsg.value = null;
     hasTested.value = true;
@@ -219,7 +236,10 @@ export function usePelicanTest(): PelicanTestState {
     rawResponseText.value = "";
     testedModel.value = config.modelName;
 
-    const startTime = Date.now();
+    timerId = setInterval(() => {
+      durationMs.value = Date.now() - testStartTime;
+    }, 50);
+
     const isStream = config.stream !== false;
     const timeoutSeconds = isStream ? 90 : 240;
     try {
@@ -238,8 +258,9 @@ export function usePelicanTest(): PelicanTestState {
 
       if (runId !== currentRunId) return;
 
+      stopTimer();
       rawResponseText.value = res.text || "";
-      durationMs.value = res.duration_ms || Date.now() - startTime;
+      durationMs.value = res.duration_ms || (Date.now() - testStartTime);
 
       const { content, contentType, hasContent } = extractRenderableContent(res.text || "");
       if (hasContent) {
@@ -252,6 +273,7 @@ export function usePelicanTest(): PelicanTestState {
       hasResult.value = true;
     } catch (err: unknown) {
       if (runId !== currentRunId) return;
+      stopTimer();
       const message =
         err instanceof Error
           ? err.message
@@ -259,10 +281,11 @@ export function usePelicanTest(): PelicanTestState {
           ? err
           : "请求异常，请检查网络或配置";
       errorMsg.value = message;
-      durationMs.value = Date.now() - startTime;
+      durationMs.value = Date.now() - testStartTime;
       hasResult.value = true;
     } finally {
       if (runId === currentRunId) {
+        stopTimer();
         isPelicanRunning.value = false;
         abortController = null;
       }
@@ -271,6 +294,7 @@ export function usePelicanTest(): PelicanTestState {
 
   function resetPelicanTest(): void {
     currentRunId += 1;
+    stopTimer();
     abortController?.abort();
     abortController = null;
     isPelicanRunning.value = false;
@@ -279,11 +303,16 @@ export function usePelicanTest(): PelicanTestState {
     pelicanContentType.value = "svg";
     rawResponseText.value = "";
     durationMs.value = 0;
+    testStartTime = 0;
     testedModel.value = "";
     errorMsg.value = null;
     hasTested.value = false;
     hasResult.value = false;
   }
+
+  onScopeDispose(() => {
+    stopTimer();
+  });
 
   return {
     isPelicanRunning,
