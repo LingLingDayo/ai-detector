@@ -64,7 +64,7 @@ const emit = defineEmits<{
               />
               <span class="segment-label">流式请求</span>
             </label>
-            <label class="segment" title="同步请求（传统全量响应，超时锁定 240 秒）">
+            <label class="segment" title="同步请求（全量响应，超时锁定 240 秒）">
               <input
                 type="radio"
                 name="request-stream"

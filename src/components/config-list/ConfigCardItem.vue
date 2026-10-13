@@ -216,7 +216,6 @@ function maskApiKey(key?: string): string {
           display: inline-flex;
           align-items: center;
           line-height: 1;
-          transform: translateY(1px);
         }
 
         &.btn-apply {
