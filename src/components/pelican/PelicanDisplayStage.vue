@@ -9,7 +9,6 @@ const props = withDefaults(
     svg?: string;
     contentType?: PelicanContentType;
     rawText: string;
-    bgTheme: "dark" | "checker";
   }>(),
   {
     content: "",
@@ -106,7 +105,6 @@ const wrappedHtml = computed(() => {
     <div
       v-else-if="displayContent"
       class="display-stage svg-stage"
-      :class="bgTheme"
     >
       <!-- SVG 渲染 -->
       <div
@@ -195,22 +193,7 @@ const wrappedHtml = computed(() => {
   justify-content: center;
   padding: 20px;
   position: relative;
-  transition: background 0.2s ease;
-
-  &.dark {
-    background: radial-gradient(circle at center, #161f30 0%, #0d121c 100%);
-  }
-
-  &.checker {
-    background-color: #1a2233;
-    background-image:
-      linear-gradient(45deg, #121824 25%, transparent 25%),
-      linear-gradient(-45deg, #121824 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #121824 75%),
-      linear-gradient(-45deg, transparent 75%, #121824 75%);
-    background-size: 16px 16px;
-    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-  }
+  background: radial-gradient(circle at center, #161f30 0%, #0d121c 100%);
 }
 
 .svg-render-viewport {

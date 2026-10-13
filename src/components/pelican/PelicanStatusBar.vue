@@ -11,7 +11,6 @@ const props = withDefaults(
     contentType?: PelicanContentType;
     modelName: string;
     durationMs: number;
-    bgTheme: "dark" | "checker";
     showCode: boolean;
     svgCopied: boolean;
   }>(),
@@ -23,7 +22,6 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (e: "update:bgTheme", value: "dark" | "checker"): void;
   (e: "update:showCode", value: boolean): void;
   (e: "copy-svg"): void;
   (e: "download-svg"): void;
@@ -63,27 +61,6 @@ const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG")
 
     <!-- 背景样式与视图切换 -->
     <div v-if="displayContent && !isRunning" class="view-controls">
-      <div class="bg-switch-group">
-        <button
-          type="button"
-          class="bg-btn"
-          :class="{ active: bgTheme === 'dark' }"
-          title="深色背景"
-          @click="emit('update:bgTheme', 'dark')"
-        >
-          深底
-        </button>
-        <button
-          type="button"
-          class="bg-btn"
-          :class="{ active: bgTheme === 'checker' }"
-          title="棋盘格背景 (便于查看浅色/透明线条)"
-          @click="emit('update:bgTheme', 'checker')"
-        >
-          网格
-        </button>
-      </div>
-
       <button
         type="button"
         class="ctrl-btn"
@@ -256,29 +233,6 @@ const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG")
   display: flex;
   align-items: center;
   gap: 6px;
-
-  .bg-switch-group {
-    display: inline-flex;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-subtle);
-    background: rgba(15, 23, 42, 0.6);
-    overflow: hidden;
-
-    .bg-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 0.7rem;
-      padding: 3px 6px;
-      cursor: pointer;
-      transition: all var(--transition-fast);
-
-      &.active {
-        background: rgba(99, 102, 241, 0.3);
-        color: #fff;
-      }
-    }
-  }
 
   .ctrl-btn {
     display: inline-flex;
