@@ -65,6 +65,7 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
 
     try {
       const list = await fetchRemoteModels(url, key, props.apiFormat || "chat_completions");
+      isFetchedFromApi.value = true;
       if (list && list.length > 0) {
         // 保留用户已排好的顺序，过滤远端已移除的，新模型追加到末尾
         const saved = loadSavedModels(url);
@@ -72,7 +73,6 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
 
         availableModels.value = mergedList;
         saveModelsToStorage(url, mergedList);
-        isFetchedFromApi.value = true;
         statusBarText.value = `已成功获取 ${mergedList.length} 个模型`;
         statusColor.value = "var(--success)";
 
@@ -85,6 +85,7 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
           }
         }
       } else {
+        availableModels.value = [];
         statusBarText.value = "上游未返回可用模型列表，仍可手动输入";
         statusColor.value = "";
       }

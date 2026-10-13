@@ -85,9 +85,9 @@ export function useModelList(): UseModelListReturn {
 
     try {
       const list = await fetchRemoteModels(trimmedUrl, trimmedKey, apiFormat);
+      isFetchedFromApi.value = true;
       if (list && list.length > 0) {
         availableModels.value = list;
-        isFetchedFromApi.value = true;
         statusBarText.value = `已成功获取 ${list.length} 个模型`;
         statusType.value = "success";
 
@@ -99,6 +99,7 @@ export function useModelList(): UseModelListReturn {
           }
         }
       } else {
+        availableModels.value = [];
         statusBarText.value = "上游未返回可用模型列表，仍可手动输入";
         statusType.value = "default";
       }

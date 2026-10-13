@@ -42,6 +42,67 @@ export function getTauriInvoke(): TauriInvokeFn | null {
   return tauriInvoke;
 }
 
+export function extractModelsFromData(data: any): string[] {
+  if (!data) return [];
+  const models: string[] = [];
+
+  const extractItem = (item: any) => {
+    if (typeof item === "string") {
+      const trimmed = item.trim();
+      if (trimmed) models.push(trimmed);
+      return;
+    }
+    if (item && typeof item === "object") {
+      const val = item.id || item.model || item.name || item.model_name || item.value || "";
+      if (typeof val === "string" && val.trim()) {
+        models.push(val.trim());
+      }
+    }
+  };
+
+  if (Array.isArray(data)) {
+    data.forEach(extractItem);
+  } else if (data && typeof data === "object") {
+    let found = false;
+    for (const key of ["data", "models", "model_list", "items", "result", "list"]) {
+      if (Array.isArray(data[key])) {
+        data[key].forEach(extractItem);
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      for (const parent of ["data", "result"]) {
+        if (data[parent] && typeof data[parent] === "object") {
+          for (const child of ["data", "models", "items", "list"]) {
+            if (Array.isArray(data[parent][child])) {
+              data[parent][child].forEach(extractItem);
+              found = true;
+              break;
+            }
+          }
+          if (found) break;
+        }
+      }
+    }
+
+    if (!found) {
+      for (const key of ["models", "data"]) {
+        if (data[key] && typeof data[key] === "object" && !Array.isArray(data[key])) {
+          Object.keys(data[key]).forEach((k) => {
+            const trimmed = k.trim();
+            if (trimmed) models.push(trimmed);
+          });
+          if (models.length > 0) break;
+        }
+      }
+    }
+  }
+
+  return Array.from(new Set(models)).sort();
+}
+
 export async function fetchRemoteModels(
   baseUrl: string,
   apiKey: string,
@@ -81,6 +142,12 @@ export async function fetchRemoteModels(
     endpoint += "/v1/models";
   }
 
+  const fallbackEndpoint = endpoint.endsWith("/v1/models")
+    ? endpoint.replace(/\/v1\/models$/, "/models")
+    : endpoint.endsWith("/models") && !endpoint.endsWith("/v1/models")
+    ? endpoint.replace(/\/models$/, "/v1/models")
+    : null;
+
   const headers: Record<string, string> = {
     Accept: "application/json",
   };
@@ -98,6 +165,12 @@ export async function fetchRemoteModels(
   let res: Response;
   try {
     res = await fetch(endpoint, { headers });
+    if ((res.status === 404 || res.status === 405) && fallbackEndpoint) {
+      const fbRes = await fetch(fallbackEndpoint, { headers }).catch(() => null);
+      if (fbRes && fbRes.ok) {
+        res = fbRes;
+      }
+    }
   } catch (netErr: unknown) {
     const msg = netErr instanceof Error ? netErr.message : String(netErr);
     throw new Error(`网络请求受限或跨域错误 (${msg})。在桌面客户端环境下无跨域限制。`);
@@ -109,23 +182,7 @@ export async function fetchRemoteModels(
   }
 
   const data = (await res.json()) as any;
-  let rawList: any[] = [];
-  if (Array.isArray(data)) {
-    rawList = data;
-  } else if (Array.isArray(data?.data)) {
-    rawList = data.data;
-  } else if (Array.isArray(data?.models)) {
-    rawList = data.models;
-  }
-
-  const models = rawList
-    .map((item) => {
-      if (typeof item === "string") return item;
-      return item?.id || item?.name || "";
-    })
-    .filter(Boolean);
-
-  return Array.from(new Set(models)).sort();
+  return extractModelsFromData(data);
 }
 
 function parseNonStreamingJson(json: any, apiFormat: string): string {
