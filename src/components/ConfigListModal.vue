@@ -5,7 +5,6 @@ import ConfigModalHeader from "./config-list/ConfigModalHeader.vue";
 import ConfigListToolbar from "./config-list/ConfigListToolbar.vue";
 import ConfigCardItem from "./config-list/ConfigCardItem.vue";
 import ConfigEmptyState from "./config-list/ConfigEmptyState.vue";
-import ConfigModalFooter from "./config-list/ConfigModalFooter.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -148,9 +147,6 @@ const filteredConfigs = computed(() => {
             @open-save-current="emit('openSaveCurrent')"
           />
         </div>
-
-        <!-- 弹窗底栏 -->
-        <ConfigModalFooter @close="emit('close')" />
       </div>
     </div>
   </Teleport>
