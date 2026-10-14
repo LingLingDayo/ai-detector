@@ -695,7 +695,7 @@ function getPureSvgContent(rawContent: string): string {
 .modal-body {
   padding: 16px 20px;
   overflow-y: auto;
-  min-height: 340px;
+  min-height: 400px;
 }
 
 .tab-content-section {
