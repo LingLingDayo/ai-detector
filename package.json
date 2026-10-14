@@ -18,6 +18,7 @@
     "sync:check": "node scripts/sync-upstream.js --check"
   },
   "dependencies": {
+    "@lucide/vue": "^1.57.0",
     "@tauri-apps/api": "^2.2.0",
     "vue": "^3.5.43"
   },

@@ -2,6 +2,7 @@
 import { ref, computed, watch, onUnmounted } from "vue";
 import type { ClientConfig } from "../types";
 import { resolveValidReasoningEffort } from "../constants";
+import { Check, Save, List, History, Eye, EyeOff } from "@lucide/vue";
 import ModelCombobox from "./ModelCombobox.vue";
 import AdvancedSettings from "./AdvancedSettings.vue";
 
@@ -161,34 +162,15 @@ defineExpose({
           :disabled="isJustUpdated"
           @click="handleSaveButtonClick"
         >
-          <svg
+          <Check
             v-if="isJustUpdated"
-            viewBox="0 0 24 24"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          <svg
+            :size="13"
+            :stroke-width="2.5"
+          />
+          <Save
             v-else
-            viewBox="0 0 24 24"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-            <polyline points="17 21 17 13 7 13 7 21" />
-            <polyline points="7 3 7 8 15 8" />
-          </svg>
+            :size="13"
+          />
           <span>{{ isJustUpdated ? "已更新" : (isConfigModified ? "更新配置" : "保存配置") }}</span>
         </button>
 
@@ -199,18 +181,7 @@ defineExpose({
           title="管理与切换已保存的配置预设列表"
           @click="emit('open-config-list')"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-          </svg>
+          <List :size="13" />
           <span>配置列表</span>
         </button>
 
@@ -221,19 +192,7 @@ defineExpose({
           title="查看历史测试结果（鹈鹕测试、模型测试）"
           @click="emit('open-history')"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
+          <History :size="13" />
           <span>历史记录</span>
         </button>
       </div>
@@ -282,32 +241,16 @@ defineExpose({
               title="切换显示/隐藏 Key"
               @click="emit('toggle-password')"
             >
-              <svg
+              <Eye
                 class="eye-open"
                 :class="{ hidden: isPasswordVisible }"
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              <svg
+                :size="16"
+              />
+              <EyeOff
                 class="eye-closed"
                 :class="{ hidden: !isPasswordVisible }"
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                <line x1="1" y1="1" x2="23" y2="23" />
-              </svg>
+                :size="16"
+              />
             </button>
           </div>
         </div>

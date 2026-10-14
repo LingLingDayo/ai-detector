@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { Settings, ChevronDown } from "@lucide/vue";
 import {
   findModelReasoningRule,
   getReasoningOptionsForModel,
@@ -42,26 +43,11 @@ const effortOptions = computed(() => getReasoningOptionsForModel(props.modelName
       @click="emit('update:isOpen', !isOpen)"
     >
       <div class="trigger-content">
-        <svg class="gear-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
+        <Settings :size="15" class="gear-icon" />
         <span>更多设置</span>
         <span class="settings-summary" id="settings-summary">{{ summary }}</span>
       </div>
-      <svg
-        class="chevron-icon"
-        viewBox="0 0 24 24"
-        width="14"
-        height="14"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
+      <ChevronDown :size="14" class="chevron-icon" />
     </button>
 
     <div class="accordion-panel" :class="{ hidden: !isOpen }" id="advanced-panel">

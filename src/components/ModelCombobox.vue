@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
+import { RotateCw, ChevronDown } from "@lucide/vue";
 import ModelDropdownMenu from "./model-combobox/ModelDropdownMenu.vue";
 import { useModelFetch } from "./model-combobox/useModelFetch";
 import { isValidBaseUrl, isValidApiKey } from "./model-combobox/modelStorage";
@@ -144,20 +145,11 @@ defineExpose({
         title="点击调用 /v1/models 接口自动获取当前 Key 允许的模型列表"
         @click.stop="() => { if (!isOpen) openDropdown(); void fetchModels({ autoSelectFirst: false }); }"
       >
-        <svg
+        <RotateCw
           class="refresh-icon"
           :class="{ spinning: isFetching }"
-          viewBox="0 0 24 24"
-          width="14"
-          height="14"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-        </svg>
+          :size="14"
+        />
       </button>
       <button
         type="button"
@@ -166,19 +158,10 @@ defineExpose({
         title="展开/收起模型选择列表"
         @click.stop="toggleDropdown"
       >
-        <svg
+        <ChevronDown
           class="dropdown-chevron"
-          viewBox="0 0 24 24"
-          width="14"
-          height="14"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+          :size="14"
+        />
       </button>
     </div>
 
