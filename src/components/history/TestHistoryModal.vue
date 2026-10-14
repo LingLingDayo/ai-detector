@@ -762,6 +762,7 @@ function getPureSvgContent(rawContent: string): string {
 /* 单张卡片项：固定接近 4:3 比例，占满整张卡片，多出裁剪，不拉伸变形 */
 .pelican-card-item {
   position: relative;
+  z-index: 1;
   background: #090e1a;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-md);
@@ -770,7 +771,10 @@ function getPureSvgContent(rawContent: string): string {
   transition: all 0.22s ease;
   display: block;
 
-  &:hover {
+  &:hover,
+  &:focus-within,
+  &:has(.info-tooltip-popover:hover) {
+    z-index: 50;
     border-color: rgba(99, 102, 241, 0.45);
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
   }
@@ -862,6 +866,15 @@ function getPureSvgContent(rawContent: string): string {
   transform: translateY(-6px);
   transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
   pointer-events: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    right: 0;
+    height: 10px;
+  }
 
   .popover-header {
     padding-bottom: 8px;
@@ -1059,6 +1072,8 @@ function getPureSvgContent(rawContent: string): string {
 }
 
 .probe-row-item {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1070,7 +1085,10 @@ function getPureSvgContent(rawContent: string): string {
   cursor: pointer;
   transition: all 0.18s ease;
 
-  &:hover {
+  &:hover,
+  &:focus-within,
+  &:has(.info-tooltip-popover:hover) {
+    z-index: 50;
     background: rgba(30, 41, 59, 0.75);
     border-color: rgba(99, 102, 241, 0.35);
     transform: translateY(-1px);
@@ -1208,6 +1226,7 @@ function getPureSvgContent(rawContent: string): string {
 
       .info-icon-wrapper {
         position: relative;
+        z-index: 2;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -1216,6 +1235,11 @@ function getPureSvgContent(rawContent: string): string {
         opacity: 1;
         transform: none;
         pointer-events: auto;
+
+        &:hover,
+        &:focus-within {
+          z-index: 10;
+        }
 
         &:hover .info-tooltip-popover,
         &:focus-within .info-tooltip-popover {
