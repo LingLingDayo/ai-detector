@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
 import { useConfig } from "./composables/useConfig";
 import { useProbeTest } from "./composables/useProbeTest";
 import { usePelicanTest } from "./composables/usePelicanTest";
@@ -134,10 +134,16 @@ function handleUpdateConfig(): void {
   }
 }
 
+const isProbeCancelled = ref(false);
+const isPelicanCancelled = ref(false);
+
 function handleCancelTest(): void {
+  cancelScroll();
   if (activeMode.value === "probe") {
+    isProbeCancelled.value = true;
     cancelTest();
   } else {
+    isPelicanCancelled.value = true;
     cancelPelicanTest();
   }
 }
@@ -145,18 +151,24 @@ function handleCancelTest(): void {
 function handleStartTest(): void {
   if (activeMode.value === "probe") {
     if (isRunning.value) {
+      cancelScroll();
+      isProbeCancelled.value = true;
       cancelTest();
       return;
     }
+    isProbeCancelled.value = false;
     const currentSavedName =
       matchedConfigItem.value?.name ||
       (isCurrentConfigSaved.value ? activeConfigName.value : undefined);
     startTest(probeConfig, currentSavedName);
   } else {
     if (isPelicanRunning.value) {
+      cancelScroll();
+      isPelicanCancelled.value = true;
       cancelPelicanTest();
       return;
     }
+    isPelicanCancelled.value = false;
     const currentSavedName =
       matchedConfigItem.value?.name ||
       (isCurrentConfigSaved.value ? activeConfigName.value : undefined);
@@ -193,13 +205,31 @@ function handleApplyProbeHistoryItem(item: ProbeHistoryItem): void {
 async function handleResetConfig(): Promise<void> {
   const confirmed = await resetConfig();
   if (confirmed) {
+    cancelScroll();
     resetTest();
     resetPelicanTest();
     configCardRef.value?.resetModelList();
   }
 }
 
+let scrollRafId: number | null = null;
+const scrollTimers: number[] = [];
+
+function cancelScroll(): void {
+  if (scrollRafId !== null) {
+    cancelAnimationFrame(scrollRafId);
+    scrollRafId = null;
+  }
+  while (scrollTimers.length > 0) {
+    const tid = scrollTimers.pop();
+    if (tid !== undefined) {
+      clearTimeout(tid);
+    }
+  }
+}
+
 function scrollToElement(selector: string, offsetTop: number = 10): void {
+  cancelScroll();
   nextTick(() => {
     let attempts = 0;
     const maxAttempts = 15;
@@ -210,7 +240,7 @@ function scrollToElement(selector: string, offsetTop: number = 10): void {
       if (!el) {
         if (attempts < maxAttempts) {
           attempts++;
-          requestAnimationFrame(performScroll);
+          scrollRafId = requestAnimationFrame(performScroll);
         }
         return;
       }
@@ -244,10 +274,10 @@ function scrollToElement(selector: string, offsetTop: number = 10): void {
       }
     };
 
-    requestAnimationFrame(() => {
+    scrollRafId = requestAnimationFrame(() => {
       performScroll();
-      setTimeout(performScroll, 120);
-      setTimeout(performScroll, 260);
+      scrollTimers.push(window.setTimeout(performScroll, 120));
+      scrollTimers.push(window.setTimeout(performScroll, 260));
     });
   });
 }
@@ -256,8 +286,14 @@ function scrollToElement(selector: string, offsetTop: number = 10): void {
 watch(
   () => isRunning.value,
   (running, wasRunning) => {
-    if (wasRunning && !running && hasProbeResult.value && activeMode.value === "probe") {
-      scrollToElement("#result-section", 10);
+    if (wasRunning && !running) {
+      if (isProbeCancelled.value) {
+        isProbeCancelled.value = false;
+        return;
+      }
+      if (hasProbeResult.value && activeMode.value === "probe") {
+        scrollToElement("#result-section", 10);
+      }
     }
   }
 );
@@ -267,10 +303,18 @@ watch(
   () => isPelicanRunning.value,
   (running, wasRunning) => {
     if (activeMode.value === "pelican" && running !== wasRunning) {
+      if (wasRunning && !running && isPelicanCancelled.value) {
+        isPelicanCancelled.value = false;
+        return;
+      }
       scrollToElement("#status-summary-bar", 10);
     }
   }
 );
+
+onUnmounted(() => {
+  cancelScroll();
+});
 
 function handleOpenGithub(): void {
   openExternalUrl(GITHUB_REPO_URL);
