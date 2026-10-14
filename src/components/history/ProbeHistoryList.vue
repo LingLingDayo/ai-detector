@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import type { ProbeHistoryItem } from "../../types";
 import { formatHistoryTime } from "../../utils/pelicanFormatters";
 import { Info, Copy, X } from "@lucide/vue";
@@ -7,7 +8,7 @@ import { usePopoverPin } from "./usePopoverPin";
 import HistoryEmptyState from "./HistoryEmptyState.vue";
 import HistoryDetailPopover from "./HistoryDetailPopover.vue";
 
-defineProps<{
+const props = defineProps<{
   probeList: ProbeHistoryItem[];
 }>();
 
@@ -18,6 +19,48 @@ const emit = defineEmits<{
 
 const { copy: copyText } = useClipboard();
 const { pinnedId, togglePin } = usePopoverPin();
+const popoverPlacementMap = ref<Record<string, "top" | "bottom">>({});
+
+function getPlacement(id: string, index: number): "top" | "bottom" {
+  if (popoverPlacementMap.value[id]) {
+    return popoverPlacementMap.value[id];
+  }
+  const total = props.probeList?.length || 0;
+  if (total >= 3 && index >= total - 2) {
+    return "top";
+  }
+  return "bottom";
+}
+
+function updatePlacement(id: string, targetEl: HTMLElement): void {
+  const rect = targetEl.getBoundingClientRect();
+  const modalBody = targetEl.closest(".modal-body") || document.body;
+  const containerRect = modalBody.getBoundingClientRect();
+  const spaceBelow = containerRect.bottom - rect.bottom;
+  const spaceAbove = rect.top - containerRect.top;
+
+  if (spaceBelow < 250 && spaceAbove > 180) {
+    popoverPlacementMap.value[id] = "top";
+  } else {
+    popoverPlacementMap.value[id] = "bottom";
+  }
+}
+
+function handleWrapperMouseEnter(id: string, e: MouseEvent): void {
+  const currentTarget = e.currentTarget as HTMLElement | null;
+  if (currentTarget) {
+    updatePlacement(id, currentTarget);
+  }
+}
+
+function handleTogglePin(id: string, e: Event): void {
+  const target = (e.currentTarget || e.target) as HTMLElement | null;
+  const wrapper = target?.closest(".info-icon-wrapper") as HTMLElement | null;
+  if (wrapper) {
+    updatePlacement(id, wrapper);
+  }
+  togglePin(id, e);
+}
 
 function handleCopyProbeSummary(item: ProbeHistoryItem): void {
   const prob = (item.probability * 100).toFixed(1);
@@ -46,7 +89,7 @@ function getProbBadgeClass(prob: number | undefined): string {
     <!-- 模型测试历史记录列表：紧凑、直观、极简极清爽 -->
     <div v-else class="probe-history-list">
       <div
-        v-for="item in probeList"
+        v-for="(item, index) in probeList"
         :key="item.id"
         class="probe-row-item"
         :class="{ 'is-pinned-row': pinnedId === item.id }"
@@ -73,6 +116,7 @@ function getProbBadgeClass(prob: number | undefined): string {
             <div
               class="info-icon-wrapper"
               :class="{ 'is-pinned': pinnedId === item.id }"
+              @mouseenter="handleWrapperMouseEnter(item.id, $event)"
             >
               <button
                 type="button"
@@ -80,7 +124,7 @@ function getProbBadgeClass(prob: number | undefined): string {
                 :class="{ 'is-pinned': pinnedId === item.id }"
                 aria-label="查看详细参数"
                 :title="pinnedId === item.id ? '取消固定详情面板' : '点击固定详情面板'"
-                @click.stop="togglePin(item.id, $event)"
+                @click.stop="handleTogglePin(item.id, $event)"
               >
                 <Info :size="13" />
               </button>
@@ -89,6 +133,7 @@ function getProbBadgeClass(prob: number | undefined): string {
               <HistoryDetailPopover
                 :item="item"
                 :is-pinned="pinnedId === item.id"
+                :placement="getPlacement(item.id, index)"
               />
             </div>
 
@@ -322,9 +367,7 @@ function getProbBadgeClass(prob: number | undefined): string {
         &:hover :deep(.info-tooltip-popover),
         &:focus-within :deep(.info-tooltip-popover),
         &.is-pinned :deep(.info-tooltip-popover) {
-          opacity: 1;
-          visibility: visible;
-          transform: translateY(0);
+          display: block;
           pointer-events: auto;
         }
       }

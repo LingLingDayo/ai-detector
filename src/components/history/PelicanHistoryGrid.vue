@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import type { PelicanHistoryItem } from "../../types";
 import { formatHistoryTime } from "../../utils/pelicanFormatters";
 import { Info, Copy, Download, X } from "@lucide/vue";
@@ -18,6 +19,37 @@ const emit = defineEmits<{
 
 const { copy: copyText } = useClipboard();
 const { pinnedId, togglePin } = usePopoverPin();
+const popoverPlacementMap = ref<Record<string, "top" | "bottom">>({});
+
+function updatePlacement(id: string, targetEl: HTMLElement): void {
+  const rect = targetEl.getBoundingClientRect();
+  const modalBody = targetEl.closest(".modal-body") || document.body;
+  const containerRect = modalBody.getBoundingClientRect();
+  const spaceBelow = containerRect.bottom - rect.bottom;
+  const spaceAbove = rect.top - containerRect.top;
+
+  if (spaceBelow < 250 && spaceAbove > 180) {
+    popoverPlacementMap.value[id] = "top";
+  } else {
+    popoverPlacementMap.value[id] = "bottom";
+  }
+}
+
+function handleWrapperMouseEnter(id: string, e: MouseEvent): void {
+  const currentTarget = e.currentTarget as HTMLElement | null;
+  if (currentTarget) {
+    updatePlacement(id, currentTarget);
+  }
+}
+
+function handleTogglePin(id: string, e: Event): void {
+  const target = (e.currentTarget || e.target) as HTMLElement | null;
+  const wrapper = target?.closest(".info-icon-wrapper") as HTMLElement | null;
+  if (wrapper) {
+    updatePlacement(id, wrapper);
+  }
+  togglePin(id, e);
+}
 
 function handleDownloadPelican(item: PelicanHistoryItem): void {
   const isHtml = item.contentType === "html";
@@ -101,6 +133,7 @@ function getPureSvgContent(rawContent: string): string {
         <div
           class="info-icon-wrapper"
           :class="{ 'is-pinned': pinnedId === item.id }"
+          @mouseenter="handleWrapperMouseEnter(item.id, $event)"
         >
           <button
             type="button"
@@ -108,7 +141,7 @@ function getPureSvgContent(rawContent: string): string {
             :class="{ 'is-pinned': pinnedId === item.id }"
             aria-label="查看详细参数"
             :title="pinnedId === item.id ? '取消固定详情面板' : '点击固定详情面板'"
-            @click.stop="togglePin(item.id, $event)"
+            @click.stop="handleTogglePin(item.id, $event)"
           >
             <Info :size="14" />
           </button>
@@ -117,6 +150,7 @@ function getPureSvgContent(rawContent: string): string {
           <HistoryDetailPopover
             :item="item"
             :is-pinned="pinnedId === item.id"
+            :placement="popoverPlacementMap[item.id] || 'bottom'"
           />
         </div>
 
@@ -284,9 +318,7 @@ function getPureSvgContent(rawContent: string): string {
   &:hover :deep(.info-tooltip-popover),
   &:focus-within :deep(.info-tooltip-popover),
   &.is-pinned :deep(.info-tooltip-popover) {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+    display: block;
     pointer-events: auto;
   }
 }

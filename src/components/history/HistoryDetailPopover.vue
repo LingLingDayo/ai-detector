@@ -5,10 +5,17 @@ import {
   formatHistoryTime,
 } from "../../utils/pelicanFormatters";
 
-const props = defineProps<{
-  item: PelicanHistoryItem | ProbeHistoryItem;
-  isPinned?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    item: PelicanHistoryItem | ProbeHistoryItem;
+    isPinned?: boolean;
+    placement?: "top" | "bottom";
+  }>(),
+  {
+    isPinned: false,
+    placement: "bottom",
+  }
+);
 
 function isProbeItem(
   target: PelicanHistoryItem | ProbeHistoryItem
@@ -25,7 +32,10 @@ function formatProb(prob: number | undefined): string {
 <template>
   <div
     class="info-tooltip-popover"
-    :class="{ 'is-pinned': isPinned }"
+    :class="[
+      `placement-${placement}`,
+      { 'is-pinned': isPinned }
+    ]"
     role="tooltip"
     @click.stop
   >
@@ -103,9 +113,32 @@ function formatProb(prob: number | undefined): string {
 </template>
 
 <style lang="scss" scoped>
+/* 详情面板弹出层动画与样式 */
+@keyframes popoverFadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes popoverFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .info-tooltip-popover {
+  display: none;
   position: absolute;
-  top: calc(100% + 8px);
   right: 0;
   width: 290px;
   background: #0f172a;
@@ -114,18 +147,48 @@ function formatProb(prob: number | undefined): string {
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 16px rgba(99, 102, 241, 0.25);
   padding: 12px;
   z-index: 100;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-6px);
-  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
-  pointer-events: none;
   user-select: text;
   cursor: default;
+  animation-duration: 0.18s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: forwards;
+
+  /* 默认向下弹出 */
+  &.placement-bottom {
+    top: calc(100% + 8px);
+    bottom: auto;
+    animation-name: popoverFadeInDown;
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: -10px;
+      bottom: auto;
+      left: 0;
+      right: 0;
+      height: 10px;
+    }
+  }
+
+  /* 向上自适应弹出 */
+  &.placement-top {
+    bottom: calc(100% + 8px);
+    top: auto;
+    animation-name: popoverFadeInUp;
+
+    &::before {
+      content: "";
+      position: absolute;
+      bottom: -10px;
+      top: auto;
+      left: 0;
+      right: 0;
+      height: 10px;
+    }
+  }
 
   &.is-pinned {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+    display: block !important;
     pointer-events: auto;
   }
 
@@ -133,15 +196,6 @@ function formatProb(prob: number | undefined): string {
   *::selection {
     background: rgba(99, 102, 241, 0.45);
     color: #ffffff;
-  }
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: -10px;
-    left: 0;
-    right: 0;
-    height: 10px;
   }
 
   .popover-header {
