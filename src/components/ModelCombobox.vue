@@ -16,6 +16,7 @@ const props = withDefaults(
     title?: string;
     required?: boolean;
     autoSelectFirst?: boolean;
+    disabled?: boolean;
   }>(),
   {
     apiFormat: "chat_completions",
@@ -24,6 +25,7 @@ const props = withDefaults(
     title: "测试模型 ID。可点击右侧下拉按钮或刷新按钮自动获取当前 Key 允许的模型列表",
     required: false,
     autoSelectFirst: true,
+    disabled: false,
   }
 );
 
@@ -66,6 +68,7 @@ function calculatePlacement(): void {
 }
 
 function openDropdown(): void {
+  if (props.disabled) return;
   calculatePlacement();
   isOpen.value = true;
 }
@@ -75,6 +78,7 @@ function closeDropdown(): void {
 }
 
 function toggleDropdown(): void {
+  if (props.disabled) return;
   if (isOpen.value) {
     closeDropdown();
   } else {
@@ -124,13 +128,14 @@ defineExpose({
   <div
     ref="comboboxRef"
     class="model-combobox-wrapper"
-    :class="{ 'combobox-open': isOpen }"
+    :class="{ 'combobox-open': isOpen, 'is-disabled': disabled }"
   >
     <input
       type="text"
       :id="id"
       :value="modelValue"
       :required="required"
+      :disabled="disabled"
       autocomplete="off"
       spellcheck="false"
       :placeholder="placeholder"
@@ -143,7 +148,8 @@ defineExpose({
         class="btn-icon btn-action-fetch"
         :id="id ? `${id}-btn-fetch` : 'btn-fetch-models'"
         title="获取当前 key 允许的模型列表"
-        @click.stop="() => { if (!isOpen) openDropdown(); void fetchModels({ autoSelectFirst: false }); }"
+        :disabled="disabled || isFetching"
+        @click.stop="() => { if (disabled) return; if (!isOpen) openDropdown(); void fetchModels({ autoSelectFirst: false }); }"
       >
         <RotateCw
           class="refresh-icon"
@@ -156,6 +162,7 @@ defineExpose({
         class="btn-icon btn-action-toggle"
         :id="id ? `${id}-btn-toggle` : 'btn-toggle-dropdown'"
         title="展开/收起模型选择列表"
+        :disabled="disabled"
         @click.stop="toggleDropdown"
       >
         <ChevronDown
@@ -195,6 +202,10 @@ defineExpose({
     }
   }
 
+  &.is-disabled {
+    cursor: not-allowed;
+  }
+
   input {
     width: 100%;
     padding-right: 56px;
@@ -224,13 +235,19 @@ defineExpose({
         flex-shrink: 0;
       }
 
+      &:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+
       &.btn-action-fetch {
         width: 18px;
         height: 18px;
         padding: 0;
         border-radius: var(--radius-sm);
 
-        &:hover {
+        &:hover:not(:disabled) {
           color: var(--text-primary);
           background: rgba(255, 255, 255, 0.08);
         }
@@ -241,7 +258,7 @@ defineExpose({
         height: 14px;
         padding: 0;
 
-        &:hover {
+        &:hover:not(:disabled) {
           color: var(--text-primary);
         }
       }

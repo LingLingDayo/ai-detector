@@ -278,12 +278,20 @@ export function usePelicanTest(): PelicanTestState {
   ): Promise<void> {
     if (isPelicanRunning.value) return;
 
-    if (!config.baseUrl?.trim() || !config.apiKey?.trim()) {
+    const baseUrl = config.baseUrl?.trim() || "";
+    const apiKey = config.apiKey?.trim() || "";
+    const modelName = config.modelName?.trim() || "";
+    const apiFormat = config.apiFormat || "openai";
+    const reasoningEffort = config.reasoningEffort || "high";
+    const isStream = config.stream !== false;
+    const timeoutSeconds = isStream ? 90 : 240;
+
+    if (!baseUrl || !apiKey) {
       errorMsg.value = "请先填写 Base URL 和 API Key";
       hasTested.value = true;
       return;
     }
-    if (!config.modelName?.trim()) {
+    if (!modelName) {
       errorMsg.value = "请先选择或输入模型名称";
       hasTested.value = true;
       return;
@@ -305,23 +313,21 @@ export function usePelicanTest(): PelicanTestState {
     pelicanContent.value = "";
     pelicanContentType.value = "svg";
     rawResponseText.value = "";
-    testedModel.value = config.modelName;
+    testedModel.value = modelName;
 
     timerId = setInterval(() => {
       durationMs.value = Date.now() - testStartTime;
     }, 50);
 
-    const isStream = config.stream !== false;
-    const timeoutSeconds = isStream ? 90 : 240;
     try {
       const promptToSend = pelicanPrompt.value.trim() || DEFAULT_PELICAN_PROMPT;
       const res = await sendProbe({
-        baseUrl: config.baseUrl,
-        apiKey: config.apiKey,
-        model: config.modelName,
+        baseUrl,
+        apiKey,
+        model: modelName,
         prompt: promptToSend,
-        apiFormat: config.apiFormat || "openai",
-        reasoningEffort: config.reasoningEffort || "high",
+        apiFormat,
+        reasoningEffort,
         stream: isStream,
         timeoutSeconds,
         signal: abortController?.signal,
@@ -342,10 +348,10 @@ export function usePelicanTest(): PelicanTestState {
         // 仅在成功生成时归档至历史记录（存储时直接脱敏省略中间部分）
         addPelicanHistoryItem({
           configName: configName?.trim() || undefined,
-          baseUrl: config.baseUrl,
-          apiKey: maskApiKey(config.apiKey),
-          modelName: config.modelName,
-          reasoningEffort: config.reasoningEffort || "high",
+          baseUrl,
+          apiKey: maskApiKey(apiKey),
+          modelName,
+          reasoningEffort,
           contentType,
           content,
           durationMs: durationMs.value,

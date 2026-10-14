@@ -159,7 +159,7 @@ defineExpose({
               ? '将修改后的参数直接更新到配置预设'
               : '将当前填写的接口参数与密钥保存为配置预设'
           "
-          :disabled="isJustUpdated"
+          :disabled="isCurrentRunning || isJustUpdated"
           @click="handleSaveButtonClick"
         >
           <Check
@@ -208,6 +208,7 @@ defineExpose({
               type="url"
               id="base-url"
               v-model="config.baseUrl"
+              :disabled="isCurrentRunning"
               placeholder="https://api.openai.com"
               required
               autocomplete="off"
@@ -226,6 +227,7 @@ defineExpose({
               :type="isPasswordVisible ? 'text' : 'password'"
               id="api-key"
               v-model="config.apiKey"
+              :disabled="isCurrentRunning"
               placeholder="sk-..."
               required
               autocomplete="off"
@@ -238,6 +240,7 @@ defineExpose({
               type="button"
               class="btn-icon"
               id="toggle-key-visibility"
+              :disabled="isCurrentRunning"
               title="切换显示/隐藏 Key"
               @click="emit('toggle-password')"
             >
@@ -269,6 +272,7 @@ defineExpose({
             v-model:reasoning-effort="config.reasoningEffort"
             :base-url="config.baseUrl"
             :api-key="config.apiKey"
+            :disabled="isCurrentRunning"
             :required="true"
           />
         </div>
@@ -282,49 +286,49 @@ defineExpose({
         :reasoning-effort="config.reasoningEffort"
         :model-name="config.modelName"
         :stream="config.stream"
+        :disabled="isCurrentRunning"
         @update:is-open="(v) => emit('update:isAdvancedOpen', v)"
         @update:api-format="(v) => (config.apiFormat = v)"
         @update:reasoning-effort="(v) => (config.reasoningEffort = v)"
         @update:stream="(v) => (config.stream = v)"
       />
 
-      <!-- 测试方式 Tab 选项 -->
+      <!-- 测试方式 Tab 选项：支持随时自由切换，并显示正在进行的测试指示灯 -->
       <div class="test-mode-tabs" role="tablist">
         <button
           type="button"
           class="tab-item"
-          :class="{ active: activeMode === 'probe' }"
-          :disabled="isRunning || isPelicanRunning"
+          :class="{ active: activeMode === 'probe', 'is-running': isRunning }"
           role="tab"
           :aria-selected="activeMode === 'probe'"
           title="三道随机题目探测，并在统一库中比对模型归因"
           @click="emit('update:activeMode', 'probe')"
         >
           <span>模型测试</span>
+          <span v-if="isRunning" class="tab-running-dot" title="模型测试进行中"></span>
         </button>
 
         <button
           type="button"
           class="tab-item"
-          :class="{ active: activeMode === 'pelican' }"
-          :disabled="isRunning || isPelicanRunning"
+          :class="{ active: activeMode === 'pelican', 'is-running': isPelicanRunning }"
           role="tab"
           :aria-selected="activeMode === 'pelican'"
           title="生成自行车鹈鹕 SVG 矢量图，直观测试模型是否降智"
           @click="emit('update:activeMode', 'pelican')"
         >
           <span>鹈鹕测试</span>
+          <span v-if="isPelicanRunning" class="tab-running-dot" title="鹈鹕测试进行中"></span>
         </button>
       </div>
 
-      <!-- 操作按钮 -->
+      <!-- 操作按钮：两个测试模式彼此独立并发，当前模式不受另一模式阻塞 -->
       <div class="form-actions">
         <button
           :type="isCurrentRunning ? 'button' : 'submit'"
           class="btn btn-primary"
           :class="{ 'btn-cancel': isCurrentRunning }"
           id="btn-start"
-          :disabled="isOtherRunning"
           :title="
             isCurrentRunning
               ? '点击取消当前正在进行的测试'
@@ -556,6 +560,31 @@ defineExpose({
       opacity: 0.45;
       cursor: not-allowed;
     }
+
+    .tab-running-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--accent-primary, #6366f1);
+      margin-left: 6px;
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.85);
+      animation: pulse-dot 1.4s infinite ease-in-out;
+      flex-shrink: 0;
+    }
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.7;
+    box-shadow: 0 0 4px rgba(99, 102, 241, 0.6);
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 1);
   }
 }
 

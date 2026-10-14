@@ -53,11 +53,16 @@ export function isConfigEqual(current: ClientConfig, item: ConfigItem): boolean 
 }
 
 export interface UseConfigOptions {
+  activeMode?: Ref<"probe" | "pelican">;
+  isRunning?: Ref<boolean>;
+  isPelicanRunning?: Ref<boolean>;
   onApply?: (item: ConfigItem) => void;
 }
 
 export interface UseConfigReturn {
   config: ClientConfig;
+  probeConfig: ClientConfig;
+  pelicanConfig: ClientConfig;
   configList: Ref<ConfigItem[]>;
   activeConfigId: Ref<string | null>;
   activeConfig: ComputedRef<ConfigItem | undefined>;
@@ -100,13 +105,38 @@ export interface UseConfigReturn {
 export function useConfig(options?: UseConfigOptions): UseConfigReturn {
   const { confirm } = useConfirm();
 
-  const config = reactive<ClientConfig>({
+  const activeModeRef = options?.activeMode || ref<"probe" | "pelican">("probe");
+  const isRunningRef = options?.isRunning || ref(false);
+  const isPelicanRunningRef = options?.isPelicanRunning || ref(false);
+
+  const probeConfig = reactive<ClientConfig>({
     baseUrl: "",
     apiKey: "",
     apiFormat: "chat_completions",
     modelName: "",
     reasoningEffort: "high",
     stream: true,
+  });
+
+  const pelicanConfig = reactive<ClientConfig>({
+    baseUrl: "",
+    apiKey: "",
+    apiFormat: "chat_completions",
+    modelName: "",
+    reasoningEffort: "high",
+    stream: true,
+  });
+
+  const config = new Proxy({} as ClientConfig, {
+    get(_, prop: string) {
+      const activeObj = activeModeRef.value === "pelican" ? pelicanConfig : probeConfig;
+      return (activeObj as any)[prop];
+    },
+    set(_, prop: string, value: any) {
+      const activeObj = activeModeRef.value === "pelican" ? pelicanConfig : probeConfig;
+      (activeObj as any)[prop] = value;
+      return true;
+    },
   });
 
   const configList = ref<ConfigItem[]>([]);
@@ -302,22 +332,34 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
   function saveConfig(): void {
     if (isInitializing) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      const cur = activeModeRef.value === "pelican" ? pelicanConfig : probeConfig;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cur));
     } catch (err) {
       console.warn("保存当前配置失败:", err);
     }
   }
 
   function applyConfig(item: ConfigItem): void {
-    config.baseUrl = item.baseUrl || "";
-    config.apiKey = item.apiKey || "";
-    config.modelName = item.modelName || "";
-    if (item.apiFormat) {
-      config.apiFormat = item.apiFormat;
+    const applyTo = (cfg: ClientConfig) => {
+      cfg.baseUrl = item.baseUrl || "";
+      cfg.apiKey = item.apiKey || "";
+      cfg.modelName = item.modelName || "";
+      if (item.apiFormat) {
+        cfg.apiFormat = item.apiFormat;
+      }
+      const targetEffort = item.reasoningEffort || "high";
+      cfg.reasoningEffort = resolveValidReasoningEffort(item.modelName, targetEffort);
+      cfg.stream = item.stream !== false;
+    };
+
+    // 仅向当前未在运行的模式应用配置，避免破坏正在进行的测试
+    if (!isRunningRef.value) {
+      applyTo(probeConfig);
     }
-    const targetEffort = item.reasoningEffort || "high";
-    config.reasoningEffort = resolveValidReasoningEffort(item.modelName, targetEffort);
-    config.stream = item.stream !== false;
+    if (!isPelicanRunningRef.value) {
+      applyTo(pelicanConfig);
+    }
+
     activeConfigId.value = item.id;
     saveConfig();
     saveConfigListToStorage();
@@ -460,35 +502,40 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
       saveConfigListToStorage();
 
       // 5. 应用表单初始值
-      if (savedConfig.baseUrl !== undefined) config.baseUrl = savedConfig.baseUrl;
-      if (savedConfig.apiKey !== undefined) config.apiKey = savedConfig.apiKey;
-      if (savedConfig.modelName !== undefined) config.modelName = savedConfig.modelName;
-      if (savedConfig.apiFormat !== undefined) {
-        if (
-          savedConfig.apiFormat === "responses" ||
-          savedConfig.apiFormat === "openai_responses" ||
-          savedConfig.apiFormat === "openai_native"
-        ) {
-          config.apiFormat = "responses";
-        } else if (savedConfig.apiFormat === "anthropic") {
-          config.apiFormat = "anthropic";
-        } else {
-          config.apiFormat = "chat_completions";
+      const applyInitial = (target: ClientConfig) => {
+        if (savedConfig.baseUrl !== undefined) target.baseUrl = savedConfig.baseUrl;
+        if (savedConfig.apiKey !== undefined) target.apiKey = savedConfig.apiKey;
+        if (savedConfig.modelName !== undefined) target.modelName = savedConfig.modelName;
+        if (savedConfig.apiFormat !== undefined) {
+          if (
+            savedConfig.apiFormat === "responses" ||
+            savedConfig.apiFormat === "openai_responses" ||
+            savedConfig.apiFormat === "openai_native"
+          ) {
+            target.apiFormat = "responses";
+          } else if (savedConfig.apiFormat === "anthropic") {
+            target.apiFormat = "anthropic";
+          } else {
+            target.apiFormat = "chat_completions";
+          }
         }
-      }
-      if (savedConfig.reasoningEffort !== undefined) {
-        config.reasoningEffort = resolveValidReasoningEffort(
-          config.modelName,
-          savedConfig.reasoningEffort
-        );
-      } else {
-        config.reasoningEffort = resolveValidReasoningEffort(config.modelName, "high");
-      }
-      if (savedConfig.stream !== undefined) {
-        config.stream = savedConfig.stream !== false;
-      } else {
-        config.stream = true;
-      }
+        if (savedConfig.reasoningEffort !== undefined) {
+          target.reasoningEffort = resolveValidReasoningEffort(
+            target.modelName,
+            savedConfig.reasoningEffort
+          );
+        } else {
+          target.reasoningEffort = resolveValidReasoningEffort(target.modelName, "high");
+        }
+        if (savedConfig.stream !== undefined) {
+          target.stream = savedConfig.stream !== false;
+        } else {
+          target.stream = true;
+        }
+      };
+
+      applyInitial(probeConfig);
+      applyInitial(pelicanConfig);
     } catch (err) {
       console.warn("加载本地配置失败:", err);
     } finally {
@@ -515,12 +562,19 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     } catch (err) {
       console.warn("清除配置缓存失败:", err);
     }
-    config.baseUrl = "";
-    config.apiKey = "";
-    config.modelName = "";
-    config.apiFormat = "chat_completions";
-    config.reasoningEffort = "high";
-    config.stream = true;
+
+    const resetOne = (cfg: ClientConfig) => {
+      cfg.baseUrl = "";
+      cfg.apiKey = "";
+      cfg.modelName = "";
+      cfg.apiFormat = "chat_completions";
+      cfg.reasoningEffort = "high";
+      cfg.stream = true;
+    };
+
+    if (!isRunningRef.value) resetOne(probeConfig);
+    if (!isPelicanRunningRef.value) resetOne(pelicanConfig);
+
     activeConfigId.value = null;
     try {
       localStorage.removeItem(ACTIVE_CONFIG_ID_KEY);
@@ -530,22 +584,68 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
 
   // 监听模型变动，限定思考强度到指定支持档位
   watch(
-    () => config.modelName,
+    () => probeConfig.modelName,
     (newModel) => {
-      const validEffort = resolveValidReasoningEffort(newModel, config.reasoningEffort);
-      if (validEffort !== config.reasoningEffort) {
-        config.reasoningEffort = validEffort;
+      const validEffort = resolveValidReasoningEffort(newModel, probeConfig.reasoningEffort);
+      if (validEffort !== probeConfig.reasoningEffort) {
+        probeConfig.reasoningEffort = validEffort;
+      }
+    }
+  );
+
+  watch(
+    () => pelicanConfig.modelName,
+    (newModel) => {
+      const validEffort = resolveValidReasoningEffort(newModel, pelicanConfig.reasoningEffort);
+      if (validEffort !== pelicanConfig.reasoningEffort) {
+        pelicanConfig.reasoningEffort = validEffort;
+      }
+    }
+  );
+
+  // 在测试未运行时，Base URL 与 API Key 自动在双模式之间同步
+  watch(
+    () => [probeConfig.baseUrl, probeConfig.apiKey],
+    ([newUrl, newKey]) => {
+      if (activeModeRef.value === "probe" && !isPelicanRunningRef.value) {
+        pelicanConfig.baseUrl = newUrl;
+        pelicanConfig.apiKey = newKey;
+      }
+    }
+  );
+
+  watch(
+    () => [pelicanConfig.baseUrl, pelicanConfig.apiKey],
+    ([newUrl, newKey]) => {
+      if (activeModeRef.value === "pelican" && !isRunningRef.value) {
+        probeConfig.baseUrl = newUrl;
+        probeConfig.apiKey = newKey;
+      }
+    }
+  );
+
+  // 当切换到 pelican 时，若 pelican 未选择模型且未在运行，自动继承 probe 的配置
+  watch(
+    () => activeModeRef.value,
+    (newMode) => {
+      if (newMode === "pelican" && !isPelicanRunningRef.value && !pelicanConfig.modelName) {
+        pelicanConfig.modelName = probeConfig.modelName;
+        pelicanConfig.apiFormat = probeConfig.apiFormat;
+        pelicanConfig.reasoningEffort = probeConfig.reasoningEffort;
+        pelicanConfig.stream = probeConfig.stream;
       }
     }
   );
 
   // 监听表单输入变化并自动持久化当前输入
-  watch(config, () => {
+  watch([probeConfig, pelicanConfig], () => {
     saveConfig();
   });
 
   return {
     config,
+    probeConfig,
+    pelicanConfig,
     configList,
     activeConfigId,
     activeConfig,

@@ -14,10 +14,12 @@ const props = withDefaults(
     reasoningEffort: string;
     stream?: boolean;
     modelName?: string;
+    disabled?: boolean;
   }>(),
   {
     stream: true,
     modelName: "",
+    disabled: false,
   }
 );
 
@@ -59,22 +61,24 @@ const effortOptions = computed(() => getReasoningOptionsForModel(props.modelName
             <span class="field-hint">{{ stream !== false ? '首包超时 90s' : '全量超时 240s' }}</span>
           </div>
           <div class="segmented-control stream-control">
-            <label class="segment" title="流式请求（默认模式，首次响应限时 90 秒，完整生成后返回结果）">
+            <label class="segment" :class="{ 'is-disabled': disabled }" title="流式请求（默认模式，首次响应限时 90 秒，完整生成后返回结果）">
               <input
                 type="radio"
                 name="request-stream"
                 :value="true"
                 :checked="stream !== false"
+                :disabled="disabled"
                 @change="emit('update:stream', true)"
               />
               <span class="segment-label">流式请求</span>
             </label>
-            <label class="segment" title="同步请求（全量响应，超时锁定 240 秒）">
+            <label class="segment" :class="{ 'is-disabled': disabled }" title="同步请求（全量响应，超时锁定 240 秒）">
               <input
                 type="radio"
                 name="request-stream"
                 :value="false"
                 :checked="stream === false"
+                :disabled="disabled"
                 @change="emit('update:stream', false)"
               />
               <span class="segment-label">同步请求</span>
@@ -86,32 +90,35 @@ const effortOptions = computed(() => getReasoningOptionsForModel(props.modelName
         <div class="advanced-row">
           <label title="选择调用的 API 规范与端点路径格式">请求接口</label>
           <div class="segmented-control">
-            <label class="segment" title="OpenAI Responses 格式">
+            <label class="segment" :class="{ 'is-disabled': disabled }" title="OpenAI Responses 格式">
               <input
                 type="radio"
                 name="endpoint-format"
                 value="responses"
                 :checked="apiFormat === 'responses'"
+                :disabled="disabled"
                 @change="emit('update:apiFormat', 'responses')"
               />
               <span class="segment-label">/v1/responses 端点</span>
             </label>
-            <label class="segment" title="OpenAI Chat Completions 格式">
+            <label class="segment" :class="{ 'is-disabled': disabled }" title="OpenAI Chat Completions 格式">
               <input
                 type="radio"
                 name="endpoint-format"
                 value="chat_completions"
                 :checked="apiFormat === 'chat_completions'"
+                :disabled="disabled"
                 @change="emit('update:apiFormat', 'chat_completions')"
               />
               <span class="segment-label">/v1/chat/completions 端点</span>
             </label>
-            <label class="segment" title="Anthropic Messages 格式">
+            <label class="segment" :class="{ 'is-disabled': disabled }" title="Anthropic Messages 格式">
               <input
                 type="radio"
                 name="endpoint-format"
                 value="anthropic"
                 :checked="apiFormat === 'anthropic'"
+                :disabled="disabled"
                 @change="emit('update:apiFormat', 'anthropic')"
               />
               <span class="segment-label">/v1/messages 端点</span>
@@ -139,6 +146,7 @@ const effortOptions = computed(() => getReasoningOptionsForModel(props.modelName
               v-for="opt in effortOptions"
               :key="opt.value"
               class="segment"
+              :class="{ 'is-disabled': disabled }"
               :title="opt.isDefault ? `${opt.description} (默认)` : opt.description"
             >
               <input
@@ -146,6 +154,7 @@ const effortOptions = computed(() => getReasoningOptionsForModel(props.modelName
                 name="reasoning-effort"
                 :value="opt.value"
                 :checked="reasoningEffort === opt.value"
+                :disabled="disabled"
                 @change="emit('update:reasoningEffort', opt.value)"
               />
               <span class="segment-label">{{ opt.label }}</span>
@@ -323,6 +332,20 @@ const effortOptions = computed(() => getReasoningOptionsForModel(props.modelName
               &:hover {
                 color: var(--text-primary);
                 background: rgba(255, 255, 255, 0.04);
+              }
+            }
+
+            &.is-disabled {
+              cursor: not-allowed;
+              opacity: 0.45;
+
+              .segment-label {
+                cursor: not-allowed;
+
+                &:hover {
+                  color: var(--text-secondary);
+                  background: transparent;
+                }
               }
             }
           }

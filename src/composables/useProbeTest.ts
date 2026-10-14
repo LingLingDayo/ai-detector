@@ -40,6 +40,7 @@ export interface UseProbeTestReturn {
   currentProbeHistoryItem: Ref<ProbeHistoryItem | null>;
   totalBankModelsCount: number;
   probeHistoryList: Ref<ProbeHistoryItem[]>;
+  testedModel: Ref<string>;
   startTest: (config: ClientConfig, configName?: string) => Promise<void>;
   cancelTest: () => void;
   resetTest: () => void;
@@ -96,6 +97,7 @@ export function useProbeTest(): UseProbeTestReturn {
   const analysisResult = ref<GlobalAnalysisResult | null>(null);
   const currentProbeHistoryItem = ref<ProbeHistoryItem | null>(null);
   const probeHistoryList = ref<ProbeHistoryItem[]>(loadInitialProbeHistory());
+  const testedModel = ref("");
 
   function addProbeHistoryItem(item: Omit<ProbeHistoryItem, "id" | "createdAt">): ProbeHistoryItem {
     const newItem: ProbeHistoryItem = {
@@ -215,6 +217,7 @@ export function useProbeTest(): UseProbeTestReturn {
     isRunning.value = false;
     hasStarted.value = false;
     hasResult.value = false;
+    testedModel.value = "";
     progressPercent.value = 0;
     completedCount.value = 0;
     statusTitle.value = "探测题目";
@@ -253,6 +256,7 @@ export function useProbeTest(): UseProbeTestReturn {
     abortController = new AbortController();
 
     // Reset UI state for new test run
+    testedModel.value = model;
     isRunning.value = true;
     hasStarted.value = true;
     hasResult.value = false;
@@ -414,10 +418,10 @@ export function useProbeTest(): UseProbeTestReturn {
 
           addProbeHistoryItem({
             configName: configName?.trim() || undefined,
-            baseUrl: config.baseUrl,
-            apiKey: maskApiKey(config.apiKey),
-            modelName: config.modelName,
-            reasoningEffort: config.reasoningEffort || "high",
+            baseUrl,
+            apiKey: maskApiKey(apiKey),
+            modelName: model,
+            reasoningEffort: reasoningEffort || "high",
             prediction: analysisResult.value.prediction,
             predictionName:
               analysisResult.value.prediction_name || analysisResult.value.prediction,
@@ -463,6 +467,7 @@ export function useProbeTest(): UseProbeTestReturn {
     currentProbeHistoryItem,
     totalBankModelsCount,
     probeHistoryList,
+    testedModel,
     startTest,
     cancelTest,
     resetTest,

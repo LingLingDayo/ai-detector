@@ -35,6 +35,7 @@ const {
   analysisResult,
   currentProbeHistoryItem,
   probeHistoryList,
+  testedModel: testedProbeModel,
   startTest,
   cancelTest,
   resetTest,
@@ -72,6 +73,8 @@ const hasActiveResult = computed(() => {
 
 const {
   config,
+  probeConfig,
+  pelicanConfig,
   configList,
   activeConfigId,
   activeConfigName,
@@ -102,9 +105,16 @@ const {
   deleteConfigItem,
   swapConfigItems,
 } = useConfig({
+  activeMode,
+  isRunning,
+  isPelicanRunning,
   onApply: () => {
-    resetTest();
-    resetPelicanTest();
+    if (!isRunning.value) {
+      resetTest();
+    }
+    if (!isPelicanRunning.value) {
+      resetPelicanTest();
+    }
     configCardRef.value?.resetModelList();
   },
 });
@@ -141,7 +151,7 @@ function handleStartTest(): void {
     const currentSavedName =
       matchedConfigItem.value?.name ||
       (isCurrentConfigSaved.value ? activeConfigName.value : undefined);
-    startTest(config, currentSavedName);
+    startTest(probeConfig, currentSavedName);
   } else {
     if (isPelicanRunning.value) {
       cancelPelicanTest();
@@ -150,7 +160,7 @@ function handleStartTest(): void {
     const currentSavedName =
       matchedConfigItem.value?.name ||
       (isCurrentConfigSaved.value ? activeConfigName.value : undefined);
-    startPelicanTest(config, currentSavedName);
+    startPelicanTest(pelicanConfig, currentSavedName);
   }
 }
 
@@ -174,6 +184,7 @@ function handleApplyProbeHistoryItem(item: ProbeHistoryItem): void {
     hasStarted.value = true;
     currentProbeHistoryItem.value = item;
   }
+  testedProbeModel.value = item.modelName;
   activeMode.value = "probe";
   isHistoryModalOpen.value = false;
   scrollToElement("#result-section", 10);
@@ -301,7 +312,7 @@ function handleOpenGithub(): void {
       />
 
       <!-- 常规探测题目与测试进度卡片（常规模式展示） -->
-      <template v-if="activeMode === 'probe'">
+      <div v-show="activeMode === 'probe'" class="mode-view-group">
         <ProgressCard
           :visible="true"
           :title="statusTitle"
@@ -321,26 +332,27 @@ function handleOpenGithub(): void {
         <ResultCard
           :analysis="analysisResult"
           :history-item="currentProbeHistoryItem"
-          :model-name="config.modelName"
+          :model-name="testedProbeModel || probeConfig.modelName"
         />
-      </template>
+      </div>
 
       <!-- 鹈鹕测试模式卡片（点击鹈鹕测试后切换展示） -->
-      <PelicanTestCard
-        v-else-if="activeMode === 'pelican'"
-        :is-running="isPelicanRunning"
-        :svg="pelicanSvg"
-        :content="pelicanContent"
-        :content-type="pelicanContentType"
-        :raw-text="rawResponseText"
-        :duration-ms="durationMs"
-        :model-name="testedModel || config.modelName"
-        :error-message="pelicanErrorMsg"
-        :has-tested="hasPelicanTested"
-        :prompt="pelicanPrompt"
-        @update:prompt="setPelicanPrompt"
-        @reset-prompt="resetPelicanPrompt"
-      />
+      <div v-show="activeMode === 'pelican'" class="mode-view-group">
+        <PelicanTestCard
+          :is-running="isPelicanRunning"
+          :svg="pelicanSvg"
+          :content="pelicanContent"
+          :content-type="pelicanContentType"
+          :raw-text="rawResponseText"
+          :duration-ms="durationMs"
+          :model-name="testedModel || pelicanConfig.modelName"
+          :error-message="pelicanErrorMsg"
+          :has-tested="hasPelicanTested"
+          :prompt="pelicanPrompt"
+          @update:prompt="setPelicanPrompt"
+          @reset-prompt="resetPelicanPrompt"
+        />
+      </div>
     </main>
 
     <!-- 配置列表弹窗 -->
@@ -419,6 +431,12 @@ function handleOpenGithub(): void {
   flex-direction: column;
   gap: 10px;
   position: relative;
+}
+
+.mode-view-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .app-version-badge {
