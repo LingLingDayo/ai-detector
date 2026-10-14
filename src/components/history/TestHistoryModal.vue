@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import type { PelicanHistoryItem, ProbeHistoryItem } from "../../types";
 import {
   formatReasoningEffort,
@@ -56,6 +56,54 @@ const activeTab = ref<HistoryTab>(props.initialTab);
 const pinnedProbeId = ref<string | null>(null);
 const pinnedPelicanId = ref<string | null>(null);
 
+let isPointerDownInsidePopover = false;
+
+function handlePointerDown(e: PointerEvent): void {
+  const target = (
+    e.target instanceof Element ? e.target : (e.target as Node)?.parentElement
+  ) as HTMLElement | null;
+  isPointerDownInsidePopover = !!target?.closest(".info-tooltip-popover");
+}
+
+function handleDocumentClick(e: MouseEvent): void {
+  if (!props.isOpen) return;
+  if (!pinnedProbeId.value && !pinnedPelicanId.value) return;
+
+  if (isPointerDownInsidePopover) {
+    isPointerDownInsidePopover = false;
+    return;
+  }
+
+  const target = (
+    e.target instanceof Element ? e.target : (e.target as Node)?.parentElement
+  ) as HTMLElement | null;
+  if (!target) return;
+
+  // 点击 popover 内部任何区域均不取消固定
+  if (target.closest(".info-tooltip-popover")) {
+    return;
+  }
+
+  // 点击触发固定/取消固定的详情按钮时，由该按钮自身的 toggle 函数处理，避免冲突
+  if (target.closest(".info-icon-wrapper > button")) {
+    return;
+  }
+
+  // 点击其他区域，取消所有固定状态
+  pinnedProbeId.value = null;
+  pinnedPelicanId.value = null;
+}
+
+onMounted(() => {
+  document.addEventListener("pointerdown", handlePointerDown, true);
+  document.addEventListener("click", handleDocumentClick, true);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("pointerdown", handlePointerDown, true);
+  document.removeEventListener("click", handleDocumentClick, true);
+});
+
 function togglePinProbe(id: string, e?: Event): void {
   e?.stopPropagation();
   pinnedProbeId.value = pinnedProbeId.value === id ? null : id;
@@ -69,10 +117,10 @@ function togglePinPelican(id: string, e?: Event): void {
 watch(
   () => props.isOpen,
   (open) => {
+    pinnedProbeId.value = null;
+    pinnedPelicanId.value = null;
     if (open) {
       activeTab.value = props.initialTab || "probe";
-      pinnedProbeId.value = null;
-      pinnedPelicanId.value = null;
     }
   }
 );
