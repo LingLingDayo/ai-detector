@@ -335,116 +335,118 @@ function getPureSvgContent(rawContent: string): string {
                   </span>
                   <span class="time-tag">{{ formatHistoryTime(item.createdAt) }}</span>
 
-                  <!-- 详情 hover icon 按钮 -->
-                  <div class="info-icon-wrapper">
-                    <button
-                      type="button"
-                      class="row-action-btn"
-                      aria-label="查看详细参数"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="13"
-                        height="13"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
+                  <div class="row-action-group">
+                    <!-- 详情 hover icon 按钮 -->
+                    <div class="info-icon-wrapper">
+                      <button
+                        type="button"
+                        class="row-action-btn"
+                        aria-label="查看详细参数"
                       >
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="16" x2="12" y2="12" />
-                        <line x1="12" y1="8" x2="12.01" y2="8" />
-                      </svg>
-                    </button>
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="13"
+                          height="13"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="16" x2="12" y2="12" />
+                          <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                      </button>
 
-                    <!-- Hover 详细信息浮层 -->
-                    <div class="info-tooltip-popover" role="tooltip">
-                      <div class="popover-header">
-                        <span class="popover-title">测试参数详情</span>
-                      </div>
-                      <div class="popover-list">
-                        <div v-if="item.configName" class="popover-item">
-                          <span class="item-label">配置名称</span>
-                          <span class="item-value config-name-badge">
-                            {{ item.configName }}
-                          </span>
+                      <!-- Hover 详细信息浮层 -->
+                      <div class="info-tooltip-popover" role="tooltip">
+                        <div class="popover-header">
+                          <span class="popover-title">测试参数详情</span>
                         </div>
-                        <div class="popover-item">
-                          <span class="item-label">Base URL</span>
-                          <span class="item-value font-mono break-all selectable" :title="item.baseUrl">
-                            {{ item.baseUrl }}
-                          </span>
-                        </div>
-                        <div class="popover-item">
-                          <span class="item-label">API Key</span>
-                          <span class="item-value font-mono">{{ item.apiKey }}</span>
-                        </div>
-                        <div class="popover-item">
-                          <span class="item-label">调用模型</span>
-                          <span class="item-value model-highlight">{{ item.modelName }}</span>
-                        </div>
-                        <div class="popover-item">
-                          <span class="item-label">思考强度</span>
-                          <span class="item-value">{{ formatReasoningEffort(item.reasoningEffort) }}</span>
-                        </div>
-                        <div class="popover-item">
-                          <span class="item-label">判定模型</span>
-                          <span class="item-value winner-highlight">
-                            {{ item.predictionName }} ({{ formatProb(item.probability) }})
-                          </span>
-                        </div>
-                        <div class="popover-item">
-                          <span class="item-label">模型家族</span>
-                          <span class="item-value">{{ item.familyPredictionName }}</span>
-                        </div>
-                        <div v-if="item.createdAt" class="popover-item">
-                          <span class="item-label">测试时间</span>
-                          <span class="item-value text-muted">{{ formatHistoryTime(item.createdAt) }}</span>
+                        <div class="popover-list">
+                          <div v-if="item.configName" class="popover-item">
+                            <span class="item-label">配置名称</span>
+                            <span class="item-value config-name-badge">
+                              {{ item.configName }}
+                            </span>
+                          </div>
+                          <div class="popover-item">
+                            <span class="item-label">Base URL</span>
+                            <span class="item-value font-mono break-all selectable" :title="item.baseUrl">
+                              {{ item.baseUrl }}
+                            </span>
+                          </div>
+                          <div class="popover-item">
+                            <span class="item-label">API Key</span>
+                            <span class="item-value font-mono">{{ item.apiKey }}</span>
+                          </div>
+                          <div class="popover-item">
+                            <span class="item-label">调用模型</span>
+                            <span class="item-value model-highlight">{{ item.modelName }}</span>
+                          </div>
+                          <div class="popover-item">
+                            <span class="item-label">思考强度</span>
+                            <span class="item-value">{{ formatReasoningEffort(item.reasoningEffort) }}</span>
+                          </div>
+                          <div class="popover-item">
+                            <span class="item-label">判定模型</span>
+                            <span class="item-value winner-highlight">
+                              {{ item.predictionName }} ({{ formatProb(item.probability) }})
+                            </span>
+                          </div>
+                          <div class="popover-item">
+                            <span class="item-label">模型家族</span>
+                            <span class="item-value">{{ item.familyPredictionName }}</span>
+                          </div>
+                          <div v-if="item.createdAt" class="popover-item">
+                            <span class="item-label">测试时间</span>
+                            <span class="item-value text-muted">{{ formatHistoryTime(item.createdAt) }}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
+
+                    <!-- 复制诊断文本按钮 -->
+                    <button
+                      type="button"
+                      class="row-action-btn"
+                      title="复制诊断结论"
+                      @click="handleCopyProbeSummary(item)"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="12"
+                        height="12"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                      </svg>
+                    </button>
+
+                    <!-- 删除单条记录按钮 -->
+                    <button
+                      type="button"
+                      class="row-action-btn delete-btn"
+                      title="删除记录"
+                      @click="emit('delete-probe', item.id)"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="12"
+                        height="12"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
                   </div>
-
-                  <!-- 复制诊断文本按钮 -->
-                  <button
-                    type="button"
-                    class="row-action-btn"
-                    title="复制诊断结论"
-                    @click="handleCopyProbeSummary(item)"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="12"
-                      height="12"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                    </svg>
-                  </button>
-
-                  <!-- 删除单条记录按钮 -->
-                  <button
-                    type="button"
-                    class="row-action-btn delete-btn"
-                    title="删除记录"
-                    @click="emit('delete-probe', item.id)"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="12"
-                      height="12"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
                 </div>
               </div>
             </div>
@@ -934,8 +936,8 @@ function getPureSvgContent(rawContent: string): string {
   }
 }
 
-/* 右上角信息 icon 与 Hover 详细信息浮层：默认隐藏，只有 hover 卡片时显示 */
-.info-icon-wrapper {
+/* 右上角信息 icon 与 Hover 详细信息浮层：鹈鹕卡片专属绝对定位 */
+.pelican-card-item .info-icon-wrapper {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -969,107 +971,106 @@ function getPureSvgContent(rawContent: string): string {
       transform: scale(1.08);
     }
   }
+}
 
-  /* 悬浮详细参数卡片 */
-  .info-tooltip-popover {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    width: 290px;
-    background: #0f172a;
-    border: 1px solid rgba(99, 102, 241, 0.4);
-    border-radius: var(--radius-sm);
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 16px rgba(99, 102, 241, 0.25);
-    padding: 12px;
-    z-index: 100;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-6px);
-    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
-    pointer-events: none;
+/* 悬浮详细参数卡片（通用） */
+.info-tooltip-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 290px;
+  background: #0f172a;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 16px rgba(99, 102, 241, 0.25);
+  padding: 12px;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  pointer-events: none;
 
-    .popover-header {
-      padding-bottom: 8px;
-      margin-bottom: 8px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  .popover-header {
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
-      .popover-title {
-        font-size: 0.76rem;
-        font-weight: 600;
-        color: #e2e8f0;
-      }
-    }
-
-    .popover-list {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-
-    .popover-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 8px;
-      font-size: 0.72rem;
-
-      .item-label {
-        color: var(--text-secondary);
-        flex-shrink: 0;
-      }
-
-      .item-value {
-        color: #f1f5f9;
-        text-align: right;
-        word-break: break-all;
-
-        &.config-name-badge {
-          color: #a5b4fc;
-          font-weight: 600;
-          background: rgba(99, 102, 241, 0.15);
-          padding: 1px 6px;
-          border-radius: 4px;
-        }
-
-        &.model-highlight {
-          color: #38bdf8;
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        }
-
-        &.winner-highlight {
-          color: #34d399;
-          font-weight: 600;
-        }
-
-        &.font-mono {
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        }
-
-        &.selectable {
-          user-select: text;
-        }
-
-        &.text-muted {
-          color: var(--text-muted);
-        }
-      }
+    .popover-title {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #e2e8f0;
     }
   }
 
-  /* 悬停或聚焦显示浮层 */
-  &:hover .info-tooltip-popover,
-  &:focus-within .info-tooltip-popover {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    pointer-events: auto;
+  .popover-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .popover-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.72rem;
+
+    .item-label {
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .item-value {
+      color: #f1f5f9;
+      text-align: right;
+      word-break: break-all;
+
+      &.config-name-badge {
+        color: #a5b4fc;
+        font-weight: 600;
+        background: rgba(99, 102, 241, 0.15);
+        padding: 1px 6px;
+        border-radius: 4px;
+      }
+
+      &.model-highlight {
+        color: #38bdf8;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+
+      &.winner-highlight {
+        color: #34d399;
+        font-weight: 600;
+      }
+
+      &.font-mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+
+      &.selectable {
+        user-select: text;
+      }
+
+      &.text-muted {
+        color: var(--text-muted);
+      }
+    }
   }
 }
 
-/* 卡片 hover 时展示右上角详情 icon */
+/* 悬停或聚焦显示浮层（通用） */
+.info-icon-wrapper:hover .info-tooltip-popover,
+.info-icon-wrapper:focus-within .info-tooltip-popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* 鹈鹕卡片 hover 时展示右上角详情 icon */
 .pelican-card-item:hover .info-icon-wrapper,
-.probe-card-item:hover .info-icon-wrapper,
-.info-icon-wrapper:focus-within {
+.pelican-card-item .info-icon-wrapper:focus-within {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
@@ -1299,48 +1300,58 @@ function getPureSvgContent(rawContent: string): string {
       font-family: ui-monospace, SFMono-Regular, monospace;
     }
 
-    .row-action-btn {
-      width: 24px;
-      height: 24px;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: #94a3b8;
+    .row-action-group {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      opacity: 0.7;
-      transition: all 0.18s ease;
+      gap: 5px;
+      flex-shrink: 0;
 
-      &:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #f1f5f9;
-        border-color: rgba(255, 255, 255, 0.2);
-        opacity: 1;
+      .row-action-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #94a3b8;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: all 0.18s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: #f1f5f9;
+          border-color: rgba(255, 255, 255, 0.2);
+          opacity: 1;
+        }
+
+        &.delete-btn:hover {
+          background: rgba(239, 68, 68, 0.2);
+          border-color: rgba(239, 68, 68, 0.4);
+          color: #fca5a5;
+        }
       }
 
-      &.delete-btn:hover {
-        background: rgba(239, 68, 68, 0.2);
-        border-color: rgba(239, 68, 68, 0.4);
-        color: #fca5a5;
-      }
-    }
-
-    .info-icon-wrapper {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      opacity: 1;
-      transform: none;
-      pointer-events: auto;
-
-      &:hover .info-tooltip-popover,
-      &:focus-within .info-tooltip-popover {
+      .info-icon-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
         opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
+        transform: none;
         pointer-events: auto;
+
+        &:hover .info-tooltip-popover,
+        &:focus-within .info-tooltip-popover {
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
       }
     }
   }
