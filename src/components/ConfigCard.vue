@@ -235,9 +235,6 @@ defineExpose({
             <polyline points="12 6 12 12 16 14" />
           </svg>
           <span>历史记录</span>
-          <span v-if="historyCount && historyCount > 0" class="btn-count-dot">
-            {{ historyCount }}
-          </span>
         </button>
       </div>
     </div>

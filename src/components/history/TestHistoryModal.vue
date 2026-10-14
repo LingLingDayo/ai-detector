@@ -174,9 +174,6 @@ function getPureSvgContent(rawContent: string): string {
                   <circle cx="12" cy="12" r="2" />
                 </svg>
                 <span>模型测试</span>
-                <span v-if="probeTotalCount > 0" class="tab-badge">
-                  {{ probeTotalCount }}
-                </span>
               </button>
 
               <button
@@ -203,9 +200,6 @@ function getPureSvgContent(rawContent: string): string {
                   <path d="M12 17.5V14l-3-3 4-3 3 3h3" />
                 </svg>
                 <span>鹈鹕测试</span>
-                <span v-if="pelicanTotalCount > 0" class="tab-badge">
-                  {{ pelicanTotalCount }}
-                </span>
               </button>
             </nav>
           </div>
