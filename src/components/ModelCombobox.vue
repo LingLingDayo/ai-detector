@@ -142,7 +142,7 @@ defineExpose({
         type="button"
         class="btn-icon btn-action-fetch"
         :id="id ? `${id}-btn-fetch` : 'btn-fetch-models'"
-        title="点击调用 /v1/models 接口自动获取当前 Key 允许的模型列表"
+        title="获取当前 key 允许的模型列表"
         @click.stop="() => { if (!isOpen) openDropdown(); void fetchModels({ autoSelectFirst: false }); }"
       >
         <RotateCw

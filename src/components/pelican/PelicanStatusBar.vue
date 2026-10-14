@@ -34,7 +34,7 @@ const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
 </script>
 
 <template>
-  <div class="status-summary-bar">
+  <div id="status-summary-bar" class="status-summary-bar">
     <div class="status-left">
       <span v-if="isRunning" class="state-pill running">
         <span class="state-spinner"></span>

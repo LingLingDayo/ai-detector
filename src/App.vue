@@ -174,7 +174,7 @@ function handleApplyProbeHistoryItem(item: ProbeHistoryItem): void {
   }
   activeMode.value = "probe";
   isHistoryModalOpen.value = false;
-  scrollToBottom();
+  scrollToElement("#result-section", 10);
 }
 
 async function handleResetConfig(): Promise<void> {
@@ -186,54 +186,75 @@ async function handleResetConfig(): Promise<void> {
   }
 }
 
-function scrollToBottom(): void {
+function scrollToElement(selector: string, offsetTop: number = 10): void {
   nextTick(() => {
-    const doScroll = () => {
-      const scrollHeight = Math.max(
-        document.documentElement.scrollHeight,
-        document.body.scrollHeight
-      );
-      window.scrollTo({
-        top: scrollHeight,
-        behavior: "smooth",
-      });
-      if (document.documentElement.scrollTop !== undefined) {
-        document.documentElement.scrollTo?.({
-          top: scrollHeight,
-          behavior: "smooth",
-        });
+    let attempts = 0;
+    const maxAttempts = 15;
+    let lastTargetTop: number | null = null;
+
+    const performScroll = () => {
+      const el = document.querySelector(selector) as HTMLElement | null;
+      if (!el) {
+        if (attempts < maxAttempts) {
+          attempts++;
+          requestAnimationFrame(performScroll);
+        }
+        return;
       }
-      if (document.body && document.body.scrollTop !== undefined) {
-        document.body.scrollTo?.({
-          top: scrollHeight,
+
+      const rect = el.getBoundingClientRect();
+      const currentScrollTop =
+        window.scrollY ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0;
+      const targetScrollTop = Math.max(0, Math.round(rect.top + currentScrollTop - offsetTop));
+
+      if (lastTargetTop === null || Math.abs(targetScrollTop - lastTargetTop) > 2) {
+        lastTargetTop = targetScrollTop;
+        window.scrollTo({
+          top: targetScrollTop,
           behavior: "smooth",
         });
+        if (document.documentElement && document.documentElement.scrollTop !== undefined) {
+          document.documentElement.scrollTo?.({
+            top: targetScrollTop,
+            behavior: "smooth",
+          });
+        }
+        if (document.body && document.body.scrollTop !== undefined) {
+          document.body.scrollTo?.({
+            top: targetScrollTop,
+            behavior: "smooth",
+          });
+        }
       }
     };
 
     requestAnimationFrame(() => {
-      doScroll();
-      setTimeout(doScroll, 120);
+      performScroll();
+      setTimeout(performScroll, 120);
+      setTimeout(performScroll, 260);
     });
   });
 }
 
-// 常规探测测试结束自动滚动到底部
+// 模型测试结束自动滚动到 result-section（使其顶部距离页面顶部 10px）
 watch(
   () => isRunning.value,
   (running, wasRunning) => {
     if (wasRunning && !running && hasProbeResult.value && activeMode.value === "probe") {
-      scrollToBottom();
+      scrollToElement("#result-section", 10);
     }
   }
 );
 
-// 鹈鹕测试结束自动滚动到底部
+// 鹈鹕测试开始后立即自动滚动到 status-summary-bar；生成结束后再次触发自动滚动，使其顶部距离页面顶部均为 10px
 watch(
   () => isPelicanRunning.value,
   (running, wasRunning) => {
-    if (wasRunning && !running && hasPelicanResult.value && activeMode.value === "pelican") {
-      scrollToBottom();
+    if (activeMode.value === "pelican" && running !== wasRunning) {
+      scrollToElement("#status-summary-bar", 10);
     }
   }
 );

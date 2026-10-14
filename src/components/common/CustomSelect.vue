@@ -299,6 +299,7 @@ onUnmounted(() => {
     font-size: 0.76rem;
     color: var(--text-secondary);
     font-weight: 400;
+    opacity: 0.5;
   }
 
   .option-badge {
