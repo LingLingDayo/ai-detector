@@ -5,6 +5,17 @@ import {
   formatReasoningEffort,
   formatHistoryTime,
 } from "../../utils/pelicanFormatters";
+import {
+  History,
+  Radar,
+  Trash2,
+  X,
+  Globe,
+  Info,
+  Copy,
+  Image,
+  Download,
+} from "@lucide/vue";
 import { useClipboard } from "../../composables/useClipboard";
 import { useConfirm } from "../../composables/useConfirm";
 
@@ -160,19 +171,7 @@ function getPureSvgContent(rawContent: string): string {
         <header class="modal-header">
           <div class="header-left">
             <div class="header-icon-box">
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
+              <History :size="18" />
             </div>
             <h3 id="test-history-title">测试历史记录</h3>
 
@@ -186,20 +185,7 @@ function getPureSvgContent(rawContent: string): string {
                 :aria-selected="activeTab === 'probe'"
                 @click="activeTab = 'probe'"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="13"
-                  height="13"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" />
-                  <path d="M12 6a6 6 0 1 0 6 6" />
-                  <circle cx="12" cy="12" r="2" />
-                </svg>
+                <Radar :size="13" />
                 <span>模型测试</span>
               </button>
 
@@ -240,19 +226,7 @@ function getPureSvgContent(rawContent: string): string {
               title="清空模型测试历史"
               @click="handleClearHistory"
             >
-              <svg
-                viewBox="0 0 24 24"
-                width="13"
-                height="13"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
+              <Trash2 :size="13" />
               <span>清空记录</span>
             </button>
 
@@ -264,19 +238,7 @@ function getPureSvgContent(rawContent: string): string {
               title="清空鹈鹕测试历史"
               @click="handleClearHistory"
             >
-              <svg
-                viewBox="0 0 24 24"
-                width="13"
-                height="13"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
+              <Trash2 :size="13" />
               <span>清空记录</span>
             </button>
 
@@ -287,19 +249,7 @@ function getPureSvgContent(rawContent: string): string {
               aria-label="关闭弹窗"
               @click="emit('close')"
             >
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <X :size="18" />
             </button>
           </div>
         </header>
@@ -311,20 +261,7 @@ function getPureSvgContent(rawContent: string): string {
             <!-- 空状态 -->
             <div v-if="probeTotalCount === 0" class="empty-state">
               <div class="empty-icon-wrap probe-icon-wrap">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="40"
-                  height="40"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-                  <path d="M2 12h20" />
-                </svg>
+                <Globe :size="40" :stroke-width="1.6" />
               </div>
               <p class="empty-title">暂无模型测试历史记录</p>
               <p class="empty-desc">
@@ -364,20 +301,7 @@ function getPureSvgContent(rawContent: string): string {
                         class="row-action-btn"
                         aria-label="查看详细参数"
                       >
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="13"
-                          height="13"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="12" y1="16" x2="12" y2="12" />
-                          <line x1="12" y1="8" x2="12.01" y2="8" />
-                        </svg>
+                        <Info :size="13" />
                       </button>
 
                       <!-- Hover 详细信息浮层 -->
@@ -435,17 +359,7 @@ function getPureSvgContent(rawContent: string): string {
                       title="复制诊断结论"
                       @click="handleCopyProbeSummary(item)"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="12"
-                        height="12"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                      </svg>
+                      <Copy :size="12" />
                     </button>
 
                     <!-- 删除单条记录按钮 -->
@@ -455,17 +369,7 @@ function getPureSvgContent(rawContent: string): string {
                       title="删除记录"
                       @click="emit('delete-probe', item.id)"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="12"
-                        height="12"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
+                      <X :size="12" />
                     </button>
                   </div>
                 </div>
@@ -478,20 +382,7 @@ function getPureSvgContent(rawContent: string): string {
             <!-- 空状态 -->
             <div v-if="pelicanTotalCount === 0" class="empty-state">
               <div class="empty-icon-wrap">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="40"
-                  height="40"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
+                <Image :size="40" :stroke-width="1.6" />
               </div>
               <p class="empty-title">暂无鹈鹕测试历史记录</p>
               <p class="empty-desc">
@@ -530,20 +421,7 @@ function getPureSvgContent(rawContent: string): string {
                     class="info-action-btn"
                     aria-label="查看详细参数"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
+                    <Info :size="14" />
                   </button>
 
                   <!-- Hover 详细信息浮层 -->
@@ -616,17 +494,7 @@ function getPureSvgContent(rawContent: string): string {
                       title="复制图形代码"
                       @click.stop="handleCopyPelican(item)"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="12"
-                        height="12"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                      </svg>
+                      <Copy :size="12" />
                     </button>
                     <button
                       type="button"
@@ -634,18 +502,7 @@ function getPureSvgContent(rawContent: string): string {
                       title="下载图片文件"
                       @click.stop="handleDownloadPelican(item)"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="12"
-                        height="12"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                      </svg>
+                      <Download :size="12" />
                     </button>
                     <button
                       type="button"
@@ -653,17 +510,7 @@ function getPureSvgContent(rawContent: string): string {
                       title="删除此条记录"
                       @click.stop="emit('delete-pelican', item.id)"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="12"
-                        height="12"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
+                      <X :size="12" />
                     </button>
                   </div>
                 </footer>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { AlertCircle } from "@lucide/vue";
 import { useClipboard } from "../composables/useClipboard";
 import { DEFAULT_PELICAN_PROMPT, type PelicanContentType } from "../composables/usePelicanTest";
 import PelicanHeader from "./pelican/PelicanHeader.vue";
@@ -96,7 +97,7 @@ function handleDownloadContent(): void {
 
     <!-- 错误警告提示 -->
     <div v-if="errorMessage && !isRunning" class="alert-box error">
-      <div class="alert-icon">!</div>
+      <AlertCircle :size="16" class="alert-icon" />
       <div class="alert-content">
         <span class="alert-title">测试失败：</span>
         <span class="alert-msg">{{ errorMessage }}</span>
@@ -157,14 +158,10 @@ function handleDownloadContent(): void {
   .alert-icon {
     width: 16px;
     height: 16px;
-    border-radius: 50%;
-    background: #ef4444;
-    color: #fff;
-    font-weight: 700;
+    color: #ef4444;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.68rem;
     flex-shrink: 0;
   }
 

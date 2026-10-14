@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { ChevronDown } from "@lucide/vue";
 
 defineProps<{
   rawText: string;
@@ -16,17 +17,10 @@ const showRawText = ref(false);
       @click="showRawText = !showRawText"
     >
       <span>{{ showRawText ? "收起模型完整响应" : "查看模型完整响应内容" }}</span>
-      <svg
-        viewBox="0 0 24 24"
-        width="12"
-        height="12"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
+      <ChevronDown
+        :size="12"
         :class="{ rotated: showRawText }"
-      >
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
+      />
     </button>
 
     <div v-if="showRawText" class="raw-response-dropdown">

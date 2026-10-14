@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from "vue";
+import { Terminal, RotateCcw, Check, SquarePen, Copy } from "@lucide/vue";
 import { useClipboard } from "../../composables/useClipboard";
 import { DEFAULT_PELICAN_PROMPT } from "../../composables/usePelicanTest";
 
@@ -70,19 +71,7 @@ watch(
   <div class="prompt-box" :class="{ 'is-editing': isEditingPrompt }">
     <div class="prompt-header">
       <span class="prompt-label">
-        <svg
-          viewBox="0 0 24 24"
-          width="13"
-          height="13"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <polyline points="4 17 10 11 4 5" />
-          <line x1="12" y1="19" x2="20" y2="19" />
-        </svg>
+        <Terminal :size="13" />
         <span>测试提示词</span>
         <span v-if="isCustomPrompt" class="custom-badge" title="当前使用自定义提示词">自定义</span>
       </span>
@@ -96,19 +85,7 @@ watch(
             title="恢复为默认提示词"
             @click="handleResetToDefault"
           >
-            <svg
-              viewBox="0 0 24 24"
-              width="11"
-              height="11"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-            </svg>
+            <RotateCcw :size="11" />
             <span>恢复默认</span>
           </button>
           <button
@@ -125,18 +102,7 @@ watch(
             title="保存提示词"
             @click="savePrompt"
           >
-            <svg
-              viewBox="0 0 24 24"
-              width="11"
-              height="11"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <Check :size="11" :stroke-width="2.5" />
             <span>保存</span>
           </button>
         </template>
@@ -149,19 +115,7 @@ watch(
             title="编辑测试提示词"
             @click="startEditing"
           >
-            <svg
-              viewBox="0 0 24 24"
-              width="11"
-              height="11"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
+            <SquarePen :size="11" />
             <span>编辑</span>
           </button>
           <button
@@ -170,33 +124,13 @@ watch(
             title="复制测试提示词到剪贴板"
             @click="handleCopyPrompt"
           >
-            <svg
-              v-if="!promptCopied"
-              viewBox="0 0 24 24"
-              width="11"
-              height="11"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-            </svg>
-            <svg
+            <Copy v-if="!promptCopied" :size="11" />
+            <Check
               v-else
-              viewBox="0 0 24 24"
-              width="11"
-              height="11"
-              fill="none"
+              :size="11"
               stroke="#10b981"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+              :stroke-width="2.5"
+            />
             <span>{{ promptCopied ? "已复制" : "复制" }}</span>
           </button>
         </template>

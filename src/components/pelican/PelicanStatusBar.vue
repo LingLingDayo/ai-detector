@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { Copy, Check, Download, Code } from "@lucide/vue";
 import type { PelicanContentType } from "../../composables/usePelicanTest";
 
 const props = withDefaults(
@@ -68,33 +69,13 @@ const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
         :title="`复制 ${typeUpper} 源码`"
         @click="emit('copy-svg')"
       >
-        <svg
-          v-if="!svgCopied"
-          viewBox="0 0 24 24"
-          width="12"
-          height="12"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-        </svg>
-        <svg
+        <Copy v-if="!svgCopied" :size="12" />
+        <Check
           v-else
-          viewBox="0 0 24 24"
-          width="12"
-          height="12"
-          fill="none"
+          :size="12"
           stroke="#10b981"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
+          :stroke-width="2.5"
+        />
         <span>{{ svgCopied ? "已复制" : `复制 ${typeUpper}` }}</span>
       </button>
 
@@ -104,20 +85,7 @@ const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
         :title="`下载 ${typeUpper} 文件`"
         @click="emit('download-svg')"
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="12"
-          height="12"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
+        <Download :size="12" />
         <span>下载 {{ typeUpper }}</span>
       </button>
 
@@ -128,19 +96,7 @@ const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
         :title="`查看或折叠 ${typeUpper} 源码`"
         @click="emit('update:showCode', !showCode)"
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="12"
-          height="12"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <polyline points="16 18 22 12 16 6" />
-          <polyline points="8 6 2 12 8 18" />
-        </svg>
+        <Code :size="12" />
         <span>源码</span>
       </button>
     </div>
