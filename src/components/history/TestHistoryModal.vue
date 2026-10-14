@@ -6,6 +6,7 @@ import {
   formatHistoryTime,
 } from "../../utils/pelicanFormatters";
 import { useClipboard } from "../../composables/useClipboard";
+import { useConfirm } from "../../composables/useConfirm";
 
 export type HistoryTab = "pelican" | "probe";
 
@@ -35,6 +36,7 @@ const emit = defineEmits<{
 }>();
 
 const { copy: copyText } = useClipboard();
+const { confirm } = useConfirm();
 
 // 当前选中的 Tab 菜单，支持无缝切换与扩展
 const activeTab = ref<HistoryTab>(props.initialTab);
@@ -77,6 +79,31 @@ function handleCopyProbeSummary(item: ProbeHistoryItem): void {
   const prob = (item.probability * 100).toFixed(1);
   const text = `【模型测试诊断结果】\n调用模型: ${item.modelName}\n判定模型: ${item.predictionName} (${prob}%)\n模型家族: ${item.familyPredictionName || "通用系列"}\n有效样本: ${item.usedOutputs}/3\n测试时间: ${formatHistoryTime(item.createdAt)}`;
   copyText(text);
+}
+
+async function handleClearHistory(): Promise<void> {
+  const isProbe = activeTab.value === "probe";
+  const title = isProbe ? "确认清空模型测试历史？" : "确认清空鹈鹕测试历史？";
+  const message = isProbe
+    ? "清空后将永久删除所有模型探测历史记录，数据无法恢复。"
+    : "清空后将永久删除所有鹈鹕测试生成的图片历史，数据无法恢复。";
+
+  const confirmed = await confirm({
+    type: "danger",
+    styleVariant: "spotlight",
+    title,
+    message,
+    confirmText: "确认清空",
+    cancelText: "取消",
+  });
+
+  if (!confirmed) return;
+
+  if (isProbe) {
+    emit("clear-probe");
+  } else {
+    emit("clear-pelican");
+  }
 }
 
 function formatProb(prob: number | undefined): string {
@@ -211,7 +238,7 @@ function getPureSvgContent(rawContent: string): string {
               type="button"
               class="clear-btn"
               title="清空模型测试历史"
-              @click="emit('clear-probe')"
+              @click="handleClearHistory"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -235,7 +262,7 @@ function getPureSvgContent(rawContent: string): string {
               type="button"
               class="clear-btn"
               title="清空鹈鹕测试历史"
-              @click="emit('clear-pelican')"
+              @click="handleClearHistory"
             >
               <svg
                 viewBox="0 0 24 24"
