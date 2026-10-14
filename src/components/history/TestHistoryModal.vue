@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import type { PelicanHistoryItem } from "../../types";
+import type { PelicanHistoryItem, ProbeHistoryItem } from "../../types";
 import {
   formatReasoningEffort,
   formatHistoryTime,
@@ -14,11 +14,13 @@ const props = withDefaults(
     isOpen: boolean;
     initialTab?: HistoryTab;
     pelicanList: PelicanHistoryItem[];
+    probeList?: ProbeHistoryItem[];
   }>(),
   {
     isOpen: false,
-    initialTab: "pelican",
+    initialTab: "probe",
     pelicanList: () => [],
+    probeList: () => [],
   }
 );
 
@@ -27,6 +29,9 @@ const emit = defineEmits<{
   (e: "delete-pelican", id: string): void;
   (e: "clear-pelican"): void;
   (e: "apply-pelican", item: PelicanHistoryItem): void;
+  (e: "delete-probe", id: string): void;
+  (e: "clear-probe"): void;
+  (e: "apply-probe", item: ProbeHistoryItem): void;
 }>();
 
 const { copy: copyText } = useClipboard();
@@ -38,12 +43,13 @@ watch(
   () => props.isOpen,
   (open) => {
     if (open) {
-      activeTab.value = props.initialTab || "pelican";
+      activeTab.value = props.initialTab || "probe";
     }
   }
 );
 
 const pelicanTotalCount = computed(() => props.pelicanList.length);
+const probeTotalCount = computed(() => (props.probeList || []).length);
 
 function handleDownloadPelican(item: PelicanHistoryItem): void {
   const isHtml = item.contentType === "html";
@@ -65,6 +71,24 @@ function handleDownloadPelican(item: PelicanHistoryItem): void {
 
 function handleCopyPelican(item: PelicanHistoryItem): void {
   copyText(item.content);
+}
+
+function handleCopyProbeSummary(item: ProbeHistoryItem): void {
+  const prob = (item.probability * 100).toFixed(1);
+  const text = `【模型测试诊断结果】\n调用模型: ${item.modelName}\n判定真身: ${item.predictionName} (${prob}%)\n所属家族: ${item.familyPredictionName || "未知家族"}\n有效样本: ${item.usedOutputs}/3\n测试时间: ${formatHistoryTime(item.createdAt)}`;
+  copyText(text);
+}
+
+function formatProb(prob: number | undefined): string {
+  if (prob === undefined || isNaN(prob)) return "0.0%";
+  return `${(prob * 100).toFixed(1)}%`;
+}
+
+function getProbBadgeClass(prob: number | undefined): string {
+  if (prob === undefined) return "prob-low";
+  if (prob >= 0.8) return "prob-high";
+  if (prob >= 0.5) return "prob-mid";
+  return "prob-low";
 }
 
 function getPureSvgContent(rawContent: string): string {
@@ -150,7 +174,9 @@ function getPureSvgContent(rawContent: string): string {
                   <circle cx="12" cy="12" r="2" />
                 </svg>
                 <span>模型测试</span>
-                <span class="tab-badge plan-tag">待接入</span>
+                <span v-if="probeTotalCount > 0" class="tab-badge">
+                  {{ probeTotalCount }}
+                </span>
               </button>
 
               <button
@@ -185,9 +211,33 @@ function getPureSvgContent(rawContent: string): string {
           </div>
 
           <div class="header-actions">
+            <!-- 模型测试清空按钮 -->
+            <button
+              v-if="activeTab === 'probe' && probeTotalCount > 0"
+              type="button"
+              class="clear-btn"
+              title="清空模型测试历史"
+              @click="emit('clear-probe')"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              <span>清空记录</span>
+            </button>
+
             <!-- 鹈鹕测试清空按钮 -->
             <button
-              v-if="activeTab === 'pelican' && pelicanTotalCount > 0"
+              v-else-if="activeTab === 'pelican' && pelicanTotalCount > 0"
               type="button"
               class="clear-btn"
               title="清空鹈鹕测试历史"
@@ -235,8 +285,261 @@ function getPureSvgContent(rawContent: string): string {
 
         <!-- 弹窗内容主体 -->
         <main class="modal-body">
-          <!-- 1. 鹈鹕测试历史视图 -->
-          <section v-if="activeTab === 'pelican'" class="tab-content-section">
+          <!-- 1. 模型测试历史视图（左侧默认 Tab） -->
+          <section v-if="activeTab === 'probe'" class="tab-content-section">
+            <!-- 空状态 -->
+            <div v-if="probeTotalCount === 0" class="empty-state">
+              <div class="empty-icon-wrap probe-icon-wrap">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="40"
+                  height="40"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                  <path d="M2 12h20" />
+                </svg>
+              </div>
+              <p class="empty-title">暂无模型测试历史记录</p>
+              <p class="empty-desc">
+                在“模型测试”模式中，完成探测并生成模型归因诊断后，记录将自动保存在这里。
+              </p>
+            </div>
+
+            <!-- 两列布局的模型测试卡片网格 -->
+            <div v-else class="probe-history-grid">
+              <article
+                v-for="item in probeList"
+                :key="item.id"
+                class="probe-card-item"
+              >
+                <!-- 卡片内容主体（点击将此诊断结果回填至主界面查看） -->
+                <div
+                  class="probe-stage"
+                  @click="emit('apply-probe', item)"
+                  title="点击将此诊断结果载入主界面查看"
+                >
+                  <!-- 背景微光矩阵 -->
+                  <div class="probe-bg-mesh"></div>
+
+                  <!-- 诊断内容核心区域：直观、简洁、高质感 -->
+                  <div class="probe-card-body">
+                    <!-- 核心诊断行：胜出模型与判定置信度 -->
+                    <div class="probe-header-row">
+                      <div class="winner-box">
+                        <span class="winner-sub">模型指纹判定</span>
+                        <h4 class="winner-title" :title="item.predictionName">
+                          {{ item.predictionName }}
+                        </h4>
+                      </div>
+                      <div
+                        class="prob-pill"
+                        :class="getProbBadgeClass(item.probability)"
+                      >
+                        <span class="prob-num">{{ formatProb(item.probability) }}</span>
+                        <span class="prob-label">匹配</span>
+                      </div>
+                    </div>
+
+                    <!-- 家族属性与样本信息 -->
+                    <div class="probe-meta-line">
+                      <span class="family-badge" :title="`归属家族: ${item.familyPredictionName}`">
+                        <span class="family-dot"></span>
+                        <span class="family-text">{{ item.familyPredictionName || '通用系列' }}</span>
+                      </span>
+                      <span class="samples-badge">
+                        样本 {{ item.usedOutputs }}/3 题
+                      </span>
+                    </div>
+
+                    <!-- Top 候选模型比例条对比（最关键信息：直观一眼区分真身与备选差距） -->
+                    <div
+                      v-if="item.candidates && item.candidates.length > 0"
+                      class="probe-chart-box"
+                    >
+                      <div class="chart-progress-bar">
+                        <div
+                          v-for="(cand, idx) in item.candidates.slice(0, 3)"
+                          :key="cand.model"
+                          class="chart-slice"
+                          :class="`slice-${idx}`"
+                          :style="{ width: `${Math.max(cand.probability * 100, 5)}%` }"
+                          :title="`${cand.displayName}: ${(cand.probability * 100).toFixed(1)}%`"
+                        ></div>
+                      </div>
+                      <div class="chart-labels">
+                        <div
+                          v-for="(cand, idx) in item.candidates.slice(0, 2)"
+                          :key="cand.model"
+                          class="label-item"
+                          :class="`cand-${idx}`"
+                        >
+                          <span class="cand-dot"></span>
+                          <span class="cand-name" :title="cand.displayName">{{ cand.displayName }}</span>
+                          <span class="cand-val">{{ (cand.probability * 100).toFixed(0) }}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 左上角显示调用模型名（与鹈鹕完全对齐：通透半透明，无 icon，默认显示） -->
+                <div class="model-tag" :title="item.modelName">
+                  <span class="model-tag-text">{{ item.modelName }}</span>
+                </div>
+
+                <!-- 右上角信息 icon 与 Hover 详细信息浮层（与鹈鹕完全对齐） -->
+                <div class="info-icon-wrapper">
+                  <button
+                    type="button"
+                    class="info-action-btn"
+                    aria-label="查看详细参数"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="16" x2="12" y2="12" />
+                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                  </button>
+
+                  <!-- Hover 详细信息浮层 -->
+                  <div class="info-tooltip-popover" role="tooltip">
+                    <div class="popover-header">
+                      <span class="popover-title">测试参数与详情</span>
+                    </div>
+                    <div class="popover-list">
+                      <!-- 配置名称 -->
+                      <div v-if="item.configName" class="popover-item">
+                        <span class="item-label">配置名称</span>
+                        <span class="item-value config-name-badge">
+                          {{ item.configName }}
+                        </span>
+                      </div>
+
+                      <!-- 完整 baseurl -->
+                      <div class="popover-item">
+                        <span class="item-label">Base URL</span>
+                        <span
+                          class="item-value font-mono break-all selectable"
+                          :title="item.baseUrl"
+                        >
+                          {{ item.baseUrl }}
+                        </span>
+                      </div>
+
+                      <!-- 省略中间部分的 key（在存储时就已脱敏） -->
+                      <div class="popover-item">
+                        <span class="item-label">API Key</span>
+                        <span class="item-value font-mono">
+                          {{ item.apiKey }}
+                        </span>
+                      </div>
+
+                      <!-- 调用模型 -->
+                      <div class="popover-item">
+                        <span class="item-label">调用模型</span>
+                        <span class="item-value model-highlight">
+                          {{ item.modelName }}
+                        </span>
+                      </div>
+
+                      <!-- 思考强度 -->
+                      <div class="popover-item">
+                        <span class="item-label">思考强度</span>
+                        <span class="item-value">
+                          {{ formatReasoningEffort(item.reasoningEffort) }}
+                        </span>
+                      </div>
+
+                      <!-- 识别结论 -->
+                      <div class="popover-item">
+                        <span class="item-label">识别真身</span>
+                        <span class="item-value winner-highlight">
+                          {{ item.predictionName }} ({{ formatProb(item.probability) }})
+                        </span>
+                      </div>
+
+                      <!-- 模型家族 -->
+                      <div class="popover-item">
+                        <span class="item-label">模型家族</span>
+                        <span class="item-value">
+                          {{ item.familyPredictionName }} ({{ formatProb(item.familyProbability) }})
+                        </span>
+                      </div>
+
+                      <!-- 测试时间 -->
+                      <div v-if="item.createdAt" class="popover-item">
+                        <span class="item-label">测试时间</span>
+                        <span class="item-value text-muted">
+                          {{ formatHistoryTime(item.createdAt) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 浮于卡片底部的快捷操作栏（默认隐藏，hover 时显现，与鹈鹕完全对齐） -->
+                <footer class="card-footer">
+                  <span class="time-label">{{ formatHistoryTime(item.createdAt) }}</span>
+                  <div class="footer-btns">
+                    <button
+                      type="button"
+                      class="tool-btn"
+                      title="复制诊断结论"
+                      @click.stop="handleCopyProbeSummary(item)"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="12"
+                        height="12"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="tool-btn delete-tool-btn"
+                      title="删除此条记录"
+                      @click.stop="emit('delete-probe', item.id)"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="12"
+                        height="12"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                </footer>
+              </article>
+            </div>
+          </section>
+
+          <!-- 2. 鹈鹕测试历史视图 -->
+          <section v-else-if="activeTab === 'pelican'" class="tab-content-section">
             <!-- 空状态 -->
             <div v-if="pelicanTotalCount === 0" class="empty-state">
               <div class="empty-icon-wrap">
@@ -430,32 +733,6 @@ function getPureSvgContent(rawContent: string): string {
                   </div>
                 </footer>
               </article>
-            </div>
-          </section>
-
-          <!-- 2. 模型测试历史视图（预留扩展架构，后续可无缝接入历史列表） -->
-          <section v-else-if="activeTab === 'probe'" class="tab-content-section">
-            <div class="empty-state probe-placeholder-state">
-              <div class="empty-icon-wrap probe-icon-wrap">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="40"
-                  height="40"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-                  <path d="M2 12h20" />
-                </svg>
-              </div>
-              <p class="empty-title">模型测试历史功能架构已就绪</p>
-              <p class="empty-desc">
-                已为“模型测试”预留完整的 Tab 历史数据模块与交互接口，后续即可无缝接入常规探测的历史报告与题目详情。
-              </p>
             </div>
           </section>
         </main>
@@ -847,6 +1124,11 @@ function getPureSvgContent(rawContent: string): string {
           font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         }
 
+        &.winner-highlight {
+          color: #34d399;
+          font-weight: 600;
+        }
+
         &.font-mono {
           font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         }
@@ -874,6 +1156,7 @@ function getPureSvgContent(rawContent: string): string {
 
 /* 卡片 hover 时展示右上角详情 icon */
 .pelican-card-item:hover .info-icon-wrapper,
+.probe-card-item:hover .info-icon-wrapper,
 .info-icon-wrapper:focus-within {
   opacity: 1;
   pointer-events: auto;
@@ -974,9 +1257,290 @@ function getPureSvgContent(rawContent: string): string {
 }
 
 /* 卡片 hover 时显示底栏 */
-.pelican-card-item:hover .card-footer {
+.pelican-card-item:hover .card-footer,
+.probe-card-item:hover .card-footer {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
+}
+
+/* ==========================================================================
+   模型测试卡片网格与卡片样式（简洁直观、富有设计感、与鹈鹕测试对称一致）
+   ========================================================================== */
+
+/* 模型测试两列卡片网格 */
+.probe-history-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 模型测试卡片项：固定 4:3 比例，和鹈鹕卡片完全对齐 */
+.probe-card-item {
+  position: relative;
+  background: #090e1a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  aspect-ratio: 4 / 3;
+  overflow: visible; /* 保证 hover 浮层正常弹出不被裁切 */
+  transition: all 0.22s ease;
+  display: block;
+
+  &:hover {
+    border-color: rgba(99, 102, 241, 0.45);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* 卡片主体舞台 */
+.probe-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: radial-gradient(circle at 85% 15%, rgba(99, 102, 241, 0.16) 0%, rgba(13, 20, 36, 0.96) 65%, #080c16 100%);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: background 0.25s ease;
+
+  &:hover {
+    background: radial-gradient(circle at 85% 15%, rgba(99, 102, 241, 0.24) 0%, rgba(15, 23, 42, 0.98) 65%, #090d18 100%);
+  }
+
+  .probe-bg-mesh {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.28;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+    background-size: 14px 14px;
+    mask-image: radial-gradient(ellipse at 50% 50%, black 40%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 40%, transparent 80%);
+  }
+
+  .probe-card-body {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 38px 14px 44px;
+    box-sizing: border-box;
+  }
+}
+
+/* 核心诊断行 */
+.probe-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+
+  .winner-box {
+    flex: 1;
+    min-width: 0;
+
+    .winner-sub {
+      display: block;
+      font-size: 0.65rem;
+      color: #94a3b8;
+      letter-spacing: 0.04em;
+      margin-bottom: 2px;
+    }
+
+    .winner-title {
+      font-size: 1.08rem;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1.25;
+      color: #f8fafc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      background: linear-gradient(135deg, #ffffff 40%, #c7d2fe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+
+  .prob-pill {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    border: 1px solid transparent;
+
+    .prob-num {
+      font-size: 0.86rem;
+      font-weight: 700;
+      line-height: 1.1;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .prob-label {
+      font-size: 0.58rem;
+      line-height: 1;
+      opacity: 0.85;
+      margin-top: 1px;
+    }
+
+    &.prob-high {
+      background: rgba(16, 185, 129, 0.14);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: #34d399;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.12);
+    }
+
+    &.prob-mid {
+      background: rgba(99, 102, 241, 0.16);
+      border-color: rgba(99, 102, 241, 0.35);
+      color: #a5b4fc;
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.12);
+    }
+
+    &.prob-low {
+      background: rgba(245, 158, 11, 0.14);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+    }
+  }
+}
+
+/* 家族属性与样本数 */
+.probe-meta-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+
+  .family-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    color: #93c5fd;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    padding: 2px 7px;
+    border-radius: 9999px;
+    max-width: 60%;
+    overflow: hidden;
+
+    .family-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #60a5fa;
+      flex-shrink: 0;
+    }
+
+    .family-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .samples-badge {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+}
+
+/* Top 候选比例条对比 */
+.probe-chart-box {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+
+  .chart-progress-bar {
+    display: flex;
+    height: 5px;
+    border-radius: 9999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+    gap: 1.5px;
+
+    .chart-slice {
+      height: 100%;
+      transition: width 0.3s ease;
+
+      &.slice-0 {
+        background: linear-gradient(90deg, #6366f1, #38bdf8);
+      }
+      &.slice-1 {
+        background: linear-gradient(90deg, #ec4899, #f43f5e);
+      }
+      &.slice-2 {
+        background: #64748b;
+      }
+    }
+  }
+
+  .chart-labels {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+
+    .label-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.66rem;
+      min-width: 0;
+
+      .cand-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .cand-name {
+        color: #cbd5e1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 90px;
+      }
+
+      .cand-val {
+        color: #94a3b8;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        flex-shrink: 0;
+      }
+
+      &.cand-0 .cand-dot {
+        background: #38bdf8;
+        box-shadow: 0 0 5px rgba(56, 189, 248, 0.5);
+      }
+      &.cand-1 .cand-dot {
+        background: #ec4899;
+        box-shadow: 0 0 5px rgba(236, 72, 153, 0.5);
+      }
+    }
+  }
 }
 </style>

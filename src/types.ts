@@ -76,3 +76,28 @@ export interface PelicanHistoryItem {
   durationMs?: number;
   prompt?: string;
 }
+
+export interface ProbeHistoryCandidate {
+  model: string;
+  displayName: string;
+  probability: number;
+  familyName: string;
+}
+
+export interface ProbeHistoryItem {
+  id: string;
+  createdAt: number;
+  configName?: string;
+  baseUrl: string;
+  apiKey: string; // 存储时已脱敏
+  modelName: string;
+  reasoningEffort: string;
+  prediction: string;
+  predictionName: string;
+  probability: number;
+  familyPredictionName: string;
+  familyProbability: number;
+  usedOutputs: number;
+  candidates: ProbeHistoryCandidate[];
+  fullAnalysis?: unknown;
+}

@@ -13,7 +13,14 @@ import {
 } from "../utils/fingerprint";
 import rawUnifiedBank from "../data/unified_bank.json";
 import { sendProbe } from "../services/api";
-import type { ClientConfig, ProbeStepItem, StatusAlertInfo } from "../types";
+import type {
+  ClientConfig,
+  ProbeStepItem,
+  StatusAlertInfo,
+  ProbeHistoryItem,
+} from "../types";
+import { PROBE_HISTORY_STORAGE_KEY } from "../constants";
+import { maskApiKey } from "../utils/pelicanFormatters";
 
 const unifiedBank = rawUnifiedBank as unknown as UnifiedBank;
 
@@ -31,11 +38,48 @@ export interface UseProbeTestReturn {
   statusAlert: Ref<StatusAlertInfo | null>;
   analysisResult: Ref<GlobalAnalysisResult | null>;
   totalBankModelsCount: number;
-  startTest: (config: ClientConfig) => Promise<void>;
+  probeHistoryList: Ref<ProbeHistoryItem[]>;
+  startTest: (config: ClientConfig, configName?: string) => Promise<void>;
   cancelTest: () => void;
   resetTest: () => void;
   refreshQuestions: () => void;
   refreshSingleQuestion: (index: number) => void;
+  deleteProbeHistoryItem: (id: string) => void;
+  clearProbeHistory: () => void;
+}
+
+const MAX_PROBE_HISTORY_COUNT = 60;
+
+function loadInitialProbeHistory(): ProbeHistoryItem[] {
+  try {
+    const raw = localStorage.getItem(PROBE_HISTORY_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.filter(
+        (item): item is ProbeHistoryItem =>
+          Boolean(item && typeof item.prediction === "string" && typeof item.probability === "number")
+      );
+    }
+  } catch (err) {
+    console.error("加载模型测试历史记录失败:", err);
+  }
+  return [];
+}
+
+function persistProbeHistory(list: ProbeHistoryItem[]): void {
+  try {
+    localStorage.setItem(PROBE_HISTORY_STORAGE_KEY, JSON.stringify(list));
+  } catch (err) {
+    console.error("保存模型测试历史记录失败:", err);
+  }
+}
+
+function generateProbeHistoryId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `probe_hist_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export function useProbeTest(): UseProbeTestReturn {
@@ -49,6 +93,33 @@ export function useProbeTest(): UseProbeTestReturn {
   const statusDesc = ref("已抽取 3 道测试题目，可点击卡片预览或直接开始测试");
   const statusAlert = ref<StatusAlertInfo | null>(null);
   const analysisResult = ref<GlobalAnalysisResult | null>(null);
+  const probeHistoryList = ref<ProbeHistoryItem[]>(loadInitialProbeHistory());
+
+  function addProbeHistoryItem(item: Omit<ProbeHistoryItem, "id" | "createdAt">): void {
+    const newItem: ProbeHistoryItem = {
+      ...item,
+      id: generateProbeHistoryId(),
+      createdAt: Date.now(),
+    };
+    const updated = [newItem, ...probeHistoryList.value].slice(0, MAX_PROBE_HISTORY_COUNT);
+    probeHistoryList.value = updated;
+    persistProbeHistory(updated);
+  }
+
+  function deleteProbeHistoryItem(id: string): void {
+    const updated = probeHistoryList.value.filter((item) => item.id !== id);
+    probeHistoryList.value = updated;
+    persistProbeHistory(updated);
+  }
+
+  function clearProbeHistory(): void {
+    probeHistoryList.value = [];
+    try {
+      localStorage.removeItem(PROBE_HISTORY_STORAGE_KEY);
+    } catch {
+      // 忽略存储删除异常
+    }
+  }
 
   // 初始化首次选题
   const currentChallenges = ref<Challenge[]>(generateChallenges(totalCount));
@@ -150,7 +221,10 @@ export function useProbeTest(): UseProbeTestReturn {
     steps.value = createInitialSteps(currentChallenges.value);
   }
 
-  async function startTest(config: ClientConfig): Promise<void> {
+  async function startTest(
+    config: ClientConfig,
+    configName?: string
+  ): Promise<void> {
     const baseUrl = config.baseUrl.trim();
     const apiKey = config.apiKey.trim();
     const model = config.modelName.trim();
@@ -322,6 +396,35 @@ export function useProbeTest(): UseProbeTestReturn {
       statusDesc.value = `成功采纳 ${validOutputs.length}/${totalCount} 份有效输出样本`;
       try {
         analysisResult.value = analyzeGlobalOutputs(validOutputs, unifiedBank);
+
+        // 测试成功且计算出分析结果后归档入历史记录（存储时 apiKey 自动脱敏）
+        if (analysisResult.value) {
+          const candidates = (analysisResult.value.results || []).slice(0, 3).map((r) => ({
+            model: r.model,
+            displayName: r.display_name,
+            probability: r.probability,
+            familyName: r.family_name,
+          }));
+
+          addProbeHistoryItem({
+            configName: configName?.trim() || undefined,
+            baseUrl: config.baseUrl,
+            apiKey: maskApiKey(config.apiKey),
+            modelName: config.modelName,
+            reasoningEffort: config.reasoningEffort || "high",
+            prediction: analysisResult.value.prediction,
+            predictionName:
+              analysisResult.value.prediction_name || analysisResult.value.prediction,
+            probability: analysisResult.value.probability,
+            familyPredictionName:
+              analysisResult.value.family_prediction_name ||
+              analysisResult.value.family_prediction,
+            familyProbability: analysisResult.value.family_probability,
+            usedOutputs: analysisResult.value.used_outputs,
+            candidates,
+            fullAnalysis: analysisResult.value,
+          });
+        }
       } catch (analysisErr: unknown) {
         if (runId !== currentRunId) return;
         const errMsg =
@@ -352,10 +455,13 @@ export function useProbeTest(): UseProbeTestReturn {
     statusAlert,
     analysisResult,
     totalBankModelsCount,
+    probeHistoryList,
     startTest,
     cancelTest,
     resetTest,
     refreshQuestions,
     refreshSingleQuestion,
+    deleteProbeHistoryItem,
+    clearProbeHistory,
   };
 }

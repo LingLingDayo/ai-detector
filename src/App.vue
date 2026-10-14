@@ -3,7 +3,8 @@ import { ref, computed, watch, nextTick, onMounted } from "vue";
 import { useConfig } from "./composables/useConfig";
 import { useProbeTest } from "./composables/useProbeTest";
 import { usePelicanTest } from "./composables/usePelicanTest";
-import type { PelicanHistoryItem } from "./types";
+import type { PelicanHistoryItem, ProbeHistoryItem } from "./types";
+import type { GlobalAnalysisResult } from "./utils/fingerprint";
 import AppHeader from "./components/AppHeader.vue";
 import ConfigCard from "./components/ConfigCard.vue";
 import ConfigListModal from "./components/ConfigListModal.vue";
@@ -32,11 +33,14 @@ const {
   steps,
   statusAlert,
   analysisResult,
+  probeHistoryList,
   startTest,
   cancelTest,
   resetTest,
   refreshQuestions,
   refreshSingleQuestion,
+  deleteProbeHistoryItem,
+  clearProbeHistory,
 } = useProbeTest();
 
 const {
@@ -108,6 +112,10 @@ onMounted(() => {
   loadConfig();
 });
 
+const totalHistoryCount = computed(
+  () => pelicanHistoryList.value.length + probeHistoryList.value.length
+);
+
 function handleUpdateConfig(): void {
   const success = updateCurrentConfig();
   if (!success) {
@@ -129,7 +137,10 @@ function handleStartTest(): void {
       cancelTest();
       return;
     }
-    startTest(config);
+    const currentSavedName =
+      matchedConfigItem.value?.name ||
+      (isCurrentConfigSaved.value ? activeConfigName.value : undefined);
+    startTest(config, currentSavedName);
   } else {
     if (isPelicanRunning.value) {
       cancelPelicanTest();
@@ -153,6 +164,17 @@ function handleApplyPelicanHistoryItem(item: PelicanHistoryItem): void {
   hasPelicanResult.value = true;
   activeMode.value = "pelican";
   isHistoryModalOpen.value = false;
+}
+
+function handleApplyProbeHistoryItem(item: ProbeHistoryItem): void {
+  if (item.fullAnalysis) {
+    analysisResult.value = item.fullAnalysis as GlobalAnalysisResult;
+    hasProbeResult.value = true;
+    hasStarted.value = true;
+  }
+  activeMode.value = "probe";
+  isHistoryModalOpen.value = false;
+  scrollToBottom();
 }
 
 async function handleResetConfig(): Promise<void> {
@@ -242,7 +264,7 @@ function handleOpenGithub(): void {
         :settings-summary="settingsSummary"
         :is-config-modified="isConfigModified"
         :is-current-config-saved="isCurrentConfigSaved"
-        :history-count="pelicanHistoryList.length"
+        :history-count="totalHistoryCount"
         @toggle-password="togglePasswordVisibility"
         @update:is-advanced-open="(v) => (isAdvancedOpen = v)"
         @update:active-mode="(v) => (activeMode = v)"
@@ -323,10 +345,14 @@ function handleOpenGithub(): void {
       :is-open="isHistoryModalOpen"
       :initial-tab="activeMode === 'pelican' ? 'pelican' : 'probe'"
       :pelican-list="pelicanHistoryList"
+      :probe-list="probeHistoryList"
       @close="isHistoryModalOpen = false"
       @delete-pelican="deletePelicanHistoryItem"
       @clear-pelican="clearPelicanHistory"
       @apply-pelican="handleApplyPelicanHistoryItem"
+      @delete-probe="deleteProbeHistoryItem"
+      @clear-probe="clearProbeHistory"
+      @apply-probe="handleApplyProbeHistoryItem"
     />
 
     <!-- 全局通用公共确认弹窗 -->
