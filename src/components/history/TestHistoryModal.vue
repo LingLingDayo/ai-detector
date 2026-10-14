@@ -778,13 +778,15 @@ function getPureSvgContent(rawContent: string): string {
 
 /* 左上角模型名：更通透半透明，无 icon，默认显示 */
 .model-tag {
+  height: 20px;
+  line-height: 20px;
   position: absolute;
   top: 10px;
   left: 10px;
   z-index: 10;
   display: inline-flex;
   align-items: center;
-  padding: 3px 9px;
+  padding: 0 9px;
   border-radius: 9999px;
   background: rgba(15, 23, 42, 0.38); /* 更加透明轻盈 */
   backdrop-filter: blur(8px);
@@ -816,6 +818,7 @@ function getPureSvgContent(rawContent: string): string {
   transition: opacity 0.2s ease, transform 0.2s ease;
 
   .info-action-btn {
+    opacity: 0.5;
     width: 26px;
     height: 26px;
     border-radius: 50%;
@@ -833,6 +836,7 @@ function getPureSvgContent(rawContent: string): string {
 
     &:hover,
     &:focus {
+      opacity: 1;
       color: #818cf8;
       border-color: rgba(99, 102, 241, 0.5);
       background: rgba(30, 41, 59, 0.95);
