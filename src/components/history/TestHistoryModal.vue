@@ -971,6 +971,14 @@ function getPureSvgContent(rawContent: string): string {
   transform: translateY(-6px);
   transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
   pointer-events: none;
+  user-select: text;
+  cursor: default;
+
+  &::selection,
+  *::selection {
+    background: rgba(99, 102, 241, 0.45);
+    color: #ffffff;
+  }
 
   &::before {
     content: '';
@@ -990,6 +998,8 @@ function getPureSvgContent(rawContent: string): string {
       font-size: 0.76rem;
       font-weight: 600;
       color: #e2e8f0;
+      user-select: text;
+      cursor: text;
     }
   }
 
@@ -1009,12 +1019,16 @@ function getPureSvgContent(rawContent: string): string {
     .item-label {
       color: var(--text-secondary);
       flex-shrink: 0;
+      user-select: text;
+      cursor: text;
     }
 
     .item-value {
       color: #f1f5f9;
       text-align: right;
       word-break: break-all;
+      user-select: text;
+      cursor: text;
 
       &.config-name-badge {
         color: #a5b4fc;
@@ -1022,28 +1036,39 @@ function getPureSvgContent(rawContent: string): string {
         background: rgba(99, 102, 241, 0.15);
         padding: 1px 6px;
         border-radius: 4px;
+        user-select: text;
+        cursor: text;
       }
 
       &.model-highlight {
         color: #38bdf8;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        user-select: text;
+        cursor: text;
       }
 
       &.winner-highlight {
         color: #34d399;
         font-weight: 600;
+        user-select: text;
+        cursor: text;
       }
 
       &.font-mono {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        user-select: text;
+        cursor: text;
       }
 
       &.selectable {
         user-select: text;
+        cursor: text;
       }
 
       &.text-muted {
         color: var(--text-muted);
+        user-select: text;
+        cursor: text;
       }
     }
   }
