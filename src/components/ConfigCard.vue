@@ -345,7 +345,7 @@ defineExpose({
                 ? '取消测试'
                 : hasResult
                 ? '重新生成'
-                : (activeMode === 'probe' ? '开始测试 (共 3 题)' : '开始测试')
+                : '开始测试'
             }}
           </span>
         </button>
