@@ -217,14 +217,15 @@ async function handleClearHistory(): Promise<void> {
   animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 对话框主体 */
+/* 对话框主体：固定 85vh 高度 */
 .history-modal-dialog {
   background: var(--bg-card);
   border: 1px solid var(--border-glow);
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 860px;
-  max-height: 88vh;
+  height: 85vh;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 28px 56px rgba(0, 0, 0, 0.82), 0 0 32px rgba(99, 102, 241, 0.18);
@@ -355,10 +356,13 @@ async function handleClearHistory(): Promise<void> {
   }
 }
 
-/* 内容主体 */
+/* 内容主体：撑满弹窗剩余高度，溢出独立滚动 */
 .modal-body {
+  flex: 1;
+  min-height: 0;
   padding: 16px 20px;
   overflow-y: auto;
-  min-height: 400px;
+  display: flex;
+  flex-direction: column;
 }
 </style>

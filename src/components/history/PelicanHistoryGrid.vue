@@ -193,6 +193,8 @@ function getPureSvgContent(rawContent: string): string {
 .pelican-history-container {
   display: flex;
   flex-direction: column;
+  min-height: 100%;
+  flex: 1;
 }
 
 /* 鹈鹕两列图片网格 */

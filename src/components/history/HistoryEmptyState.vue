@@ -31,6 +31,7 @@ defineProps<{
 
 <style lang="scss" scoped>
 .empty-state {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;

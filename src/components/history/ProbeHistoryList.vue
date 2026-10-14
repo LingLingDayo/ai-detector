@@ -167,6 +167,8 @@ function getProbBadgeClass(prob: number | undefined): string {
 .probe-history-container {
   display: flex;
   flex-direction: column;
+  min-height: 100%;
+  flex: 1;
 }
 
 .probe-history-list {
