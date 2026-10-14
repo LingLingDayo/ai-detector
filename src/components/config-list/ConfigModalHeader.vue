@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { List, Plus, X } from "@lucide/vue";
+
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "openCreate"): void;
@@ -9,18 +11,7 @@ const emit = defineEmits<{
   <div class="modal-header">
     <div class="header-left">
       <div class="title-icon">
-        <svg
-          viewBox="0 0 24 24"
-          width="18"
-          height="18"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-        </svg>
+        <List :size="18" />
       </div>
       <div>
         <h3>配置列表</h3>
@@ -35,10 +26,7 @@ const emit = defineEmits<{
         @click="emit('openCreate')"
         title="添加一条新的配置"
       >
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
+        <Plus :size="14" />
         添加配置
       </button>
       <button
@@ -47,10 +35,7 @@ const emit = defineEmits<{
         title="关闭弹窗 (Esc)"
         @click="emit('close')"
       >
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
+        <X :size="16" />
       </button>
     </div>
   </div>

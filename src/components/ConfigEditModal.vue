@@ -6,6 +6,7 @@ import {
   getReasoningOptionsForModel,
   resolveValidReasoningEffort,
 } from "../constants";
+import { Pencil, Save, X, Eye, EyeOff, ChevronDown } from "@lucide/vue";
 import CustomSelect, { type SelectOption } from "./common/CustomSelect.vue";
 import ModelCombobox from "./ModelCombobox.vue";
 
@@ -167,30 +168,14 @@ function handleSubmit(applyImmediately: boolean = false): void {
         <div class="modal-header">
           <div class="header-title-group">
             <div class="title-icon">
-              <svg
+              <Pencil
                 v-if="mode === 'edit'"
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-              <svg
+                :size="18"
+              />
+              <Save
                 v-else
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                <polyline points="17 21 17 13 7 13 7 21" />
-                <polyline points="7 3 7 8 15 8" />
-              </svg>
+                :size="18"
+              />
             </div>
             <div>
               <h3>
@@ -219,10 +204,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
             title="关闭弹窗 (Esc)"
             @click="emit('close')"
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <X :size="16" />
           </button>
         </div>
 
@@ -298,30 +280,14 @@ function handleSubmit(applyImmediately: boolean = false): void {
                   title="切换显示/隐藏 Key"
                   @click="isKeyVisible = !isKeyVisible"
                 >
-                  <svg
+                  <Eye
                     v-if="!isKeyVisible"
-                    viewBox="0 0 24 24"
-                    width="15"
-                    height="15"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                  <svg
+                    :size="15"
+                  />
+                  <EyeOff
                     v-else
-                    viewBox="0 0 24 24"
-                    width="15"
-                    height="15"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                    <line x1="1" y1="1" x2="23" y2="23" />
-                  </svg>
+                    :size="15"
+                  />
                 </button>
               </div>
             </div>
@@ -334,18 +300,11 @@ function handleSubmit(applyImmediately: boolean = false): void {
               class="btn-toggle-advanced"
               @click="isAdvancedExpanded = !isAdvancedExpanded"
             >
-              <svg
+              <ChevronDown
                 class="arrow-icon"
                 :class="{ rotated: isAdvancedExpanded }"
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+                :size="14"
+              />
               <span>更多设置</span>
             </button>
           </div>
