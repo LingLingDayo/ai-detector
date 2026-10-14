@@ -52,14 +52,35 @@ const { confirm } = useConfirm();
 // 当前选中的 Tab 菜单，支持无缝切换与扩展
 const activeTab = ref<HistoryTab>(props.initialTab);
 
+// 当前被点击固定的测试记录 ID（点击详情按钮锁定/解锁展示，防止移开或点击面板失焦）
+const pinnedProbeId = ref<string | null>(null);
+const pinnedPelicanId = ref<string | null>(null);
+
+function togglePinProbe(id: string, e?: Event): void {
+  e?.stopPropagation();
+  pinnedProbeId.value = pinnedProbeId.value === id ? null : id;
+}
+
+function togglePinPelican(id: string, e?: Event): void {
+  e?.stopPropagation();
+  pinnedPelicanId.value = pinnedPelicanId.value === id ? null : id;
+}
+
 watch(
   () => props.isOpen,
   (open) => {
     if (open) {
       activeTab.value = props.initialTab || "probe";
+      pinnedProbeId.value = null;
+      pinnedPelicanId.value = null;
     }
   }
 );
+
+watch(activeTab, () => {
+  pinnedProbeId.value = null;
+  pinnedPelicanId.value = null;
+});
 
 const pelicanTotalCount = computed(() => props.pelicanList.length);
 const probeTotalCount = computed(() => (props.probeList || []).length);
@@ -275,6 +296,7 @@ function getPureSvgContent(rawContent: string): string {
                 v-for="item in probeList"
                 :key="item.id"
                 class="probe-row-item"
+                :class="{ 'is-pinned-row': pinnedProbeId === item.id }"
                 @click="emit('apply-probe', item)"
                 title="点击将此诊断结果载入主界面查看"
               >
@@ -294,18 +316,29 @@ function getPureSvgContent(rawContent: string): string {
                   <span class="time-tag">{{ formatHistoryTime(item.createdAt) }}</span>
 
                   <div class="row-action-group">
-                    <!-- 详情 hover icon 按钮 -->
-                    <div class="info-icon-wrapper">
+                    <!-- 详情 hover/固定 icon 按钮 -->
+                    <div
+                      class="info-icon-wrapper"
+                      :class="{ 'is-pinned': pinnedProbeId === item.id }"
+                    >
                       <button
                         type="button"
                         class="row-action-btn"
+                        :class="{ 'is-pinned': pinnedProbeId === item.id }"
                         aria-label="查看详细参数"
+                        :title="pinnedProbeId === item.id ? '取消固定详情面板' : '点击固定详情面板'"
+                        @click.stop="togglePinProbe(item.id, $event)"
                       >
                         <Info :size="13" />
                       </button>
 
-                      <!-- Hover 详细信息浮层 -->
-                      <div class="info-tooltip-popover" role="tooltip">
+                      <!-- Hover/固定 详细信息浮层 -->
+                      <div
+                        class="info-tooltip-popover"
+                        :class="{ 'is-pinned': pinnedProbeId === item.id }"
+                        role="tooltip"
+                        @click.stop
+                      >
                         <div class="popover-header">
                           <span class="popover-title">测试参数详情</span>
                         </div>
@@ -396,6 +429,7 @@ function getPureSvgContent(rawContent: string): string {
                 v-for="item in pelicanList"
                 :key="item.id"
                 class="pelican-card-item"
+                :class="{ 'is-pinned-card': pinnedPelicanId === item.id }"
               >
                 <!-- 1. 图片展示区域（纯原生矢量 SVG 渲染，占满卡片，自动裁剪且不拉伸变形） -->
                 <div
@@ -415,17 +449,28 @@ function getPureSvgContent(rawContent: string): string {
                 </div>
 
                 <!-- 右上角合适位置的信息 icon，hover 上去能够显示详细信息浮层 -->
-                <div class="info-icon-wrapper">
+                <div
+                  class="info-icon-wrapper"
+                  :class="{ 'is-pinned': pinnedPelicanId === item.id }"
+                >
                   <button
                     type="button"
                     class="info-action-btn"
+                    :class="{ 'is-pinned': pinnedPelicanId === item.id }"
                     aria-label="查看详细参数"
+                    :title="pinnedPelicanId === item.id ? '取消固定详情面板' : '点击固定详情面板'"
+                    @click.stop="togglePinPelican(item.id, $event)"
                   >
                     <Info :size="14" />
                   </button>
 
-                  <!-- Hover 详细信息浮层 -->
-                  <div class="info-tooltip-popover" role="tooltip">
+                  <!-- Hover/固定 详细信息浮层 -->
+                  <div
+                    class="info-tooltip-popover"
+                    :class="{ 'is-pinned': pinnedPelicanId === item.id }"
+                    role="tooltip"
+                    @click.stop
+                  >
                     <div class="popover-header">
                       <span class="popover-title">测试参数详情</span>
                     </div>
@@ -774,9 +819,21 @@ function getPureSvgContent(rawContent: string): string {
   &:hover,
   &:focus-within,
   &:has(.info-tooltip-popover:hover) {
-    z-index: 50;
+    z-index: 15;
     border-color: rgba(99, 102, 241, 0.45);
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  }
+
+  &.is-pinned-card {
+    z-index: 80;
+    border-color: rgba(99, 102, 241, 0.65);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+
+    .info-icon-wrapper {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
   }
 }
 
@@ -944,13 +1001,25 @@ function getPureSvgContent(rawContent: string): string {
   }
 }
 
-/* 悬停或聚焦显示浮层（通用） */
+/* 悬停、聚焦或固定锁定显示浮层（通用） */
 .info-icon-wrapper:hover .info-tooltip-popover,
-.info-icon-wrapper:focus-within .info-tooltip-popover {
+.info-icon-wrapper:focus-within .info-tooltip-popover,
+.info-icon-wrapper.is-pinned .info-tooltip-popover,
+.info-tooltip-popover.is-pinned {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+/* 详情按钮在固定状态下的视觉高亮反馈 */
+.row-action-btn.is-pinned,
+.info-action-btn.is-pinned {
+  background: rgba(99, 102, 241, 0.3) !important;
+  border-color: rgba(99, 102, 241, 0.65) !important;
+  color: #a5b4fc !important;
+  opacity: 1 !important;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
 }
 
 /* 鹈鹕卡片 hover 时展示右上角详情 icon */
@@ -1088,11 +1157,22 @@ function getPureSvgContent(rawContent: string): string {
   &:hover,
   &:focus-within,
   &:has(.info-tooltip-popover:hover) {
-    z-index: 50;
+    z-index: 15;
     background: rgba(30, 41, 59, 0.75);
     border-color: rgba(99, 102, 241, 0.35);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+
+    .probe-row-meta .row-action-btn {
+      opacity: 0.95;
+    }
+  }
+
+  &.is-pinned-row {
+    z-index: 80;
+    background: rgba(30, 41, 59, 0.85);
+    border-color: rgba(99, 102, 241, 0.6);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
 
     .probe-row-meta .row-action-btn {
       opacity: 0.95;
@@ -1237,12 +1317,14 @@ function getPureSvgContent(rawContent: string): string {
         pointer-events: auto;
 
         &:hover,
-        &:focus-within {
+        &:focus-within,
+        &.is-pinned {
           z-index: 10;
         }
 
         &:hover .info-tooltip-popover,
-        &:focus-within .info-tooltip-popover {
+        &:focus-within .info-tooltip-popover,
+        &.is-pinned .info-tooltip-popover {
           opacity: 1;
           visibility: visible;
           transform: translateY(0);
