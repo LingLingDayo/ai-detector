@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch, nextTick } from "vue";
 import { AlertCircle } from "@lucide/vue";
 import { useClipboard } from "../composables/useClipboard";
 import { DEFAULT_PELICAN_PROMPT, type PelicanContentType } from "../composables/usePelicanTest";
@@ -39,6 +39,61 @@ const emit = defineEmits<{
 const { copied: svgCopied, copy: copySvg } = useClipboard();
 
 const showCode = ref(false);
+
+function scrollToBottom(): void {
+  nextTick(() => {
+    let attempts = 0;
+    const maxAttempts = 15;
+    let lastTargetTop: number | null = null;
+
+    const performScroll = () => {
+      const scrollHeight = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+        document.documentElement.offsetHeight,
+        document.body.offsetHeight
+      );
+
+      if (lastTargetTop === null || Math.abs(scrollHeight - lastTargetTop) > 2) {
+        lastTargetTop = scrollHeight;
+        window.scrollTo({
+          top: scrollHeight,
+          behavior: "smooth",
+        });
+        if (document.documentElement && document.documentElement.scrollTop !== undefined) {
+          document.documentElement.scrollTo?.({
+            top: scrollHeight,
+            behavior: "smooth",
+          });
+        }
+        if (document.body && document.body.scrollTop !== undefined) {
+          document.body.scrollTo?.({
+            top: scrollHeight,
+            behavior: "smooth",
+          });
+        }
+      }
+
+      if (attempts < maxAttempts) {
+        attempts++;
+        requestAnimationFrame(performScroll);
+      }
+    };
+
+    requestAnimationFrame(() => {
+      performScroll();
+      setTimeout(performScroll, 80);
+      setTimeout(performScroll, 200);
+      setTimeout(performScroll, 350);
+    });
+  });
+}
+
+watch(showCode, (val) => {
+  if (val) {
+    scrollToBottom();
+  }
+});
 
 const displayContent = computed(() => props.content || props.svg || "");
 

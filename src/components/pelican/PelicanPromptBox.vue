@@ -110,16 +110,6 @@ watch(
         <template v-else>
           <button
             type="button"
-            class="btn-prompt-action edit"
-            :disabled="isRunning"
-            title="编辑测试提示词"
-            @click="startEditing"
-          >
-            <SquarePen :size="11" />
-            <span>编辑</span>
-          </button>
-          <button
-            type="button"
             class="btn-prompt-action copy"
             title="复制测试提示词到剪贴板"
             @click="handleCopyPrompt"
@@ -132,6 +122,16 @@ watch(
               :stroke-width="2.5"
             />
             <span>{{ promptCopied ? "已复制" : "复制" }}</span>
+          </button>
+          <button
+            type="button"
+            class="btn-prompt-action edit"
+            :disabled="isRunning"
+            title="编辑测试提示词"
+            @click="startEditing"
+          >
+            <SquarePen :size="11" />
+            <span>编辑</span>
           </button>
         </template>
       </div>
