@@ -75,7 +75,7 @@ function handleCopyPelican(item: PelicanHistoryItem): void {
 
 function handleCopyProbeSummary(item: ProbeHistoryItem): void {
   const prob = (item.probability * 100).toFixed(1);
-  const text = `【模型测试诊断结果】\n调用模型: ${item.modelName}\n判定真身: ${item.predictionName} (${prob}%)\n所属家族: ${item.familyPredictionName || "未知家族"}\n有效样本: ${item.usedOutputs}/3\n测试时间: ${formatHistoryTime(item.createdAt)}`;
+  const text = `【模型测试诊断结果】\n调用模型: ${item.modelName}\n判定模型: ${item.predictionName} (${prob}%)\n模型家族: ${item.familyPredictionName || "通用系列"}\n有效样本: ${item.usedOutputs}/3\n测试时间: ${formatHistoryTime(item.createdAt)}`;
   copyText(text);
 }
 
@@ -311,230 +311,142 @@ function getPureSvgContent(rawContent: string): string {
               </p>
             </div>
 
-            <!-- 两列布局的模型测试卡片网格 -->
-            <div v-else class="probe-history-grid">
-              <article
+            <!-- 模型测试历史记录列表：紧凑、直观、极简极清爽 -->
+            <div v-else class="probe-history-list">
+              <div
                 v-for="item in probeList"
                 :key="item.id"
-                class="probe-card-item"
+                class="probe-row-item"
+                @click="emit('apply-probe', item)"
+                title="点击将此诊断结果载入主界面查看"
               >
-                <!-- 卡片内容主体（点击将此诊断结果回填至主界面查看） -->
-                <div
-                  class="probe-stage"
-                  @click="emit('apply-probe', item)"
-                  title="点击将此诊断结果载入主界面查看"
-                >
-                  <!-- 背景微光矩阵 -->
-                  <div class="probe-bg-mesh"></div>
+                <!-- 左侧核心结果：调用模型 -> 判定真身 -->
+                <div class="probe-row-main">
+                  <span class="call-name" :title="`调用模型: ${item.modelName}`">{{ item.modelName }}</span>
+                  <span class="row-arrow">→</span>
+                  <span class="pred-name" :title="`判定真身: ${item.predictionName}`">{{ item.predictionName }}</span>
+                  <span v-if="item.familyPredictionName" class="family-tag">{{ item.familyPredictionName }}</span>
+                </div>
 
-                  <!-- 诊断内容核心区域：直观、简洁、高质感 -->
-                  <div class="probe-card-body">
-                    <!-- 核心诊断行：胜出模型与判定置信度 -->
-                    <div class="probe-header-row">
-                      <div class="winner-box">
-                        <span class="winner-sub">模型指纹判定</span>
-                        <h4 class="winner-title" :title="item.predictionName">
-                          {{ item.predictionName }}
-                        </h4>
-                      </div>
-                      <div
-                        class="prob-pill"
-                        :class="getProbBadgeClass(item.probability)"
-                      >
-                        <span class="prob-num">{{ formatProb(item.probability) }}</span>
-                        <span class="prob-label">匹配</span>
-                      </div>
-                    </div>
+                <!-- 右侧信息与操作：置信度、时间、详情 hover 浮层、复制、删除 -->
+                <div class="probe-row-meta" @click.stop>
+                  <span class="prob-tag" :class="getProbBadgeClass(item.probability)">
+                    {{ formatProb(item.probability) }}
+                  </span>
+                  <span class="time-tag">{{ formatHistoryTime(item.createdAt) }}</span>
 
-                    <!-- 家族属性与样本信息 -->
-                    <div class="probe-meta-line">
-                      <span class="family-badge" :title="`归属家族: ${item.familyPredictionName}`">
-                        <span class="family-dot"></span>
-                        <span class="family-text">{{ item.familyPredictionName || '通用系列' }}</span>
-                      </span>
-                      <span class="samples-badge">
-                        样本 {{ item.usedOutputs }}/3 题
-                      </span>
-                    </div>
-
-                    <!-- Top 候选模型比例条对比（最关键信息：直观一眼区分真身与备选差距） -->
-                    <div
-                      v-if="item.candidates && item.candidates.length > 0"
-                      class="probe-chart-box"
+                  <!-- 详情 hover icon 按钮 -->
+                  <div class="info-icon-wrapper">
+                    <button
+                      type="button"
+                      class="row-action-btn"
+                      aria-label="查看详细参数"
                     >
-                      <div class="chart-progress-bar">
-                        <div
-                          v-for="(cand, idx) in item.candidates.slice(0, 3)"
-                          :key="cand.model"
-                          class="chart-slice"
-                          :class="`slice-${idx}`"
-                          :style="{ width: `${Math.max(cand.probability * 100, 5)}%` }"
-                          :title="`${cand.displayName}: ${(cand.probability * 100).toFixed(1)}%`"
-                        ></div>
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="13"
+                        height="13"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                      </svg>
+                    </button>
+
+                    <!-- Hover 详细信息浮层 -->
+                    <div class="info-tooltip-popover" role="tooltip">
+                      <div class="popover-header">
+                        <span class="popover-title">测试参数详情</span>
                       </div>
-                      <div class="chart-labels">
-                        <div
-                          v-for="(cand, idx) in item.candidates.slice(0, 2)"
-                          :key="cand.model"
-                          class="label-item"
-                          :class="`cand-${idx}`"
-                        >
-                          <span class="cand-dot"></span>
-                          <span class="cand-name" :title="cand.displayName">{{ cand.displayName }}</span>
-                          <span class="cand-val">{{ (cand.probability * 100).toFixed(0) }}%</span>
+                      <div class="popover-list">
+                        <div v-if="item.configName" class="popover-item">
+                          <span class="item-label">配置名称</span>
+                          <span class="item-value config-name-badge">
+                            {{ item.configName }}
+                          </span>
+                        </div>
+                        <div class="popover-item">
+                          <span class="item-label">Base URL</span>
+                          <span class="item-value font-mono break-all selectable" :title="item.baseUrl">
+                            {{ item.baseUrl }}
+                          </span>
+                        </div>
+                        <div class="popover-item">
+                          <span class="item-label">API Key</span>
+                          <span class="item-value font-mono">{{ item.apiKey }}</span>
+                        </div>
+                        <div class="popover-item">
+                          <span class="item-label">调用模型</span>
+                          <span class="item-value model-highlight">{{ item.modelName }}</span>
+                        </div>
+                        <div class="popover-item">
+                          <span class="item-label">思考强度</span>
+                          <span class="item-value">{{ formatReasoningEffort(item.reasoningEffort) }}</span>
+                        </div>
+                        <div class="popover-item">
+                          <span class="item-label">判定模型</span>
+                          <span class="item-value winner-highlight">
+                            {{ item.predictionName }} ({{ formatProb(item.probability) }})
+                          </span>
+                        </div>
+                        <div class="popover-item">
+                          <span class="item-label">模型家族</span>
+                          <span class="item-value">{{ item.familyPredictionName }}</span>
+                        </div>
+                        <div v-if="item.createdAt" class="popover-item">
+                          <span class="item-label">测试时间</span>
+                          <span class="item-value text-muted">{{ formatHistoryTime(item.createdAt) }}</span>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <!-- 左上角显示调用模型名（与鹈鹕完全对齐：通透半透明，无 icon，默认显示） -->
-                <div class="model-tag" :title="item.modelName">
-                  <span class="model-tag-text">{{ item.modelName }}</span>
-                </div>
-
-                <!-- 右上角信息 icon 与 Hover 详细信息浮层（与鹈鹕完全对齐） -->
-                <div class="info-icon-wrapper">
+                  <!-- 复制诊断文本按钮 -->
                   <button
                     type="button"
-                    class="info-action-btn"
-                    aria-label="查看详细参数"
+                    class="row-action-btn"
+                    title="复制诊断结论"
+                    @click="handleCopyProbeSummary(item)"
                   >
                     <svg
                       viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
+                      width="12"
+                      height="12"
                       fill="none"
                       stroke="currentColor"
                       stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
                     >
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                     </svg>
                   </button>
 
-                  <!-- Hover 详细信息浮层 -->
-                  <div class="info-tooltip-popover" role="tooltip">
-                    <div class="popover-header">
-                      <span class="popover-title">测试参数与详情</span>
-                    </div>
-                    <div class="popover-list">
-                      <!-- 配置名称 -->
-                      <div v-if="item.configName" class="popover-item">
-                        <span class="item-label">配置名称</span>
-                        <span class="item-value config-name-badge">
-                          {{ item.configName }}
-                        </span>
-                      </div>
-
-                      <!-- 完整 baseurl -->
-                      <div class="popover-item">
-                        <span class="item-label">Base URL</span>
-                        <span
-                          class="item-value font-mono break-all selectable"
-                          :title="item.baseUrl"
-                        >
-                          {{ item.baseUrl }}
-                        </span>
-                      </div>
-
-                      <!-- 省略中间部分的 key（在存储时就已脱敏） -->
-                      <div class="popover-item">
-                        <span class="item-label">API Key</span>
-                        <span class="item-value font-mono">
-                          {{ item.apiKey }}
-                        </span>
-                      </div>
-
-                      <!-- 调用模型 -->
-                      <div class="popover-item">
-                        <span class="item-label">调用模型</span>
-                        <span class="item-value model-highlight">
-                          {{ item.modelName }}
-                        </span>
-                      </div>
-
-                      <!-- 思考强度 -->
-                      <div class="popover-item">
-                        <span class="item-label">思考强度</span>
-                        <span class="item-value">
-                          {{ formatReasoningEffort(item.reasoningEffort) }}
-                        </span>
-                      </div>
-
-                      <!-- 识别结论 -->
-                      <div class="popover-item">
-                        <span class="item-label">识别真身</span>
-                        <span class="item-value winner-highlight">
-                          {{ item.predictionName }} ({{ formatProb(item.probability) }})
-                        </span>
-                      </div>
-
-                      <!-- 模型家族 -->
-                      <div class="popover-item">
-                        <span class="item-label">模型家族</span>
-                        <span class="item-value">
-                          {{ item.familyPredictionName }} ({{ formatProb(item.familyProbability) }})
-                        </span>
-                      </div>
-
-                      <!-- 测试时间 -->
-                      <div v-if="item.createdAt" class="popover-item">
-                        <span class="item-label">测试时间</span>
-                        <span class="item-value text-muted">
-                          {{ formatHistoryTime(item.createdAt) }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <!-- 删除单条记录按钮 -->
+                  <button
+                    type="button"
+                    class="row-action-btn delete-btn"
+                    title="删除记录"
+                    @click="emit('delete-probe', item.id)"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="12"
+                      height="12"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
                 </div>
-
-                <!-- 浮于卡片底部的快捷操作栏（默认隐藏，hover 时显现，与鹈鹕完全对齐） -->
-                <footer class="card-footer">
-                  <span class="time-label">{{ formatHistoryTime(item.createdAt) }}</span>
-                  <div class="footer-btns">
-                    <button
-                      type="button"
-                      class="tool-btn"
-                      title="复制诊断结论"
-                      @click.stop="handleCopyProbeSummary(item)"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="12"
-                        height="12"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      class="tool-btn delete-tool-btn"
-                      title="删除此条记录"
-                      @click.stop="emit('delete-probe', item.id)"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="12"
-                        height="12"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
-                    </button>
-                  </div>
-                </footer>
-              </article>
+              </div>
             </div>
           </section>
 
@@ -1257,288 +1169,178 @@ function getPureSvgContent(rawContent: string): string {
 }
 
 /* 卡片 hover 时显示底栏 */
-.pelican-card-item:hover .card-footer,
-.probe-card-item:hover .card-footer {
+.pelican-card-item:hover .card-footer {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
 }
 
 /* ==========================================================================
-   模型测试卡片网格与卡片样式（简洁直观、富有设计感、与鹈鹕测试对称一致）
+   模型测试历史记录：轻量列表设计（紧凑、直观、极低 DOM 负荷）
    ========================================================================== */
 
-/* 模型测试两列卡片网格 */
-.probe-history-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* 模型测试卡片项：固定 4:3 比例，和鹈鹕卡片完全对齐 */
-.probe-card-item {
-  position: relative;
-  background: #090e1a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-md);
-  aspect-ratio: 4 / 3;
-  overflow: visible; /* 保证 hover 浮层正常弹出不被裁切 */
-  transition: all 0.22s ease;
-  display: block;
-
-  &:hover {
-    border-color: rgba(99, 102, 241, 0.45);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
-  }
-}
-
-/* 卡片主体舞台 */
-.probe-stage {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: radial-gradient(circle at 85% 15%, rgba(99, 102, 241, 0.16) 0%, rgba(13, 20, 36, 0.96) 65%, #080c16 100%);
+.probe-history-list {
   display: flex;
   flex-direction: column;
-  cursor: pointer;
-  transition: background 0.25s ease;
-
-  &:hover {
-    background: radial-gradient(circle at 85% 15%, rgba(99, 102, 241, 0.24) 0%, rgba(15, 23, 42, 0.98) 65%, #090d18 100%);
-  }
-
-  .probe-bg-mesh {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.28;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
-    background-size: 14px 14px;
-    mask-image: radial-gradient(ellipse at 50% 50%, black 40%, transparent 80%);
-    -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 40%, transparent 80%);
-  }
-
-  .probe-card-body {
-    position: relative;
-    z-index: 2;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 38px 14px 44px;
-    box-sizing: border-box;
-  }
+  gap: 6px;
 }
 
-/* 核心诊断行 */
-.probe-header-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-
-  .winner-box {
-    flex: 1;
-    min-width: 0;
-
-    .winner-sub {
-      display: block;
-      font-size: 0.65rem;
-      color: #94a3b8;
-      letter-spacing: 0.04em;
-      margin-bottom: 2px;
-    }
-
-    .winner-title {
-      font-size: 1.08rem;
-      font-weight: 700;
-      margin: 0;
-      line-height: 1.25;
-      color: #f8fafc;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      background: linear-gradient(135deg, #ffffff 40%, #c7d2fe 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-  }
-
-  .prob-pill {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 3px 8px;
-    border-radius: var(--radius-sm);
-    flex-shrink: 0;
-    border: 1px solid transparent;
-
-    .prob-num {
-      font-size: 0.86rem;
-      font-weight: 700;
-      line-height: 1.1;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    }
-
-    .prob-label {
-      font-size: 0.58rem;
-      line-height: 1;
-      opacity: 0.85;
-      margin-top: 1px;
-    }
-
-    &.prob-high {
-      background: rgba(16, 185, 129, 0.14);
-      border-color: rgba(16, 185, 129, 0.35);
-      color: #34d399;
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.12);
-    }
-
-    &.prob-mid {
-      background: rgba(99, 102, 241, 0.16);
-      border-color: rgba(99, 102, 241, 0.35);
-      color: #a5b4fc;
-      box-shadow: 0 0 10px rgba(99, 102, 241, 0.12);
-    }
-
-    &.prob-low {
-      background: rgba(245, 158, 11, 0.14);
-      border-color: rgba(245, 158, 11, 0.35);
-      color: #fbbf24;
-    }
-  }
-}
-
-/* 家族属性与样本数 */
-.probe-meta-line {
+.probe-row-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-top: 2px;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
 
-  .family-badge {
-    display: inline-flex;
+  &:hover {
+    background: rgba(30, 41, 59, 0.75);
+    border-color: rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+
+    .probe-row-meta .row-action-btn {
+      opacity: 0.95;
+    }
+  }
+
+  /* 左侧核心：调用模型 -> 判定模型 (家族) */
+  .probe-row-main {
+    display: flex;
     align-items: center;
-    gap: 5px;
-    font-size: 0.7rem;
-    color: #93c5fd;
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    padding: 2px 7px;
-    border-radius: 9999px;
-    max-width: 60%;
-    overflow: hidden;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
 
-    .family-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: #60a5fa;
+    .call-name {
+      font-size: 0.74rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #94a3b8;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 1px 6px;
+      border-radius: 4px;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       flex-shrink: 0;
     }
 
-    .family-text {
+    .row-arrow {
+      color: #64748b;
+      font-size: 0.78rem;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .pred-name {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: #f8fafc;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-  }
 
-  .samples-badge {
-    font-size: 0.68rem;
-    color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.04);
-    padding: 2px 6px;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
-}
-
-/* Top 候选比例条对比 */
-.probe-chart-box {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  background: rgba(15, 23, 42, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-sm);
-  padding: 6px 8px;
-
-  .chart-progress-bar {
-    display: flex;
-    height: 5px;
-    border-radius: 9999px;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.08);
-    gap: 1.5px;
-
-    .chart-slice {
-      height: 100%;
-      transition: width 0.3s ease;
-
-      &.slice-0 {
-        background: linear-gradient(90deg, #6366f1, #38bdf8);
-      }
-      &.slice-1 {
-        background: linear-gradient(90deg, #ec4899, #f43f5e);
-      }
-      &.slice-2 {
-        background: #64748b;
-      }
+    .family-tag {
+      font-size: 0.65rem;
+      color: #818cf8;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      padding: 1px 5px;
+      border-radius: 3px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
   }
 
-  .chart-labels {
+  /* 右侧信息与操作 */
+  .probe-row-meta {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
+    flex-shrink: 0;
 
-    .label-item {
-      display: flex;
+    .prob-tag {
+      font-size: 0.74rem;
+      font-weight: 700;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+
+      &.prob-high {
+        background: rgba(16, 185, 129, 0.14);
+        border-color: rgba(16, 185, 129, 0.3);
+        color: #34d399;
+      }
+
+      &.prob-mid {
+        background: rgba(99, 102, 241, 0.14);
+        border-color: rgba(99, 102, 241, 0.3);
+        color: #a5b4fc;
+      }
+
+      &.prob-low {
+        background: rgba(245, 158, 11, 0.14);
+        border-color: rgba(245, 158, 11, 0.3);
+        color: #fbbf24;
+      }
+    }
+
+    .time-tag {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+
+    .row-action-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      display: inline-flex;
       align-items: center;
-      gap: 4px;
-      font-size: 0.66rem;
-      min-width: 0;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: all 0.18s ease;
 
-      .cand-dot {
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        flex-shrink: 0;
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #f1f5f9;
+        border-color: rgba(255, 255, 255, 0.2);
+        opacity: 1;
       }
 
-      .cand-name {
-        color: #cbd5e1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 90px;
+      &.delete-btn:hover {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: rgba(239, 68, 68, 0.4);
+        color: #fca5a5;
       }
+    }
 
-      .cand-val {
-        color: #94a3b8;
-        font-family: ui-monospace, SFMono-Regular, monospace;
-        flex-shrink: 0;
-      }
+    .info-icon-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      opacity: 1;
+      transform: none;
+      pointer-events: auto;
 
-      &.cand-0 .cand-dot {
-        background: #38bdf8;
-        box-shadow: 0 0 5px rgba(56, 189, 248, 0.5);
-      }
-      &.cand-1 .cand-dot {
-        background: #ec4899;
-        box-shadow: 0 0 5px rgba(236, 72, 153, 0.5);
+      &:hover .info-tooltip-popover,
+      &:focus-within .info-tooltip-popover {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        pointer-events: auto;
       }
     }
   }
