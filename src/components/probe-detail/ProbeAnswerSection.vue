@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { watch } from "vue";
+import { Copy, Check, AlertCircle } from "@lucide/vue";
 import type { ProbeStepItem } from "../../types";
 import { useClipboard } from "../../composables/useClipboard";
 
@@ -50,13 +51,8 @@ function handleCopyAnswer(): void {
           title="复制模型实际回答文本"
           @click="handleCopyAnswer"
         >
-          <svg v-if="!isAnswerCopied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-          <svg v-else viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
+          <Copy v-if="!isAnswerCopied" :size="13" />
+          <Check v-else :size="13" />
           <span>{{ isAnswerCopied ? "已复制" : "复制" }}</span>
         </button>
       </div>
@@ -87,11 +83,7 @@ function handleCopyAnswer(): void {
 
     <!-- 异常无有效回答 -->
     <div v-else class="modal-status-placeholder error">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
+      <AlertCircle :size="18" />
       <div class="placeholder-text">
         <strong>未能获取到符合要求的有效回答</strong>
         <p class="error-msg">{{ step.error || "未收到模型返回的有效文本数据" }}</p>

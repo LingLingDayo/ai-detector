@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { RefreshCw, Copy, Check } from "@lucide/vue";
 import { useClipboard } from "../../composables/useClipboard";
 
 const props = defineProps<{
@@ -38,9 +39,7 @@ function handleCopy(): void {
           title="重新抽取当前这道测试题目"
           @click="emit('refreshSingle')"
         >
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-          </svg>
+          <RefreshCw :size="13" />
           <span>换一题</span>
         </button>
         <button
@@ -51,13 +50,8 @@ function handleCopy(): void {
           title="复制题目 Prompt 文本"
           @click="handleCopy"
         >
-          <svg v-if="!isPromptCopied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-          <svg v-else viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
+          <Copy v-if="!isPromptCopied" :size="13" />
+          <Check v-else :size="13" />
           <span>{{ isPromptCopied ? "已复制" : "复制" }}</span>
         </button>
       </div>

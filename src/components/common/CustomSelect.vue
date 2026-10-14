@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from "vue";
+import { ChevronDown, Check } from "@lucide/vue";
 
 export interface SelectOption {
   value: string;
@@ -181,19 +182,10 @@ onUnmounted(() => {
         <span v-else class="placeholder-text">{{ placeholder }}</span>
       </div>
 
-      <svg
+      <ChevronDown
         class="chevron-arrow"
-        viewBox="0 0 24 24"
-        width="14"
-        height="14"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
+        :size="14"
+      />
     </div>
 
     <!-- 下拉选项菜单 -->
@@ -232,20 +224,12 @@ onUnmounted(() => {
             </div>
 
             <!-- 选中对勾标记 -->
-            <svg
+            <Check
               v-if="option.value === modelValue"
               class="check-icon"
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+              :size="14"
+              :stroke-width="2.5"
+            />
           </li>
         </ul>
       </div>
