@@ -364,7 +364,7 @@ function handleOpenGithub(): void {
     <!-- 统一测试历史记录弹窗（包含鹈鹕测试与模型测试 Tab 架构） -->
     <TestHistoryModal
       :is-open="isHistoryModalOpen"
-      :initial-tab="activeMode === 'pelican' ? 'pelican' : 'probe'"
+      initial-tab="probe"
       :pelican-list="pelicanHistoryList"
       :probe-list="probeHistoryList"
       @close="isHistoryModalOpen = false"

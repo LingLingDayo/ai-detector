@@ -1160,7 +1160,6 @@ function getPureSvgContent(rawContent: string): string {
     z-index: 15;
     background: rgba(30, 41, 59, 0.75);
     border-color: rgba(99, 102, 241, 0.35);
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 
     .probe-row-meta .row-action-btn {
