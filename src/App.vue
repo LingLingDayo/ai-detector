@@ -33,6 +33,7 @@ const {
   steps,
   statusAlert,
   analysisResult,
+  currentProbeHistoryItem,
   probeHistoryList,
   startTest,
   cancelTest,
@@ -171,6 +172,7 @@ function handleApplyProbeHistoryItem(item: ProbeHistoryItem): void {
     analysisResult.value = item.fullAnalysis as GlobalAnalysisResult;
     hasProbeResult.value = true;
     hasStarted.value = true;
+    currentProbeHistoryItem.value = item;
   }
   activeMode.value = "probe";
   isHistoryModalOpen.value = false;
@@ -316,7 +318,11 @@ function handleOpenGithub(): void {
         />
 
         <!-- 探测诊断报告卡片 -->
-        <ResultCard :analysis="analysisResult" />
+        <ResultCard
+          :analysis="analysisResult"
+          :history-item="currentProbeHistoryItem"
+          :model-name="config.modelName"
+        />
       </template>
 
       <!-- 鹈鹕测试模式卡片（点击鹈鹕测试后切换展示） -->

@@ -389,7 +389,7 @@ function getPureSvgContent(rawContent: string): string {
                     <button
                       type="button"
                       class="row-action-btn"
-                      title="复制诊断结论"
+                      title="复制诊断结果"
                       @click="handleCopyProbeSummary(item)"
                     >
                       <Copy :size="12" />

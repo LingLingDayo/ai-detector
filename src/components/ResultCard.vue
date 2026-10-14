@@ -1,12 +1,39 @@
 <script setup lang="ts">
+import { Copy, Check } from "@lucide/vue";
 import type { GlobalAnalysisResult } from "../utils/fingerprint";
+import type { ProbeHistoryItem } from "../types";
+import { useClipboard } from "../composables/useClipboard";
+import { formatHistoryTime } from "../utils/pelicanFormatters";
 
-defineProps<{
+const props = defineProps<{
   analysis: GlobalAnalysisResult | null;
+  historyItem?: ProbeHistoryItem | null;
+  modelName?: string;
 }>();
+
+const { copied, copy } = useClipboard();
 
 function percentFormat(val: number): string {
   return `${(val * 100).toFixed(1)}%`;
+}
+
+function handleCopyResult(): void {
+  if (!props.analysis) return;
+  const item = props.historyItem;
+  const prob = (props.analysis.probability * 100).toFixed(1);
+  const modelName = item?.modelName || props.modelName || "未知模型";
+  const predName =
+    item?.predictionName || props.analysis.prediction_name || props.analysis.prediction;
+  const familyName =
+    item?.familyPredictionName ||
+    props.analysis.family_prediction_name ||
+    props.analysis.family_prediction ||
+    "通用系列";
+  const used = item?.usedOutputs ?? props.analysis.used_outputs;
+  const timeStr = formatHistoryTime(item?.createdAt || Date.now());
+
+  const text = `【模型测试诊断结果】\n调用模型: ${modelName}\n判定模型: ${predName} (${prob}%)\n模型家族: ${familyName}\n有效样本: ${used}/3\n测试时间: ${timeStr}`;
+  copy(text);
 }
 </script>
 
@@ -18,7 +45,16 @@ function percentFormat(val: number): string {
   >
     <div class="card-header">
       <h2>探测诊断报告</h2>
-      <span class="badge badge-success" title="3 题探针已完成分析与概率校准">测试已完成</span>
+      <button
+        type="button"
+        class="btn-copy-result"
+        :class="{ copied }"
+        :title="copied ? '已复制诊断结果' : '复制诊断结果'"
+        @click="handleCopyResult"
+      >
+        <Check v-if="copied" :size="13" />
+        <Copy v-else :size="13" />
+      </button>
     </div>
 
     <!-- 胜出模型概览卡片 -->
@@ -128,6 +164,37 @@ function percentFormat(val: number): string {
   z-index: 10;
   animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 12px 15px;
+
+  .card-header {
+    .btn-copy-result {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.75;
+      transition: all 0.18s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #f1f5f9;
+        border-color: rgba(255, 255, 255, 0.2);
+        opacity: 1;
+      }
+
+      &.copied {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.35);
+        color: #34d399;
+        opacity: 1;
+      }
+    }
+  }
 
   .winner-hero {
     display: grid;

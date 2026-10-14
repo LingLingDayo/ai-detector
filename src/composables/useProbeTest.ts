@@ -37,6 +37,7 @@ export interface UseProbeTestReturn {
   currentChallenges: Ref<Challenge[]>;
   statusAlert: Ref<StatusAlertInfo | null>;
   analysisResult: Ref<GlobalAnalysisResult | null>;
+  currentProbeHistoryItem: Ref<ProbeHistoryItem | null>;
   totalBankModelsCount: number;
   probeHistoryList: Ref<ProbeHistoryItem[]>;
   startTest: (config: ClientConfig, configName?: string) => Promise<void>;
@@ -93,9 +94,10 @@ export function useProbeTest(): UseProbeTestReturn {
   const statusDesc = ref("已抽取 3 道测试题目，可点击卡片预览或直接开始测试");
   const statusAlert = ref<StatusAlertInfo | null>(null);
   const analysisResult = ref<GlobalAnalysisResult | null>(null);
+  const currentProbeHistoryItem = ref<ProbeHistoryItem | null>(null);
   const probeHistoryList = ref<ProbeHistoryItem[]>(loadInitialProbeHistory());
 
-  function addProbeHistoryItem(item: Omit<ProbeHistoryItem, "id" | "createdAt">): void {
+  function addProbeHistoryItem(item: Omit<ProbeHistoryItem, "id" | "createdAt">): ProbeHistoryItem {
     const newItem: ProbeHistoryItem = {
       ...item,
       id: generateProbeHistoryId(),
@@ -104,6 +106,8 @@ export function useProbeTest(): UseProbeTestReturn {
     const updated = [newItem, ...probeHistoryList.value].slice(0, MAX_PROBE_HISTORY_COUNT);
     probeHistoryList.value = updated;
     persistProbeHistory(updated);
+    currentProbeHistoryItem.value = newItem;
+    return newItem;
   }
 
   function deleteProbeHistoryItem(id: string): void {
@@ -217,6 +221,7 @@ export function useProbeTest(): UseProbeTestReturn {
     statusDesc.value = "已就绪，点击开始测试发起探测";
     statusAlert.value = null;
     analysisResult.value = null;
+    currentProbeHistoryItem.value = null;
     currentChallenges.value = generateChallenges(totalCount);
     steps.value = createInitialSteps(currentChallenges.value);
   }
@@ -253,6 +258,7 @@ export function useProbeTest(): UseProbeTestReturn {
     hasResult.value = false;
     statusAlert.value = null;
     analysisResult.value = null;
+    currentProbeHistoryItem.value = null;
     progressPercent.value = 0;
     completedCount.value = 0;
     statusTitle.value = "探测进行中";
@@ -454,6 +460,7 @@ export function useProbeTest(): UseProbeTestReturn {
     currentChallenges,
     statusAlert,
     analysisResult,
+    currentProbeHistoryItem,
     totalBankModelsCount,
     probeHistoryList,
     startTest,
