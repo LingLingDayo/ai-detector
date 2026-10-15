@@ -27,6 +27,26 @@ const emit = defineEmits<{
   (e: "dragend"): void;
 }>();
 
+let isDragHappening = false;
+
+function handleDragStart(event: DragEvent) {
+  isDragHappening = true;
+  emit("dragstart", event, props.item.id);
+}
+
+function handleDragEnd() {
+  emit("dragend");
+  setTimeout(() => {
+    isDragHappening = false;
+  }, 100);
+}
+
+function handleCardClick() {
+  if (isDragHappening || props.isDragging) return;
+  if (props.isActive) return;
+  emit("apply", props.item);
+}
+
 function maskApiKey(key?: string): string {
   if (!key) return "未设置";
   if (key.length <= 8) return "••••••••";
@@ -42,39 +62,32 @@ function maskApiKey(key?: string): string {
       'is-dragging': isDragging,
       'is-drag-over': isDragOver
     }"
+    :title="isActive ? '当前正在使用此配置' : '点击切换至此配置'"
     draggable="true"
-    @dragstart="emit('dragstart', $event, item.id)"
+    @click="handleCardClick"
+    @dragstart="handleDragStart"
     @dragover.prevent="emit('dragover', $event, item.id)"
     @dragenter.prevent="emit('dragenter', $event, item.id)"
     @dragleave="emit('dragleave', $event, item.id)"
     @drop.prevent="emit('drop', $event, item.id)"
-    @dragend="emit('dragend')"
+    @dragend="handleDragEnd"
   >
     <!-- 主信息与操作栏 -->
     <div class="card-main-row">
       <div class="card-title-group">
-        <span class="item-name" :title="item.name">{{ item.name }}</span>
+        <span class="item-name">{{ item.name }}</span>
+        <!-- 激活状态标记 -->
+        <span v-if="isActive" class="status-badge badge-active" title="当前正在使用此配置">
+          <Check :size="11" :stroke-width="2.5" />
+          <span>已应用</span>
+        </span>
+        <!-- 未激活时的悬浮切换提示 -->
+        <span v-else class="status-badge badge-hint" title="点击切换至此配置">
+          <span>点击切换</span>
+        </span>
       </div>
 
       <div class="card-actions" @mousedown.stop>
-        <button
-          type="button"
-          class="btn-action btn-apply"
-          :class="{ 'is-applied': isActive }"
-          :disabled="isActive"
-          :title="isActive ? '当前正在使用此配置' : '应用此配置到主界面'"
-          draggable="false"
-          @dragstart.stop.prevent
-          @click.stop="emit('apply', item)"
-        >
-          <Check
-            v-if="isActive"
-            :size="12"
-            :stroke-width="2.5"
-          />
-          <span>{{ isActive ? "已应用" : "应用" }}</span>
-        </button>
-
         <button
           type="button"
           class="btn-action btn-edit"
@@ -125,31 +138,62 @@ function maskApiKey(key?: string): string {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  cursor: default;
+  cursor: pointer;
   user-select: none;
   transition: all var(--transition-fast);
 
   &:hover {
-    border-color: rgba(99, 102, 241, 0.35);
-    background: rgba(20, 28, 43, 0.75);
+    border-color: rgba(99, 102, 241, 0.45);
+    background: rgba(22, 31, 48, 0.85);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), 0 0 10px rgba(99, 102, 241, 0.1);
+    transform: translateY(-1px);
+
+    .card-main-row .card-title-group .badge-hint {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  /* 鼠标悬浮在编辑/删除按钮上时，柔和淡化切换提示，聚焦当前按钮操作 */
+  &:has(.card-actions:hover) {
+    .card-main-row .card-title-group .badge-hint {
+      opacity: 0.2;
+      transform: translateX(-2px);
+    }
   }
 
   &.is-active {
+    cursor: default;
     border-color: rgba(16, 185, 129, 0.4);
     background: rgba(16, 185, 129, 0.04);
     box-shadow: inset 3px 0 0 var(--success), 0 0 12px rgba(16, 185, 129, 0.06);
+    transform: none;
+
+    &:hover {
+      border-color: rgba(16, 185, 129, 0.55);
+      background: rgba(16, 185, 129, 0.06);
+      box-shadow: inset 3px 0 0 var(--success), 0 0 14px rgba(16, 185, 129, 0.1);
+      transform: none;
+    }
   }
 
   &.is-dragging {
     opacity: 0.35;
     border-style: dashed;
     border-color: rgba(99, 102, 241, 0.6);
+    cursor: grabbing;
+    transform: none;
   }
 
   &.is-drag-over {
     border-color: var(--accent-primary);
     background: rgba(99, 102, 241, 0.18);
     box-shadow: 0 0 14px rgba(99, 102, 241, 0.3);
+    transform: none;
   }
 
   .card-main-row {
@@ -172,6 +216,34 @@ function maskApiKey(key?: string): string {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 1px 7px;
+        font-size: 0.68rem;
+        font-weight: 500;
+        line-height: 1.3;
+        border-radius: 9999px;
+        flex-shrink: 0;
+        transition: all var(--transition-fast);
+        pointer-events: none;
+      }
+
+      .badge-active {
+        color: var(--success);
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
+
+      .badge-hint {
+        color: #a5b4fc;
+        background: rgba(99, 102, 241, 0.14);
+        border: 1px solid rgba(99, 102, 241, 0.35);
+        opacity: 0;
+        transform: translateX(-4px);
       }
     }
 
@@ -206,26 +278,6 @@ function maskApiKey(key?: string): string {
           display: inline-flex;
           align-items: center;
           line-height: 1;
-        }
-
-        &.btn-apply {
-          background: rgba(99, 102, 241, 0.12);
-          color: #a5b4fc;
-          border-color: rgba(99, 102, 241, 0.3);
-          font-weight: 600;
-
-          &:hover:not(:disabled) {
-            background: rgba(99, 102, 241, 0.25);
-            border-color: rgba(99, 102, 241, 0.5);
-            color: #fff;
-          }
-
-          &.is-applied {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            border-color: rgba(16, 185, 129, 0.25);
-            cursor: default;
-          }
         }
 
         &.btn-edit {
