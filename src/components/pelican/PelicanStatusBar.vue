@@ -76,7 +76,7 @@ const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
           stroke="#10b981"
           :stroke-width="2.5"
         />
-        <span>{{ svgCopied ? "已复制" : `复制 ${typeUpper}` }}</span>
+        <span>{{ svgCopied ? "已复制" : "复制" }}</span>
       </button>
 
       <button
@@ -86,7 +86,7 @@ const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
         @click="emit('download-svg')"
       >
         <Download :size="12" />
-        <span>下载 {{ typeUpper }}</span>
+        <span>下载</span>
       </button>
 
       <button
