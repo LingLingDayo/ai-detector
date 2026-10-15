@@ -113,7 +113,6 @@ function handleCopyError(): void {
       <button
         type="button"
         class="btn-retry-in-modal"
-        :disabled="isRunning"
         title="重试"
         @click="emit('retry')"
       >

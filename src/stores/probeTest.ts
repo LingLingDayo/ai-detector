@@ -124,8 +124,9 @@ export const useProbeTestStore = defineStore("probeTest", () => {
   // 初始化首次选题
   const currentChallenges = ref<Challenge[]>(generateChallenges(totalCount));
 
-  let currentRunId = 0;
-  let abortController: AbortController | null = null;
+  let sessionId = 0;
+  const stepAbortControllers = new Map<number, AbortController>();
+  const stepTickets = new Map<number, number>();
   let lastUsedConfig: Partial<ClientConfig> | null = null;
   let lastUsedConfigName: string | undefined = undefined;
 
@@ -141,6 +142,39 @@ export const useProbeTestStore = defineStore("probeTest", () => {
   }
 
   const steps = ref<ProbeStepItem[]>(createInitialSteps(currentChallenges.value));
+
+  function updateProgressState(): void {
+    const completed = steps.value.filter(
+      (s) => s.state === "done" || s.state === "error"
+    ).length;
+    completedCount.value = completed;
+    progressPercent.value = Math.round((completed / totalCount) * 100);
+  }
+
+  function updateRunningStatusDesc(): void {
+    const workingIndices = steps.value
+      .map((s, i) => (s.state === "working" ? i + 1 : null))
+      .filter((n): n is number => n !== null);
+
+    if (workingIndices.length === 0) return;
+    if (workingIndices.length === totalCount) {
+      statusDesc.value = "已同时发起 3 题并发测试请求...";
+    } else if (workingIndices.length === 1) {
+      statusDesc.value = `正在测试第 ${workingIndices[0]} 题，请稍候...`;
+    } else {
+      statusDesc.value = `正在同时测试第 ${workingIndices.join("、")} 题，请稍候...`;
+    }
+  }
+
+  function updateStatusAlert(): void {
+    const currentErrors = steps.value
+      .map((s, i) => (s.state === "error" && s.error ? `第 ${i + 1} 题: ${s.error}` : null))
+      .filter(Boolean);
+    statusAlert.value =
+      currentErrors.length > 0
+        ? { message: currentErrors.join("；\n"), type: "error" }
+        : null;
+  }
 
   function refreshQuestions(): void {
     if (isRunning.value) return;
@@ -183,9 +217,12 @@ export const useProbeTestStore = defineStore("probeTest", () => {
 
   function cancelTest(): void {
     if (!isRunning.value) return;
-    currentRunId += 1;
-    abortController?.abort();
-    abortController = null;
+    sessionId += 1;
+    for (const ctrl of stepAbortControllers.values()) {
+      ctrl.abort();
+    }
+    stepAbortControllers.clear();
+    stepTickets.clear();
     isRunning.value = false;
 
     steps.value = steps.value.map((s) => {
@@ -205,9 +242,12 @@ export const useProbeTestStore = defineStore("probeTest", () => {
   }
 
   function resetTest(): void {
-    currentRunId += 1;
-    abortController?.abort();
-    abortController = null;
+    sessionId += 1;
+    for (const ctrl of stepAbortControllers.values()) {
+      ctrl.abort();
+    }
+    stepAbortControllers.clear();
+    stepTickets.clear();
     isRunning.value = false;
     hasStarted.value = false;
     hasResult.value = false;
@@ -244,7 +284,8 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     stream: boolean;
     timeoutSeconds: number;
     signal?: AbortSignal;
-    runId: number;
+    sessionId: number;
+    ticket: number;
   }): Promise<SingleProbeResult | null> {
     const {
       index,
@@ -257,7 +298,8 @@ export const useProbeTestStore = defineStore("probeTest", () => {
       stream,
       timeoutSeconds,
       signal,
-      runId,
+      sessionId: currentSessionId,
+      ticket,
     } = params;
 
     const minimum = Math.max(80, Math.ceil(challenge.expected_count * 0.55));
@@ -269,7 +311,9 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     // 最多尝试: 1 次初次执行 + 失败后最多静默重试 3 次，每次间隔 5 秒
     const maxAttempts = 1 + DEFAULT_REQUEST_RETRY_COUNT;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      if (runId !== currentRunId || signal?.aborted) return null;
+      if (sessionId !== currentSessionId || stepTickets.get(index) !== ticket || signal?.aborted) {
+        return null;
+      }
       try {
         const response = await sendProbe({
           baseUrl,
@@ -283,7 +327,9 @@ export const useProbeTestStore = defineStore("probeTest", () => {
           signal,
         });
 
-        if (runId !== currentRunId || signal?.aborted) return null;
+        if (sessionId !== currentSessionId || stepTickets.get(index) !== ticket || signal?.aborted) {
+          return null;
+        }
 
         const parsedNumbers = parseNumbers(response.text);
         lastParsedNumbers = parsedNumbers;
@@ -300,7 +346,9 @@ export const useProbeTestStore = defineStore("probeTest", () => {
           );
         }
       } catch (err: unknown) {
-        if (runId !== currentRunId || signal?.aborted) return null;
+        if (sessionId !== currentSessionId || stepTickets.get(index) !== ticket || signal?.aborted) {
+          return null;
+        }
         lastErrMsg = err instanceof Error ? err.message : String(err);
         console.warn(
           `第 ${index + 1} 题第 ${attempt} 次尝试请求失败（${lastErrMsg}）` +
@@ -310,11 +358,15 @@ export const useProbeTestStore = defineStore("probeTest", () => {
 
       if (attempt < maxAttempts) {
         await sleep(DEFAULT_REQUEST_RETRY_DELAY_MS, signal);
-        if (runId !== currentRunId || signal?.aborted) return null;
+        if (sessionId !== currentSessionId || stepTickets.get(index) !== ticket || signal?.aborted) {
+          return null;
+        }
       }
     }
 
-    if (runId !== currentRunId) return null;
+    if (sessionId !== currentSessionId || stepTickets.get(index) !== ticket) {
+      return null;
+    }
 
     return {
       accepted,
@@ -373,11 +425,10 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     model: string;
     reasoningEffort?: string;
     configName?: string;
-    retryInfo?: { index: number; accepted: boolean };
-    runId: number;
+    sessionId: number;
   }): void {
-    const { baseUrl, apiKey, model, reasoningEffort, configName, retryInfo, runId } = params;
-    if (runId !== currentRunId) return;
+    const { baseUrl, apiKey, model, reasoningEffort, configName, sessionId: evalSessionId } = params;
+    if (evalSessionId !== sessionId) return;
 
     const validOutputs: ProbeOutputItem[] = [];
     for (const s of steps.value) {
@@ -395,11 +446,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
 
     if (validOutputs.length === 0) {
       statusTitle.value = "未获得有效样本";
-      if (retryInfo) {
-        statusDesc.value = `第 ${retryInfo.index + 1} 题重试未成功，3 题均未能获取合规输出。`;
-      } else {
-        statusDesc.value = "3 题测试均未能获取合规输出，请检查错误原因。";
-      }
+      statusDesc.value = "3 题测试均未能获取合规输出，请检查错误原因。";
       statusAlert.value = {
         message: allErrors.join("；\n") || "未获得任何可分析输出。",
         type: "error",
@@ -407,21 +454,10 @@ export const useProbeTestStore = defineStore("probeTest", () => {
       analysisResult.value = null;
     } else {
       statusTitle.value = "测试完成";
-      if (retryInfo) {
-        if (retryInfo.accepted) {
-          statusDesc.value =
-            validOutputs.length === totalCount
-              ? `第 ${retryInfo.index + 1} 题重试成功，3 题已全部采纳！`
-              : `第 ${retryInfo.index + 1} 题重试成功，已采纳 ${validOutputs.length}/${totalCount} 份有效样本`;
-        } else {
-          statusDesc.value = `第 ${retryInfo.index + 1} 题重试未成功，当前有效样本: ${validOutputs.length}/${totalCount}`;
-        }
-      } else {
-        statusDesc.value =
-          validOutputs.length === totalCount
-            ? "3 题测试均已完成并成功采纳！"
-            : `成功采纳 ${validOutputs.length}/${totalCount} 份有效输出样本`;
-      }
+      statusDesc.value =
+        validOutputs.length === totalCount
+          ? "3 题测试均已完成并成功采纳！"
+          : `成功采纳 ${validOutputs.length}/${totalCount} 份有效输出样本`;
 
       if (allErrors.length > 0) {
         statusAlert.value = {
@@ -462,7 +498,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
           });
         }
       } catch (analysisErr: unknown) {
-        if (runId !== currentRunId) return;
+        if (evalSessionId !== sessionId) return;
         const errMsg =
           analysisErr instanceof Error ? analysisErr.message : String(analysisErr);
         statusAlert.value = {
@@ -498,9 +534,14 @@ export const useProbeTestStore = defineStore("probeTest", () => {
       return;
     }
 
-    const runId = ++currentRunId;
-    abortController?.abort();
-    abortController = new AbortController();
+    sessionId += 1;
+    const currentSessionId = sessionId;
+
+    for (const ctrl of stepAbortControllers.values()) {
+      ctrl.abort();
+    }
+    stepAbortControllers.clear();
+    stepTickets.clear();
 
     lastUsedConfig = { ...config };
     lastUsedConfigName = configName;
@@ -527,6 +568,11 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     }));
 
     const tasks = challenges.map(async (challenge, i) => {
+      const stepCtrl = new AbortController();
+      stepAbortControllers.set(i, stepCtrl);
+      const ticket = 1;
+      stepTickets.set(i, ticket);
+
       try {
         const res = await executeSingleProbe({
           index: i,
@@ -538,36 +584,59 @@ export const useProbeTestStore = defineStore("probeTest", () => {
           reasoningEffort,
           stream: isStream,
           timeoutSeconds,
-          signal: abortController?.signal,
-          runId,
+          signal: stepCtrl.signal,
+          sessionId: currentSessionId,
+          ticket,
         });
 
-        if (runId !== currentRunId || !res) return;
-        applyProbeResult(i, challenge, res);
+        if (sessionId !== currentSessionId || stepTickets.get(i) !== ticket) return;
+
+        if (res) {
+          applyProbeResult(i, challenge, res);
+        } else if (steps.value[i].state === "working") {
+          steps.value[i] = {
+            id: i,
+            state: "error",
+            stateText: "失败",
+            statText: "未完成",
+            prompt: challenge.prompt,
+            expectedCount: challenge.expected_count,
+            error: "请求中断或未获取到结果",
+          };
+        }
       } finally {
-        if (runId === currentRunId) {
-          completedCount.value += 1;
-          progressPercent.value = Math.round((completedCount.value / totalCount) * 100);
-          if (completedCount.value < totalCount) {
+        stepAbortControllers.delete(i);
+        if (sessionId === currentSessionId && stepTickets.get(i) === ticket) {
+          updateProgressState();
+          const hasAnyWorking = steps.value.some((s) => s.state === "working");
+          if (hasAnyWorking) {
             statusDesc.value = `已完成 ${completedCount.value}/${totalCount} 题，正在等待剩余响应...`;
-          } else {
-            statusDesc.value = "3 题测试完成，正在计算模型归因...";
+            updateStatusAlert();
           }
         }
       }
     });
 
     await Promise.all(tasks);
-    if (runId !== currentRunId) return;
+    if (sessionId !== currentSessionId) return;
 
-    finalizeTestEvaluation({
-      baseUrl,
-      apiKey,
-      model,
-      reasoningEffort,
-      configName,
-      runId,
-    });
+    if (!steps.value.some((s) => s.state === "working")) {
+      const configStore = useConfigStore();
+      const resolvedConfigName =
+        configName?.trim() ||
+        configStore.matchedConfigItem?.name ||
+        (configStore.isCurrentConfigSaved ? configStore.activeConfigName : undefined) ||
+        lastUsedConfigName;
+
+      finalizeTestEvaluation({
+        baseUrl,
+        apiKey,
+        model,
+        reasoningEffort,
+        configName: resolvedConfigName,
+        sessionId: currentSessionId,
+      });
+    }
   }
 
   async function retrySingleQuestion(
@@ -575,7 +644,9 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     config?: ClientConfig,
     configName?: string
   ): Promise<void> {
-    if (isRunning.value || index < 0 || index >= totalCount) return;
+    if (index < 0 || index >= totalCount) return;
+    // 如果该题已在进行中，无需重复发起
+    if (steps.value[index]?.state === "working") return;
 
     const configStore = useConfigStore();
     const probeConfig = configStore.probeConfig;
@@ -597,9 +668,14 @@ export const useProbeTestStore = defineStore("probeTest", () => {
       return;
     }
 
-    const runId = ++currentRunId;
-    abortController?.abort();
-    abortController = new AbortController();
+    // 中断该题目旧的请求（如果存在），但绝不影响其它正在运行题目的请求
+    stepAbortControllers.get(index)?.abort();
+    const stepCtrl = new AbortController();
+    stepAbortControllers.set(index, stepCtrl);
+
+    const ticket = (stepTickets.get(index) || 0) + 1;
+    stepTickets.set(index, ticket);
+    const currentSessionId = sessionId;
 
     lastUsedConfig = {
       baseUrl,
@@ -630,61 +706,74 @@ export const useProbeTestStore = defineStore("probeTest", () => {
       error: undefined,
     };
 
-    // 重新计算进行中的进度条与完成数（其余已出结果的题目视为已完成，本题重试中）
-    const completedBefore = steps.value.filter(
-      (s, i) => i !== index && (s.state === "done" || s.state === "error")
-    ).length;
-    completedCount.value = completedBefore;
-    progressPercent.value = Math.round((completedCount.value / totalCount) * 100);
-
+    updateProgressState();
     statusTitle.value = "测试进行中";
-    statusDesc.value = `正在重试第 ${index + 1} 题，请稍候...`;
+    updateRunningStatusDesc();
+    updateStatusAlert();
 
-    // 过滤掉当前题的旧报错，仅保留其它题目的报错提示
-    const otherErrors = steps.value
-      .map((s, i) => (i !== index && s.state === "error" && s.error ? `第 ${i + 1} 题: ${s.error}` : null))
-      .filter(Boolean);
-    statusAlert.value = otherErrors.length > 0
-      ? { message: otherErrors.join("；\n"), type: "error" }
-      : null;
+    try {
+      const res = await executeSingleProbe({
+        index,
+        challenge,
+        baseUrl,
+        apiKey,
+        model,
+        apiFormat,
+        reasoningEffort,
+        stream: isStream,
+        timeoutSeconds,
+        signal: stepCtrl.signal,
+        sessionId: currentSessionId,
+        ticket,
+      });
 
-    const res = await executeSingleProbe({
-      index,
-      challenge,
-      baseUrl,
-      apiKey,
-      model,
-      apiFormat,
-      reasoningEffort,
-      stream: isStream,
-      timeoutSeconds,
-      signal: abortController.signal,
-      runId,
-    });
+      if (sessionId !== currentSessionId || stepTickets.get(index) !== ticket) {
+        return;
+      }
 
-    if (runId !== currentRunId || !res) return;
+      if (res) {
+        applyProbeResult(index, challenge, res);
+      } else if (steps.value[index].state === "working") {
+        steps.value[index] = {
+          id: index,
+          state: "error",
+          stateText: "重试失败",
+          statText: "未完成",
+          prompt: challenge.prompt,
+          expectedCount: challenge.expected_count,
+          error: "重试中断或未获取到结果",
+        };
+      }
+    } finally {
+      stepAbortControllers.delete(index);
+    }
 
-    applyProbeResult(index, challenge, res);
+    if (sessionId !== currentSessionId || stepTickets.get(index) !== ticket) {
+      return;
+    }
 
-    // 重试完成，全部题目都已有结果
-    completedCount.value = totalCount;
-    progressPercent.value = 100;
+    updateProgressState();
 
-    const resolvedConfigName =
-      configName?.trim() ||
-      configStore.matchedConfigItem?.name ||
-      (configStore.isCurrentConfigSaved ? configStore.activeConfigName : undefined) ||
-      lastUsedConfigName;
+    const hasAnyWorking = steps.value.some((s) => s.state === "working");
+    if (hasAnyWorking) {
+      updateRunningStatusDesc();
+      updateStatusAlert();
+    } else {
+      const resolvedConfigName =
+        configName?.trim() ||
+        configStore.matchedConfigItem?.name ||
+        (configStore.isCurrentConfigSaved ? configStore.activeConfigName : undefined) ||
+        lastUsedConfigName;
 
-    finalizeTestEvaluation({
-      baseUrl,
-      apiKey,
-      model,
-      reasoningEffort,
-      configName: resolvedConfigName,
-      retryInfo: { index, accepted: res.accepted },
-      runId,
-    });
+      finalizeTestEvaluation({
+        baseUrl,
+        apiKey,
+        model,
+        reasoningEffort,
+        configName: resolvedConfigName,
+        sessionId: currentSessionId,
+      });
+    }
   }
 
   return {

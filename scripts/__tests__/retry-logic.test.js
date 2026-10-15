@@ -48,3 +48,29 @@ test("sleep 接收已中止的 signal 时立即返回", async () => {
   const elapsed = Date.now() - start;
   assert.ok(elapsed < 100, `已中止 signal 应在 100ms 内立即返回，实际耗时: ${elapsed}ms`);
 });
+
+test("多题并发独立重试场景下的 AbortController 隔离性验证（中止单题不影响另一题）", async () => {
+  const stepAbortControllers = new Map();
+  stepAbortControllers.set(0, new AbortController());
+  stepAbortControllers.set(1, new AbortController());
+
+  // 模拟题 0 重新发起重试，中断题 0 的旧 controller
+  stepAbortControllers.get(0)?.abort();
+  stepAbortControllers.set(0, new AbortController());
+
+  assert.equal(stepAbortControllers.get(0)?.signal.aborted, false);
+  assert.equal(stepAbortControllers.get(1)?.signal.aborted, false);
+
+  // 验证题 1 仍在独立运行不受影响
+  let step1Finished = false;
+  const task1 = sleep(60, stepAbortControllers.get(1)?.signal).then(() => {
+    step1Finished = true;
+  });
+
+  // 中止题 0，题 1 必须不受影响成功完成
+  stepAbortControllers.get(0)?.abort();
+  await task1;
+  assert.equal(step1Finished, true);
+  assert.equal(stepAbortControllers.get(0)?.signal.aborted, true);
+  assert.equal(stepAbortControllers.get(1)?.signal.aborted, false);
+});

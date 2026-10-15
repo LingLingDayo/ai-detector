@@ -89,6 +89,11 @@ function closeModal(): void {
         <div class="step-info">
           <div class="step-title-row">
             <strong>测试 {{ idx + 1 }}</strong>
+            <RefreshCw
+              v-if="step.state === 'working'"
+              :size="10"
+              class="step-running-icon"
+            />
           </div>
           <span class="step-state">{{ step.stateText }}</span>
         </div>
@@ -97,9 +102,8 @@ function closeModal(): void {
           v-if="step.state === 'error'"
           type="button"
           class="btn-step-retry"
-          :disabled="isRunning"
-          title="重试"
-          aria-label="重试"
+          title="重试此题"
+          aria-label="重试此题"
           @click.stop="emit('retrySingleQuestion', idx)"
         >
           <RefreshCw :size="13" />
@@ -287,6 +291,12 @@ function closeModal(): void {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+          }
+
+          .step-running-icon {
+            color: var(--accent-primary);
+            animation: spin 1s linear infinite;
+            flex-shrink: 0;
           }
         }
 
