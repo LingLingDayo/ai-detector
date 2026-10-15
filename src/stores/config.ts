@@ -576,6 +576,19 @@ export const useConfigStore = defineStore("config", () => {
     }
   );
 
+  // 当切换到 pelican 时，若 pelican 未选择模型，自动继承 probe 的配置
+  watch(
+    () => activeMode.value,
+    (newMode) => {
+      if (newMode === "pelican" && !pelicanConfig.modelName) {
+        pelicanConfig.modelName = probeConfig.modelName;
+        pelicanConfig.apiFormat = probeConfig.apiFormat;
+        pelicanConfig.reasoningEffort = probeConfig.reasoningEffort;
+        pelicanConfig.stream = probeConfig.stream;
+      }
+    }
+  );
+
   // 监听表单输入变化并自动持久化当前输入
   watch([probeConfig, pelicanConfig], () => {
     saveConfig();

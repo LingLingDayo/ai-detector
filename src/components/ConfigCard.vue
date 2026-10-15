@@ -107,9 +107,14 @@ function handleFormSubmit(): void {
   appStore.handleStartTest();
 }
 
-function handleReset(): void {
+async function handleReset(): Promise<void> {
   emit("reset");
-  configStore.resetConfig();
+  const confirmed = await configStore.resetConfig();
+  if (confirmed) {
+    probeStore.resetTest();
+    pelicanStore.resetPelicanTest();
+    comboboxRef.value?.resetModelList();
+  }
 }
 
 function handleTogglePassword(): void {
@@ -144,16 +149,21 @@ function handleSaveButtonClick(): void {
   if (isJustUpdated.value) return;
 
   if (currentConfigModified.value) {
-    emit("update-config");
-    configStore.updateCurrentConfig();
-    isJustUpdated.value = true;
-    if (updatedTimer) {
-      clearTimeout(updatedTimer);
+    const success = configStore.updateCurrentConfig();
+    if (success) {
+      emit("update-config");
+      isJustUpdated.value = true;
+      if (updatedTimer) {
+        clearTimeout(updatedTimer);
+      }
+      updatedTimer = window.setTimeout(() => {
+        isJustUpdated.value = false;
+        updatedTimer = null;
+      }, 1200);
+    } else {
+      emit("open-save-config");
+      configStore.openSaveCurrentModal();
     }
-    updatedTimer = window.setTimeout(() => {
-      isJustUpdated.value = false;
-      updatedTimer = null;
-    }, 1200);
   } else {
     emit("open-save-config");
     configStore.openSaveCurrentModal();

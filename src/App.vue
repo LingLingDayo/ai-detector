@@ -199,7 +199,11 @@ function handleOpenGithub(): void {
       :active-config-id="configStore.activeConfigId"
       :can-save-current="configStore.canSaveCurrent"
       @close="configStore.closeConfigListModal"
-      @apply="(item) => configStore.applyConfig(item, () => configCardRef?.resetModelList())"
+      @apply="(item) => {
+        if (!probeStore.isRunning) probeStore.resetTest();
+        if (!pelicanStore.isPelicanRunning) pelicanStore.resetPelicanTest();
+        configStore.applyConfig(item, () => configCardRef?.resetModelList());
+      }"
       @open-create="configStore.openCreateConfigModal"
       @open-edit="configStore.openEditConfigModal"
       @open-save-current="configStore.openSaveCurrentModal"
