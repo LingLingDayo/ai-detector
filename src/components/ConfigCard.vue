@@ -374,7 +374,7 @@ defineExpose({
           :class="{ active: currentActiveMode === 'probe', 'is-running': currentProbeRunning }"
           role="tab"
           :aria-selected="currentActiveMode === 'probe'"
-          title="三道随机题目探测，并在统一库中比对模型归因"
+          title="三道随机题目探测，并在统一库中比对模型归因（仅匹配候选库内已收录模型，未收录模型仍会被归到最相似的现有候选）"
           @click="handleUpdateMode('probe')"
         >
           <span>模型测试</span>

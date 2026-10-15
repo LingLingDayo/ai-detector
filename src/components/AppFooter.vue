@@ -4,7 +4,7 @@
 
 <template>
   <footer class="app-footer">
-    <span title="本工具仅对指纹库内的模型进行归因分析，测试结果仅供技术参考">
+    <span title="仅匹配候选库内已收录模型，未收录模型仍会被归到最相似的现有候选。测试结果仅供技术参考">
       AI Detector · 纯本地运行 · 凭据不离开本机
     </span>
   </footer>

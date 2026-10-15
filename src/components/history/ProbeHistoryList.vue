@@ -100,7 +100,7 @@ function getProbBadgeClass(prob: number | undefined): string {
         <div class="probe-row-main">
           <span class="call-name" :title="`调用模型: ${item.modelName}`">{{ item.modelName }}</span>
           <span class="row-arrow">→</span>
-          <span class="pred-name" :title="`判定真身: ${item.predictionName}`">{{ item.predictionName }}</span>
+          <span class="pred-name" :title="`判定真身: ${item.predictionName}（仅匹配候选库内已收录模型，未收录模型仍会被归到最相似的现有候选）`">{{ item.predictionName }}</span>
           <span v-if="item.familyPredictionName" class="family-tag">{{ item.familyPredictionName }}</span>
         </div>
 

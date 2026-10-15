@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Copy, Check } from "@lucide/vue";
+import { Copy, Check, Info } from "@lucide/vue";
 import type { GlobalAnalysisResult } from "../utils/fingerprint";
 import type { ProbeHistoryItem } from "../types";
 import { useClipboard } from "../composables/useClipboard";
@@ -44,7 +44,18 @@ function handleCopyResult(): void {
     id="result-section"
   >
     <div class="card-header">
-      <h2>探测诊断报告</h2>
+      <div class="header-title-group">
+        <h2 title="仅匹配候选库内已收录模型，未收录模型仍会被归到最相似的现有候选">
+          探测诊断报告
+        </h2>
+        <span
+          class="candidate-scope-badge"
+          title="仅匹配候选库内已收录模型，未收录模型仍会被归到最相似的现有候选"
+        >
+          <Info :size="11" class="badge-icon" />
+          <span>仅匹配库内候选</span>
+        </span>
+      </div>
       <button
         type="button"
         class="btn-copy-result"
@@ -59,7 +70,10 @@ function handleCopyResult(): void {
 
     <!-- 胜出模型概览卡片 -->
     <div class="winner-hero" id="winner-hero">
-      <div class="hero-item primary" title="当前候选库中后验概率最高的匹配模型">
+      <div
+        class="hero-item primary"
+        title="当前候选库中后验概率最高的匹配模型。仅匹配候选库内已收录模型，未收录模型仍会被归到最相似的现有候选。"
+      >
         <span class="hero-label">最可能模型预测</span>
         <strong class="hero-val" id="winner-name">
           {{ analysis.prediction_name || analysis.prediction }}
@@ -107,7 +121,15 @@ function handleCopyResult(): void {
         <thead>
           <tr>
             <th style="width: 60px">排序</th>
-            <th>候选模型</th>
+            <th
+              title="仅匹配候选库内已收录模型，未收录模型仍会被归到最相似的现有候选"
+              class="th-candidate"
+            >
+              <div class="th-content">
+                <span>候选模型</span>
+                <Info :size="11" class="th-hint-icon" />
+              </div>
+            </th>
             <th style="width: 130px">家族分类</th>
             <th style="width: 220px" title="全局归一化后的闭集归因概率">归因概率</th>
             <th style="width: 110px" title="特征分布与模型中心相似度">分布相似度</th>
@@ -155,6 +177,15 @@ function handleCopyResult(): void {
         </tbody>
       </table>
     </div>
+
+    <!-- 诊断说明注脚 -->
+    <div
+      class="candidate-footnote"
+      title="仅匹配候选库内已收录模型，未收录模型仍会被归到最相似的现有候选"
+    >
+      <Info :size="11" class="footnote-icon" />
+      <span>仅匹配候选库内已收录模型，未收录模型仍会被归到最相似的现有候选。</span>
+    </div>
   </section>
 </template>
 
@@ -166,6 +197,43 @@ function handleCopyResult(): void {
   padding: 12px 15px;
 
   .card-header {
+    .header-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      h2 {
+        cursor: help;
+      }
+
+      .candidate-scope-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 7px;
+        border-radius: 9999px;
+        font-size: 0.68rem;
+        font-weight: 500;
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        color: #a5b4fc;
+        cursor: help;
+        line-height: 1.2;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: rgba(99, 102, 241, 0.18);
+          border-color: rgba(99, 102, 241, 0.4);
+          color: #c7d2fe;
+        }
+
+        .badge-icon {
+          flex-shrink: 0;
+          opacity: 0.85;
+        }
+      }
+    }
+
     .btn-copy-result {
       width: 24px;
       height: 24px;
@@ -301,6 +369,26 @@ function handleCopyResult(): void {
         font-weight: 600;
         border-bottom: 1px solid var(--border-subtle);
         font-size: 0.72rem;
+
+        &.th-candidate {
+          cursor: help;
+
+          .th-content {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+
+            .th-hint-icon {
+              opacity: 0.55;
+              transition: opacity 0.15s ease, color 0.15s ease;
+            }
+          }
+
+          &:hover .th-hint-icon {
+            opacity: 1;
+            color: var(--accent);
+          }
+        }
       }
 
       td {
@@ -382,6 +470,34 @@ function handleCopyResult(): void {
         color: var(--text-secondary);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 0.76rem;
+      }
+    }
+  }
+
+  .candidate-footnote {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    cursor: help;
+    user-select: none;
+    transition: color 0.18s ease;
+
+    .footnote-icon {
+      flex-shrink: 0;
+      opacity: 0.75;
+      transition: opacity 0.18s ease, color 0.18s ease;
+    }
+
+    &:hover {
+      color: var(--text-secondary);
+
+      .footnote-icon {
+        opacity: 1;
+        color: var(--accent);
       }
     }
   }
