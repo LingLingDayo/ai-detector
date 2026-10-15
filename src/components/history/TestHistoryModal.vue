@@ -280,15 +280,31 @@ async function handleClearHistory(): Promise<void> {
     .clear-btn {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 5px;
-      padding: 4px 10px;
+      height: 24px;
+      padding: 0 10px;
       background: rgba(239, 68, 68, 0.1);
       border: 1px solid rgba(239, 68, 68, 0.25);
       border-radius: var(--radius-sm);
       color: #fca5a5;
       font-size: 0.74rem;
+      line-height: 1;
+      font-family: inherit;
       cursor: pointer;
       transition: all 0.2s ease;
+
+      svg {
+        display: block;
+        flex-shrink: 0;
+      }
+
+      span {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+        transform: translateY(-0.5px);
+      }
 
       &:hover {
         background: rgba(239, 68, 68, 0.2);
@@ -303,12 +319,18 @@ async function handleClearHistory(): Promise<void> {
       justify-content: center;
       width: 28px;
       height: 28px;
+      padding: 0;
       border-radius: var(--radius-sm);
       background: transparent;
       border: 1px solid transparent;
       color: var(--text-muted);
       cursor: pointer;
       transition: all 0.2s ease;
+
+      svg {
+        display: block;
+        flex-shrink: 0;
+      }
 
       &:hover {
         background: rgba(255, 255, 255, 0.08);
@@ -331,10 +353,14 @@ async function handleClearHistory(): Promise<void> {
   .tab-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 4px 10px;
+    height: 24px;
+    padding: 0 10px;
     font-size: 0.74rem;
     font-weight: 500;
+    line-height: 1;
+    font-family: inherit;
     color: var(--text-secondary);
     background: transparent;
     border: none;
@@ -342,6 +368,18 @@ async function handleClearHistory(): Promise<void> {
     cursor: pointer;
     transition: all 0.18s ease;
     white-space: nowrap;
+
+    svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+      transform: translateY(-0.5px);
+    }
 
     &:hover {
       color: #e2e8f0;

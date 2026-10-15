@@ -126,11 +126,14 @@ const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
   .state-pill {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
-    padding: 2px 7px;
+    height: 20px;
+    padding: 0 7px;
     border-radius: 9999px;
     font-size: 0.72rem;
     font-weight: 500;
+    line-height: 1;
 
     &.running {
       background: rgba(59, 130, 246, 0.12);
@@ -160,6 +163,7 @@ const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
       width: 5px;
       height: 5px;
       border-radius: 50%;
+      flex-shrink: 0;
 
       &.success { background: #10b981; }
       &.error { background: #ef4444; }
@@ -173,6 +177,7 @@ const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
       border-top-color: #60a5fa;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
     }
   }
 
@@ -195,15 +200,31 @@ const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
   .ctrl-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
-    padding: 3px 7px;
+    height: 22px;
+    padding: 0 7px;
     background: rgba(30, 41, 59, 0.5);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
     font-size: 0.7rem;
+    line-height: 1;
+    font-family: inherit;
     cursor: pointer;
     transition: all var(--transition-fast);
+
+    svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+      transform: translateY(-0.5px);
+    }
 
     &:hover {
       background: rgba(30, 41, 59, 0.9);
