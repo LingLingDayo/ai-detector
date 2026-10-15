@@ -98,8 +98,8 @@ function closeModal(): void {
           type="button"
           class="btn-step-retry"
           :disabled="isRunning"
-          title="手动重试本题"
-          aria-label="手动重试本题"
+          title="重试"
+          aria-label="重试"
           @click.stop="emit('retrySingleQuestion', idx)"
         >
           <RefreshCw :size="13" />

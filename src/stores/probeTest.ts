@@ -621,7 +621,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     progressPercent.value = Math.round((completedCount.value / totalCount) * 100);
 
     statusTitle.value = "测试进行中";
-    statusDesc.value = `正在手动重试第 ${index + 1} 题，请稍候...`;
+    statusDesc.value = `正在重试第 ${index + 1} 题，请稍候...`;
 
     // 过滤掉当前题的旧报错，仅保留其它题目的报错提示
     const otherErrors = steps.value

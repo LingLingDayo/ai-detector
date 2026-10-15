@@ -114,11 +114,11 @@ function handleCopyError(): void {
         type="button"
         class="btn-retry-in-modal"
         :disabled="isRunning"
-        title="手动重试本题"
+        title="重试"
         @click="emit('retry')"
       >
         <RefreshCw :size="13" />
-        <span>手动重试本题</span>
+        <span>重试</span>
       </button>
     </div>
   </section>
