@@ -177,15 +177,6 @@ function handleCopyResult(): void {
         </tbody>
       </table>
     </div>
-
-    <!-- 诊断说明注脚 -->
-    <div
-      class="candidate-footnote"
-      title="仅匹配候选库内已收录模型，未收录模型仍会被归到最相似的现有候选"
-    >
-      <Info :size="11" class="footnote-icon" />
-      <span>仅匹配候选库内已收录模型，未收录模型仍会被归到最相似的现有候选。</span>
-    </div>
   </section>
 </template>
 
@@ -470,34 +461,6 @@ function handleCopyResult(): void {
         color: var(--text-secondary);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 0.76rem;
-      }
-    }
-  }
-
-  .candidate-footnote {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 8px;
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    line-height: 1.4;
-    cursor: help;
-    user-select: none;
-    transition: color 0.18s ease;
-
-    .footnote-icon {
-      flex-shrink: 0;
-      opacity: 0.75;
-      transition: opacity 0.18s ease, color 0.18s ease;
-    }
-
-    &:hover {
-      color: var(--text-secondary);
-
-      .footnote-icon {
-        opacity: 1;
-        color: var(--accent);
       }
     }
   }
