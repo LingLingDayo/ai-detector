@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
-import { useConfig } from "./composables/useConfig";
-import { useProbeTest } from "./composables/useProbeTest";
-import { usePelicanTest } from "./composables/usePelicanTest";
-import type { PelicanHistoryItem, ProbeHistoryItem } from "./types";
-import type { GlobalAnalysisResult } from "./utils/fingerprint";
+import { ref, watch, nextTick, onMounted, onUnmounted } from "vue";
+import {
+  useConfigStore,
+  useProbeTestStore,
+  usePelicanTestStore,
+  useAppStore,
+} from "./stores";
 import AppHeader from "./components/AppHeader.vue";
 import ConfigCard from "./components/ConfigCard.vue";
 import ConfigListModal from "./components/ConfigListModal.vue";
@@ -17,200 +18,16 @@ import TestHistoryModal from "./components/history/TestHistoryModal.vue";
 import { APP_VERSION, GITHUB_REPO_URL } from "./constants";
 import { openExternalUrl } from "./services/api";
 
+const configStore = useConfigStore();
+const probeStore = useProbeTestStore();
+const pelicanStore = usePelicanTestStore();
+const appStore = useAppStore();
+
 const configCardRef = ref<InstanceType<typeof ConfigCard> | null>(null);
-const activeMode = ref<"probe" | "pelican">("probe");
-const isHistoryModalOpen = ref(false);
-
-const {
-  isRunning,
-  hasStarted,
-  hasResult: hasProbeResult,
-  progressPercent,
-  completedCount,
-  totalCount,
-  statusTitle,
-  statusDesc,
-  steps,
-  statusAlert,
-  analysisResult,
-  currentProbeHistoryItem,
-  probeHistoryList,
-  testedModel: testedProbeModel,
-  startTest,
-  cancelTest,
-  resetTest,
-  refreshQuestions,
-  refreshSingleQuestion,
-  deleteProbeHistoryItem,
-  clearProbeHistory,
-} = useProbeTest();
-
-const {
-  isPelicanRunning,
-  pelicanSvg,
-  pelicanContent,
-  pelicanContentType,
-  rawResponseText,
-  durationMs,
-  testedModel,
-  errorMsg: pelicanErrorMsg,
-  hasTested: hasPelicanTested,
-  hasResult: hasPelicanResult,
-  pelicanPrompt,
-  pelicanHistoryList,
-  setPelicanPrompt,
-  resetPelicanPrompt,
-  startPelicanTest,
-  cancelPelicanTest,
-  resetPelicanTest,
-  deletePelicanHistoryItem,
-  clearPelicanHistory,
-} = usePelicanTest();
-
-const hasActiveResult = computed(() => {
-  return activeMode.value === "probe" ? hasProbeResult.value : hasPelicanResult.value;
-});
-
-const {
-  config,
-  probeConfig,
-  pelicanConfig,
-  configList,
-  activeConfigId,
-  activeConfigName,
-  isPasswordVisible,
-  isAdvancedOpen,
-  isConfigListModalOpen,
-  isConfigEditModalOpen,
-  configEditModalMode,
-  editingConfigItem,
-  settingsSummary,
-  hasCurrentInput,
-  isCurrentConfigSaved,
-  canSaveCurrent,
-  matchedConfigItem,
-  isConfigModified,
-  togglePasswordVisibility,
-  openConfigListModal,
-  closeConfigListModal,
-  openSaveCurrentModal,
-  openCreateConfigModal,
-  openEditConfigModal,
-  closeConfigEditModal,
-  updateCurrentConfig,
-  loadConfig,
-  resetConfig,
-  applyConfig,
-  handleSaveConfigItem,
-  deleteConfigItem,
-  swapConfigItems,
-} = useConfig({
-  activeMode,
-  isRunning,
-  isPelicanRunning,
-  onApply: () => {
-    if (!isRunning.value) {
-      resetTest();
-    }
-    if (!isPelicanRunning.value) {
-      resetPelicanTest();
-    }
-    configCardRef.value?.resetModelList();
-  },
-});
 
 onMounted(() => {
-  loadConfig();
+  configStore.loadConfig();
 });
-
-const totalHistoryCount = computed(
-  () => pelicanHistoryList.value.length + probeHistoryList.value.length
-);
-
-function handleUpdateConfig(): void {
-  const success = updateCurrentConfig();
-  if (!success) {
-    openSaveCurrentModal();
-  }
-}
-
-const isProbeCancelled = ref(false);
-const isPelicanCancelled = ref(false);
-
-function handleCancelTest(): void {
-  cancelScroll();
-  if (activeMode.value === "probe") {
-    isProbeCancelled.value = true;
-    cancelTest();
-  } else {
-    isPelicanCancelled.value = true;
-    cancelPelicanTest();
-  }
-}
-
-function handleStartTest(): void {
-  if (activeMode.value === "probe") {
-    if (isRunning.value) {
-      cancelScroll();
-      isProbeCancelled.value = true;
-      cancelTest();
-      return;
-    }
-    isProbeCancelled.value = false;
-    const currentSavedName =
-      matchedConfigItem.value?.name ||
-      (isCurrentConfigSaved.value ? activeConfigName.value : undefined);
-    startTest(probeConfig, currentSavedName);
-  } else {
-    if (isPelicanRunning.value) {
-      cancelScroll();
-      isPelicanCancelled.value = true;
-      cancelPelicanTest();
-      return;
-    }
-    isPelicanCancelled.value = false;
-    const currentSavedName =
-      matchedConfigItem.value?.name ||
-      (isCurrentConfigSaved.value ? activeConfigName.value : undefined);
-    startPelicanTest(pelicanConfig, currentSavedName);
-  }
-}
-
-function handleApplyPelicanHistoryItem(item: PelicanHistoryItem): void {
-  pelicanContent.value = item.content;
-  pelicanSvg.value = item.content;
-  pelicanContentType.value = item.contentType;
-  testedModel.value = item.modelName;
-  rawResponseText.value = item.content;
-  durationMs.value = item.durationMs || 0;
-  hasPelicanTested.value = true;
-  hasPelicanResult.value = true;
-  activeMode.value = "pelican";
-  isHistoryModalOpen.value = false;
-}
-
-function handleApplyProbeHistoryItem(item: ProbeHistoryItem): void {
-  if (item.fullAnalysis) {
-    analysisResult.value = item.fullAnalysis as GlobalAnalysisResult;
-    hasProbeResult.value = true;
-    hasStarted.value = true;
-    currentProbeHistoryItem.value = item;
-  }
-  testedProbeModel.value = item.modelName;
-  activeMode.value = "probe";
-  isHistoryModalOpen.value = false;
-  scrollToElement("#result-section", 10);
-}
-
-async function handleResetConfig(): Promise<void> {
-  const confirmed = await resetConfig();
-  if (confirmed) {
-    cancelScroll();
-    resetTest();
-    resetPelicanTest();
-    configCardRef.value?.resetModelList();
-  }
-}
 
 let scrollRafId: number | null = null;
 const scrollTimers: number[] = [];
@@ -284,14 +101,14 @@ function scrollToElement(selector: string, offsetTop: number = 10): void {
 
 // 模型测试结束自动滚动到 result-section（使其顶部距离页面顶部 10px）
 watch(
-  () => isRunning.value,
+  () => probeStore.isRunning,
   (running, wasRunning) => {
     if (wasRunning && !running) {
-      if (isProbeCancelled.value) {
-        isProbeCancelled.value = false;
+      if (appStore.isProbeCancelled) {
+        appStore.isProbeCancelled = false;
         return;
       }
-      if (hasProbeResult.value && activeMode.value === "probe") {
+      if (probeStore.hasResult && appStore.activeMode === "probe") {
         scrollToElement("#result-section", 10);
       }
     }
@@ -300,11 +117,11 @@ watch(
 
 // 鹈鹕测试开始后立即自动滚动到 status-summary-bar；生成结束后再次触发自动滚动，使其顶部距离页面顶部均为 10px
 watch(
-  () => isPelicanRunning.value,
+  () => pelicanStore.isPelicanRunning,
   (running, wasRunning) => {
-    if (activeMode.value === "pelican" && running !== wasRunning) {
-      if (wasRunning && !running && isPelicanCancelled.value) {
-        isPelicanCancelled.value = false;
+    if (appStore.activeMode === "pelican" && running !== wasRunning) {
+      if (wasRunning && !running && appStore.isPelicanCancelled) {
+        appStore.isPelicanCancelled = false;
         return;
       }
       scrollToElement("#status-summary-bar", 10);
@@ -329,113 +146,89 @@ function handleOpenGithub(): void {
     <!-- 主体区域 -->
     <main class="app-main">
       <!-- 参数配置卡片 -->
-      <ConfigCard
-        ref="configCardRef"
-        :config="config"
-        :active-config-name="activeConfigName"
-        :is-running="isRunning"
-        :is-pelican-running="isPelicanRunning"
-        :active-mode="activeMode"
-        :has-result="hasActiveResult"
-        :is-password-visible="isPasswordVisible"
-        :is-advanced-open="isAdvancedOpen"
-        :settings-summary="settingsSummary"
-        :is-config-modified="isConfigModified"
-        :is-current-config-saved="isCurrentConfigSaved"
-        :history-count="totalHistoryCount"
-        @toggle-password="togglePasswordVisibility"
-        @update:is-advanced-open="(v) => (isAdvancedOpen = v)"
-        @update:active-mode="(v) => (activeMode = v)"
-        @submit="handleStartTest"
-        @cancel="handleCancelTest"
-        @reset="handleResetConfig"
-        @update-config="handleUpdateConfig"
-        @open-save-config="openSaveCurrentModal"
-        @open-config-list="openConfigListModal"
-        @open-history="isHistoryModalOpen = true"
-      />
+      <ConfigCard ref="configCardRef" />
 
       <!-- 常规探测题目与测试进度卡片（常规模式展示） -->
-      <div v-show="activeMode === 'probe'" class="mode-view-group">
+      <div v-show="appStore.activeMode === 'probe'" class="mode-view-group">
         <ProgressCard
           :visible="true"
-          :title="statusTitle"
-          :desc="statusDesc"
-          :percent="progressPercent"
-          :completed-count="completedCount"
-          :total-count="totalCount"
-          :steps="steps"
-          :status-alert="statusAlert"
-          :is-running="isRunning"
-          :has-started="hasStarted"
-          @refresh-questions="refreshQuestions"
-          @refresh-single-question="refreshSingleQuestion"
+          :title="probeStore.statusTitle"
+          :desc="probeStore.statusDesc"
+          :percent="probeStore.progressPercent"
+          :completed-count="probeStore.completedCount"
+          :total-count="probeStore.totalCount"
+          :steps="probeStore.steps"
+          :status-alert="probeStore.statusAlert"
+          :is-running="probeStore.isRunning"
+          :has-started="probeStore.hasStarted"
+          @refresh-questions="probeStore.refreshQuestions"
+          @refresh-single-question="probeStore.refreshSingleQuestion"
         />
 
         <!-- 探测诊断报告卡片 -->
         <ResultCard
-          :analysis="analysisResult"
-          :history-item="currentProbeHistoryItem"
-          :model-name="testedProbeModel || probeConfig.modelName"
+          :analysis="probeStore.analysisResult"
+          :history-item="probeStore.currentProbeHistoryItem"
+          :model-name="probeStore.testedModel || configStore.probeConfig.modelName"
         />
       </div>
 
       <!-- 鹈鹕测试模式卡片（点击鹈鹕测试后切换展示） -->
-      <div v-show="activeMode === 'pelican'" class="mode-view-group">
+      <div v-show="appStore.activeMode === 'pelican'" class="mode-view-group">
         <PelicanTestCard
-          :is-running="isPelicanRunning"
-          :svg="pelicanSvg"
-          :content="pelicanContent"
-          :content-type="pelicanContentType"
-          :raw-text="rawResponseText"
-          :duration-ms="durationMs"
-          :model-name="testedModel || pelicanConfig.modelName"
-          :error-message="pelicanErrorMsg"
-          :has-tested="hasPelicanTested"
-          :prompt="pelicanPrompt"
-          @update:prompt="setPelicanPrompt"
-          @reset-prompt="resetPelicanPrompt"
+          :is-running="pelicanStore.isPelicanRunning"
+          :svg="pelicanStore.pelicanSvg"
+          :content="pelicanStore.pelicanContent"
+          :content-type="pelicanStore.pelicanContentType"
+          :raw-text="pelicanStore.rawResponseText"
+          :duration-ms="pelicanStore.durationMs"
+          :model-name="pelicanStore.testedModel || configStore.pelicanConfig.modelName"
+          :error-message="pelicanStore.errorMsg"
+          :has-tested="pelicanStore.hasTested"
+          :prompt="pelicanStore.pelicanPrompt"
+          @update:prompt="pelicanStore.setPelicanPrompt"
+          @reset-prompt="pelicanStore.resetPelicanPrompt"
         />
       </div>
     </main>
 
     <!-- 配置列表弹窗 -->
     <ConfigListModal
-      :is-open="isConfigListModalOpen"
-      :configs="configList"
-      :active-config-id="activeConfigId"
-      :can-save-current="canSaveCurrent"
-      @close="closeConfigListModal"
-      @apply="applyConfig"
-      @open-create="openCreateConfigModal"
-      @open-edit="openEditConfigModal"
-      @open-save-current="openSaveCurrentModal"
-      @delete="deleteConfigItem"
-      @swap="({ sourceId, targetId }) => swapConfigItems(sourceId, targetId)"
+      :is-open="configStore.isConfigListModalOpen"
+      :configs="configStore.configList"
+      :active-config-id="configStore.activeConfigId"
+      :can-save-current="configStore.canSaveCurrent"
+      @close="configStore.closeConfigListModal"
+      @apply="(item) => configStore.applyConfig(item, () => configCardRef?.resetModelList())"
+      @open-create="configStore.openCreateConfigModal"
+      @open-edit="configStore.openEditConfigModal"
+      @open-save-current="configStore.openSaveCurrentModal"
+      @delete="configStore.deleteConfigItem"
+      @swap="({ sourceId, targetId }) => configStore.swapConfigItems(sourceId, targetId)"
     />
 
     <!-- 添加 / 编辑 / 保存当前配置弹窗 -->
     <ConfigEditModal
-      :is-open="isConfigEditModalOpen"
-      :mode="configEditModalMode"
-      :initial-data="editingConfigItem"
-      @close="closeConfigEditModal"
-      @save="handleSaveConfigItem"
+      :is-open="configStore.isConfigEditModalOpen"
+      :mode="configStore.configEditModalMode"
+      :initial-data="configStore.editingConfigItem"
+      @close="configStore.closeConfigEditModal"
+      @save="configStore.handleSaveConfigItem"
     />
 
     <!-- 统一测试历史记录弹窗（包含鹈鹕测试与模型测试 Tab 架构） -->
     <TestHistoryModal
-      :is-open="isHistoryModalOpen"
+      :is-open="appStore.isHistoryModalOpen"
       initial-tab="probe"
-      :pelican-list="pelicanHistoryList"
-      :probe-list="probeHistoryList"
-      @close="isHistoryModalOpen = false"
-      @delete-pelican="deletePelicanHistoryItem"
-      @clear-pelican="clearPelicanHistory"
-      @apply-pelican="handleApplyPelicanHistoryItem"
-      @delete-probe="deleteProbeHistoryItem"
-      @clear-probe="clearProbeHistory"
-      @apply-probe="handleApplyProbeHistoryItem"
+      :pelican-list="pelicanStore.pelicanHistoryList"
+      :probe-list="probeStore.probeHistoryList"
+      @close="appStore.closeHistoryModal"
+      @delete-pelican="pelicanStore.deletePelicanHistoryItem"
+      @clear-pelican="pelicanStore.clearPelicanHistory"
+      @apply-pelican="appStore.applyPelicanHistory"
+      @delete-probe="probeStore.deleteProbeHistoryItem"
+      @clear-probe="probeStore.clearProbeHistory"
+      @apply-probe="(item) => { appStore.applyProbeHistory(item); scrollToElement('#result-section', 10); }"
     />
 
     <!-- 全局通用公共确认弹窗 -->

@@ -5,29 +5,41 @@ import { resolveValidReasoningEffort } from "../constants";
 import { Check, Save, List, History, Eye, EyeOff } from "@lucide/vue";
 import ModelCombobox from "./ModelCombobox.vue";
 import AdvancedSettings from "./AdvancedSettings.vue";
+import { useConfigStore, useAppStore, useProbeTestStore, usePelicanTestStore } from "../stores";
+
+const configStore = useConfigStore();
+const appStore = useAppStore();
+const probeStore = useProbeTestStore();
+const pelicanStore = usePelicanTestStore();
 
 const props = withDefaults(
   defineProps<{
-    config: ClientConfig;
+    config?: ClientConfig;
     activeConfigName?: string;
-    isRunning: boolean;
+    isRunning?: boolean;
     isPelicanRunning?: boolean;
     activeMode?: "probe" | "pelican";
     hasResult?: boolean;
-    isPasswordVisible: boolean;
-    isAdvancedOpen: boolean;
-    settingsSummary: string;
+    isPasswordVisible?: boolean;
+    isAdvancedOpen?: boolean;
+    settingsSummary?: string;
     isConfigModified?: boolean;
     isCurrentConfigSaved?: boolean;
     historyCount?: number;
   }>(),
   {
-    isPelicanRunning: false,
-    activeMode: "probe",
-    hasResult: false,
-    isConfigModified: false,
-    isCurrentConfigSaved: false,
-    historyCount: 0,
+    config: undefined,
+    activeConfigName: undefined,
+    isRunning: undefined,
+    isPelicanRunning: undefined,
+    activeMode: undefined,
+    hasResult: undefined,
+    isPasswordVisible: undefined,
+    isAdvancedOpen: undefined,
+    settingsSummary: undefined,
+    isConfigModified: undefined,
+    isCurrentConfigSaved: undefined,
+    historyCount: undefined,
   }
 );
 
@@ -46,34 +58,83 @@ const emit = defineEmits<{
 
 const comboboxRef = ref<InstanceType<typeof ModelCombobox> | null>(null);
 
+// 统一数据接入层：外部传参优先，未传时自动使用 Store 单一事实来源
+const activeConfig = computed(() => props.config ?? configStore.config);
+const activeConfigNameDisplay = computed(() => props.activeConfigName ?? configStore.activeConfigName);
+const currentProbeRunning = computed(() => props.isRunning ?? probeStore.isRunning);
+const currentPelicanRunning = computed(() => props.isPelicanRunning ?? pelicanStore.isPelicanRunning);
+const currentActiveMode = computed(() => props.activeMode ?? appStore.activeMode);
+const currentHasResult = computed(() => props.hasResult ?? appStore.hasActiveResult);
+const currentPasswordVisible = computed(() => props.isPasswordVisible ?? configStore.isPasswordVisible);
+const currentAdvancedOpen = computed(() => props.isAdvancedOpen ?? configStore.isAdvancedOpen);
+const currentSettingsSummary = computed(() => props.settingsSummary ?? configStore.settingsSummary);
+const currentConfigModified = computed(() => props.isConfigModified ?? configStore.isConfigModified);
+const currentConfigSaved = computed(() => props.isCurrentConfigSaved ?? configStore.isCurrentConfigSaved);
+
 // 监听当前选定模型变更，自动将思考强度限定或修正到合法档位
 watch(
-  () => props.config.modelName,
+  () => activeConfig.value.modelName,
   (newModel) => {
-    const validEffort = resolveValidReasoningEffort(newModel, props.config.reasoningEffort);
-    if (validEffort !== props.config.reasoningEffort) {
-      props.config.reasoningEffort = validEffort;
+    const validEffort = resolveValidReasoningEffort(newModel, activeConfig.value.reasoningEffort);
+    if (validEffort !== activeConfig.value.reasoningEffort) {
+      activeConfig.value.reasoningEffort = validEffort;
     }
   }
 );
 
 const isCurrentRunning = computed(() => {
-  return props.activeMode === "probe" ? props.isRunning : Boolean(props.isPelicanRunning);
+  return currentActiveMode.value === "probe"
+    ? currentProbeRunning.value
+    : Boolean(currentPelicanRunning.value);
 });
 
 const isOtherRunning = computed(() => {
-  return props.activeMode === "probe" ? Boolean(props.isPelicanRunning) : props.isRunning;
+  return currentActiveMode.value === "probe"
+    ? Boolean(currentPelicanRunning.value)
+    : currentProbeRunning.value;
 });
 
 function handleStartButtonClick(e: MouseEvent): void {
   if (isCurrentRunning.value) {
     e.preventDefault();
     emit("cancel");
+    appStore.handleCancelTest();
   }
+}
+
+function handleFormSubmit(): void {
+  emit("submit");
+  appStore.handleStartTest();
 }
 
 function handleReset(): void {
   emit("reset");
+  configStore.resetConfig();
+}
+
+function handleTogglePassword(): void {
+  emit("toggle-password");
+  configStore.togglePasswordVisibility();
+}
+
+function handleUpdateAdvanced(val: boolean): void {
+  emit("update:isAdvancedOpen", val);
+  configStore.isAdvancedOpen = val;
+}
+
+function handleUpdateMode(mode: "probe" | "pelican"): void {
+  emit("update:activeMode", mode);
+  appStore.setActiveMode(mode);
+}
+
+function handleOpenConfigList(): void {
+  emit("open-config-list");
+  configStore.openConfigListModal();
+}
+
+function handleOpenHistory(): void {
+  emit("open-history");
+  appStore.openHistoryModal();
 }
 
 const isJustUpdated = ref(false);
@@ -82,8 +143,9 @@ let updatedTimer: number | null = null;
 function handleSaveButtonClick(): void {
   if (isJustUpdated.value) return;
 
-  if (props.isConfigModified) {
+  if (currentConfigModified.value) {
     emit("update-config");
+    configStore.updateCurrentConfig();
     isJustUpdated.value = true;
     if (updatedTimer) {
       clearTimeout(updatedTimer);
@@ -94,17 +156,18 @@ function handleSaveButtonClick(): void {
     }, 1200);
   } else {
     emit("open-save-config");
+    configStore.openSaveCurrentModal();
   }
 }
 
 watch(
   () => [
-    props.config.baseUrl,
-    props.config.apiKey,
-    props.config.modelName,
-    props.config.apiFormat,
-    props.config.reasoningEffort,
-    props.config.stream,
+    activeConfig.value.baseUrl,
+    activeConfig.value.apiKey,
+    activeConfig.value.modelName,
+    activeConfig.value.apiFormat,
+    activeConfig.value.reasoningEffort,
+    activeConfig.value.stream,
   ],
   () => {
     if (isJustUpdated.value) {
@@ -136,18 +199,18 @@ defineExpose({
       <div class="header-title-group">
         <h2>探测参数配置</h2>
         <span
-          v-if="activeConfigName"
+          v-if="activeConfigNameDisplay"
           class="active-config-tag"
-          :title="`当前应用配置：${activeConfigName}`"
+          :title="`当前应用配置：${activeConfigNameDisplay}`"
         >
           <span class="active-dot"></span>
-          {{ activeConfigName }}
+          {{ activeConfigNameDisplay }}
         </span>
       </div>
 
       <div class="header-actions-group">
         <button
-          v-if="!isCurrentConfigSaved || isJustUpdated"
+          v-if="!currentConfigSaved || isJustUpdated"
           type="button"
           class="btn-header-action btn-save-config"
           :class="{ 'btn-updated-success': isJustUpdated }"
@@ -155,7 +218,7 @@ defineExpose({
           :title="
             isJustUpdated
               ? '配置已成功更新'
-              : isConfigModified
+              : currentConfigModified
               ? '将修改后的参数直接更新到配置预设'
               : '将当前填写的接口参数与密钥保存为配置预设'
           "
@@ -171,7 +234,7 @@ defineExpose({
             v-else
             :size="13"
           />
-          <span>{{ isJustUpdated ? "已更新" : (isConfigModified ? "更新配置" : "保存配置") }}</span>
+          <span>{{ isJustUpdated ? "已更新" : (currentConfigModified ? "更新配置" : "保存配置") }}</span>
         </button>
 
         <button
@@ -179,7 +242,7 @@ defineExpose({
           class="btn-header-action btn-config-list"
           id="btn-config-list"
           title="管理与切换已保存的配置预设列表"
-          @click="emit('open-config-list')"
+          @click="handleOpenConfigList"
         >
           <List :size="13" />
           <span>配置列表</span>
@@ -190,7 +253,7 @@ defineExpose({
           class="btn-header-action btn-history"
           id="btn-history"
           title="查看历史测试结果（鹈鹕测试、模型测试）"
-          @click="emit('open-history')"
+          @click="handleOpenHistory"
         >
           <History :size="13" />
           <span>历史记录</span>
@@ -198,7 +261,7 @@ defineExpose({
       </div>
     </div>
 
-    <form id="test-form" class="config-form" @submit.prevent="emit('submit')">
+    <form id="test-form" class="config-form" @submit.prevent="handleFormSubmit">
       <!-- 第一行：Base URL 与 API Key -->
       <div class="form-row">
         <div class="form-group flex-1">
@@ -207,7 +270,7 @@ defineExpose({
             <input
               type="url"
               id="base-url"
-              v-model="config.baseUrl"
+              v-model="activeConfig.baseUrl"
               :disabled="isCurrentRunning"
               placeholder="https://api.openai.com"
               required
@@ -224,9 +287,9 @@ defineExpose({
           <label for="api-key" title="用于鉴权的 API 密钥，仅保存在本电脑本地">API Key</label>
           <div class="input-wrapper">
             <input
-              :type="isPasswordVisible ? 'text' : 'password'"
+              :type="currentPasswordVisible ? 'text' : 'password'"
               id="api-key"
-              v-model="config.apiKey"
+              v-model="activeConfig.apiKey"
               :disabled="isCurrentRunning"
               placeholder="sk-..."
               required
@@ -242,16 +305,16 @@ defineExpose({
               id="toggle-key-visibility"
               :disabled="isCurrentRunning"
               title="切换显示/隐藏 Key"
-              @click="emit('toggle-password')"
+              @click="handleTogglePassword"
             >
               <Eye
                 class="eye-open"
-                :class="{ hidden: isPasswordVisible }"
+                :class="{ hidden: currentPasswordVisible }"
                 :size="16"
               />
               <EyeOff
                 class="eye-closed"
-                :class="{ hidden: !isPasswordVisible }"
+                :class="{ hidden: !currentPasswordVisible }"
                 :size="16"
               />
             </button>
@@ -267,11 +330,11 @@ defineExpose({
           </label>
           <ModelCombobox
             ref="comboboxRef"
-            v-model:model-value="config.modelName"
-            v-model:api-format="config.apiFormat"
-            v-model:reasoning-effort="config.reasoningEffort"
-            :base-url="config.baseUrl"
-            :api-key="config.apiKey"
+            v-model:model-value="activeConfig.modelName"
+            v-model:api-format="activeConfig.apiFormat"
+            v-model:reasoning-effort="activeConfig.reasoningEffort"
+            :base-url="activeConfig.baseUrl"
+            :api-key="activeConfig.apiKey"
             :disabled="isCurrentRunning"
             :required="true"
           />
@@ -280,17 +343,17 @@ defineExpose({
 
       <!-- 更多设置折叠区 -->
       <AdvancedSettings
-        :is-open="isAdvancedOpen"
-        :summary="settingsSummary"
-        :api-format="config.apiFormat"
-        :reasoning-effort="config.reasoningEffort"
-        :model-name="config.modelName"
-        :stream="config.stream"
+        :is-open="currentAdvancedOpen"
+        :summary="currentSettingsSummary"
+        :api-format="activeConfig.apiFormat"
+        :reasoning-effort="activeConfig.reasoningEffort"
+        :model-name="activeConfig.modelName"
+        :stream="activeConfig.stream"
         :disabled="isCurrentRunning"
-        @update:is-open="(v) => emit('update:isAdvancedOpen', v)"
-        @update:api-format="(v) => (config.apiFormat = v)"
-        @update:reasoning-effort="(v) => (config.reasoningEffort = v)"
-        @update:stream="(v) => (config.stream = v)"
+        @update:is-open="handleUpdateAdvanced"
+        @update:api-format="(v) => (activeConfig.apiFormat = v)"
+        @update:reasoning-effort="(v) => (activeConfig.reasoningEffort = v)"
+        @update:stream="(v) => (activeConfig.stream = v)"
       />
 
       <!-- 测试方式 Tab 选项：支持随时自由切换，并显示正在进行的测试指示灯 -->
@@ -298,27 +361,27 @@ defineExpose({
         <button
           type="button"
           class="tab-item"
-          :class="{ active: activeMode === 'probe', 'is-running': isRunning }"
+          :class="{ active: currentActiveMode === 'probe', 'is-running': currentProbeRunning }"
           role="tab"
-          :aria-selected="activeMode === 'probe'"
+          :aria-selected="currentActiveMode === 'probe'"
           title="三道随机题目探测，并在统一库中比对模型归因"
-          @click="emit('update:activeMode', 'probe')"
+          @click="handleUpdateMode('probe')"
         >
           <span>模型测试</span>
-          <span v-if="isRunning" class="tab-running-dot" title="模型测试进行中"></span>
+          <span v-if="currentProbeRunning" class="tab-running-dot" title="模型测试进行中"></span>
         </button>
 
         <button
           type="button"
           class="tab-item"
-          :class="{ active: activeMode === 'pelican', 'is-running': isPelicanRunning }"
+          :class="{ active: currentActiveMode === 'pelican', 'is-running': currentPelicanRunning }"
           role="tab"
-          :aria-selected="activeMode === 'pelican'"
+          :aria-selected="currentActiveMode === 'pelican'"
           title="生成自行车鹈鹕 SVG 矢量图，直观测试模型是否降智"
-          @click="emit('update:activeMode', 'pelican')"
+          @click="handleUpdateMode('pelican')"
         >
           <span>鹈鹕测试</span>
-          <span v-if="isPelicanRunning" class="tab-running-dot" title="鹈鹕测试进行中"></span>
+          <span v-if="currentPelicanRunning" class="tab-running-dot" title="鹈鹕测试进行中"></span>
         </button>
       </div>
 
@@ -332,9 +395,9 @@ defineExpose({
           :title="
             isCurrentRunning
               ? '点击取消当前正在进行的测试'
-              : hasResult
-              ? (activeMode === 'probe' ? '重新执行 3 轮探测并计算模型归因' : '重新发起鹈鹕测试，让 AI 重新绘制 SVG')
-              : (activeMode === 'probe' ? '执行 3 轮探测，并在统一库中比对归因' : '发起鹈鹕测试，让 AI 绘制骑自行车 SVG')
+              : currentHasResult
+              ? (currentActiveMode === 'probe' ? '重新执行 3 轮探测并计算模型归因' : '重新发起鹈鹕测试，让 AI 重新绘制 SVG')
+              : (currentActiveMode === 'probe' ? '执行 3 轮探测，并在统一库中比对归因' : '发起鹈鹕测试，让 AI 绘制骑自行车 SVG')
           "
           @click="handleStartButtonClick"
         >
@@ -347,7 +410,7 @@ defineExpose({
             {{
               isCurrentRunning
                 ? '取消测试'
-                : hasResult
+                : currentHasResult
                 ? '重新生成'
                 : '开始测试'
             }}
@@ -357,7 +420,7 @@ defineExpose({
           type="button"
           class="btn btn-ghost"
           id="btn-reset"
-          :disabled="isRunning || isPelicanRunning"
+          :disabled="currentProbeRunning || currentPelicanRunning"
           title="清空已保存的 Base URL 与 Key 等本地配置"
           @click="handleReset"
         >

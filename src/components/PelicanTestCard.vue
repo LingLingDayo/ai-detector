@@ -2,7 +2,7 @@
 import { ref, computed, watch, nextTick } from "vue";
 import { AlertCircle } from "@lucide/vue";
 import { useClipboard } from "../composables/useClipboard";
-import { DEFAULT_PELICAN_PROMPT, type PelicanContentType } from "../composables/usePelicanTest";
+import { DEFAULT_PELICAN_PROMPT, type PelicanContentType } from "../stores/pelicanTest";
 import PelicanHeader from "./pelican/PelicanHeader.vue";
 import PelicanPromptBox from "./pelican/PelicanPromptBox.vue";
 import PelicanStatusBar from "./pelican/PelicanStatusBar.vue";

@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
 const dataDir = path.resolve(rootDir, "src/data");
 const useProbeTestFile = path.resolve(rootDir, "src/composables/useProbeTest.ts");
+const storeProbeTestFile = path.resolve(rootDir, "src/stores/probeTest.ts");
 
 // 默认配置
 const DEFAULT_REPO = "xqy2006/ModelTrace";
@@ -141,17 +142,21 @@ function validateBank(bankObj) {
 }
 
 /**
- * 更新 useProbeTest.ts 中的 fallback 默认数量
+ * 更新 fallback 默认模型数量
  */
 function updateProbeTestFallback(modelCount) {
-  if (!fs.existsSync(useProbeTestFile)) return;
-  const content = fs.readFileSync(useProbeTestFile, "utf-8");
+  const targetFiles = [storeProbeTestFile, useProbeTestFile];
   const regex = /(const\s+totalBankModelsCount\s*=\s*unifiedBank\?\.models\?\.length\s*\|\|\s*)\d+;/;
-  if (regex.test(content)) {
-    const updated = content.replace(regex, `$1${modelCount};`);
-    if (updated !== content) {
-      fs.writeFileSync(useProbeTestFile, updated, "utf-8");
-      logSuccess(`已自动同步 ${colors.cyan}useProbeTest.ts${colors.reset} 默认模型数量为 ${colors.bold}${modelCount}${colors.reset}`);
+
+  for (const file of targetFiles) {
+    if (!fs.existsSync(file)) continue;
+    const content = fs.readFileSync(file, "utf-8");
+    if (regex.test(content)) {
+      const updated = content.replace(regex, `$1${modelCount};`);
+      if (updated !== content) {
+        fs.writeFileSync(file, updated, "utf-8");
+        logSuccess(`已自动同步 ${colors.cyan}${path.basename(file)}${colors.reset} 默认模型数量为 ${colors.bold}${modelCount}${colors.reset}`);
+      }
     }
   }
 }
