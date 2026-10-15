@@ -39,6 +39,17 @@ const emit = defineEmits<{
 const { copied: svgCopied, copy: copySvg } = useClipboard();
 
 const showCode = ref(false);
+const bgTheme = ref<"dark" | "light">(
+  (localStorage.getItem("pelican_bg_theme") as "dark" | "light") || "dark"
+);
+
+watch(bgTheme, (val) => {
+  try {
+    localStorage.setItem("pelican_bg_theme", val);
+  } catch {
+    // ignore
+  }
+});
 
 function scrollToBottom(): void {
   nextTick(() => {
@@ -143,8 +154,10 @@ function handleDownloadContent(): void {
       :content-type="contentType"
       :model-name="modelName"
       :duration-ms="durationMs"
+      :bg-theme="bgTheme"
       :show-code="showCode"
       :svg-copied="svgCopied"
+      @update:bg-theme="bgTheme = $event"
       @update:show-code="showCode = $event"
       @copy-svg="handleCopyContent"
       @download-svg="handleDownloadContent"
@@ -167,6 +180,7 @@ function handleDownloadContent(): void {
       :content="displayContent"
       :content-type="contentType"
       :raw-text="rawText"
+      :bg-theme="bgTheme"
     />
 
     <!-- 可折叠的源码展示区 -->

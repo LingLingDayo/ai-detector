@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { Copy, Check, Download, Code } from "@lucide/vue";
+import { Copy, Check, Download, Code, Sun, Moon } from "@lucide/vue";
 import type { PelicanContentType } from "../../composables/usePelicanTest";
 
 const props = withDefaults(
@@ -12,6 +12,7 @@ const props = withDefaults(
     contentType?: PelicanContentType;
     modelName: string;
     durationMs: number;
+    bgTheme?: "dark" | "light";
     showCode: boolean;
     svgCopied: boolean;
   }>(),
@@ -19,10 +20,12 @@ const props = withDefaults(
     svg: "",
     content: "",
     contentType: "svg",
+    bgTheme: "dark",
   }
 );
 
 const emit = defineEmits<{
+  (e: "update:bgTheme", value: "dark" | "light"): void;
   (e: "update:showCode", value: boolean): void;
   (e: "copy-svg"): void;
   (e: "download-svg"): void;
@@ -31,6 +34,10 @@ const emit = defineEmits<{
 const displayContent = computed(() => props.content || props.svg || "");
 const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG"));
 const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
+
+function toggleBgTheme(): void {
+  emit("update:bgTheme", props.bgTheme === "dark" ? "light" : "dark");
+}
 </script>
 
 <template>
@@ -87,6 +94,18 @@ const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
       >
         <Download :size="12" />
         <span>下载</span>
+      </button>
+
+      <button
+        type="button"
+        class="ctrl-btn"
+        :class="{ active: bgTheme === 'light' }"
+        :title="bgTheme === 'dark' ? '切换为亮色背景 (便于查看深色线条)' : '切换为暗色背景'"
+        @click="toggleBgTheme"
+      >
+        <Sun v-if="bgTheme === 'dark'" :size="12" />
+        <Moon v-else :size="12" />
+        <span>{{ bgTheme === 'dark' ? "亮色" : "暗色" }}</span>
       </button>
 
       <button

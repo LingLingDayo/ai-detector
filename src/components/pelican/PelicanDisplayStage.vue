@@ -9,15 +9,18 @@ const props = withDefaults(
     svg?: string;
     contentType?: PelicanContentType;
     rawText: string;
+    bgTheme?: "dark" | "light";
   }>(),
   {
     content: "",
     svg: "",
     contentType: "svg",
+    bgTheme: "dark",
   }
 );
 
 const displayContent = computed(() => props.content || props.svg || "");
+const bodyColor = computed(() => (props.bgTheme === "light" ? "#1e293b" : "#e2e8f0"));
 
 const wrappedHtml = computed(() => {
   if (!displayContent.value) return "";
@@ -37,6 +40,7 @@ const wrappedHtml = computed(() => {
     display: flex;
     justify-content: center;
     align-items: center;
+    color: ${bodyColor.value};
   }
   svg, canvas, img {
     max-width: 100%;
@@ -73,7 +77,7 @@ const wrappedHtml = computed(() => {
       justify-content: center;
       align-items: center;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      color: #e2e8f0;
+      color: ${bodyColor.value};
       overflow: auto;
     }
     svg, canvas, img {
@@ -91,7 +95,7 @@ const wrappedHtml = computed(() => {
 </script>
 
 <template>
-  <div class="display-container">
+  <div class="display-container" :class="{ 'light-bg': bgTheme === 'light' }">
     <!-- 加载中态 -->
     <div v-if="isRunning" class="loading-state">
       <div class="radar-spinner"></div>
@@ -105,6 +109,7 @@ const wrappedHtml = computed(() => {
     <div
       v-else-if="displayContent"
       class="display-stage svg-stage"
+      :class="{ 'light-bg': bgTheme === 'light' }"
     >
       <!-- SVG 渲染 -->
       <div
@@ -150,6 +155,12 @@ const wrappedHtml = computed(() => {
   align-items: center;
   justify-content: center;
   background: #0d121c;
+  transition: background 0.25s ease, border-color 0.25s ease;
+
+  &.light-bg {
+    background: #f8fafc;
+    border-color: rgba(203, 213, 225, 0.4);
+  }
 }
 
 .loading-state {
@@ -194,6 +205,19 @@ const wrappedHtml = computed(() => {
   padding: 20px;
   position: relative;
   background: radial-gradient(circle at center, #161f30 0%, #0d121c 100%);
+  transition: background 0.25s ease;
+
+  &.light-bg {
+    background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
+
+    :deep(svg) {
+      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.12));
+    }
+
+    .html-render-frame {
+      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.12));
+    }
+  }
 }
 
 .svg-render-viewport {
@@ -212,6 +236,7 @@ const wrappedHtml = computed(() => {
     margin: 0 auto;
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
     user-select: none;
+    transition: filter 0.25s ease;
   }
 }
 
@@ -233,6 +258,7 @@ const wrappedHtml = computed(() => {
   background: transparent;
   display: block;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+  transition: filter 0.25s ease;
 }
 
 .fallback-text-box {
