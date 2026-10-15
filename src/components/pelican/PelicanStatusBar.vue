@@ -99,13 +99,12 @@ function toggleBgTheme(): void {
       <button
         type="button"
         class="ctrl-btn"
-        :class="{ active: bgTheme === 'light' }"
-        :title="bgTheme === 'dark' ? '切换为亮色背景 (便于查看深色线条)' : '切换为暗色背景'"
+        :title="bgTheme === 'dark' ? '当前为暗色背景，点击切换为亮色' : '当前为亮色背景，点击切换为暗色'"
         @click="toggleBgTheme"
       >
-        <Sun v-if="bgTheme === 'dark'" :size="12" />
-        <Moon v-else :size="12" />
-        <span>{{ bgTheme === 'dark' ? "亮色" : "暗色" }}</span>
+        <Moon v-if="bgTheme === 'dark'" :size="12" />
+        <Sun v-else :size="12" />
+        <span>{{ bgTheme === 'dark' ? "暗色" : "亮色" }}</span>
       </button>
 
       <button
