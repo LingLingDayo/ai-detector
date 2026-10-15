@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import type { ConfigItem } from "../../types";
 import { Check, Pencil, Trash2 } from "@lucide/vue";
 
@@ -28,6 +29,13 @@ const emit = defineEmits<{
 }>();
 
 let isDragHappening = false;
+
+const cardTooltip = computed(() => {
+  if (props.isActive) {
+    return "当前正在使用此配置 · 拖动可调整顺序";
+  }
+  return "点击可切换此配置 · 拖动可调整顺序";
+});
 
 function handleDragStart(event: DragEvent) {
   isDragHappening = true;
@@ -62,7 +70,7 @@ function maskApiKey(key?: string): string {
       'is-dragging': isDragging,
       'is-drag-over': isDragOver
     }"
-    :title="isActive ? '当前正在使用此配置' : '点击切换至此配置'"
+    :title="cardTooltip"
     draggable="true"
     @click="handleCardClick"
     @dragstart="handleDragStart"
@@ -77,12 +85,12 @@ function maskApiKey(key?: string): string {
       <div class="card-title-group">
         <span class="item-name">{{ item.name }}</span>
         <!-- 激活状态标记 -->
-        <span v-if="isActive" class="status-badge badge-active" title="当前正在使用此配置">
+        <span v-if="isActive" class="status-badge badge-active">
           <Check :size="11" :stroke-width="2.5" />
           <span>已应用</span>
         </span>
         <!-- 未激活时的悬浮切换提示 -->
-        <span v-else class="status-badge badge-hint" title="点击切换至此配置">
+        <span v-else class="status-badge badge-hint">
           <span>点击切换</span>
         </span>
       </div>
