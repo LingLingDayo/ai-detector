@@ -1,4 +1,4 @@
-import pkg from "../package.json";
+import pkg from "../package.json" with { type: "json" };
 
 export const APP_VERSION = `v${pkg.version}`;
 export const GITHUB_REPO_URL = "https://github.com/LingLingDayo/ai-detector";
@@ -9,6 +9,9 @@ export const ACTIVE_CONFIG_ID_KEY = "modeltrace_active_config_id";
 export const PELICAN_PROMPT_STORAGE_KEY = "modeltrace_pelican_prompt";
 export const PELICAN_HISTORY_STORAGE_KEY = "modeltrace_pelican_history";
 export const PROBE_HISTORY_STORAGE_KEY = "modeltrace_probe_history";
+
+export const DEFAULT_REQUEST_RETRY_COUNT = 3;
+export const DEFAULT_REQUEST_RETRY_DELAY_MS = 5000;
 
 export {
   ALL_REASONING_EFFORT_OPTIONS,

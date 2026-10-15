@@ -20,7 +20,12 @@ import type {
   StatusAlertInfo,
   ProbeHistoryItem,
 } from "../types";
-import { PROBE_HISTORY_STORAGE_KEY } from "../constants";
+import {
+  PROBE_HISTORY_STORAGE_KEY,
+  DEFAULT_REQUEST_RETRY_COUNT,
+  DEFAULT_REQUEST_RETRY_DELAY_MS,
+} from "../constants";
+import { sleep } from "../utils/timer";
 import { maskApiKey } from "../utils/pelicanFormatters";
 import { useConfigStore } from "./config";
 
@@ -261,10 +266,10 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     let lastParsedNumbers: number[] = [];
     let lastErrMsg = "";
 
-    // 最多尝试 2 次（初次执行 + 失败后最多静默重试 1 次）
-    const maxAttempts = 2;
+    // 最多尝试: 1 次初次执行 + 失败后最多静默重试 3 次，每次间隔 5 秒
+    const maxAttempts = 1 + DEFAULT_REQUEST_RETRY_COUNT;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      if (runId !== currentRunId) return null;
+      if (runId !== currentRunId || signal?.aborted) return null;
       try {
         const response = await sendProbe({
           baseUrl,
@@ -278,7 +283,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
           signal,
         });
 
-        if (runId !== currentRunId) return null;
+        if (runId !== currentRunId || signal?.aborted) return null;
 
         const parsedNumbers = parseNumbers(response.text);
         lastParsedNumbers = parsedNumbers;
@@ -289,11 +294,23 @@ export const useProbeTestStore = defineStore("probeTest", () => {
           break;
         } else {
           lastErrMsg = `仅解析到 ${parsedNumbers.length} 个有效整数（需至少 ${minimum} 个）`;
+          console.warn(
+            `第 ${index + 1} 题第 ${attempt} 次尝试未达标（${lastErrMsg}）` +
+              (attempt < maxAttempts ? `，将在 ${DEFAULT_REQUEST_RETRY_DELAY_MS / 1000} 秒后静默重试...` : "")
+          );
         }
       } catch (err: unknown) {
-        if (runId !== currentRunId) return null;
+        if (runId !== currentRunId || signal?.aborted) return null;
         lastErrMsg = err instanceof Error ? err.message : String(err);
-        console.error(`第 ${index + 1} 题第 ${attempt} 次尝试失败:`, err);
+        console.warn(
+          `第 ${index + 1} 题第 ${attempt} 次尝试请求失败（${lastErrMsg}）` +
+            (attempt < maxAttempts ? `，将在 ${DEFAULT_REQUEST_RETRY_DELAY_MS / 1000} 秒后静默重试...` : "")
+        );
+      }
+
+      if (attempt < maxAttempts) {
+        await sleep(DEFAULT_REQUEST_RETRY_DELAY_MS, signal);
+        if (runId !== currentRunId || signal?.aborted) return null;
       }
     }
 

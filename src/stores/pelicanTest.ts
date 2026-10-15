@@ -5,7 +5,10 @@ import type { ClientConfig, PelicanHistoryItem } from "../types";
 import {
   PELICAN_PROMPT_STORAGE_KEY,
   PELICAN_HISTORY_STORAGE_KEY,
+  DEFAULT_REQUEST_RETRY_COUNT,
+  DEFAULT_REQUEST_RETRY_DELAY_MS,
 } from "../constants";
+import { sleep } from "../utils/timer";
 import { maskApiKey } from "../utils/pelicanFormatters";
 
 export const DEFAULT_PELICAN_PROMPT =
@@ -309,60 +312,96 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
       durationMs.value = Date.now() - testStartTime;
     }, 50);
 
+    const promptToSend = pelicanPrompt.value.trim() || DEFAULT_PELICAN_PROMPT;
+    const maxAttempts = 1 + DEFAULT_REQUEST_RETRY_COUNT;
+    let success = false;
+    let lastErrMsg = "请求异常，请检查网络或配置";
+    let lastResponseText = "";
+    let finalDurationMs = 0;
+
     try {
-      const promptToSend = pelicanPrompt.value.trim() || DEFAULT_PELICAN_PROMPT;
-      const res = await sendProbe({
-        baseUrl,
-        apiKey,
-        model: modelName,
-        prompt: promptToSend,
-        apiFormat,
-        reasoningEffort,
-        stream: isStream,
-        timeoutSeconds,
-        signal: abortController?.signal,
-      });
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        if (runId !== currentRunId || abortController?.signal.aborted) return;
 
-      if (runId !== currentRunId) return;
+        try {
+          const res = await sendProbe({
+            baseUrl,
+            apiKey,
+            model: modelName,
+            prompt: promptToSend,
+            apiFormat,
+            reasoningEffort,
+            stream: isStream,
+            timeoutSeconds,
+            signal: abortController?.signal,
+          });
 
-      stopTimer();
-      rawResponseText.value = res.text || "";
-      durationMs.value = res.duration_ms || (Date.now() - testStartTime);
+          if (runId !== currentRunId || abortController?.signal.aborted) return;
 
-      const { content, contentType, hasContent } = extractRenderableContent(res.text || "");
-      if (hasContent) {
-        pelicanContent.value = content;
-        pelicanSvg.value = content;
-        pelicanContentType.value = contentType;
+          lastResponseText = res.text || "";
+          finalDurationMs = res.duration_ms || (Date.now() - testStartTime);
 
-        // 仅在成功生成时归档至历史记录（存储时直接脱敏省略中间部分）
-        addPelicanHistoryItem({
-          configName: configName?.trim() || undefined,
-          baseUrl,
-          apiKey: maskApiKey(apiKey),
-          modelName,
-          reasoningEffort,
-          contentType,
-          content,
-          durationMs: durationMs.value,
-          prompt: promptToSend,
-        });
-      } else {
-        errorMsg.value = "模型未返回有效的 SVG 或 HTML 代码";
+          const { content, contentType, hasContent } = extractRenderableContent(res.text || "");
+          if (hasContent) {
+            stopTimer();
+            rawResponseText.value = lastResponseText;
+            durationMs.value = finalDurationMs;
+            pelicanContent.value = content;
+            pelicanSvg.value = content;
+            pelicanContentType.value = contentType;
+
+            // 仅在成功生成时归档至历史记录（存储时直接脱敏省略中间部分）
+            addPelicanHistoryItem({
+              configName: configName?.trim() || undefined,
+              baseUrl,
+              apiKey: maskApiKey(apiKey),
+              modelName,
+              reasoningEffort,
+              contentType,
+              content,
+              durationMs: durationMs.value,
+              prompt: promptToSend,
+            });
+
+            hasResult.value = true;
+            success = true;
+            break;
+          } else {
+            lastErrMsg = "模型未返回有效的 SVG 或 HTML 代码";
+            console.warn(
+              `鹈鹕测试第 ${attempt} 次尝试未成功（未返回有效的 SVG 或 HTML 代码）` +
+                (attempt < maxAttempts ? `，将在 ${DEFAULT_REQUEST_RETRY_DELAY_MS / 1000} 秒后静默重试...` : "")
+            );
+          }
+        } catch (err: unknown) {
+          if (runId !== currentRunId || abortController?.signal.aborted) return;
+          lastErrMsg =
+            err instanceof Error
+              ? err.message
+              : typeof err === "string"
+              ? err
+              : "请求异常，请检查网络或配置";
+          console.warn(
+            `鹈鹕测试第 ${attempt} 次尝试请求失败（${lastErrMsg}）` +
+              (attempt < maxAttempts ? `，将在 ${DEFAULT_REQUEST_RETRY_DELAY_MS / 1000} 秒后静默重试...` : "")
+          );
+        }
+
+        if (attempt < maxAttempts) {
+          await sleep(DEFAULT_REQUEST_RETRY_DELAY_MS, abortController?.signal);
+          if (runId !== currentRunId || abortController?.signal.aborted) return;
+        }
       }
-      hasResult.value = true;
-    } catch (err: unknown) {
-      if (runId !== currentRunId) return;
-      stopTimer();
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === "string"
-          ? err
-          : "请求异常，请检查网络或配置";
-      errorMsg.value = message;
-      durationMs.value = Date.now() - testStartTime;
-      hasResult.value = true;
+
+      if (runId !== currentRunId || abortController?.signal.aborted) return;
+
+      if (!success) {
+        stopTimer();
+        rawResponseText.value = lastResponseText;
+        durationMs.value = Date.now() - testStartTime;
+        errorMsg.value = lastErrMsg;
+        hasResult.value = true;
+      }
     } finally {
       if (runId === currentRunId) {
         stopTimer();
