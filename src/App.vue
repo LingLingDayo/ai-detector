@@ -163,6 +163,7 @@ function handleOpenGithub(): void {
           :has-started="probeStore.hasStarted"
           @refresh-questions="probeStore.refreshQuestions"
           @refresh-single-question="probeStore.refreshSingleQuestion"
+          @retry-single-question="probeStore.retrySingleQuestion"
         />
 
         <!-- 探测诊断报告卡片 -->

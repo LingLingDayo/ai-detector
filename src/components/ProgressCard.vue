@@ -27,6 +27,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "refreshQuestions"): void;
   (e: "refreshSingleQuestion", index: number): void;
+  (e: "retrySingleQuestion", index: number): void;
 }>();
 
 const selectedIndex = ref<number>(0);
@@ -97,9 +98,9 @@ function closeModal(): void {
           type="button"
           class="btn-step-retry"
           :disabled="isRunning"
-          title="重新生成该题目"
-          aria-label="重新生成该题目"
-          @click.stop="emit('refreshSingleQuestion', idx)"
+          title="手动重试本题"
+          aria-label="手动重试本题"
+          @click.stop="emit('retrySingleQuestion', idx)"
         >
           <RefreshCw :size="13" />
         </button>
@@ -122,6 +123,7 @@ function closeModal(): void {
       :initial-index="selectedIndex"
       :is-running="isRunning"
       @refresh-single-question="(idx) => emit('refreshSingleQuestion', idx)"
+      @retry-single-question="(idx) => emit('retrySingleQuestion', idx)"
       @close="closeModal"
     />
   </section>

@@ -16,6 +16,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "refreshSingleQuestion", index: number): void;
+  (e: "retrySingleQuestion", index: number): void;
 }>();
 
 const activeIndex = ref(props.initialIndex);
@@ -77,7 +78,11 @@ function selectStep(idx: number): void {
             @refresh-single="emit('refreshSingleQuestion', activeIndex)"
           />
 
-          <ProbeAnswerSection :step="currentStep" />
+          <ProbeAnswerSection
+            :step="currentStep"
+            :is-running="isRunning"
+            @retry="emit('retrySingleQuestion', activeIndex)"
+          />
         </div>
 
         <!-- 弹窗底栏 -->

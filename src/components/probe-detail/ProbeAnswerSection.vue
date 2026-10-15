@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { watch } from "vue";
-import { Copy, Check, AlertCircle } from "@lucide/vue";
+import { Copy, Check, AlertCircle, RefreshCw } from "@lucide/vue";
 import type { ProbeStepItem } from "../../types";
 import { useClipboard } from "../../composables/useClipboard";
 
 const props = defineProps<{
   step: ProbeStepItem;
+  isRunning?: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: "retry"): void;
 }>();
 
 const { copied: isAnswerCopied, copy: copyAnswer, reset: resetAnswerCopy } = useClipboard();
@@ -105,6 +110,16 @@ function handleCopyError(): void {
         <strong>未能获取到符合要求的有效回答</strong>
         <p class="error-msg">{{ step.error || "未收到模型返回的有效文本数据" }}</p>
       </div>
+      <button
+        type="button"
+        class="btn-retry-in-modal"
+        :disabled="isRunning"
+        title="手动重试本题"
+        @click="emit('retry')"
+      >
+        <RefreshCw :size="13" />
+        <span>手动重试本题</span>
+      </button>
     </div>
   </section>
 </template>
@@ -301,6 +316,35 @@ function handleCopyError(): void {
           user-select: text;
           -webkit-user-select: text;
           cursor: text;
+        }
+      }
+
+      .btn-retry-in-modal {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #fca5a5;
+        border-radius: var(--radius-sm);
+        font-size: 0.74rem;
+        font-weight: 500;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all var(--transition-fast);
+
+        &:hover:not(:disabled) {
+          background: rgba(239, 68, 68, 0.28);
+          border-color: rgba(239, 68, 68, 0.65);
+          color: #fff;
+          transform: translateY(-1px);
+        }
+
+        &:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
         }
       }
     }

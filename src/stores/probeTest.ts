@@ -22,6 +22,7 @@ import type {
 } from "../types";
 import { PROBE_HISTORY_STORAGE_KEY } from "../constants";
 import { maskApiKey } from "../utils/pelicanFormatters";
+import { useConfigStore } from "./config";
 
 const unifiedBank = rawUnifiedBank as unknown as UnifiedBank;
 
@@ -120,6 +121,8 @@ export const useProbeTestStore = defineStore("probeTest", () => {
 
   let currentRunId = 0;
   let abortController: AbortController | null = null;
+  let lastUsedConfig: Partial<ClientConfig> | null = null;
+  let lastUsedConfigName: string | undefined = undefined;
 
   function createInitialSteps(challenges: Challenge[]): ProbeStepItem[] {
     return challenges.map((ch, idx) => ({
@@ -211,181 +214,209 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     statusAlert.value = null;
     analysisResult.value = null;
     currentProbeHistoryItem.value = null;
+    lastUsedConfig = null;
+    lastUsedConfigName = undefined;
     currentChallenges.value = generateChallenges(totalCount);
     steps.value = createInitialSteps(currentChallenges.value);
   }
 
-  async function startTest(
-    config: ClientConfig,
-    configName?: string
-  ): Promise<void> {
-    const baseUrl = config.baseUrl.trim();
-    const apiKey = config.apiKey.trim();
-    const model = config.modelName.trim();
-    const apiFormat = config.apiFormat;
-    const reasoningEffort = config.reasoningEffort;
-    const isStream = config.stream !== false;
-    const timeoutSeconds = isStream ? 90 : 240;
+  interface SingleProbeResult {
+    accepted: boolean;
+    finalResponseText: string;
+    parsedNumbers: number[];
+    lastErrMsg: string;
+    minimum: number;
+  }
 
-    if (!baseUrl || !apiKey) {
-      alert("请填写 Base URL 和 API Key！");
-      return;
-    }
+  async function executeSingleProbe(params: {
+    index: number;
+    challenge: Challenge;
+    baseUrl: string;
+    apiKey: string;
+    model: string;
+    apiFormat?: string;
+    reasoningEffort?: string;
+    stream: boolean;
+    timeoutSeconds: number;
+    signal?: AbortSignal;
+    runId: number;
+  }): Promise<SingleProbeResult | null> {
+    const {
+      index,
+      challenge,
+      baseUrl,
+      apiKey,
+      model,
+      apiFormat,
+      reasoningEffort,
+      stream,
+      timeoutSeconds,
+      signal,
+      runId,
+    } = params;
 
-    if (!model) {
-      alert("请填写或选择测试模型 ID！");
-      return;
-    }
+    const minimum = Math.max(80, Math.ceil(challenge.expected_count * 0.55));
+    let accepted = false;
+    let finalResponseText = "";
+    let lastParsedNumbers: number[] = [];
+    let lastErrMsg = "";
 
-    const runId = ++currentRunId;
-    abortController?.abort();
-    abortController = new AbortController();
-
-    hasStarted.value = true;
-    hasResult.value = false;
-    isRunning.value = true;
-    testedModel.value = model;
-    progressPercent.value = 0;
-    completedCount.value = 0;
-    statusTitle.value = "测试进行中";
-    statusDesc.value = "已同时发起 3 题并发测试请求...";
-    statusAlert.value = null;
-    analysisResult.value = null;
-
-    const challenges = currentChallenges.value;
-    steps.value = challenges.map((ch, i) => ({
-      id: i,
-      state: "working",
-      stateText: "请求中",
-      statText: `期望 ${ch.expected_count} 个`,
-      prompt: ch.prompt,
-      expectedCount: ch.expected_count,
-    }));
-
-    const outputs: (ProbeOutputItem | null)[] = new Array(totalCount).fill(null);
-    const errors: string[] = [];
-
-    const tasks = challenges.map(async (challenge, i) => {
-      const minimum = Math.max(80, Math.ceil(challenge.expected_count * 0.55));
-      let accepted = false;
-      let finalResponseText = "";
-      let lastParsedNumbers: number[] = [];
-      let lastErrMsg = "";
-
-      // 最多尝试 2 次（初次执行 + 失败后最多静默重试 1 次）
-      const maxAttempts = 2;
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        if (runId !== currentRunId) return;
-        try {
-          const response = await sendProbe({
-            baseUrl,
-            apiKey,
-            model,
-            prompt: challenge.prompt,
-            apiFormat,
-            reasoningEffort,
-            stream: isStream,
-            timeoutSeconds,
-            signal: abortController?.signal,
-          });
-
-          if (runId !== currentRunId) return;
-
-          const parsedNumbers = parseNumbers(response.text);
-          lastParsedNumbers = parsedNumbers;
-          finalResponseText = response.text;
-
-          if (parsedNumbers.length >= minimum) {
-            accepted = true;
-            break;
-          } else {
-            lastErrMsg = `仅解析到 ${parsedNumbers.length} 个有效整数（需至少 ${minimum} 个）`;
-          }
-        } catch (err: unknown) {
-          if (runId !== currentRunId) return;
-          lastErrMsg = err instanceof Error ? err.message : String(err);
-          console.error(`第 ${i + 1} 题第 ${attempt} 次尝试失败:`, err);
-        }
-      }
-
-      if (runId !== currentRunId) return;
-
+    // 最多尝试 2 次（初次执行 + 失败后最多静默重试 1 次）
+    const maxAttempts = 2;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      if (runId !== currentRunId) return null;
       try {
-        if (accepted) {
-          steps.value[i] = {
-            id: i,
-            state: "done",
-            stateText: "已采纳",
-            statText: `${lastParsedNumbers.length} 个数字`,
-            prompt: challenge.prompt,
-            expectedCount: challenge.expected_count,
-            answer: finalResponseText,
-            parsedNumbers: lastParsedNumbers,
-          };
-          outputs[i] = {
-            text: finalResponseText,
-            expected_count: challenge.expected_count,
-          };
-        } else if (lastParsedNumbers.length > 0) {
-          steps.value[i] = {
-            id: i,
-            state: "error",
-            stateText: "数字不足",
-            statText: `${lastParsedNumbers.length}/${minimum}`,
-            prompt: challenge.prompt,
-            expectedCount: challenge.expected_count,
-            answer: finalResponseText,
-            parsedNumbers: lastParsedNumbers,
-            error: lastErrMsg,
-          };
-          errors.push(`第 ${i + 1} 题: ${lastErrMsg}`);
+        const response = await sendProbe({
+          baseUrl,
+          apiKey,
+          model,
+          prompt: challenge.prompt,
+          apiFormat: apiFormat || "openai",
+          reasoningEffort,
+          stream,
+          timeoutSeconds,
+          signal,
+        });
+
+        if (runId !== currentRunId) return null;
+
+        const parsedNumbers = parseNumbers(response.text);
+        lastParsedNumbers = parsedNumbers;
+        finalResponseText = response.text;
+
+        if (parsedNumbers.length >= minimum) {
+          accepted = true;
+          break;
         } else {
-          steps.value[i] = {
-            id: i,
-            state: "error",
-            stateText: "失败",
-            statText: "错误",
-            prompt: challenge.prompt,
-            expectedCount: challenge.expected_count,
-            answer: finalResponseText || undefined,
-            error: lastErrMsg,
-          };
-          errors.push(`第 ${i + 1} 题失败: ${lastErrMsg}`);
+          lastErrMsg = `仅解析到 ${parsedNumbers.length} 个有效整数（需至少 ${minimum} 个）`;
         }
-      } finally {
-        if (runId === currentRunId) {
-          completedCount.value += 1;
-          progressPercent.value = Math.round((completedCount.value / totalCount) * 100);
-          if (completedCount.value < totalCount) {
-            statusDesc.value = `已完成 ${completedCount.value}/${totalCount} 题，正在等待剩余响应...`;
-          } else {
-            statusDesc.value = "3 题测试完成，正在计算模型归因...";
-          }
-        }
+      } catch (err: unknown) {
+        if (runId !== currentRunId) return null;
+        lastErrMsg = err instanceof Error ? err.message : String(err);
+        console.error(`第 ${index + 1} 题第 ${attempt} 次尝试失败:`, err);
       }
-    });
+    }
 
-    await Promise.all(tasks);
+    if (runId !== currentRunId) return null;
 
-    if (runId !== currentRunId) return;
+    return {
+      accepted,
+      finalResponseText,
+      parsedNumbers: lastParsedNumbers,
+      lastErrMsg,
+      minimum,
+    };
+  }
 
-    const validOutputs = outputs.filter((item): item is ProbeOutputItem => item !== null);
-
-    // 处理评估分析与输出
-    if (validOutputs.length === 0) {
-      statusTitle.value = "未获得有效样本";
-      statusDesc.value = "3 题测试均未能获取合规输出，请检查错误原因。";
-      statusAlert.value = {
-        message: errors.join("；\n") || "未获得任何可分析输出。",
-        type: "error",
+  function applyProbeResult(
+    index: number,
+    challenge: Challenge,
+    res: SingleProbeResult
+  ): void {
+    if (res.accepted) {
+      steps.value[index] = {
+        id: index,
+        state: "done",
+        stateText: "已采纳",
+        statText: `${res.parsedNumbers.length} 个数字`,
+        prompt: challenge.prompt,
+        expectedCount: challenge.expected_count,
+        answer: res.finalResponseText,
+        parsedNumbers: res.parsedNumbers,
+      };
+    } else if (res.parsedNumbers.length > 0) {
+      steps.value[index] = {
+        id: index,
+        state: "error",
+        stateText: "数字不足",
+        statText: `${res.parsedNumbers.length}/${res.minimum}`,
+        prompt: challenge.prompt,
+        expectedCount: challenge.expected_count,
+        answer: res.finalResponseText,
+        parsedNumbers: res.parsedNumbers,
+        error: res.lastErrMsg,
       };
     } else {
+      steps.value[index] = {
+        id: index,
+        state: "error",
+        stateText: "失败",
+        statText: "错误",
+        prompt: challenge.prompt,
+        expectedCount: challenge.expected_count,
+        answer: res.finalResponseText || undefined,
+        error: res.lastErrMsg,
+      };
+    }
+  }
+
+  function finalizeTestEvaluation(params: {
+    baseUrl: string;
+    apiKey: string;
+    model: string;
+    reasoningEffort?: string;
+    configName?: string;
+    retryInfo?: { index: number; accepted: boolean };
+    runId: number;
+  }): void {
+    const { baseUrl, apiKey, model, reasoningEffort, configName, retryInfo, runId } = params;
+    if (runId !== currentRunId) return;
+
+    const validOutputs: ProbeOutputItem[] = [];
+    for (const s of steps.value) {
+      if (s.state === "done" && s.answer) {
+        validOutputs.push({
+          text: s.answer,
+          expected_count: s.expectedCount,
+        });
+      }
+    }
+
+    const allErrors = steps.value
+      .map((s, i) => (s.state === "error" && s.error ? `第 ${i + 1} 题: ${s.error}` : null))
+      .filter(Boolean);
+
+    if (validOutputs.length === 0) {
+      statusTitle.value = "未获得有效样本";
+      if (retryInfo) {
+        statusDesc.value = `第 ${retryInfo.index + 1} 题重试未成功，3 题均未能获取合规输出。`;
+      } else {
+        statusDesc.value = "3 题测试均未能获取合规输出，请检查错误原因。";
+      }
+      statusAlert.value = {
+        message: allErrors.join("；\n") || "未获得任何可分析输出。",
+        type: "error",
+      };
+      analysisResult.value = null;
+    } else {
       statusTitle.value = "测试完成";
-      statusDesc.value = `成功采纳 ${validOutputs.length}/${totalCount} 份有效输出样本`;
+      if (retryInfo) {
+        if (retryInfo.accepted) {
+          statusDesc.value =
+            validOutputs.length === totalCount
+              ? `第 ${retryInfo.index + 1} 题重试成功，3 题已全部采纳！`
+              : `第 ${retryInfo.index + 1} 题重试成功，已采纳 ${validOutputs.length}/${totalCount} 份有效样本`;
+        } else {
+          statusDesc.value = `第 ${retryInfo.index + 1} 题重试未成功，当前有效样本: ${validOutputs.length}/${totalCount}`;
+        }
+      } else {
+        statusDesc.value =
+          validOutputs.length === totalCount
+            ? "3 题测试均已完成并成功采纳！"
+            : `成功采纳 ${validOutputs.length}/${totalCount} 份有效输出样本`;
+      }
+
+      if (allErrors.length > 0) {
+        statusAlert.value = {
+          message: allErrors.join("；\n"),
+          type: "error",
+        };
+      } else {
+        statusAlert.value = null;
+      }
+
       try {
         analysisResult.value = analyzeGlobalOutputs(validOutputs, unifiedBank);
-
-        // 测试成功且计算出分析结果后归档入历史记录（存储时 apiKey 自动脱敏）
         if (analysisResult.value) {
           const candidates = (analysisResult.value.results || []).slice(0, 3).map((r) => ({
             model: r.model,
@@ -428,6 +459,217 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     hasResult.value = true;
   }
 
+  async function startTest(
+    config: ClientConfig,
+    configName?: string
+  ): Promise<void> {
+    const baseUrl = config.baseUrl.trim();
+    const apiKey = config.apiKey.trim();
+    const model = config.modelName.trim();
+    const apiFormat = config.apiFormat;
+    const reasoningEffort = config.reasoningEffort;
+    const isStream = config.stream !== false;
+    const timeoutSeconds = isStream ? 90 : 240;
+
+    if (!baseUrl || !apiKey) {
+      alert("请填写 Base URL 和 API Key！");
+      return;
+    }
+
+    if (!model) {
+      alert("请填写或选择测试模型 ID！");
+      return;
+    }
+
+    const runId = ++currentRunId;
+    abortController?.abort();
+    abortController = new AbortController();
+
+    lastUsedConfig = { ...config };
+    lastUsedConfigName = configName;
+
+    hasStarted.value = true;
+    hasResult.value = false;
+    isRunning.value = true;
+    testedModel.value = model;
+    progressPercent.value = 0;
+    completedCount.value = 0;
+    statusTitle.value = "测试进行中";
+    statusDesc.value = "已同时发起 3 题并发测试请求...";
+    statusAlert.value = null;
+    analysisResult.value = null;
+
+    const challenges = currentChallenges.value;
+    steps.value = challenges.map((ch, i) => ({
+      id: i,
+      state: "working",
+      stateText: "请求中",
+      statText: `期望 ${ch.expected_count} 个`,
+      prompt: ch.prompt,
+      expectedCount: ch.expected_count,
+    }));
+
+    const tasks = challenges.map(async (challenge, i) => {
+      try {
+        const res = await executeSingleProbe({
+          index: i,
+          challenge,
+          baseUrl,
+          apiKey,
+          model,
+          apiFormat,
+          reasoningEffort,
+          stream: isStream,
+          timeoutSeconds,
+          signal: abortController?.signal,
+          runId,
+        });
+
+        if (runId !== currentRunId || !res) return;
+        applyProbeResult(i, challenge, res);
+      } finally {
+        if (runId === currentRunId) {
+          completedCount.value += 1;
+          progressPercent.value = Math.round((completedCount.value / totalCount) * 100);
+          if (completedCount.value < totalCount) {
+            statusDesc.value = `已完成 ${completedCount.value}/${totalCount} 题，正在等待剩余响应...`;
+          } else {
+            statusDesc.value = "3 题测试完成，正在计算模型归因...";
+          }
+        }
+      }
+    });
+
+    await Promise.all(tasks);
+    if (runId !== currentRunId) return;
+
+    finalizeTestEvaluation({
+      baseUrl,
+      apiKey,
+      model,
+      reasoningEffort,
+      configName,
+      runId,
+    });
+  }
+
+  async function retrySingleQuestion(
+    index: number,
+    config?: ClientConfig,
+    configName?: string
+  ): Promise<void> {
+    if (isRunning.value || index < 0 || index >= totalCount) return;
+
+    const configStore = useConfigStore();
+    const probeConfig = configStore.probeConfig;
+    const baseUrl = (config?.baseUrl || probeConfig.baseUrl || lastUsedConfig?.baseUrl || "").trim();
+    const apiKey = (config?.apiKey || probeConfig.apiKey || lastUsedConfig?.apiKey || "").trim();
+    const model = (config?.modelName || probeConfig.modelName || testedModel.value || lastUsedConfig?.modelName || "").trim();
+    const apiFormat = config?.apiFormat ?? probeConfig.apiFormat ?? lastUsedConfig?.apiFormat;
+    const reasoningEffort = config?.reasoningEffort ?? probeConfig.reasoningEffort ?? lastUsedConfig?.reasoningEffort;
+    const isStream = (config?.stream ?? probeConfig.stream ?? lastUsedConfig?.stream) !== false;
+    const timeoutSeconds = isStream ? 90 : 240;
+
+    if (!baseUrl || !apiKey) {
+      alert("请填写 Base URL 和 API Key！");
+      return;
+    }
+
+    if (!model) {
+      alert("请填写或选择测试模型 ID！");
+      return;
+    }
+
+    const runId = ++currentRunId;
+    abortController?.abort();
+    abortController = new AbortController();
+
+    lastUsedConfig = {
+      baseUrl,
+      apiKey,
+      modelName: model,
+      apiFormat,
+      reasoningEffort,
+      stream: isStream,
+    };
+    if (configName) lastUsedConfigName = configName;
+
+    hasStarted.value = true;
+    isRunning.value = true;
+    testedModel.value = model;
+
+    const challenge = currentChallenges.value[index];
+
+    // 将本题置为 working 状态
+    steps.value[index] = {
+      id: index,
+      state: "working",
+      stateText: "重试中",
+      statText: `期望 ${challenge.expected_count} 个`,
+      prompt: challenge.prompt,
+      expectedCount: challenge.expected_count,
+      answer: undefined,
+      parsedNumbers: undefined,
+      error: undefined,
+    };
+
+    // 重新计算进行中的进度条与完成数（其余已出结果的题目视为已完成，本题重试中）
+    const completedBefore = steps.value.filter(
+      (s, i) => i !== index && (s.state === "done" || s.state === "error")
+    ).length;
+    completedCount.value = completedBefore;
+    progressPercent.value = Math.round((completedCount.value / totalCount) * 100);
+
+    statusTitle.value = "测试进行中";
+    statusDesc.value = `正在手动重试第 ${index + 1} 题，请稍候...`;
+
+    // 过滤掉当前题的旧报错，仅保留其它题目的报错提示
+    const otherErrors = steps.value
+      .map((s, i) => (i !== index && s.state === "error" && s.error ? `第 ${i + 1} 题: ${s.error}` : null))
+      .filter(Boolean);
+    statusAlert.value = otherErrors.length > 0
+      ? { message: otherErrors.join("；\n"), type: "error" }
+      : null;
+
+    const res = await executeSingleProbe({
+      index,
+      challenge,
+      baseUrl,
+      apiKey,
+      model,
+      apiFormat,
+      reasoningEffort,
+      stream: isStream,
+      timeoutSeconds,
+      signal: abortController.signal,
+      runId,
+    });
+
+    if (runId !== currentRunId || !res) return;
+
+    applyProbeResult(index, challenge, res);
+
+    // 重试完成，全部题目都已有结果
+    completedCount.value = totalCount;
+    progressPercent.value = 100;
+
+    const resolvedConfigName =
+      configName?.trim() ||
+      configStore.matchedConfigItem?.name ||
+      (configStore.isCurrentConfigSaved ? configStore.activeConfigName : undefined) ||
+      lastUsedConfigName;
+
+    finalizeTestEvaluation({
+      baseUrl,
+      apiKey,
+      model,
+      reasoningEffort,
+      configName: resolvedConfigName,
+      retryInfo: { index, accepted: res.accepted },
+      runId,
+    });
+  }
+
   return {
     isRunning,
     hasStarted,
@@ -450,6 +692,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     resetTest,
     refreshQuestions,
     refreshSingleQuestion,
+    retrySingleQuestion,
     deleteProbeHistoryItem,
     clearProbeHistory,
     applyHistoryItem,
