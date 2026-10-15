@@ -6,7 +6,6 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: "selectStep", index: number): void;
-  (e: "close"): void;
 }>();
 </script>
 
@@ -28,13 +27,6 @@ const emit = defineEmits<{
         @click="emit('selectStep', activeIndex + 1)"
       >
         下一题
-      </button>
-      <button
-        type="button"
-        class="btn btn-primary modal-footer-btn"
-        @click="emit('close')"
-      >
-        关闭
       </button>
     </div>
   </div>

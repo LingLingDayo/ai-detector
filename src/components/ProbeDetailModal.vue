@@ -90,7 +90,6 @@ function selectStep(idx: number): void {
           :active-index="activeIndex"
           :total-steps="steps.length"
           @select-step="selectStep"
-          @close="emit('close')"
         />
       </div>
     </div>
