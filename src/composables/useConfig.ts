@@ -222,7 +222,6 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
       high: "高",
       xhigh: "极高",
       max: "最高",
-      ultra: "极致",
     };
     const effortLabel = effortMap[config.reasoningEffort] || "高";
     const streamLabel = config.stream !== false ? "流式" : "同步";

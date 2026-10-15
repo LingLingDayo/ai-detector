@@ -418,7 +418,6 @@ export async function sendProbe({
           high: 8192,
           xhigh: 16384,
           max: 32768,
-          ultra: 65536,
         };
         budget = budgetMap[trimmed] || 8192;
       }

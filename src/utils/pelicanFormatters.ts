@@ -29,7 +29,6 @@ export function formatReasoningEffort(effort?: string): string {
     high: "高 (high)",
     xhigh: "极高 (xhigh)",
     max: "最高 (max)",
-    ultra: "极致 (ultra)",
   };
   return map[effort.toLowerCase()] || effort;
 }

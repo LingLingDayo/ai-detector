@@ -613,7 +613,6 @@ async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> 
                             "high" => 8192,
                             "xhigh" => 16384,
                             "max" => 32768,
-                            "ultra" => 65536,
                             _ => 8192,
                         }
                     };

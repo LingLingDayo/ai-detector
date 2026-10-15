@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 // 由于是 ts 模块，我们可以通过 node 动态执行测试，或者简单验证配置规则的纯逻辑。
 // 先构建一个简单的 node 运行脚本进行断言。
 import {
+  ALL_REASONING_EFFORT_OPTIONS,
   MODEL_REASONING_RULES,
   normalizeModelName,
   findModelReasoningRule,
@@ -260,6 +261,21 @@ test("resolveValidReasoningEffort 正确修正思考强度", () => {
   // 未匹配模型，保留原值或默认 high
   const effort4 = resolveValidReasoningEffort("unknown-model", "minimal");
   assert.equal(effort4, "minimal");
+
+  // 已移除的 ultra 等级，对于未匹配模型平滑回退至默认 high
+  const effort5 = resolveValidReasoningEffort("unknown-model", "ultra");
+  assert.equal(effort5, "high");
+
+  // 已移除的 ultra 等级，对于匹配特定规则模型平滑回退至其默认值
+  const effort6 = resolveValidReasoningEffort("gpt-5.6-sol", "ultra");
+  assert.equal(effort6, "medium");
 });
+
+test("ALL_REASONING_EFFORT_OPTIONS 不再包含已移除的 ultra 档位", () => {
+  const values = ALL_REASONING_EFFORT_OPTIONS.map((opt) => opt.value);
+  assert.equal(values.includes("ultra"), false, "预设档位中不应包含 ultra");
+  assert.deepEqual(values, ["none", "minimal", "low", "medium", "high", "xhigh", "max"]);
+});
+
 
 
