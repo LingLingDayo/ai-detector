@@ -8,9 +8,6 @@ import {
 } from "../constants";
 import type { ClientConfig, ConfigItem } from "../types";
 import { useConfirm } from "../composables/useConfirm";
-import { useProbeTestStore } from "./probeTest";
-import { usePelicanTestStore } from "./pelicanTest";
-import { useAppStore } from "./app";
 
 function generateConfigId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -59,6 +56,13 @@ export function isConfigEqual(current: ClientConfig, item: ConfigItem): boolean 
 export const useConfigStore = defineStore("config", () => {
   const { confirm } = useConfirm();
 
+  // 当前测试模式：probe（模型测试）或 pelican（鹈鹕测试）
+  const activeMode = ref<"probe" | "pelican">("probe");
+
+  function setActiveMode(mode: "probe" | "pelican"): void {
+    activeMode.value = mode;
+  }
+
   const probeConfig = reactive<ClientConfig>({
     baseUrl: "",
     apiKey: "",
@@ -77,16 +81,14 @@ export const useConfigStore = defineStore("config", () => {
     stream: true,
   });
 
-  // 根据当前 App 的激活模式，提供统一代理对象
+  // 根据当前激活模式，提供统一的动态代理对象
   const config = new Proxy({} as ClientConfig, {
     get(_, prop: string) {
-      const appStore = useAppStore();
-      const activeObj = appStore.activeMode === "pelican" ? pelicanConfig : probeConfig;
+      const activeObj = activeMode.value === "pelican" ? pelicanConfig : probeConfig;
       return (activeObj as any)[prop];
     },
     set(_, prop: string, value: any) {
-      const appStore = useAppStore();
-      const activeObj = appStore.activeMode === "pelican" ? pelicanConfig : probeConfig;
+      const activeObj = activeMode.value === "pelican" ? pelicanConfig : probeConfig;
       (activeObj as any)[prop] = value;
       return true;
     },
@@ -248,8 +250,7 @@ export const useConfigStore = defineStore("config", () => {
   function saveConfig(): void {
     if (isInitializing) return;
     try {
-      const appStore = useAppStore();
-      const cur = appStore.activeMode === "pelican" ? pelicanConfig : probeConfig;
+      const cur = activeMode.value === "pelican" ? pelicanConfig : probeConfig;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cur));
     } catch (err) {
       console.warn("保存当前配置失败:", err);
@@ -294,9 +295,6 @@ export const useConfigStore = defineStore("config", () => {
   }
 
   function applyConfig(item: ConfigItem, onApply?: (item: ConfigItem) => void): void {
-    const probeStore = useProbeTestStore();
-    const pelicanStore = usePelicanTestStore();
-
     const applyTo = (cfg: ClientConfig) => {
       cfg.baseUrl = item.baseUrl || "";
       cfg.apiKey = item.apiKey || "";
@@ -309,15 +307,8 @@ export const useConfigStore = defineStore("config", () => {
       cfg.stream = item.stream !== false;
     };
 
-    // 仅向当前未在运行的模式应用配置，避免破坏正在进行的测试
-    if (!probeStore.isRunning) {
-      applyTo(probeConfig);
-      probeStore.resetTest();
-    }
-    if (!pelicanStore.isPelicanRunning) {
-      applyTo(pelicanConfig);
-      pelicanStore.resetPelicanTest();
-    }
+    applyTo(probeConfig);
+    applyTo(pelicanConfig);
 
     activeConfigId.value = item.id;
     saveConfig();
@@ -502,7 +493,7 @@ export const useConfigStore = defineStore("config", () => {
     }
   }
 
-  async function resetConfig(): Promise<boolean> {
+  async function resetConfig(onReset?: () => void): Promise<boolean> {
     const confirmed = await confirm({
       type: "warning",
       styleVariant: "spotlight",
@@ -531,22 +522,15 @@ export const useConfigStore = defineStore("config", () => {
       cfg.stream = true;
     };
 
-    const probeStore = useProbeTestStore();
-    const pelicanStore = usePelicanTestStore();
-
-    if (!probeStore.isRunning) {
-      resetOne(probeConfig);
-      probeStore.resetTest();
-    }
-    if (!pelicanStore.isPelicanRunning) {
-      resetOne(pelicanConfig);
-      pelicanStore.resetPelicanTest();
-    }
+    resetOne(probeConfig);
+    resetOne(pelicanConfig);
 
     activeConfigId.value = null;
     try {
       localStorage.removeItem(ACTIVE_CONFIG_ID_KEY);
     } catch {}
+
+    onReset?.();
     return true;
   }
 
@@ -575,9 +559,7 @@ export const useConfigStore = defineStore("config", () => {
   watch(
     () => [probeConfig.baseUrl, probeConfig.apiKey],
     ([newUrl, newKey]) => {
-      const appStore = useAppStore();
-      const pelicanStore = usePelicanTestStore();
-      if (appStore.activeMode === "probe" && !pelicanStore.isPelicanRunning) {
+      if (activeMode.value === "probe") {
         pelicanConfig.baseUrl = newUrl;
         pelicanConfig.apiKey = newKey;
       }
@@ -587,9 +569,7 @@ export const useConfigStore = defineStore("config", () => {
   watch(
     () => [pelicanConfig.baseUrl, pelicanConfig.apiKey],
     ([newUrl, newKey]) => {
-      const appStore = useAppStore();
-      const probeStore = useProbeTestStore();
-      if (appStore.activeMode === "pelican" && !probeStore.isRunning) {
+      if (activeMode.value === "pelican") {
         probeConfig.baseUrl = newUrl;
         probeConfig.apiKey = newKey;
       }
@@ -602,6 +582,8 @@ export const useConfigStore = defineStore("config", () => {
   });
 
   return {
+    activeMode,
+    setActiveMode,
     config,
     probeConfig,
     pelicanConfig,

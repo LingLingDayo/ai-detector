@@ -6,7 +6,13 @@ import { usePelicanTestStore } from "./pelicanTest";
 import type { PelicanHistoryItem, ProbeHistoryItem } from "../types";
 
 export const useAppStore = defineStore("app", () => {
-  const activeMode = ref<"probe" | "pelican">("probe");
+  const configStore = useConfigStore();
+
+  const activeMode = computed<"probe" | "pelican">({
+    get: () => configStore.activeMode,
+    set: (mode) => configStore.setActiveMode(mode),
+  });
+
   const isHistoryModalOpen = ref(false);
   const isProbeCancelled = ref(false);
   const isPelicanCancelled = ref(false);
