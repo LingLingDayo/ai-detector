@@ -12,8 +12,8 @@ import {
   resolveValidReasoningEffort,
 } from "../../src/data/modelReasoningRules.ts";
 
-test("MODEL_REASONING_RULES 包含了全部 14 个模型规则", () => {
-  assert.equal(MODEL_REASONING_RULES.length, 14);
+test("MODEL_REASONING_RULES 包含了全部 18 个模型规则", () => {
+  assert.equal(MODEL_REASONING_RULES.length, 18);
 
   const modelNames = MODEL_REASONING_RULES.map((r) => r.model);
   const expectedModels = [
@@ -31,6 +31,10 @@ test("MODEL_REASONING_RULES 包含了全部 14 个模型规则", () => {
     "DeepSeek-V4.1-Flash",
     "Grok-4.6",
     "Grok-4.7",
+    "claude-sonnet-5",
+    "claude-sonnet-5-5",
+    "claude-opus-5",
+    "claude-opus-5-5",
   ];
 
   for (const expected of expectedModels) {
@@ -74,9 +78,27 @@ test("精确匹配与前缀匹配", () => {
 
   const slashFlashRule = findModelReasoningRule("deepseek/deepseek-flash");
   assert.equal(slashFlashRule?.model, "DeepSeek-V4.1-Flash");
+
+  // Anthropic Claude 官方模型标识与前缀测试
+  const sonnet5Rule = findModelReasoningRule("claude-sonnet-5");
+  assert.equal(sonnet5Rule?.model, "claude-sonnet-5");
+  assert.equal(sonnet5Rule?.defaultEffort, "high");
+  assert.equal(sonnet5Rule?.allowDisableReasoning, true);
+
+  const sonnet55Rule = findModelReasoningRule("claude-sonnet-5-5");
+  assert.equal(sonnet55Rule?.model, "claude-sonnet-5-5");
+
+  const opus5Rule = findModelReasoningRule("claude-opus-5");
+  assert.equal(opus5Rule?.model, "claude-opus-5");
+
+  const slashOpusRule = findModelReasoningRule("anthropic/claude-opus-5");
+  assert.equal(slashOpusRule?.model, "claude-opus-5");
+
+  const opus55Rule = findModelReasoningRule("claude-opus-5-5");
+  assert.equal(opus55Rule?.model, "claude-opus-5-5");
 });
 
-test("表格全部 14 个模型的思考强度与默认值完全对齐需求表", () => {
+test("表格全部 18 个模型的思考强度与默认值完全对齐需求表", () => {
   const tableData = [
     {
       vendor: "OpenAI GPT-5.6",
@@ -174,6 +196,34 @@ test("表格全部 14 个模型的思考强度与默认值完全对齐需求表"
       model: "Grok-4.7",
       supported: ["low", "medium", "high", "xhigh"],
       defaultEffort: "high",
+      allowDisable: false,
+    },
+    {
+      vendor: "Anthropic Claude",
+      model: "claude-sonnet-5",
+      supported: ["none", "low", "medium", "high", "xhigh", "max"],
+      defaultEffort: "high",
+      allowDisable: true,
+    },
+    {
+      vendor: "Anthropic Claude",
+      model: "claude-sonnet-5-5",
+      supported: ["low", "medium", "high", "xhigh", "max"],
+      defaultEffort: "high",
+      allowDisable: false,
+    },
+    {
+      vendor: "Anthropic Claude",
+      model: "claude-opus-5",
+      supported: ["none", "low", "medium", "high", "xhigh", "max"],
+      defaultEffort: "high",
+      allowDisable: true,
+    },
+    {
+      vendor: "Anthropic Claude",
+      model: "claude-opus-5-5",
+      supported: ["low", "medium", "high", "xhigh", "max"],
+      defaultEffort: "medium",
       allowDisable: false,
     },
   ];

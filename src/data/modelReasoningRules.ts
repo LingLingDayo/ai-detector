@@ -124,16 +124,14 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     model: "GLM-5.3",
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
-    allowDisableReasoning: false,
-    notes: "强制思考",
+    allowDisableReasoning: false
   },
   {
     vendor: "Zhipu GLM-5.3",
     model: "GLM-5.3-FLASH",
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
-    allowDisableReasoning: false,
-    notes: "强制思考",
+    allowDisableReasoning: false
   },
 
   // ==================== Moonshot Kimi ====================
@@ -142,8 +140,7 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     model: "Kimi K3",
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
-    allowDisableReasoning: false,
-    notes: "强制思考",
+    allowDisableReasoning: false
   },
 
   // ==================== DeepSeek ====================
@@ -178,6 +175,36 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["low", "medium", "high", "xhigh"],
     defaultEffort: "high",
     allowDisableReasoning: false,
+  },
+
+  // ==================== Anthropic Claude ====================
+  {
+    vendor: "Anthropic Claude",
+    model: "claude-sonnet-5",
+    supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "high",
+    allowDisableReasoning: true,
+  },
+  {
+    vendor: "Anthropic Claude",
+    model: "claude-sonnet-5-5",
+    supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "high",
+    allowDisableReasoning: false
+  },
+  {
+    vendor: "Anthropic Claude",
+    model: "claude-opus-5",
+    supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "high",
+    allowDisableReasoning: true,
+  },
+  {
+    vendor: "Anthropic Claude",
+    model: "claude-opus-5-5",
+    supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "medium",
+    allowDisableReasoning: false
   },
 ] as const;
 
