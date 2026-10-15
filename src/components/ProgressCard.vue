@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { RefreshCw } from "@lucide/vue";
 import type { ProbeStepItem, StatusAlertInfo } from "../types";
 import ProbeDetailModal from "./ProbeDetailModal.vue";
@@ -29,6 +29,14 @@ const emit = defineEmits<{
   (e: "refreshSingleQuestion", index: number): void;
   (e: "retrySingleQuestion", index: number): void;
 }>();
+
+const alertLines = computed<string[]>(() => {
+  if (!props.statusAlert?.message) return [];
+  return props.statusAlert.message
+    .split("\n")
+    .map((line) => line.trim().replace(/[;；]$/, ""))
+    .filter(Boolean);
+});
 
 const selectedIndex = ref<number>(0);
 const isModalOpen = ref(false);
@@ -112,12 +120,18 @@ function closeModal(): void {
     </div>
 
     <div
-      v-if="statusAlert"
+      v-if="statusAlert && alertLines.length > 0"
       class="status-alert"
       :class="statusAlert.type"
       id="status-alert"
     >
-      {{ statusAlert.message }}
+      <div
+        v-for="(line, idx) in alertLines"
+        :key="idx"
+        class="status-alert-line"
+      >
+        {{ line }}
+      </div>
     </div>
 
     <!-- 题目内容与模型回答弹窗 -->
@@ -424,11 +438,19 @@ function closeModal(): void {
     user-select: text;
     -webkit-user-select: text;
     cursor: text;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 
     &.error {
       background: var(--danger-bg);
       border: 1px solid rgba(239, 68, 68, 0.3);
       color: #fca5a5;
+    }
+
+    .status-alert-line {
+      line-height: 1.45;
+      word-break: break-word;
     }
   }
 }

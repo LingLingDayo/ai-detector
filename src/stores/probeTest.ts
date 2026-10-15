@@ -172,7 +172,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
       .filter(Boolean);
     statusAlert.value =
       currentErrors.length > 0
-        ? { message: currentErrors.join("；\n"), type: "error" }
+        ? { message: currentErrors.join("\n"), type: "error" }
         : null;
   }
 
@@ -448,7 +448,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
       statusTitle.value = "未获得有效样本";
       statusDesc.value = "3 题测试均未能获取合规输出，请检查错误原因。";
       statusAlert.value = {
-        message: allErrors.join("；\n") || "未获得任何可分析输出。",
+        message: allErrors.join("\n") || "未获得任何可分析输出。",
         type: "error",
       };
       analysisResult.value = null;
@@ -461,7 +461,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
 
       if (allErrors.length > 0) {
         statusAlert.value = {
-          message: allErrors.join("；\n"),
+          message: allErrors.join("\n"),
           type: "error",
         };
       } else {
