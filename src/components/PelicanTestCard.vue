@@ -208,6 +208,14 @@ function handleDownloadContent(): void {
     background: var(--danger-bg);
     border: 1px solid rgba(239, 68, 68, 0.3);
     color: #fca5a5;
+    user-select: text;
+    -webkit-user-select: text;
+
+    .alert-content {
+      user-select: text;
+      -webkit-user-select: text;
+      cursor: text;
+    }
   }
 
   .alert-icon {
@@ -218,10 +226,15 @@ function handleDownloadContent(): void {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: none;
   }
 
   .alert-title {
     font-weight: 600;
+    user-select: text;
+    -webkit-user-select: text;
   }
 }
 </style>

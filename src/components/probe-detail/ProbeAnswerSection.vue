@@ -22,6 +22,11 @@ function handleCopyAnswer(): void {
     copyAnswer(props.step.answer);
   }
 }
+
+function handleCopyError(): void {
+  const errorText = props.step.error || "未收到模型返回的有效文本数据";
+  copyAnswer(errorText);
+}
 </script>
 
 <template>
@@ -54,6 +59,18 @@ function handleCopyAnswer(): void {
           <Copy v-if="!isAnswerCopied" :size="13" />
           <Check v-else :size="13" />
           <span>{{ isAnswerCopied ? "已复制" : "复制" }}</span>
+        </button>
+        <button
+          v-else-if="step.state === 'error' || step.error"
+          type="button"
+          class="btn-copy"
+          :class="{ copied: isAnswerCopied }"
+          title="复制错误信息"
+          @click="handleCopyError"
+        >
+          <Copy v-if="!isAnswerCopied" :size="13" />
+          <Check v-else :size="13" />
+          <span>{{ isAnswerCopied ? "已复制" : "复制错误" }}</span>
         </button>
       </div>
     </div>
@@ -255,16 +272,36 @@ function handleCopyAnswer(): void {
       color: #fca5a5;
       border-color: rgba(239, 68, 68, 0.35);
       background: rgba(239, 68, 68, 0.06);
+      user-select: text;
+      -webkit-user-select: text;
 
       svg {
         color: var(--danger);
         flex-shrink: 0;
         margin-top: 2px;
+        user-select: none;
+        -webkit-user-select: none;
+        pointer-events: none;
       }
 
-      .error-msg {
-        color: #fca5a5;
-        word-break: break-word;
+      .placeholder-text {
+        user-select: text;
+        -webkit-user-select: text;
+        cursor: text;
+
+        strong {
+          user-select: text;
+          -webkit-user-select: text;
+          cursor: text;
+        }
+
+        .error-msg {
+          color: #fca5a5;
+          word-break: break-word;
+          user-select: text;
+          -webkit-user-select: text;
+          cursor: text;
+        }
       }
     }
 

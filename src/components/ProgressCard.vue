@@ -409,6 +409,9 @@ function closeModal(): void {
     padding: 6px 10px;
     border-radius: var(--radius-sm);
     font-size: 0.76rem;
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
 
     &.error {
       background: var(--danger-bg);

@@ -41,6 +41,11 @@
   padding: 0;
 }
 
+::selection {
+  background: rgba(99, 102, 241, 0.45);
+  color: #ffffff;
+}
+
 /* Custom Minimalist Dark Scrollbars */
 ::-webkit-scrollbar {
   width: 5px;
