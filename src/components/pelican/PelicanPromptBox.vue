@@ -85,7 +85,7 @@ watch(
             title="恢复为默认提示词"
             @click="handleResetToDefault"
           >
-            <RotateCcw :size="11" />
+            <RotateCcw :size="12" />
             <span>恢复默认</span>
           </button>
           <button
@@ -102,7 +102,7 @@ watch(
             title="保存提示词"
             @click="savePrompt"
           >
-            <Check :size="11" :stroke-width="2.5" />
+            <Check :size="12" :stroke-width="2.5" />
             <span>保存</span>
           </button>
         </template>
@@ -114,10 +114,10 @@ watch(
             title="复制测试提示词到剪贴板"
             @click="handleCopyPrompt"
           >
-            <Copy v-if="!promptCopied" :size="11" />
+            <Copy v-if="!promptCopied" :size="12" />
             <Check
               v-else
-              :size="11"
+              :size="12"
               stroke="#10b981"
               :stroke-width="2.5"
             />
@@ -130,7 +130,7 @@ watch(
             title="编辑测试提示词"
             @click="startEditing"
           >
-            <SquarePen :size="11" />
+            <SquarePen :size="12" />
             <span>编辑</span>
           </button>
         </template>
@@ -203,23 +203,23 @@ watch(
   .prompt-actions {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
   }
 
   .btn-prompt-action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    height: 20px;
-    padding: 0 6px;
-    background: transparent;
-    border: 1px solid transparent;
-    color: #94a3b8;
-    font-size: 0.72rem;
+    gap: 4px;
+    height: 22px;
+    padding: 0 7px;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
     line-height: 1;
     cursor: pointer;
-    border-radius: 3px;
     transition: all var(--transition-fast);
     font-family: inherit;
 
@@ -232,11 +232,13 @@ watch(
       display: inline-flex;
       align-items: center;
       line-height: 1;
+      transform: translateY(-0.5px);
     }
 
     &:hover:not(:disabled) {
-      color: #f8fafc;
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(30, 41, 59, 0.9);
+      color: #fff;
+      border-color: rgba(99, 102, 241, 0.4);
     }
 
     &:disabled {
@@ -244,44 +246,22 @@ watch(
       cursor: not-allowed;
     }
 
-    &.edit {
-      border: 1px solid var(--border-subtle);
-      background: rgba(30, 41, 59, 0.4);
-
-      &:hover:not(:disabled) {
-        border-color: rgba(99, 102, 241, 0.4);
-        background: rgba(99, 102, 241, 0.15);
-        color: #e0e7ff;
-      }
-    }
-
     &.save {
       background: rgba(99, 102, 241, 0.25);
-      border: 1px solid #6366f1;
-      color: #c7d2fe;
+      border-color: #6366f1;
+      color: #fff;
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: rgba(99, 102, 241, 0.45);
-        color: #ffffff;
-      }
-    }
-
-    &.cancel {
-      border: 1px solid var(--border-subtle);
-      background: rgba(30, 41, 59, 0.4);
-
-      &:hover {
-        color: #cbd5e1;
-        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        border-color: #818cf8;
       }
     }
 
     &.reset {
-      color: #94a3b8;
-
-      &:hover {
-        color: #f59e0b;
-        background: rgba(245, 158, 11, 0.1);
+      &:hover:not(:disabled) {
+        color: #fbbf24;
+        border-color: rgba(245, 158, 11, 0.4);
       }
     }
   }
