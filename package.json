@@ -15,6 +15,7 @@
     "test:changelog": "node --test scripts/__tests__/extract-changelog.test.js",
     "test:reasoning": "node --experimental-strip-types --test scripts/__tests__/model-reasoning.test.js",
     "test:retry": "node --experimental-strip-types --test scripts/__tests__/retry-logic.test.js",
+    "test:probe": "node --test scripts/__tests__/probe-modular.test.js",
     "sync": "node scripts/sync-upstream.js",
     "sync:check": "node scripts/sync-upstream.js --check"
   },
