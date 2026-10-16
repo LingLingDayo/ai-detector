@@ -7,6 +7,16 @@ use crate::utils::{compact_error, normalize_url};
 pub const DEFAULT_USER_AGENT: &str =
     "Codex Desktop/0.147.0-alpha.1.2 (Windows 10.0.26200; x86_64) unknown (codex_exec; 0.147.0-alpha.1.2)";
 
+fn is_adaptive_thinking_model(model: &str) -> bool {
+    let m = model.to_lowercase();
+    if m.contains("claude") {
+        if m.contains("-5") || m.contains(".5") || m.contains("-4-6") || m.contains("-4-7") || m.contains("-4-8") {
+            return true;
+        }
+    }
+    false
+}
+
 #[tauri::command]
 pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> {
     let is_stream = req.stream.unwrap_or(true);
@@ -69,10 +79,16 @@ pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, Stri
             if let Some(effort) = &req.reasoning_effort {
                 let trimmed = effort.trim();
                 if trimmed != "none" && !trimmed.is_empty() {
-                    let budget = if let Ok(num) = trimmed.parse::<u64>() {
-                        num.max(1024)
+                    if is_adaptive_thinking_model(&req.model) {
+                        map["thinking"] = serde_json::json!({
+                            "type": "adaptive"
+                        });
+                        map["output_config"] = serde_json::json!({
+                            "effort": trimmed
+                        });
+                        map["max_tokens"] = serde_json::json!(16000);
                     } else {
-                        match trimmed {
+                        let budget = match trimmed {
                             "minimal" => 1024,
                             "low" => 2048,
                             "medium" => 4096,
@@ -80,16 +96,13 @@ pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, Stri
                             "xhigh" => 16384,
                             "max" => 32768,
                             _ => 8192,
-                        }
-                    };
-                    map["thinking"] = serde_json::json!({
-                        "type": "enabled",
-                        "budget_tokens": budget
-                    });
-                    map["output_config"] = serde_json::json!({
-                        "effort": trimmed
-                    });
-                    map["max_tokens"] = serde_json::json!(budget + 2048);
+                        };
+                        map["thinking"] = serde_json::json!({
+                            "type": "enabled",
+                            "budget_tokens": budget
+                        });
+                        map["max_tokens"] = serde_json::json!(budget.max(4096) + 2048);
+                    }
                 }
             }
             map

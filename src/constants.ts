@@ -21,6 +21,8 @@ export {
   getSupportedReasoningEfforts,
   getReasoningOptionsForModel,
   resolveValidReasoningEffort,
+  isAdaptiveThinkingModel,
+  isClaudeFamilyModel,
 } from "./data/modelReasoningRules";
 export type {
   ReasoningEffortLevel,

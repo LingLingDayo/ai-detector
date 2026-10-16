@@ -1,4 +1,5 @@
 import type { ProbeResponse, SendProbeOptions, TauriInvokeFn } from "../types";
+import { isAdaptiveThinkingModel } from "../data/modelReasoningRules";
 
 let tauriInvoke: TauriInvokeFn | null = null;
 
@@ -388,7 +389,7 @@ export async function sendProbe({
     reasoning_effort?: string;
     reasoning?: { effort: string };
     output_config?: { effort: string };
-    thinking?: { type: string; budget_tokens: number };
+    thinking?: { type: string; budget_tokens?: number };
     stream?: boolean;
   }
 
@@ -406,10 +407,10 @@ export async function sendProbe({
     };
     if (reasoningEffort && reasoningEffort !== "none") {
       const trimmed = reasoningEffort.trim();
-      const isNum = /^\d+$/.test(trimmed);
-      let budget: number;
-      if (isNum) {
-        budget = Math.max(1024, parseInt(trimmed, 10));
+      if (isAdaptiveThinkingModel(model)) {
+        bodyObj.thinking = { type: "adaptive" };
+        bodyObj.output_config = { effort: trimmed };
+        bodyObj.max_tokens = 16000;
       } else {
         const budgetMap: Record<string, number> = {
           minimal: 1024,
@@ -419,11 +420,10 @@ export async function sendProbe({
           xhigh: 16384,
           max: 32768,
         };
-        budget = budgetMap[trimmed] || 8192;
+        const budget = budgetMap[trimmed] || 8192;
+        bodyObj.thinking = { type: "enabled", budget_tokens: budget };
+        bodyObj.max_tokens = Math.max(4096, budget + 2048);
       }
-      bodyObj.thinking = { type: "enabled", budget_tokens: budget };
-      bodyObj.output_config = { effort: trimmed };
-      bodyObj.max_tokens = Math.max(4096, budget + 2048);
     }
   } else if (apiFormat === "responses" || apiFormat === "openai_responses") {
     headers["Authorization"] = `Bearer ${apiKey}`;

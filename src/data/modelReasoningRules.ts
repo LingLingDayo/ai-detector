@@ -47,6 +47,8 @@ export interface ModelReasoningRule {
   defaultEffort: ReasoningEffortLevel;
   /** 是否可关闭思考 (即是否支持 none) */
   allowDisableReasoning: boolean;
+  /** 是否启用自适应思考 (Adaptive Thinking，如 Claude 4.7+ / 5+ 系列通过 output_config.effort 控制) */
+  adaptiveThinking?: boolean;
   /** 备注说明 */
   notes?: string;
   /**
@@ -182,13 +184,15 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "high",
     allowDisableReasoning: true,
+    adaptiveThinking: true,
   },
   {
     vendor: "Anthropic Claude",
     model: "claude-sonnet-5-5",
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
     defaultEffort: "high",
-    allowDisableReasoning: false
+    allowDisableReasoning: false,
+    adaptiveThinking: true,
   },
   {
     vendor: "Anthropic Claude",
@@ -196,13 +200,15 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "high",
     allowDisableReasoning: true,
+    adaptiveThinking: true,
   },
   {
     vendor: "Anthropic Claude",
     model: "claude-opus-5-5",
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
-    allowDisableReasoning: false
+    allowDisableReasoning: false,
+    adaptiveThinking: true,
   },
 ] as const;
 
@@ -284,6 +290,36 @@ export function findModelReasoningRule(modelName?: string): ModelReasoningRule |
 export const REASONING_EFFORT_OPTIONS = ALL_REASONING_EFFORT_OPTIONS;
 
 /**
+ * 判定模型是否为 Claude 家族模型
+ */
+export function isClaudeFamilyModel(modelName?: string): boolean {
+  if (!modelName) return false;
+  const normalized = normalizeModelName(modelName);
+  return normalized.includes("claude");
+}
+
+/**
+ * 判定模型是否使用自适应思考 (Adaptive Thinking，如 Claude 4.7+ / 5+ 系列通过 output_config.effort 控制)
+ */
+export function isAdaptiveThinkingModel(modelName?: string): boolean {
+  if (!modelName) return false;
+  const rule = findModelReasoningRule(modelName);
+  if (rule?.adaptiveThinking !== undefined) {
+    return rule.adaptiveThinking;
+  }
+  const normalized = normalizeModelName(modelName);
+  if (normalized.includes("claude")) {
+    if (
+      /(?:sonnet|opus|haiku|fable|mythos)-(?:[5-9]|\d{2,}|4-[6-9])/.test(normalized) ||
+      /(?:sonnet|opus|haiku|fable|mythos)-5/.test(normalized)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * 获取指定模型支持的思考强度档位列表
  * 若匹配到模型规则，则返回限定的思考强度数组；若未匹配，返回系统全部预设档位。
  */
@@ -306,7 +342,6 @@ export function getReasoningOptionsForModel(
   const rule = findModelReasoningRule(modelName);
   const defaultEffort = rule ? rule.defaultEffort : "high";
 
-  // 保证按照预设顺序或规则指定顺序输出
   if (rule) {
     return rule.supportedEfforts.map((effort) => {
       const match = ALL_REASONING_EFFORT_OPTIONS.find((opt) => opt.value === effort);

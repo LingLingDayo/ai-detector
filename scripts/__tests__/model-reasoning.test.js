@@ -11,6 +11,7 @@ import {
   getSupportedReasoningEfforts,
   getReasoningOptionsForModel,
   resolveValidReasoningEffort,
+  isAdaptiveThinkingModel,
 } from "../../src/data/modelReasoningRules.ts";
 
 test("MODEL_REASONING_RULES 包含了全部 18 个模型规则", () => {
@@ -275,6 +276,33 @@ test("ALL_REASONING_EFFORT_OPTIONS 不再包含已移除的 ultra 档位", () =>
   const values = ALL_REASONING_EFFORT_OPTIONS.map((opt) => opt.value);
   assert.equal(values.includes("ultra"), false, "预设档位中不应包含 ultra");
   assert.deepEqual(values, ["none", "minimal", "low", "medium", "high", "xhigh", "max"]);
+});
+
+test("Claude 模型自适应思考判断与禁止直接设置数字思考额度", () => {
+  // Claude 5 / 5.5 新模型具备 adaptiveThinking 属性
+  const sonnet55Rule = findModelReasoningRule("claude-sonnet-5-5");
+  assert.equal(sonnet55Rule?.adaptiveThinking, true);
+
+  const opus5Rule = findModelReasoningRule("claude-opus-5");
+  assert.equal(opus5Rule?.adaptiveThinking, true);
+
+  // isAdaptiveThinkingModel 智能识别
+  assert.equal(isAdaptiveThinkingModel("claude-sonnet-5-5"), true);
+  assert.equal(isAdaptiveThinkingModel("claude-opus-5-5"), true);
+  assert.equal(isAdaptiveThinkingModel("anthropic/claude-sonnet-5"), true);
+  assert.equal(isAdaptiveThinkingModel("claude-sonnet-4-6"), true);
+  assert.equal(isAdaptiveThinkingModel("claude-3-7-sonnet"), false);
+  assert.equal(isAdaptiveThinkingModel("gpt-5.6-sol"), false);
+
+  // 项目中任何模型都不允许直接设置数字思考额度，必须平滑回退到默认档位
+  const numericSonnet = resolveValidReasoningEffort("claude-sonnet-5-5", "4000");
+  assert.equal(numericSonnet, "high");
+
+  const numericOpus = resolveValidReasoningEffort("claude-opus-5-5", "10000");
+  assert.equal(numericOpus, "medium");
+
+  const numericGpt = resolveValidReasoningEffort("gpt-5.6-sol", "4000");
+  assert.equal(numericGpt, "medium");
 });
 
 
