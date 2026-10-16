@@ -297,6 +297,9 @@ pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, Stri
                     }
                 }
                 Err(e) => {
+                    if e.is_timeout() {
+                        return Err(format!("同步请求超时（{} 秒内未收到上游响应）", timeout_sec));
+                    }
                     if attempt < max_attempts {
                         tokio::time::sleep(Duration::from_millis(1000 * attempt)).await;
                         continue;

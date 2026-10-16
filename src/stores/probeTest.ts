@@ -26,6 +26,7 @@ import {
   DEFAULT_REQUEST_RETRY_DELAY_MS,
 } from "../constants";
 import { sleep } from "../utils/timer";
+import { isTimeoutError } from "../utils/retry";
 import { maskApiKey } from "../utils/pelicanFormatters";
 import { useConfigStore } from "./config";
 
@@ -350,10 +351,14 @@ export const useProbeTestStore = defineStore("probeTest", () => {
           return null;
         }
         lastErrMsg = err instanceof Error ? err.message : String(err);
+        const isTimeout = isTimeoutError(lastErrMsg);
         console.warn(
           `第 ${index + 1} 题第 ${attempt} 次尝试请求失败（${lastErrMsg}）` +
-            (attempt < maxAttempts ? `，将在 ${DEFAULT_REQUEST_RETRY_DELAY_MS / 1000} 秒后静默重试...` : "")
+            (!isTimeout && attempt < maxAttempts ? `，将在 ${DEFAULT_REQUEST_RETRY_DELAY_MS / 1000} 秒后静默重试...` : "")
         );
+        if (isTimeout) {
+          break;
+        }
       }
 
       if (attempt < maxAttempts) {

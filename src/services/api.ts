@@ -471,7 +471,7 @@ export async function sendProbe({
   let firstResponseReceived = false;
   const timeoutTimer = setTimeout(() => {
     if (!firstResponseReceived) {
-      controller.abort(new Error(isStream ? `流式请求首次响应超时（${actualTimeout}秒内未收到首包响应）` : `请求超时（超过${actualTimeout}秒）`));
+      controller.abort(new Error(isStream ? `流式请求首次响应超时（${actualTimeout} 秒内未收到上游响应）` : `同步请求超时（${actualTimeout} 秒内未收到上游响应）`));
     }
   }, actualTimeout * 1000);
 
@@ -521,6 +521,18 @@ export async function sendProbe({
 
     const durationMs = Date.now() - startTime;
     return { text, raw_status: res.status, duration_ms: durationMs };
+  } catch (err: unknown) {
+    if (controller.signal.aborted && !signal?.aborted) {
+      if (controller.signal.reason instanceof Error) {
+        throw controller.signal.reason;
+      }
+      throw new Error(
+        isStream
+          ? `流式请求首次响应超时（${actualTimeout} 秒内未收到上游响应）`
+          : `同步请求超时（${actualTimeout} 秒内未收到上游响应）`
+      );
+    }
+    throw err;
   } finally {
     clearTimeout(timeoutTimer);
   }

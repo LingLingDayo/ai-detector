@@ -74,3 +74,74 @@ test("多题并发独立重试场景下的 AbortController 隔离性验证（中
   assert.equal(stepAbortControllers.get(0)?.signal.aborted, true);
   assert.equal(stepAbortControllers.get(1)?.signal.aborted, false);
 });
+
+test("isTimeoutError 能准确识别各类超时错误", async () => {
+  const { isTimeoutError } = await import("../../src/utils/retry.ts");
+
+  assert.equal(isTimeoutError(new Error("流式请求首次响应超时（90 秒内未收到上游响应）")), true);
+  assert.equal(isTimeoutError("流式请求首次响应超时（90 秒内未收到上游响应）"), true);
+  assert.equal(isTimeoutError("流式请求首次响应超时（90 秒内未收到模型首包响应）"), true);
+  assert.equal(isTimeoutError("上游流式响应传输中断（90 秒内未收到后续数据分片）"), true);
+  assert.equal(isTimeoutError("同步请求超时（240 秒内未收到上游响应）"), true);
+  assert.equal(isTimeoutError("error sending request for url: operation timed out"), true);
+  assert.equal(isTimeoutError("Request timeout after 90000ms"), true);
+  assert.equal(isTimeoutError(new DOMException("The operation timed out.", "TimeoutError")), true);
+
+  // 非超时错误不应误判
+  assert.equal(isTimeoutError("仅解析到 30 个有效整数（需至少 80 个）"), false);
+  assert.equal(isTimeoutError("模型未返回有效的 SVG 或 HTML 代码"), false);
+  assert.equal(isTimeoutError("接口请求异常 (500): Internal Server Error"), false);
+  assert.equal(isTimeoutError("接口请求异常 (401): Unauthorized"), false);
+  assert.equal(isTimeoutError("无法连接上游接口: connection refused"), false);
+  assert.equal(isTimeoutError(null), false);
+  assert.equal(isTimeoutError(undefined), false);
+});
+
+test("超时错误立即终止重试流程，仅尝试 1 次并保留原超时错误", async () => {
+  const { isTimeoutError } = await import("../../src/utils/retry.ts");
+
+  const timeoutErrMsg = "流式请求首次响应超时（90 秒内未收到上游响应）";
+  let attemptCount = 0;
+  let finalErrMsg = "";
+
+  const maxAttempts = 1 + DEFAULT_REQUEST_RETRY_COUNT;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    attemptCount++;
+    try {
+      // 模拟请求抛出超时异常
+      throw new Error(timeoutErrMsg);
+    } catch (err) {
+      finalErrMsg = err instanceof Error ? err.message : String(err);
+      if (isTimeoutError(finalErrMsg)) {
+        break;
+      }
+    }
+  }
+
+  assert.equal(attemptCount, 1, "超时后应当立即终止，尝试次数应为 1");
+  assert.equal(finalErrMsg, timeoutErrMsg, "最终错误信息应完整保留超时文案");
+});
+
+test("非超时异常保持静默重试至最大次数", async () => {
+  const { isTimeoutError } = await import("../../src/utils/retry.ts");
+
+  const serverErrMsg = "接口请求异常 (500): Internal Server Error";
+  let attemptCount = 0;
+  let finalErrMsg = "";
+
+  const maxAttempts = 1 + DEFAULT_REQUEST_RETRY_COUNT;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    attemptCount++;
+    try {
+      throw new Error(serverErrMsg);
+    } catch (err) {
+      finalErrMsg = err instanceof Error ? err.message : String(err);
+      if (isTimeoutError(finalErrMsg)) {
+        break;
+      }
+    }
+  }
+
+  assert.equal(attemptCount, maxAttempts, `非超时错误应重试满 ${maxAttempts} 次`);
+  assert.equal(finalErrMsg, serverErrMsg);
+});

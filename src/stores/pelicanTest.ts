@@ -9,6 +9,7 @@ import {
   DEFAULT_REQUEST_RETRY_DELAY_MS,
 } from "../constants";
 import { sleep } from "../utils/timer";
+import { isTimeoutError } from "../utils/retry";
 import { maskApiKey } from "../utils/pelicanFormatters";
 
 export const DEFAULT_PELICAN_PROMPT =
@@ -381,10 +382,14 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
               : typeof err === "string"
               ? err
               : "请求异常，请检查网络或配置";
+          const isTimeout = isTimeoutError(lastErrMsg);
           console.warn(
             `鹈鹕测试第 ${attempt} 次尝试请求失败（${lastErrMsg}）` +
-              (attempt < maxAttempts ? `，将在 ${DEFAULT_REQUEST_RETRY_DELAY_MS / 1000} 秒后静默重试...` : "")
+              (!isTimeout && attempt < maxAttempts ? `，将在 ${DEFAULT_REQUEST_RETRY_DELAY_MS / 1000} 秒后静默重试...` : "")
           );
+          if (isTimeout) {
+            break;
+          }
         }
 
         if (attempt < maxAttempts) {
