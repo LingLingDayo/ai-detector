@@ -306,7 +306,9 @@ export const useProbeTestStore = defineStore("probeTest", () => {
         );
       }
     } finally {
-      stepAbortControllers.delete(index);
+      if (stepAbortControllers.get(index) === stepCtrl) {
+        stepAbortControllers.delete(index);
+      }
     }
   }
 
