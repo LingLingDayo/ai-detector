@@ -85,10 +85,12 @@ export function copyReleaseArtifacts(options = {}) {
 
       for (const filePath of allBundleFiles) {
         const ext = path.extname(filePath).toLowerCase();
-        const filename = path.basename(filePath);
+        let filename = path.basename(filePath);
 
         // 仅收集安装包文件（排除非安装包以及旧版本残留）
         if (validExtensions.has(ext)) {
+          // 兜底将中文产品名替换为规范英文名
+          filename = filename.replace(/AI模型检测器/g, standardEnglishName);
           if (version) {
             if (filename.includes(version)) {
               candidateFileMap.set(filename, filePath);
@@ -138,16 +140,12 @@ export function copyReleaseArtifacts(options = {}) {
     }
   }
 
-  // 3. 规范化归档名称（同时提供英文规范名与中文名直接执行程序）
+  // 3. 规范化独立可执行程序归档名称（仅保留标准英文名称）
   if (foundBinPath) {
     const ext = path.extname(foundBinName) || (process.platform === "win32" ? ".exe" : "");
-    // 规范英文包名（连字符无空格格式，例如 AI-Detector.exe）
+    // 规范英文包名（例如 AI-Detector.exe）
     const standardBinName = `${standardEnglishName}${ext}`;
     candidateFileMap.set(standardBinName, foundBinPath);
-
-    // 中文名称执行程序（例如 AI模型检测器.exe）
-    const chineseBinName = `${chineseProductName}${ext}`;
-    candidateFileMap.set(chineseBinName, foundBinPath);
   }
 
   if (candidateFileMap.size === 0) {

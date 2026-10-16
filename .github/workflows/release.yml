@@ -69,43 +69,37 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path dist-release | Out-Null
 
-          # 1. 收集 NSIS 安装程序 (*-setup.exe 或 *.exe)
+          # 1. 收集 NSIS 安装程序 (*-setup.exe 或 *.exe)，替换任何残留中文确保纯英文
           Get-ChildItem -Path "src-tauri/target/release/bundle/nsis/*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination "dist-release/$($_.Name)"
-            Write-Host "Collected NSIS Installer: $($_.Name)"
+            $destName = $_.Name -replace "AI模型检测器", "AI-Detector"
+            Copy-Item -Path $_.FullName -Destination "dist-release/$destName"
+            Write-Host "Collected NSIS Installer: $destName"
           }
 
-          # 2. 收集 MSI 安装程序 (*.msi)
+          # 2. 收集 MSI 安装程序 (*.msi)，替换任何残留中文确保纯英文
           Get-ChildItem -Path "src-tauri/target/release/bundle/msi/*.msi" -ErrorAction SilentlyContinue | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination "dist-release/$($_.Name)"
-            Write-Host "Collected MSI Installer: $($_.Name)"
+            $destName = $_.Name -replace "AI模型检测器", "AI-Detector"
+            Copy-Item -Path $_.FullName -Destination "dist-release/$destName"
+            Write-Host "Collected MSI Installer: $destName"
           }
 
-          # 3. 收集编译生成的独立可执行文件
-          Get-ChildItem -Path "src-tauri/target/release/*.exe" -Exclude "*.pdb" | Where-Object {
-            $_.Name -notmatch "tauri" -and $_.Name -notmatch "build"
-          } | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination "dist-release/$($_.Name)"
-            Write-Host "Collected Standalone Executable: $($_.Name)"
+          # 3. 收集编译生成的独立可执行文件（仅保留唯一的标准英文名 AI-Detector.exe）
+          $standaloneExe = Get-ChildItem -Path "src-tauri/target/release/*.exe" -Exclude "*.pdb" | Where-Object {
+            $_.Name -eq "AI-Detector.exe" -or $_.Name -eq "ai-detector.exe" -or ($_.Name -notmatch "tauri" -and $_.Name -notmatch "build" -and $_.Name -notmatch "setup")
+          } | Select-Object -First 1
 
-            # 同时提供应用中文名与英文规范名的便携版独立程序
-            if ($_.Name -ne "AI模型检测器.exe") {
-              Copy-Item -Path $_.FullName -Destination "dist-release/AI模型检测器.exe"
-              Write-Host "Created Standalone Copy: AI模型检测器.exe"
-            }
-            if ($_.Name -ne "AI-Detector.exe") {
-              Copy-Item -Path $_.FullName -Destination "dist-release/AI-Detector.exe"
-              Write-Host "Created Standalone Copy: AI-Detector.exe"
-            }
+          if ($standaloneExe) {
+            Copy-Item -Path $standaloneExe.FullName -Destination "dist-release/AI-Detector.exe"
+            Write-Host "Collected Standalone Executable: AI-Detector.exe"
           }
 
-          # 4. 同步 release/ 目录下生成的产物 (如有)
+          # 4. 同步 release/ 目录下额外产物 (严格排除任何带有中文名称的文件)
           if (Test-Path "release") {
-            Get-ChildItem -Path "release/*" -Include "*.exe", "*.msi" -ErrorAction SilentlyContinue | ForEach-Object {
-              if (-not (Test-Path "dist-release/$($_.Name)")) {
-                Copy-Item -Path $_.FullName -Destination "dist-release/$($_.Name)"
-                Write-Host "Collected Extra Artifact from release/: $($_.Name)"
-              }
+            Get-ChildItem -Path "release/*" -Include "*.exe", "*.msi" -ErrorAction SilentlyContinue | Where-Object {
+              $_.Name -notmatch "[\u4e00-\u9fa5]" -and $_.Name -ne "AI-Detector.exe" -and -not (Test-Path "dist-release/$($_.Name)")
+            } | ForEach-Object {
+              Copy-Item -Path $_.FullName -Destination "dist-release/$($_.Name)"
+              Write-Host "Collected Extra Artifact from release/: $($_.Name)"
             }
           }
 

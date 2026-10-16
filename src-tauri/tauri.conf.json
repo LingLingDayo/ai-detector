@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "AI模型检测器",
+  "productName": "AI-Detector",
   "version": "1.0.0",
   "identifier": "com.aidetector.app",
   "build": {
