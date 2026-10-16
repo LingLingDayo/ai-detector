@@ -47,8 +47,8 @@ export interface ModelReasoningRule {
   defaultEffort: ReasoningEffortLevel;
   /** 是否可关闭思考 (即是否支持 none) */
   allowDisableReasoning: boolean;
-  /** 是否启用自适应思考 (Adaptive Thinking，如 Claude 4.7+ / 5+ 系列通过 output_config.effort 控制) */
-  adaptiveThinking?: boolean;
+  /** 是否强制要求自适应思考 (即 API 拒绝 budget_tokens 且强制要求 type: "adaptive") */
+  requiresAdaptiveThinking?: boolean;
   /** 备注说明 */
   notes?: string;
   /**
@@ -184,7 +184,7 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "high",
     allowDisableReasoning: true,
-    adaptiveThinking: true,
+    requiresAdaptiveThinking: true,
   },
   {
     vendor: "Anthropic Claude",
@@ -192,7 +192,7 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
     defaultEffort: "high",
     allowDisableReasoning: false,
-    adaptiveThinking: true,
+    requiresAdaptiveThinking: true,
   },
   {
     vendor: "Anthropic Claude",
@@ -200,7 +200,7 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "high",
     allowDisableReasoning: true,
-    adaptiveThinking: true,
+    requiresAdaptiveThinking: true,
   },
   {
     vendor: "Anthropic Claude",
@@ -208,7 +208,7 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
     allowDisableReasoning: false,
-    adaptiveThinking: true,
+    requiresAdaptiveThinking: true,
   },
 ] as const;
 
@@ -299,25 +299,35 @@ export function isClaudeFamilyModel(modelName?: string): boolean {
 }
 
 /**
- * 判定模型是否使用自适应思考 (Adaptive Thinking，如 Claude 4.7+ / 5+ 系列通过 output_config.effort 控制)
+ * 判定模型是否强制要求自适应思考 (即不支持 manual budget_tokens，仅支持 thinking.type: "adaptive")
+ * 依据 Anthropic 官方文档：
+ * - Claude 4.7, 4.8 及 5.x+ (Sonnet 5/5.5, Opus 5/5.5, Haiku 5.5, Fable, Mythos 等) 强制拒绝 type: "enabled" 并要求自适应思考；
+ * - Claude 4.6 (Sonnet 4.6, Opus 4.6) 及更早模型虽然支持或部分支持自适应，但并未强制，使用 budget_tokens 仍然成功，不得强制配置 adaptive。
  */
-export function isAdaptiveThinkingModel(modelName?: string): boolean {
+export function isAdaptiveThinkingRequired(modelName?: string): boolean {
   if (!modelName) return false;
   const rule = findModelReasoningRule(modelName);
-  if (rule?.adaptiveThinking !== undefined) {
-    return rule.adaptiveThinking;
+  if (rule?.requiresAdaptiveThinking !== undefined) {
+    return rule.requiresAdaptiveThinking;
   }
   const normalized = normalizeModelName(modelName);
   if (normalized.includes("claude")) {
+    // 强制要求自适应思考的模型：Claude 4.7, 4.8 以及 5 系列及更高版本
+    // 排除 4.6 及更低 (4.6, 4.5, 3.7 等)
     if (
-      /(?:sonnet|opus|haiku|fable|mythos)-(?:[5-9]|\d{2,}|4-[6-9])/.test(normalized) ||
-      /(?:sonnet|opus|haiku|fable|mythos)-5/.test(normalized)
+      /(?:sonnet|opus|haiku|fable|mythos)-(?:[5-9]|\d{2,}|4-[7-9])/.test(normalized) ||
+      /(?:sonnet|opus|haiku|fable|mythos)-5/.test(normalized) ||
+      /\b4\.[7-9]\b/.test(normalized) ||
+      /\b[5-9]\.\d+\b/.test(normalized)
     ) {
       return true;
     }
   }
   return false;
 }
+
+/** 别名兼容 */
+export const isAdaptiveThinkingModel = isAdaptiveThinkingRequired;
 
 /**
  * 获取指定模型支持的思考强度档位列表

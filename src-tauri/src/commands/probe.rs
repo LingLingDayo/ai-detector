@@ -7,10 +7,13 @@ use crate::utils::{compact_error, normalize_url};
 pub const DEFAULT_USER_AGENT: &str =
     "Codex Desktop/0.147.0-alpha.1.2 (Windows 10.0.26200; x86_64) unknown (codex_exec; 0.147.0-alpha.1.2)";
 
-fn is_adaptive_thinking_model(model: &str) -> bool {
+fn is_adaptive_thinking_required(model: &str) -> bool {
     let m = model.to_lowercase();
     if m.contains("claude") {
-        if m.contains("-5") || m.contains(".5") || m.contains("-4-6") || m.contains("-4-7") || m.contains("-4-8") {
+        // 仅对 Anthropic 官方强制要求 adaptive thinking (即拒绝 budget_tokens 报 400) 的模型生效：
+        // Claude 4.7, 4.8 以及 5.x+ 系列 (如 5, 5.1, 5.5 等)。
+        // 注意：Claude 4.6 (如 claude-sonnet-4-6, claude-opus-4-6) 虽然支持 adaptive，但并不强制，使用 budget_tokens 仍可正常请求，严禁在此强制配置。
+        if m.contains("-5") || m.contains(".5") || m.contains("-4-7") || m.contains("-4-8") || m.contains(".4.7") || m.contains(".4.8") {
             return true;
         }
     }
@@ -79,7 +82,7 @@ pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, Stri
             if let Some(effort) = &req.reasoning_effort {
                 let trimmed = effort.trim();
                 if trimmed != "none" && !trimmed.is_empty() {
-                    if is_adaptive_thinking_model(&req.model) {
+                    if is_adaptive_thinking_required(&req.model) {
                         map["thinking"] = serde_json::json!({
                             "type": "adaptive"
                         });

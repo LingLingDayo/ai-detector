@@ -1,5 +1,5 @@
 import type { ProbeResponse, SendProbeOptions, TauriInvokeFn } from "../types";
-import { isAdaptiveThinkingModel } from "../data/modelReasoningRules";
+import { isAdaptiveThinkingRequired } from "../data/modelReasoningRules";
 
 let tauriInvoke: TauriInvokeFn | null = null;
 
@@ -407,7 +407,7 @@ export async function sendProbe({
     };
     if (reasoningEffort && reasoningEffort !== "none") {
       const trimmed = reasoningEffort.trim();
-      if (isAdaptiveThinkingModel(model)) {
+      if (isAdaptiveThinkingRequired(model)) {
         bodyObj.thinking = { type: "adaptive" };
         bodyObj.output_config = { effort: trimmed };
         bodyObj.max_tokens = 16000;

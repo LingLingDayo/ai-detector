@@ -21,6 +21,7 @@ export {
   getSupportedReasoningEfforts,
   getReasoningOptionsForModel,
   resolveValidReasoningEffort,
+  isAdaptiveThinkingRequired,
   isAdaptiveThinkingModel,
   isClaudeFamilyModel,
 } from "./data/modelReasoningRules";

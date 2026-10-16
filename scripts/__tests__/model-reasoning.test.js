@@ -11,6 +11,7 @@ import {
   getSupportedReasoningEfforts,
   getReasoningOptionsForModel,
   resolveValidReasoningEffort,
+  isAdaptiveThinkingRequired,
   isAdaptiveThinkingModel,
 } from "../../src/data/modelReasoningRules.ts";
 
@@ -278,21 +279,29 @@ test("ALL_REASONING_EFFORT_OPTIONS 不再包含已移除的 ultra 档位", () =>
   assert.deepEqual(values, ["none", "minimal", "low", "medium", "high", "xhigh", "max"]);
 });
 
-test("Claude 模型自适应思考判断与禁止直接设置数字思考额度", () => {
-  // Claude 5 / 5.5 新模型具备 adaptiveThinking 属性
+test("Claude 模型强制自适应思考精准判定与禁止数字预算", () => {
+  // 规则配置中 Claude 5 / 5.5 新模型具备 requiresAdaptiveThinking 属性
   const sonnet55Rule = findModelReasoningRule("claude-sonnet-5-5");
-  assert.equal(sonnet55Rule?.adaptiveThinking, true);
+  assert.equal(sonnet55Rule?.requiresAdaptiveThinking, true);
 
   const opus5Rule = findModelReasoningRule("claude-opus-5");
-  assert.equal(opus5Rule?.adaptiveThinking, true);
+  assert.equal(opus5Rule?.requiresAdaptiveThinking, true);
 
-  // isAdaptiveThinkingModel 智能识别
-  assert.equal(isAdaptiveThinkingModel("claude-sonnet-5-5"), true);
-  assert.equal(isAdaptiveThinkingModel("claude-opus-5-5"), true);
-  assert.equal(isAdaptiveThinkingModel("anthropic/claude-sonnet-5"), true);
-  assert.equal(isAdaptiveThinkingModel("claude-sonnet-4-6"), true);
-  assert.equal(isAdaptiveThinkingModel("claude-3-7-sonnet"), false);
-  assert.equal(isAdaptiveThinkingModel("gpt-5.6-sol"), false);
+  // 官方强制要求自适应思考的模型 (即传 enabled 会报 400 的模型)：4.7, 4.8 及 5.x+ 系列
+  assert.equal(isAdaptiveThinkingRequired("claude-sonnet-5-5"), true);
+  assert.equal(isAdaptiveThinkingRequired("claude-opus-5-5"), true);
+  assert.equal(isAdaptiveThinkingRequired("anthropic/claude-sonnet-5"), true);
+  assert.equal(isAdaptiveThinkingRequired("claude-opus-4-7"), true);
+  assert.equal(isAdaptiveThinkingRequired("claude-opus-4-8"), true);
+
+  // 关键：官方支持但不强制自适应思考的模型 (如 Claude 4.6 系列)，使用 budget_tokens 仍然正常成功，绝对不得强制配置 adaptive
+  assert.equal(isAdaptiveThinkingRequired("claude-sonnet-4-6"), false);
+  assert.equal(isAdaptiveThinkingRequired("claude-opus-4-6"), false);
+
+  // 不支持自适应思考的模型 (如 Claude 4.5、3.7 及更早)，传 adaptive 会报 400，严禁配置
+  assert.equal(isAdaptiveThinkingRequired("claude-opus-4-5"), false);
+  assert.equal(isAdaptiveThinkingRequired("claude-3-7-sonnet"), false);
+  assert.equal(isAdaptiveThinkingRequired("gpt-5.6-sol"), false);
 
   // 项目中任何模型都不允许直接设置数字思考额度，必须平滑回退到默认档位
   const numericSonnet = resolveValidReasoningEffort("claude-sonnet-5-5", "4000");
