@@ -30,7 +30,6 @@ const presetWrapperRef = ref<HTMLDivElement | null>(null);
 const isPresetDropdownOpen = ref(false);
 
 const currentPrompt = computed(() => props.prompt || DEFAULT_PELICAN_PROMPT);
-const isCustomPrompt = computed(() => currentPrompt.value !== DEFAULT_PELICAN_PROMPT);
 
 function handleCopyPrompt(): void {
   copyPrompt(currentPrompt.value);
@@ -123,7 +122,6 @@ watch(
       <span class="prompt-label">
         <Terminal :size="13" />
         <span>测试提示词</span>
-        <span v-if="isCustomPrompt" class="custom-badge" title="当前使用自定义提示词">自定义</span>
       </span>
 
       <div class="prompt-actions">
@@ -284,19 +282,6 @@ watch(
     font-weight: 600;
     color: #94a3b8;
     letter-spacing: 0.5px;
-
-    .custom-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 1px 5px;
-      border-radius: 9999px;
-      font-size: 0.65rem;
-      font-weight: 500;
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      color: #a5b4fc;
-      margin-left: 2px;
-    }
   }
 
   .prompt-actions {
