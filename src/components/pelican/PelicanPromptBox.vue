@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from "vue";
-import { Terminal, RotateCcw, Check, SquarePen, Copy } from "@lucide/vue";
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from "vue";
+import { Terminal, RotateCcw, Check, SquarePen, Copy, Sparkles, ChevronDown } from "@lucide/vue";
 import { useClipboard } from "../../composables/useClipboard";
 import { DEFAULT_PELICAN_PROMPT } from "../../composables/usePelicanTest";
+import { PELICAN_PRESETS, type PelicanPreset } from "../../data/pelicanPresets";
 
 const props = withDefaults(
   defineProps<{
@@ -24,6 +25,9 @@ const { copied: promptCopied, copy: copyPrompt } = useClipboard();
 const isEditingPrompt = ref(false);
 const editingPrompt = ref("");
 const promptTextareaRef = ref<HTMLTextAreaElement | null>(null);
+
+const presetWrapperRef = ref<HTMLDivElement | null>(null);
+const isPresetDropdownOpen = ref(false);
 
 const currentPrompt = computed(() => props.prompt || DEFAULT_PELICAN_PROMPT);
 const isCustomPrompt = computed(() => currentPrompt.value !== DEFAULT_PELICAN_PROMPT);
@@ -57,11 +61,57 @@ function handleResetToDefault(): void {
   editingPrompt.value = DEFAULT_PELICAN_PROMPT;
 }
 
+function togglePresetDropdown(): void {
+  if (props.isRunning) return;
+  isPresetDropdownOpen.value = !isPresetDropdownOpen.value;
+}
+
+function closePresetDropdown(): void {
+  isPresetDropdownOpen.value = false;
+}
+
+function handleSelectPreset(preset: PelicanPreset): void {
+  if (props.isRunning) return;
+  if (isEditingPrompt.value) {
+    editingPrompt.value = preset.prompt;
+  }
+  emit("update:prompt", preset.prompt);
+  closePresetDropdown();
+}
+
+function handleDocumentClick(e: MouseEvent): void {
+  if (!isPresetDropdownOpen.value) return;
+  if (presetWrapperRef.value && !presetWrapperRef.value.contains(e.target as Node)) {
+    closePresetDropdown();
+  }
+}
+
+function handleDocumentKeydown(e: KeyboardEvent): void {
+  if (e.key === "Escape" && isPresetDropdownOpen.value) {
+    closePresetDropdown();
+  }
+}
+
+onMounted(() => {
+  document.addEventListener("click", handleDocumentClick);
+  document.addEventListener("keydown", handleDocumentKeydown);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", handleDocumentClick);
+  document.removeEventListener("keydown", handleDocumentKeydown);
+});
+
 watch(
   () => props.isRunning,
   (running) => {
-    if (running && isEditingPrompt.value) {
-      isEditingPrompt.value = false;
+    if (running) {
+      if (isEditingPrompt.value) {
+        isEditingPrompt.value = false;
+      }
+      if (isPresetDropdownOpen.value) {
+        isPresetDropdownOpen.value = false;
+      }
     }
   }
 );
@@ -108,6 +158,55 @@ watch(
         </template>
 
         <template v-else>
+          <!-- 预设选择下拉按钮 -->
+          <div ref="presetWrapperRef" class="preset-wrapper">
+            <button
+              type="button"
+              class="btn-prompt-action preset"
+              :class="{ active: isPresetDropdownOpen }"
+              :disabled="isRunning"
+              title="选择测试提示词预设"
+              @click.stop="togglePresetDropdown"
+            >
+              <Sparkles :size="12" />
+              <span>预设</span>
+              <ChevronDown
+                :size="10"
+                class="preset-chevron"
+                :class="{ 'is-open': isPresetDropdownOpen }"
+              />
+            </button>
+
+            <!-- 预设下拉浮层 -->
+            <Transition name="preset-dropdown-fade">
+              <div
+                v-if="isPresetDropdownOpen"
+                class="preset-dropdown-menu"
+                role="menu"
+                @click.stop
+              >
+                <button
+                  v-for="preset in PELICAN_PRESETS"
+                  :key="preset.id"
+                  type="button"
+                  class="preset-dropdown-item"
+                  :class="{ 'is-selected': preset.prompt === currentPrompt }"
+                  :title="preset.prompt"
+                  role="menuitem"
+                  @click="handleSelectPreset(preset)"
+                >
+                  <span class="preset-name">{{ preset.name }}</span>
+                  <Check
+                    v-if="preset.prompt === currentPrompt"
+                    :size="12"
+                    class="preset-check-icon"
+                    :stroke-width="2.5"
+                  />
+                </button>
+              </div>
+            </Transition>
+          </div>
+
           <button
             type="button"
             class="btn-prompt-action copy"
@@ -206,6 +305,88 @@ watch(
     gap: 6px;
   }
 
+  .preset-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .preset-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 120px;
+    width: max-content;
+    background: #0f172a;
+    border: 1px solid rgba(51, 65, 85, 0.8);
+    border-radius: var(--radius-sm, 6px);
+    box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 100;
+    padding: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    box-sizing: border-box;
+  }
+
+  .preset-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    height: 25px;
+    padding: 0 7px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-xs, 4px);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    line-height: 1;
+    cursor: pointer;
+    text-align: left;
+    white-space: nowrap;
+    transition: all var(--transition-fast);
+    font-family: inherit;
+
+    .preset-name {
+      line-height: 1;
+    }
+
+    .preset-check-icon {
+      color: #10b981;
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-primary);
+    }
+
+    &.is-selected {
+      background: rgba(99, 102, 241, 0.16);
+      color: #a5b4fc;
+      font-weight: 500;
+
+      &:hover {
+        background: rgba(99, 102, 241, 0.22);
+        color: #c7d2fe;
+      }
+    }
+  }
+
+  .preset-dropdown-fade-enter-active,
+  .preset-dropdown-fade-leave-active {
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  .preset-dropdown-fade-enter-from,
+  .preset-dropdown-fade-leave-to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+
   .btn-prompt-action {
     display: inline-flex;
     align-items: center;
@@ -235,10 +416,35 @@ watch(
       transform: translateY(-0.5px);
     }
 
+    .preset-chevron {
+      color: var(--text-muted);
+      transition: transform var(--transition-fast), color var(--transition-fast);
+      flex-shrink: 0;
+
+      &.is-open {
+        transform: rotate(180deg);
+        color: #fff;
+      }
+    }
+
     &:hover:not(:disabled) {
       background: rgba(30, 41, 59, 0.9);
       color: #fff;
       border-color: rgba(99, 102, 241, 0.4);
+
+      .preset-chevron {
+        color: #fff;
+      }
+    }
+
+    &.active {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: #6366f1;
+      color: #fff;
+
+      .preset-chevron {
+        color: #fff;
+      }
     }
 
     &:disabled {
