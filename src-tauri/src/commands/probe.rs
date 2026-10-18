@@ -71,7 +71,7 @@ pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, Stri
 
             let mut map = serde_json::json!({
                 "model": req.model.trim(),
-                "max_tokens": 4096,
+                "max_tokens": 65536,
                 "messages": [
                     { "role": "user", "content": &req.prompt }
                 ]
@@ -89,7 +89,7 @@ pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, Stri
                         map["output_config"] = serde_json::json!({
                             "effort": trimmed
                         });
-                        map["max_tokens"] = serde_json::json!(16000);
+                        map["max_tokens"] = serde_json::json!(65536);
                     } else {
                         let budget = match trimmed {
                             "minimal" => 1024,
@@ -104,7 +104,7 @@ pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, Stri
                             "type": "enabled",
                             "budget_tokens": budget
                         });
-                        map["max_tokens"] = serde_json::json!(budget.max(4096) + 2048);
+                        map["max_tokens"] = serde_json::json!((budget + 2048).max(65536));
                     }
                 }
             }
@@ -128,7 +128,8 @@ pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, Stri
                             }
                         ]
                     }
-                ]
+                ],
+                "max_output_tokens": 65536
             });
             if is_stream {
                 map["stream"] = serde_json::json!(true);
@@ -148,12 +149,20 @@ pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, Stri
                 format!("Bearer {}", req.api_key.trim()),
             );
 
+            let m = req.model.trim().to_lowercase();
+            let is_o_series = m.starts_with("o1") || m.starts_with("o3") || m.starts_with("o4");
+
             let mut map = serde_json::json!({
                 "model": req.model.trim(),
                 "messages": [
                     { "role": "user", "content": &req.prompt }
                 ]
             });
+            if is_o_series {
+                map["max_completion_tokens"] = serde_json::json!(65536);
+            } else {
+                map["max_tokens"] = serde_json::json!(65536);
+            }
             if is_stream {
                 map["stream"] = serde_json::json!(true);
             }
@@ -162,6 +171,7 @@ pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, Stri
                 if trimmed != "none" && !trimmed.is_empty() {
                     if let Ok(num) = trimmed.parse::<u64>() {
                         map["max_completion_tokens"] = serde_json::json!(num);
+                        map.as_object_mut().and_then(|o| o.remove("max_tokens"));
                     } else {
                         map["reasoning_effort"] = serde_json::json!(trimmed);
                     }

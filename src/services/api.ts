@@ -386,6 +386,7 @@ export async function sendProbe({
     }>;
     max_tokens?: number;
     max_completion_tokens?: number;
+    max_output_tokens?: number;
     reasoning_effort?: string;
     reasoning?: { effort: string };
     output_config?: { effort: string };
@@ -401,7 +402,7 @@ export async function sendProbe({
     headers["Authorization"] = `Bearer ${apiKey}`;
     bodyObj = {
       model,
-      max_tokens: 4096,
+      max_tokens: 65536,
       messages: [{ role: "user", content: prompt }],
       stream: isStream ? true : undefined,
     };
@@ -410,7 +411,7 @@ export async function sendProbe({
       if (isAdaptiveThinkingRequired(model)) {
         bodyObj.thinking = { type: "adaptive" };
         bodyObj.output_config = { effort: trimmed };
-        bodyObj.max_tokens = 16000;
+        bodyObj.max_tokens = 65536;
       } else {
         const budgetMap: Record<string, number> = {
           minimal: 1024,
@@ -422,7 +423,7 @@ export async function sendProbe({
         };
         const budget = budgetMap[trimmed] || 8192;
         bodyObj.thinking = { type: "enabled", budget_tokens: budget };
-        bodyObj.max_tokens = Math.max(4096, budget + 2048);
+        bodyObj.max_tokens = Math.max(65536, budget + 2048);
       }
     }
   } else if (apiFormat === "responses" || apiFormat === "openai_responses") {
@@ -436,6 +437,7 @@ export async function sendProbe({
           content: [{ type: "input_text", text: prompt }],
         },
       ],
+      max_output_tokens: 65536,
       stream: isStream ? true : undefined,
     };
     if (reasoningEffort && reasoningEffort !== "none") {
@@ -444,14 +446,19 @@ export async function sendProbe({
     }
   } else {
     headers["Authorization"] = `Bearer ${apiKey}`;
+    const m = model.trim().toLowerCase();
+    const isOSeries = m.startsWith("o1") || m.startsWith("o3") || m.startsWith("o4");
+
     bodyObj = {
       model,
       messages: [{ role: "user", content: prompt }],
       stream: isStream ? true : undefined,
+      ...(isOSeries ? { max_completion_tokens: 65536 } : { max_tokens: 65536 }),
     };
     if (reasoningEffort && reasoningEffort !== "none") {
       const trimmed = reasoningEffort.trim();
       if (/^\d+$/.test(trimmed)) {
+        delete bodyObj.max_tokens;
         bodyObj.max_completion_tokens = parseInt(trimmed, 10);
       } else {
         bodyObj.reasoning_effort = trimmed;
