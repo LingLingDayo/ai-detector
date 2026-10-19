@@ -15,8 +15,8 @@ import {
   isAdaptiveThinkingModel,
 } from "../../src/data/modelReasoningRules.ts";
 
-test("MODEL_REASONING_RULES 包含了全部 18 个模型规则", () => {
-  assert.equal(MODEL_REASONING_RULES.length, 18);
+test("MODEL_REASONING_RULES 包含了全部 20 个模型规则", () => {
+  assert.equal(MODEL_REASONING_RULES.length, 20);
 
   const modelNames = MODEL_REASONING_RULES.map((r) => r.model);
   const expectedModels = [
@@ -38,6 +38,8 @@ test("MODEL_REASONING_RULES 包含了全部 18 个模型规则", () => {
     "claude-sonnet-5-5",
     "claude-opus-5",
     "claude-opus-5-5",
+    "Gemini 4 Argon",
+    "Gemini 3.8 Flash",
   ];
 
   for (const expected of expectedModels) {
@@ -99,9 +101,34 @@ test("精确匹配与前缀匹配", () => {
 
   const opus55Rule = findModelReasoningRule("claude-opus-5-5");
   assert.equal(opus55Rule?.model, "claude-opus-5-5");
+
+  // Google Gemini 官方模型标识、前缀与别名测试
+  const gemini4ArgonRule = findModelReasoningRule("gemini-4-argon");
+  assert.equal(gemini4ArgonRule?.model, "Gemini 4 Argon");
+  assert.equal(gemini4ArgonRule?.allowDisableReasoning, false);
+  assert.equal(gemini4ArgonRule?.defaultEffort, "medium");
+  assert.deepEqual(gemini4ArgonRule?.supportedEfforts, ["low", "medium", "high"]);
+
+  const gemini4AliasRule = findModelReasoningRule("gemini-4");
+  assert.equal(gemini4AliasRule?.model, "Gemini 4 Argon");
+
+  const slashGemini4Rule = findModelReasoningRule("google/gemini-4-argon");
+  assert.equal(slashGemini4Rule?.model, "Gemini 4 Argon");
+
+  const gemini38FlashRule = findModelReasoningRule("gemini-3.8-flash");
+  assert.equal(gemini38FlashRule?.model, "Gemini 3.8 Flash");
+  assert.equal(gemini38FlashRule?.allowDisableReasoning, false);
+  assert.equal(gemini38FlashRule?.defaultEffort, "medium");
+  assert.deepEqual(gemini38FlashRule?.supportedEfforts, ["low", "medium", "high"]);
+
+  const gemini38AliasRule = findModelReasoningRule("gemini-3.8");
+  assert.equal(gemini38AliasRule?.model, "Gemini 3.8 Flash");
+
+  const slashGemini38Rule = findModelReasoningRule("google/gemini-3.8-flash");
+  assert.equal(slashGemini38Rule?.model, "Gemini 3.8 Flash");
 });
 
-test("表格全部 18 个模型的思考强度与默认值完全对齐需求表", () => {
+test("表格全部 20 个模型的思考强度与默认值完全对齐需求表", () => {
   const tableData = [
     {
       vendor: "OpenAI GPT-5.6",
@@ -229,6 +256,20 @@ test("表格全部 18 个模型的思考强度与默认值完全对齐需求表"
       defaultEffort: "medium",
       allowDisable: false,
     },
+    {
+      vendor: "Google Gemini",
+      model: "Gemini 4 Argon",
+      supported: ["low", "medium", "high"],
+      defaultEffort: "medium",
+      allowDisable: false,
+    },
+    {
+      vendor: "Google Gemini",
+      model: "Gemini 3.8 Flash",
+      supported: ["low", "medium", "high"],
+      defaultEffort: "medium",
+      allowDisable: false,
+    },
   ];
 
   for (const item of tableData) {
@@ -271,6 +312,26 @@ test("resolveValidReasoningEffort 正确修正思考强度", () => {
   // 已移除的 ultra 等级，对于匹配特定规则模型平滑回退至其默认值
   const effort6 = resolveValidReasoningEffort("gpt-5.6-sol", "ultra");
   assert.equal(effort6, "medium");
+
+  // Gemini 4 Argon 不支持 none，应平滑修正为默认值 medium
+  const gemini4None = resolveValidReasoningEffort("gemini-4-argon", "none");
+  assert.equal(gemini4None, "medium");
+
+  // Gemini 4 Argon 不支持 max，应平滑修正为默认值 medium
+  const gemini4Max = resolveValidReasoningEffort("gemini-4-argon", "max");
+  assert.equal(gemini4Max, "medium");
+
+  // Gemini 3.8 Flash 不支持 none，应平滑修正为默认值 medium
+  const gemini38None = resolveValidReasoningEffort("gemini-3.8-flash", "none");
+  assert.equal(gemini38None, "medium");
+
+  // Gemini 3.8 Flash 不支持 max，应平滑修正为默认值 medium
+  const gemini38Max = resolveValidReasoningEffort("gemini-3.8-flash", "max");
+  assert.equal(gemini38Max, "medium");
+
+  // Gemini 3.8 Flash 支持 high，应正常保留 high
+  const gemini38High = resolveValidReasoningEffort("gemini-3.8-flash", "high");
+  assert.equal(gemini38High, "high");
 });
 
 test("ALL_REASONING_EFFORT_OPTIONS 不再包含已移除的 ultra 档位", () => {

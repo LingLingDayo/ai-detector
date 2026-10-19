@@ -210,6 +210,22 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     allowDisableReasoning: false,
     requiresAdaptiveThinking: true,
   },
+
+  // ==================== Google Gemini ====================
+  {
+    vendor: "Google Gemini",
+    model: "Gemini 4 Argon",
+    supportedEfforts: ["low", "medium", "high"],
+    defaultEffort: "medium",
+    allowDisableReasoning: false
+  },
+  {
+    vendor: "Google Gemini",
+    model: "Gemini 3.8 Flash",
+    supportedEfforts: ["low", "medium", "high"],
+    defaultEffort: "medium",
+    allowDisableReasoning: false
+  },
 ] as const;
 
 /**
