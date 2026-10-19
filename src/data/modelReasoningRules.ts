@@ -124,14 +124,15 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     model: "GLM-5.3",
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
-    allowDisableReasoning: false
+    allowDisableReasoning: false,
   },
   {
     vendor: "Zhipu GLM-5.3",
-    model: "GLM-5.3-FLASH",
+    model: "GLM-5.3 Flash",
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
-    allowDisableReasoning: false
+    allowDisableReasoning: false,
+    patterns: ["glm-5.3-flash"],
   },
 
   // ==================== Moonshot Kimi ====================
@@ -140,75 +141,82 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     model: "Kimi K3",
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
-    allowDisableReasoning: false
+    allowDisableReasoning: false,
   },
 
   // ==================== DeepSeek ====================
   {
     vendor: "DeepSeek",
-    model: "DeepSeek-V4-Pro",
+    model: "DeepSeek V4 Pro",
     supportedEfforts: ["none", "low", "high", "max"],
     defaultEffort: "high",
     allowDisableReasoning: true,
+    patterns: ["deepseek-v4-pro"],
   },
   {
     vendor: "DeepSeek",
-    model: "DeepSeek-V4.1-Flash",
+    model: "DeepSeek V4.1 Flash",
     supportedEfforts: ["none", "low", "high", "max"],
     defaultEffort: "high",
     allowDisableReasoning: true,
     notes: "官方别名 deepseek-flash",
-    patterns: ["deepseek-flash"],
+    patterns: ["deepseek-v4.1-flash", "deepseek-flash"],
   },
 
   // ==================== xAI Grok ====================
   {
     vendor: "xAI Grok",
-    model: "Grok-4.6",
+    model: "Grok 4.6",
     supportedEfforts: ["low", "medium", "high", "xhigh"],
     defaultEffort: "high",
     allowDisableReasoning: false,
+    patterns: ["grok-4.6"],
   },
   {
     vendor: "xAI Grok",
-    model: "Grok-4.7",
+    model: "Grok 4.7",
     supportedEfforts: ["low", "medium", "high", "xhigh"],
     defaultEffort: "high",
     allowDisableReasoning: false,
+    patterns: ["grok-4.7"],
   },
 
   // ==================== Anthropic Claude ====================
   {
     vendor: "Anthropic Claude",
-    model: "claude-sonnet-5",
+    model: "Claude 5 Sonnet",
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "high",
     allowDisableReasoning: true,
     requiresAdaptiveThinking: true,
+    patterns: ["claude-sonnet-5", "claude-5-sonnet"],
   },
   {
     vendor: "Anthropic Claude",
-    model: "claude-sonnet-5-5",
+    model: "Claude 5.5 Sonnet",
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
     defaultEffort: "high",
     allowDisableReasoning: false,
     requiresAdaptiveThinking: true,
+    patterns: ["claude-sonnet-5-5", "claude-5.5-sonnet"],
   },
   {
     vendor: "Anthropic Claude",
-    model: "claude-opus-5",
+    model: "Claude 5 Opus",
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "high",
     allowDisableReasoning: true,
     requiresAdaptiveThinking: true,
+    patterns: ["claude-opus-5", "claude-5-opus"],
   },
   {
     vendor: "Anthropic Claude",
-    model: "claude-opus-5-5",
+    model: "Claude 5.5 Opus",
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
     allowDisableReasoning: false,
     requiresAdaptiveThinking: true,
+    patterns: ["claude-opus-5-5", "claude-5.5-opus"],
   },
 
   // ==================== Google Gemini ====================
@@ -217,14 +225,16 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     model: "Gemini 4 Argon",
     supportedEfforts: ["low", "medium", "high"],
     defaultEffort: "medium",
-    allowDisableReasoning: false
+    allowDisableReasoning: false,
+    patterns: ["gemini-4-argon"],
   },
   {
     vendor: "Google Gemini",
     model: "Gemini 3.8 Flash",
     supportedEfforts: ["low", "medium", "high"],
     defaultEffort: "medium",
-    allowDisableReasoning: false
+    allowDisableReasoning: false,
+    patterns: ["gemini-3.8-flash"],
   },
 ] as const;
 

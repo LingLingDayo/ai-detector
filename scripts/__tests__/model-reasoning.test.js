@@ -28,16 +28,16 @@ test("MODEL_REASONING_RULES 包含了全部 20 个模型规则", () => {
     "GPT-6 Luna",
     "GPT-6.1 Sol",
     "GLM-5.3",
-    "GLM-5.3-FLASH",
+    "GLM-5.3 Flash",
     "Kimi K3",
-    "DeepSeek-V4-Pro",
-    "DeepSeek-V4.1-Flash",
-    "Grok-4.6",
-    "Grok-4.7",
-    "claude-sonnet-5",
-    "claude-sonnet-5-5",
-    "claude-opus-5",
-    "claude-opus-5-5",
+    "DeepSeek V4 Pro",
+    "DeepSeek V4.1 Flash",
+    "Grok 4.6",
+    "Grok 4.7",
+    "Claude 5 Sonnet",
+    "Claude 5.5 Sonnet",
+    "Claude 5 Opus",
+    "Claude 5.5 Opus",
     "Gemini 4 Argon",
     "Gemini 3.8 Flash",
   ];
@@ -48,9 +48,9 @@ test("MODEL_REASONING_RULES 包含了全部 20 个模型规则", () => {
 });
 
 test("精确匹配与前缀匹配", () => {
-  // GLM-5.3-FLASH 与 GLM-5.3 优先级测试
+  // GLM-5.3 Flash 与 GLM-5.3 优先级测试
   const flashRule = findModelReasoningRule("glm-5.3-flash");
-  assert.equal(flashRule?.model, "GLM-5.3-FLASH");
+  assert.equal(flashRule?.model, "GLM-5.3 Flash");
   assert.deepEqual(flashRule?.supportedEfforts, ["low", "high", "max"]);
   assert.equal(flashRule?.defaultEffort, "max");
   assert.equal(flashRule?.allowDisableReasoning, false);
@@ -71,46 +71,49 @@ test("精确匹配与前缀匹配", () => {
 
   // Grok 测试
   const grokRule = findModelReasoningRule("grok-4.6");
-  assert.equal(grokRule?.model, "Grok-4.6");
+  assert.equal(grokRule?.model, "Grok 4.6");
   assert.equal(grokRule?.defaultEffort, "high");
   assert.deepEqual(grokRule?.supportedEfforts, ["low", "medium", "high", "xhigh"]);
 
-  // DeepSeek 别名测试 (deepseek-flash 与 DeepSeek-V4.1-Flash 等价)
+  // DeepSeek 别名与标准名测试
   const flashAliasRule = findModelReasoningRule("deepseek-flash");
-  assert.equal(flashAliasRule?.model, "DeepSeek-V4.1-Flash");
+  assert.equal(flashAliasRule?.model, "DeepSeek V4.1 Flash");
   assert.equal(flashAliasRule?.defaultEffort, "high");
   assert.deepEqual(flashAliasRule?.supportedEfforts, ["none", "low", "high", "max"]);
 
   const slashFlashRule = findModelReasoningRule("deepseek/deepseek-flash");
-  assert.equal(slashFlashRule?.model, "DeepSeek-V4.1-Flash");
+  assert.equal(slashFlashRule?.model, "DeepSeek V4.1 Flash");
 
-  // Anthropic Claude 官方模型标识与前缀测试
+  const deepseekProRule = findModelReasoningRule("deepseek-v4-pro");
+  assert.equal(deepseekProRule?.model, "DeepSeek V4 Pro");
+
+  // Anthropic Claude 官方模型标识与标准名称双向测试
   const sonnet5Rule = findModelReasoningRule("claude-sonnet-5");
-  assert.equal(sonnet5Rule?.model, "claude-sonnet-5");
+  assert.equal(sonnet5Rule?.model, "Claude 5 Sonnet");
   assert.equal(sonnet5Rule?.defaultEffort, "high");
   assert.equal(sonnet5Rule?.allowDisableReasoning, true);
 
+  const sonnet5NameRule = findModelReasoningRule("Claude 5 Sonnet");
+  assert.equal(sonnet5NameRule?.model, "Claude 5 Sonnet");
+
   const sonnet55Rule = findModelReasoningRule("claude-sonnet-5-5");
-  assert.equal(sonnet55Rule?.model, "claude-sonnet-5-5");
+  assert.equal(sonnet55Rule?.model, "Claude 5.5 Sonnet");
 
   const opus5Rule = findModelReasoningRule("claude-opus-5");
-  assert.equal(opus5Rule?.model, "claude-opus-5");
+  assert.equal(opus5Rule?.model, "Claude 5 Opus");
 
   const slashOpusRule = findModelReasoningRule("anthropic/claude-opus-5");
-  assert.equal(slashOpusRule?.model, "claude-opus-5");
+  assert.equal(slashOpusRule?.model, "Claude 5 Opus");
 
   const opus55Rule = findModelReasoningRule("claude-opus-5-5");
-  assert.equal(opus55Rule?.model, "claude-opus-5-5");
+  assert.equal(opus55Rule?.model, "Claude 5.5 Opus");
 
-  // Google Gemini 官方模型标识、前缀与别名测试
+  // Google Gemini 官方模型标识与精确前缀测试
   const gemini4ArgonRule = findModelReasoningRule("gemini-4-argon");
   assert.equal(gemini4ArgonRule?.model, "Gemini 4 Argon");
   assert.equal(gemini4ArgonRule?.allowDisableReasoning, false);
   assert.equal(gemini4ArgonRule?.defaultEffort, "medium");
   assert.deepEqual(gemini4ArgonRule?.supportedEfforts, ["low", "medium", "high"]);
-
-  const gemini4AliasRule = findModelReasoningRule("gemini-4");
-  assert.equal(gemini4AliasRule?.model, "Gemini 4 Argon");
 
   const slashGemini4Rule = findModelReasoningRule("google/gemini-4-argon");
   assert.equal(slashGemini4Rule?.model, "Gemini 4 Argon");
@@ -121,11 +124,14 @@ test("精确匹配与前缀匹配", () => {
   assert.equal(gemini38FlashRule?.defaultEffort, "medium");
   assert.deepEqual(gemini38FlashRule?.supportedEfforts, ["low", "medium", "high"]);
 
-  const gemini38AliasRule = findModelReasoningRule("gemini-3.8");
-  assert.equal(gemini38AliasRule?.model, "Gemini 3.8 Flash");
-
   const slashGemini38Rule = findModelReasoningRule("google/gemini-3.8-flash");
   assert.equal(slashGemini38Rule?.model, "Gemini 3.8 Flash");
+
+  // 防误触断言：泛系列前缀（gemini-4, gemini-3.8）不得匹配，避免劫持未来衍生型号（如 gemini-4-flash, gemini-3.8-pro）
+  assert.equal(findModelReasoningRule("gemini-4"), undefined);
+  assert.equal(findModelReasoningRule("gemini-4-flash"), undefined);
+  assert.equal(findModelReasoningRule("gemini-3.8"), undefined);
+  assert.equal(findModelReasoningRule("gemini-3.8-pro"), undefined);
 });
 
 test("表格全部 20 个模型的思考强度与默认值完全对齐需求表", () => {
@@ -188,7 +194,7 @@ test("表格全部 20 个模型的思考强度与默认值完全对齐需求表"
     },
     {
       vendor: "Zhipu GLM-5.3",
-      model: "GLM-5.3-FLASH",
+      model: "GLM-5.3 Flash",
       supported: ["low", "high", "max"],
       defaultEffort: "max",
       allowDisable: false,
@@ -202,56 +208,56 @@ test("表格全部 20 个模型的思考强度与默认值完全对齐需求表"
     },
     {
       vendor: "DeepSeek",
-      model: "DeepSeek-V4-Pro",
+      model: "DeepSeek V4 Pro",
       supported: ["none", "low", "high", "max"],
       defaultEffort: "high",
       allowDisable: true,
     },
     {
       vendor: "DeepSeek",
-      model: "DeepSeek-V4.1-Flash",
+      model: "DeepSeek V4.1 Flash",
       supported: ["none", "low", "high", "max"],
       defaultEffort: "high",
       allowDisable: true,
     },
     {
       vendor: "xAI Grok",
-      model: "Grok-4.6",
+      model: "Grok 4.6",
       supported: ["low", "medium", "high", "xhigh"],
       defaultEffort: "high",
       allowDisable: false,
     },
     {
       vendor: "xAI Grok",
-      model: "Grok-4.7",
+      model: "Grok 4.7",
       supported: ["low", "medium", "high", "xhigh"],
       defaultEffort: "high",
       allowDisable: false,
     },
     {
       vendor: "Anthropic Claude",
-      model: "claude-sonnet-5",
+      model: "Claude 5 Sonnet",
       supported: ["none", "low", "medium", "high", "xhigh", "max"],
       defaultEffort: "high",
       allowDisable: true,
     },
     {
       vendor: "Anthropic Claude",
-      model: "claude-sonnet-5-5",
+      model: "Claude 5.5 Sonnet",
       supported: ["low", "medium", "high", "xhigh", "max"],
       defaultEffort: "high",
       allowDisable: false,
     },
     {
       vendor: "Anthropic Claude",
-      model: "claude-opus-5",
+      model: "Claude 5 Opus",
       supported: ["none", "low", "medium", "high", "xhigh", "max"],
       defaultEffort: "high",
       allowDisable: true,
     },
     {
       vendor: "Anthropic Claude",
-      model: "claude-opus-5-5",
+      model: "Claude 5.5 Opus",
       supported: ["low", "medium", "high", "xhigh", "max"],
       defaultEffort: "medium",
       allowDisable: false,
