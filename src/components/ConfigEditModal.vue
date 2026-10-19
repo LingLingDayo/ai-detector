@@ -376,16 +376,12 @@ function handleSubmit(applyImmediately: boolean = false): void {
               取消
             </button>
             <div class="footer-action-right">
-              <button type="submit" class="btn btn-secondary">
-                保存
-              </button>
               <button
-                type="button"
+                type="submit"
                 class="btn btn-primary"
-                @click="handleSubmit(true)"
-                title="保存该配置并立即载入到主界面使用"
+                title="保存配置预设"
               >
-                保存并立即使用
+                保存
               </button>
             </div>
           </div>

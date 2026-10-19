@@ -400,8 +400,10 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
         updatedAt: now,
       };
       configList.value.push(newItem);
-      if (applyImmediately || !activeConfigId.value) {
+      if (applyImmediately) {
         applyConfig(newItem);
+      } else if (configEditModalMode.value === "save-current") {
+        activeConfigId.value = newId;
       }
     }
     saveConfigListToStorage();
