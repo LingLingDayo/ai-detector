@@ -16,11 +16,15 @@ const props = withDefaults(
     statusAlert: StatusAlertInfo | null;
     isRunning?: boolean;
     hasStarted?: boolean;
+    hasFingerprintUpdate?: boolean;
+    isUpdatingFingerprint?: boolean;
   }>(),
   {
     visible: true,
     isRunning: false,
     hasStarted: false,
+    hasFingerprintUpdate: false,
+    isUpdatingFingerprint: false,
   }
 );
 
@@ -28,6 +32,7 @@ const emit = defineEmits<{
   (e: "refreshQuestions"): void;
   (e: "refreshSingleQuestion", index: number): void;
   (e: "retrySingleQuestion", index: number): void;
+  (e: "updateFingerprint"): void;
 }>();
 
 const alertLines = computed<string[]>(() => {
@@ -69,9 +74,29 @@ function closeModal(): void {
         </div>
         <span class="progress-status-desc" id="progress-status-desc">{{ desc }}</span>
       </div>
-      <div v-if="hasStarted" class="progress-numeric">
-        <span id="progress-percent">{{ percent }}%</span>
-        <small id="progress-count-text">完成 {{ completedCount }}/{{ totalCount }} 题</small>
+
+      <div class="progress-header-right">
+        <!-- 更新指纹库按钮（文案仅为“更新”） -->
+        <button
+          v-if="hasFingerprintUpdate"
+          type="button"
+          class="btn-update-fingerprint"
+          :disabled="isUpdatingFingerprint || isRunning"
+          title="检测到上游指纹题库有更新，点击立即同步"
+          @click="emit('updateFingerprint')"
+        >
+          <RefreshCw
+            v-if="isUpdatingFingerprint"
+            :size="11"
+            class="update-spin"
+          />
+          更新
+        </button>
+
+        <div v-if="hasStarted" class="progress-numeric">
+          <span id="progress-percent">{{ percent }}%</span>
+          <small id="progress-count-text">完成 {{ completedCount }}/{{ totalCount }} 题</small>
+        </div>
       </div>
     </div>
 
@@ -210,25 +235,73 @@ function closeModal(): void {
       }
     }
 
-    .progress-numeric {
-      text-align: right;
+    .progress-header-right {
       display: flex;
-      flex-direction: column;
-      align-items: flex-end;
+      align-items: center;
+      gap: 12px;
 
-      span {
-        font-size: 1.1rem;
-        font-weight: 700;
-        background: var(--accent-gradient);
-        background-clip: text;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        line-height: 1.1;
+      .btn-update-fingerprint {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        height: 24px;
+        padding: 0 10px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #e0e7ff;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(168, 85, 247, 0.18));
+        border: 1px solid rgba(129, 140, 248, 0.45);
+        border-radius: var(--radius-sm, 6px);
+        cursor: pointer;
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+        transition: all var(--transition-fast, 0.15s ease);
+        user-select: none;
+        line-height: 1;
+
+        &:hover:not(:disabled) {
+          background: linear-gradient(135deg, rgba(99, 102, 241, 0.42), rgba(168, 85, 247, 0.32));
+          border-color: rgba(165, 180, 252, 0.85);
+          color: #ffffff;
+          box-shadow: 0 0 14px rgba(99, 102, 241, 0.45);
+          transform: translateY(-1px);
+        }
+
+        &:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        &:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+
+        .update-spin {
+          animation: spin 1s linear infinite;
+        }
       }
 
-      small {
-        font-size: 0.68rem;
-        color: var(--text-muted);
+      .progress-numeric {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+
+        span {
+          font-size: 1.1rem;
+          font-weight: 700;
+          background: var(--accent-gradient);
+          background-clip: text;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          line-height: 1.1;
+        }
+
+        small {
+          font-size: 0.68rem;
+          color: var(--text-muted);
+        }
       }
     }
   }

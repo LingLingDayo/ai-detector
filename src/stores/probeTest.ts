@@ -1,37 +1,14 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import {
-  generateChallenges,
-  generateSingleChallenge,
-  type Challenge,
-} from "../utils/challenge";
+import { generateChallenges, generateSingleChallenge, type Challenge } from "../utils/challenge";
 import type { UnifiedBank, GlobalAnalysisResult } from "../utils/fingerprint";
 import rawUnifiedBank from "../data/unified_bank.json";
-import type {
-  ClientConfig,
-  ProbeStepItem,
-  StatusAlertInfo,
-  ProbeHistoryItem,
-} from "../types";
+import type { ClientConfig, ProbeStepItem, StatusAlertInfo, ProbeHistoryItem } from "../types";
 import { useConfigStore } from "./config";
-import {
-  loadInitialProbeHistory,
-  persistProbeHistory,
-  createProbeHistoryRecord,
-  clearProbeHistoryStorage,
-  MAX_PROBE_HISTORY_COUNT,
-} from "../utils/probeHistory";
+import { loadInitialProbeHistory, persistProbeHistory, createProbeHistoryRecord, clearProbeHistoryStorage, MAX_PROBE_HISTORY_COUNT } from "../utils/probeHistory";
 import { executeSingleProbe } from "../services/probeRunner";
-import {
-  createInitialSteps,
-  formatProbeStepResult,
-  createFailedStep,
-  createCancelledSteps,
-  computeProgress,
-  computeRunningStatusDesc,
-  collectStepErrors,
-  performFinalEvaluation,
-} from "../utils/probeEvaluation";
+import { createInitialSteps, formatProbeStepResult, createFailedStep, createCancelledSteps, computeProgress, computeRunningStatusDesc, collectStepErrors, performFinalEvaluation } from "../utils/probeEvaluation";
+import { loadActiveUnifiedBank, getPersistedUpdateStatus, setPersistedUpdateStatus, checkFingerprintUpdate, executeFingerprintUpdate } from "../services/fingerprintSync";
 
 const unifiedBank = rawUnifiedBank as unknown as UnifiedBank;
 
@@ -59,6 +36,9 @@ export const useProbeTestStore = defineStore("probeTest", () => {
   const currentProbeHistoryItem = ref<ProbeHistoryItem | null>(null);
   const probeHistoryList = ref<ProbeHistoryItem[]>(loadInitialProbeHistory());
   const testedModel = ref("");
+  const activeUnifiedBank = ref<UnifiedBank>(loadActiveUnifiedBank());
+  const hasFingerprintUpdate = ref<boolean>(getPersistedUpdateStatus());
+  const isUpdatingFingerprint = ref<boolean>(false);
 
   // 重要保留：供 sync-upstream.js 自动同步与备用
   const totalBankModelsCount = unifiedBank?.models?.length || 18;
@@ -212,7 +192,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
 
     const evalResult = performFinalEvaluation({
       steps: steps.value,
-      unifiedBank,
+      unifiedBank: activeUnifiedBank.value,
       totalCount,
       baseUrl,
       apiKey,
@@ -445,6 +425,35 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     }
   }
 
+  async function performFingerprintUpdate(): Promise<boolean> {
+    if (isUpdatingFingerprint.value) return false;
+    isUpdatingFingerprint.value = true;
+    try {
+      const newBank = await executeFingerprintUpdate();
+      activeUnifiedBank.value = newBank;
+      hasFingerprintUpdate.value = false;
+      alert(`指纹题库更新成功！当前题库已支持 ${newBank.models?.length || 0} 个模型。`);
+      return true;
+    } catch (err) {
+      alert(`指纹题库更新失败: ${err instanceof Error ? err.message : "网络连接异常，请稍后重试"}`);
+      return false;
+    } finally {
+      isUpdatingFingerprint.value = false;
+    }
+  }
+
+  async function initStartupFingerprintCheck(): Promise<void> {
+    if (hasFingerprintUpdate.value) return;
+    try {
+      if (await checkFingerprintUpdate(activeUnifiedBank.value)) {
+        hasFingerprintUpdate.value = true;
+        setPersistedUpdateStatus(true);
+      }
+    } catch {
+      // 启动自动检测静默失败，严禁抛错或弹窗提示
+    }
+  }
+
   return {
     isRunning,
     hasStarted,
@@ -462,6 +471,11 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     totalBankModelsCount,
     probeHistoryList,
     testedModel,
+    hasFingerprintUpdate,
+    isUpdatingFingerprint,
+    activeUnifiedBank,
+    performFingerprintUpdate,
+    initStartupFingerprintCheck,
     startTest,
     cancelTest,
     resetTest,

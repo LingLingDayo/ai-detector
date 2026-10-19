@@ -27,6 +27,7 @@ const configCardRef = ref<InstanceType<typeof ConfigCard> | null>(null);
 
 onMounted(() => {
   configStore.loadConfig();
+  probeStore.initStartupFingerprintCheck();
 });
 
 let scrollRafId: number | null = null;
@@ -161,9 +162,12 @@ function handleOpenGithub(): void {
           :status-alert="probeStore.statusAlert"
           :is-running="probeStore.isRunning"
           :has-started="probeStore.hasStarted"
+          :has-fingerprint-update="probeStore.hasFingerprintUpdate"
+          :is-updating-fingerprint="probeStore.isUpdatingFingerprint"
           @refresh-questions="probeStore.refreshQuestions"
           @refresh-single-question="probeStore.refreshSingleQuestion"
           @retry-single-question="probeStore.retrySingleQuestion"
+          @update-fingerprint="probeStore.performFingerprintUpdate"
         />
 
         <!-- 探测诊断报告卡片 -->
