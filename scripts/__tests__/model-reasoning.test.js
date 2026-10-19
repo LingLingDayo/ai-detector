@@ -87,6 +87,9 @@ test("精确匹配与前缀匹配", () => {
   const deepseekProRule = findModelReasoningRule("deepseek-v4-pro");
   assert.equal(deepseekProRule?.model, "DeepSeek V4 Pro");
 
+  const deepseekProSnapshotRule = findModelReasoningRule("deepseek-v4-pro-0813");
+  assert.equal(deepseekProSnapshotRule?.model, "DeepSeek V4 Pro");
+
   // Anthropic Claude 官方模型标识与标准名称双向测试
   const sonnet5Rule = findModelReasoningRule("claude-sonnet-5");
   assert.equal(sonnet5Rule?.model, "Claude 5 Sonnet");

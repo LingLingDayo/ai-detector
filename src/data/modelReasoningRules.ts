@@ -151,7 +151,7 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["none", "low", "high", "max"],
     defaultEffort: "high",
     allowDisableReasoning: true,
-    patterns: ["deepseek-v4-pro"],
+    patterns: ["deepseek-v4-pro", "deepseek-v4-pro-0813"],
   },
   {
     vendor: "DeepSeek",
