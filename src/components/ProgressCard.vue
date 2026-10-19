@@ -90,7 +90,7 @@ function closeModal(): void {
             :size="11"
             class="update-spin"
           />
-          更新
+          <span>更新</span>
         </button>
 
         <div v-if="hasStarted" class="progress-numeric">
@@ -184,7 +184,7 @@ function closeModal(): void {
     height: 36px;
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: center;
     margin-bottom: 6px;
 
     .progress-title-wrap {
@@ -246,9 +246,9 @@ function closeModal(): void {
         justify-content: center;
         gap: 5px;
         height: 24px;
-        padding: 0 10px;
-        font-size: 0.72rem;
-        font-weight: 600;
+        padding: 0 9px;
+        font-size: 0.74rem;
+        font-weight: 500;
         color: #e0e7ff;
         background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(168, 85, 247, 0.18));
         border: 1px solid rgba(129, 140, 248, 0.45);
@@ -258,6 +258,19 @@ function closeModal(): void {
         transition: all var(--transition-fast, 0.15s ease);
         user-select: none;
         line-height: 1;
+        font-family: inherit;
+
+        svg {
+          display: block;
+          flex-shrink: 0;
+        }
+
+        span {
+          display: inline-flex;
+          align-items: center;
+          line-height: 1;
+          transform: translateY(-0.5px);
+        }
 
         &:hover:not(:disabled) {
           background: linear-gradient(135deg, rgba(99, 102, 241, 0.42), rgba(168, 85, 247, 0.32));
