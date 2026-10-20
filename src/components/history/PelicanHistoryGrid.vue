@@ -8,8 +8,9 @@ import { usePopoverPin } from "./usePopoverPin";
 import HistoryEmptyState from "./HistoryEmptyState.vue";
 import HistoryDetailPopover from "./HistoryDetailPopover.vue";
 
-defineProps<{
+const props = defineProps<{
   pelicanList: PelicanHistoryItem[];
+  applyDisabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -40,6 +41,11 @@ function handleWrapperMouseEnter(id: string, e: MouseEvent): void {
   if (currentTarget) {
     updatePlacement(id, currentTarget);
   }
+}
+
+function handleApply(item: PelicanHistoryItem): void {
+  if (props.applyDisabled) return;
+  emit("apply", item);
 }
 
 function handleTogglePin(id: string, e: Event): void {
@@ -115,7 +121,8 @@ function getPureSvgContent(rawContent: string): string {
         <!-- 1. 图片展示区域（纯原生矢量 SVG 渲染，占满卡片，自动裁剪且不拉伸变形） -->
         <div
           class="image-stage"
-          @click="emit('apply', item)"
+          :class="{ 'is-apply-disabled': applyDisabled }"
+          @click="handleApply(item)"
           title="点击将此图片载入主界面查看"
         >
           <div
@@ -347,6 +354,10 @@ function getPureSvgContent(rawContent: string): string {
   justify-content: center;
   cursor: pointer;
   transition: background 0.2s ease;
+
+  &.is-apply-disabled {
+    cursor: not-allowed;
+  }
 
   .svg-viewport {
     width: 100%;

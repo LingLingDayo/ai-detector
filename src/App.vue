@@ -232,6 +232,8 @@ function handleOpenGithub(): void {
       initial-tab="probe"
       :pelican-list="pelicanStore.pelicanHistoryList"
       :probe-list="probeStore.probeHistoryList"
+      :probe-running="probeStore.isRunning"
+      :pelican-running="pelicanStore.isPelicanRunning"
       @close="appStore.closeHistoryModal"
       @delete-pelican="pelicanStore.deletePelicanHistoryItem"
       @clear-pelican="pelicanStore.clearPelicanHistory"

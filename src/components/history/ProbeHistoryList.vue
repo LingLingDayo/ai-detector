@@ -10,6 +10,7 @@ import HistoryDetailPopover from "./HistoryDetailPopover.vue";
 
 const props = defineProps<{
   probeList: ProbeHistoryItem[];
+  applyDisabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -53,6 +54,11 @@ function handleWrapperMouseEnter(id: string, e: MouseEvent): void {
   }
 }
 
+function handleApply(item: ProbeHistoryItem): void {
+  if (props.applyDisabled) return;
+  emit("apply", item);
+}
+
 function handleTogglePin(id: string, e: Event): void {
   const target = (e.currentTarget || e.target) as HTMLElement | null;
   const wrapper = target?.closest(".info-icon-wrapper") as HTMLElement | null;
@@ -92,8 +98,8 @@ function getProbBadgeClass(prob: number | undefined): string {
         v-for="(item, index) in probeList"
         :key="item.id"
         class="probe-row-item"
-        :class="{ 'is-pinned-row': pinnedId === item.id }"
-        @click="emit('apply', item)"
+        :class="{ 'is-pinned-row': pinnedId === item.id, 'is-apply-disabled': applyDisabled }"
+        @click="handleApply(item)"
         title="点击将此诊断结果载入主界面查看"
       >
         <!-- 左侧核心结果：调用模型 -> 判定真身 -->
@@ -213,6 +219,10 @@ function getProbBadgeClass(prob: number | undefined): string {
     .probe-row-meta .row-action-btn {
       opacity: 0.95;
     }
+  }
+
+  &.is-apply-disabled {
+    cursor: not-allowed;
   }
 
   /* 左侧核心：调用模型 -> 判定模型 (家族) */

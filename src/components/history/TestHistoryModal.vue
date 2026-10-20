@@ -14,12 +14,16 @@ const props = withDefaults(
     initialTab?: HistoryTab;
     pelicanList: PelicanHistoryItem[];
     probeList?: ProbeHistoryItem[];
+    probeRunning?: boolean;
+    pelicanRunning?: boolean;
   }>(),
   {
     isOpen: false,
     initialTab: "probe",
     pelicanList: () => [],
     probeList: () => [],
+    probeRunning: false,
+    pelicanRunning: false,
   }
 );
 
@@ -184,6 +188,7 @@ async function handleClearHistory(): Promise<void> {
           <ProbeHistoryList
             v-if="activeTab === 'probe'"
             :probe-list="probeList"
+            :apply-disabled="probeRunning"
             @apply="emit('apply-probe', $event)"
             @delete="emit('delete-probe', $event)"
           />
@@ -192,6 +197,7 @@ async function handleClearHistory(): Promise<void> {
           <PelicanHistoryGrid
             v-else-if="activeTab === 'pelican'"
             :pelican-list="pelicanList"
+            :apply-disabled="pelicanRunning"
             @apply="emit('apply-pelican', $event)"
             @delete="emit('delete-pelican', $event)"
           />
