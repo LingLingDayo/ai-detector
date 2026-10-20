@@ -238,6 +238,9 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     testedModel.value = item.modelName;
     rawResponseText.value = item.content;
     durationMs.value = item.durationMs || 0;
+    if (item.prompt?.trim()) {
+      setPelicanPrompt(item.prompt);
+    }
     hasTested.value = true;
     hasResult.value = true;
   }
