@@ -25,6 +25,7 @@ export interface RenderableContent {
 
 export interface PelicanTestState {
   isPelicanRunning: Ref<boolean>;
+  isPelicanGenerating: Ref<boolean>;
   pelicanSvg: Ref<string>;
   pelicanContent: Ref<string>;
   pelicanContentType: Ref<PelicanContentType>;
@@ -194,6 +195,7 @@ function generateHistoryId(): string {
 
 export function usePelicanTest(): PelicanTestState {
   const isPelicanRunning = ref(false);
+  const isPelicanGenerating = ref(false);
   const pelicanSvg = ref("");
   const pelicanContent = ref("");
   const pelicanContentType = ref<PelicanContentType>("svg");
@@ -273,6 +275,7 @@ export function usePelicanTest(): PelicanTestState {
       durationMs.value = Date.now() - testStartTime;
     }
     isPelicanRunning.value = false;
+    isPelicanGenerating.value = false;
     errorMsg.value = "测试已取消，再次点击开始按钮重新测试";
   }
 
@@ -310,6 +313,7 @@ export function usePelicanTest(): PelicanTestState {
     durationMs.value = 0;
 
     isPelicanRunning.value = true;
+    isPelicanGenerating.value = false;
     errorMsg.value = null;
     hasTested.value = true;
     hasResult.value = false;
@@ -345,6 +349,11 @@ export function usePelicanTest(): PelicanTestState {
             stream: isStream,
             timeoutSeconds,
             signal: abortController?.signal,
+            onStreamStart: () => {
+              if (runId === currentRunId && !abortController?.signal.aborted) {
+                isPelicanGenerating.value = true;
+              }
+            },
           });
 
           if (runId !== currentRunId || abortController?.signal.aborted) return;
@@ -421,6 +430,7 @@ export function usePelicanTest(): PelicanTestState {
       if (runId === currentRunId) {
         stopTimer();
         isPelicanRunning.value = false;
+        isPelicanGenerating.value = false;
         abortController = null;
       }
     }
@@ -432,6 +442,7 @@ export function usePelicanTest(): PelicanTestState {
     abortController?.abort();
     abortController = null;
     isPelicanRunning.value = false;
+    isPelicanGenerating.value = false;
     pelicanSvg.value = "";
     pelicanContent.value = "";
     pelicanContentType.value = "svg";
@@ -450,6 +461,7 @@ export function usePelicanTest(): PelicanTestState {
 
   return {
     isPelicanRunning,
+    isPelicanGenerating,
     pelicanSvg,
     pelicanContent,
     pelicanContentType,

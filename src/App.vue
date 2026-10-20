@@ -182,6 +182,7 @@ function handleOpenGithub(): void {
       <div v-show="appStore.activeMode === 'pelican'" class="mode-view-group">
         <PelicanTestCard
           :is-running="pelicanStore.isPelicanRunning"
+          :is-generating="pelicanStore.isPelicanGenerating"
           :svg="pelicanStore.pelicanSvg"
           :content="pelicanStore.pelicanContent"
           :content-type="pelicanStore.pelicanContentType"

@@ -325,23 +325,42 @@ export async function sendProbe({
   stream = true,
   timeoutSeconds,
   signal,
+  onStreamStart,
 }: SendProbeOptions): Promise<ProbeResponse> {
   const isStream = stream !== false;
   const actualTimeout = timeoutSeconds ?? (isStream ? 90 : 240);
 
   if (tauriInvoke && isTauriApp()) {
-    return await tauriInvoke<ProbeResponse>("send_probe_request", {
-      req: {
-        base_url: baseUrl,
-        api_key: apiKey,
-        model,
-        prompt,
-        api_format: apiFormat,
-        reasoning_effort: reasoningEffort,
-        stream: isStream,
-        timeout_seconds: actualTimeout,
-      },
-    });
+    let unlisten: (() => void) | null = null;
+    if (isStream && onStreamStart) {
+      try {
+        const { listen } = await import("@tauri-apps/api/event");
+        unlisten = await listen("pelican-stream-start", () => {
+          onStreamStart();
+        });
+      } catch (err) {
+        console.warn("监听流式启动事件失败:", err);
+      }
+    }
+
+    try {
+      return await tauriInvoke<ProbeResponse>("send_probe_request", {
+        req: {
+          base_url: baseUrl,
+          api_key: apiKey,
+          model,
+          prompt,
+          api_format: apiFormat,
+          reasoning_effort: reasoningEffort,
+          stream: isStream,
+          timeout_seconds: actualTimeout,
+        },
+      });
+    } finally {
+      if (unlisten) {
+        unlisten();
+      }
+    }
   }
 
   // Web fallback for browser preview
@@ -507,6 +526,7 @@ export async function sendProbe({
       clearTimeout(timeoutTimer);
 
       if (firstChunk.value) {
+        onStreamStart?.();
         streamBuffer += decoder.decode(firstChunk.value, { stream: true });
       }
 

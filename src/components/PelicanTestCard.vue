@@ -13,6 +13,7 @@ import PelicanRawResponse from "./pelican/PelicanRawResponse.vue";
 const props = withDefaults(
   defineProps<{
     isRunning: boolean;
+    isGenerating?: boolean;
     svg?: string;
     content?: string;
     contentType?: PelicanContentType;
@@ -24,6 +25,7 @@ const props = withDefaults(
     prompt?: string;
   }>(),
   {
+    isGenerating: false,
     svg: "",
     content: "",
     contentType: "svg",
@@ -148,6 +150,7 @@ function handleDownloadContent(): void {
     <PelicanStatusBar
       v-if="hasTested || isRunning"
       :is-running="isRunning"
+      :is-generating="isGenerating"
       :error-message="errorMessage"
       :svg="displayContent"
       :content="displayContent"

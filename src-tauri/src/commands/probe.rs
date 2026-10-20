@@ -1,5 +1,7 @@
 use std::time::{Duration, Instant};
 
+use tauri::Emitter;
+
 use crate::parser::{parse_non_streaming_json, parse_streaming_body};
 use crate::types::{ProbeRequest, ProbeResponse};
 use crate::utils::{compact_error, normalize_url};
@@ -21,7 +23,10 @@ fn is_adaptive_thinking_required(model: &str) -> bool {
 }
 
 #[tauri::command]
-pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, String> {
+pub async fn send_probe_request(
+    app: tauri::AppHandle,
+    req: ProbeRequest,
+) -> Result<ProbeResponse, String> {
     let is_stream = req.stream.unwrap_or(true);
     let default_timeout = if is_stream { 90 } else { 240 };
     let timeout_sec = req.timeout_seconds.unwrap_or(default_timeout).max(5);
@@ -244,6 +249,9 @@ pub async fn send_probe_request(req: ProbeRequest) -> Result<ProbeResponse, Stri
 
             let mut raw_bytes = Vec::new();
             raw_bytes.extend_from_slice(&first_chunk);
+
+            // 首包数据到达，通知前端模型真正开始流式输出
+            let _ = app.emit("pelican-stream-start", ());
 
             // 读取后续数据分片，每个分片之间设置 90 秒空闲超时防止连接死锁
             loop {

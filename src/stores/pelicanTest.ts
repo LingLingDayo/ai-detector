@@ -173,6 +173,7 @@ function generateHistoryId(): string {
 
 export const usePelicanTestStore = defineStore("pelicanTest", () => {
   const isPelicanRunning = ref(false);
+  const isPelicanGenerating = ref(false);
   const pelicanSvg = ref("");
   const pelicanContent = ref("");
   const pelicanContentType = ref<PelicanContentType>("svg");
@@ -263,6 +264,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
       durationMs.value = Date.now() - testStartTime;
     }
     isPelicanRunning.value = false;
+    isPelicanGenerating.value = false;
     errorMsg.value = "测试已取消，再次点击开始按钮重新测试";
   }
 
@@ -300,6 +302,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     durationMs.value = 0;
 
     isPelicanRunning.value = true;
+    isPelicanGenerating.value = false;
     errorMsg.value = null;
     hasTested.value = true;
     hasResult.value = false;
@@ -335,6 +338,11 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
             stream: isStream,
             timeoutSeconds,
             signal: abortController?.signal,
+            onStreamStart: () => {
+              if (runId === currentRunId && !abortController?.signal.aborted) {
+                isPelicanGenerating.value = true;
+              }
+            },
           });
 
           if (runId !== currentRunId || abortController?.signal.aborted) return;
@@ -411,6 +419,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
       if (runId === currentRunId) {
         stopTimer();
         isPelicanRunning.value = false;
+        isPelicanGenerating.value = false;
         abortController = null;
       }
     }
@@ -422,6 +431,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     abortController?.abort();
     abortController = null;
     isPelicanRunning.value = false;
+    isPelicanGenerating.value = false;
     pelicanSvg.value = "";
     pelicanContent.value = "";
     pelicanContentType.value = "svg";
@@ -440,6 +450,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
 
   return {
     isPelicanRunning,
+    isPelicanGenerating,
     pelicanSvg,
     pelicanContent,
     pelicanContentType,

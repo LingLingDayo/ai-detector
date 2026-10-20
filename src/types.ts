@@ -31,6 +31,7 @@ export interface SendProbeOptions {
   stream?: boolean;
   timeoutSeconds?: number;
   signal?: AbortSignal;
+  onStreamStart?: () => void;
 }
 
 export interface ProbeResponse {

@@ -6,6 +6,7 @@ import type { PelicanContentType } from "../../composables/usePelicanTest";
 const props = withDefaults(
   defineProps<{
     isRunning: boolean;
+    isGenerating?: boolean;
     errorMessage: string | null;
     svg?: string;
     content?: string;
@@ -17,6 +18,7 @@ const props = withDefaults(
     svgCopied: boolean;
   }>(),
   {
+    isGenerating: false,
     svg: "",
     content: "",
     contentType: "svg",
@@ -45,7 +47,7 @@ function toggleBgTheme(): void {
     <div class="status-left">
       <span v-if="isRunning" class="state-pill running">
         <span class="state-spinner"></span>
-        正在生成图形...
+        {{ isGenerating ? "正在生成图形..." : "等待模型响应..." }}
       </span>
       <span v-else-if="errorMessage" class="state-pill error">
         <span class="dot error"></span>
