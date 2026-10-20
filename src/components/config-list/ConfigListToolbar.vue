@@ -42,7 +42,7 @@ const emit = defineEmits<{
       title="将主界面当前输入的参数保存为一条新配置"
     >
       <Save :size="13" />
-      保存当前输入为新配置
+      保存为新配置
     </button>
   </div>
 </template>
