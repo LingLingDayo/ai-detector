@@ -54,7 +54,7 @@ export function isConfigEqual(current: ClientConfig, item: ConfigItem): boolean 
 }
 
 /**
- * 格式化高级参数的展示文案（接口协议、传输模式、思考强度）
+ * 格式化高级参数的展示文案（接口协议、传输模式）
  */
 export function formatSettingsSummary(config: ClientConfig): string {
   let formatName = "/v1/chat/completions";
@@ -64,17 +64,7 @@ export function formatSettingsSummary(config: ClientConfig): string {
     formatName = "/v1/messages";
   }
 
-  const effortMap: Record<string, string> = {
-    none: "关闭",
-    minimal: "极低",
-    low: "低",
-    medium: "中",
-    high: "高",
-    xhigh: "极高",
-    max: "最高",
-  };
-  const effortLabel = effortMap[config.reasoningEffort] || "高";
   const streamLabel = config.stream !== false ? "流式" : "同步";
 
-  return `${formatName} · ${streamLabel} · 思考强度:${effortLabel}`;
+  return `${formatName} · ${streamLabel}`;
 }

@@ -146,19 +146,9 @@ export const useConfigStore = defineStore("config", () => {
       formatName = "/v1/messages";
     }
 
-    const effortMap: Record<string, string> = {
-      none: "关闭",
-      minimal: "极低",
-      low: "低",
-      medium: "中",
-      high: "高",
-      xhigh: "极高",
-      max: "最高",
-    };
-    const effortLabel = effortMap[config.reasoningEffort] || "高";
     const streamLabel = config.stream !== false ? "流式" : "同步";
 
-    return `${formatName} · ${streamLabel} · 思考强度:${effortLabel}`;
+    return `${formatName} · ${streamLabel}`;
   });
 
   function togglePasswordVisibility(): void {

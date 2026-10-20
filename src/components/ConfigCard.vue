@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from "vue";
 import type { ClientConfig } from "../types";
-import { resolveValidReasoningEffort } from "../constants";
+import { resolveValidReasoningEffort, getReasoningOptionsForModel } from "../constants";
 import { Check, Save, List, History, Eye, EyeOff } from "@lucide/vue";
 import ModelCombobox from "./ModelCombobox.vue";
 import AdvancedSettings from "./AdvancedSettings.vue";
+import { CustomSelect, type SelectOption } from "./common";
 import { useConfigStore, useAppStore, useProbeTestStore, usePelicanTestStore } from "../stores";
 
 const configStore = useConfigStore();
@@ -81,6 +82,14 @@ watch(
     }
   }
 );
+
+const reasoningOptions = computed<SelectOption[]>(() => {
+  return getReasoningOptionsForModel(activeConfig.value.modelName).map((opt) => ({
+    value: opt.value,
+    label: opt.value,
+    description: opt.isDefault ? `${opt.description} (默认)` : opt.description,
+  }));
+});
 
 const isCurrentRunning = computed(() => {
   return currentActiveMode.value === "probe"
@@ -332,7 +341,7 @@ defineExpose({
         </div>
       </div>
 
-      <!-- 第二行：模型选择下拉组件 -->
+      <!-- 第二行：模型选择与思考强度下拉组件 -->
       <div class="form-row">
         <div class="form-group flex-1 model-select-group">
           <label for="model-name" title="指定要测试的模型 ID，支持手动输入或从下方下拉获取列表中选择">
@@ -349,6 +358,18 @@ defineExpose({
             :required="true"
           />
         </div>
+
+        <div class="form-group reasoning-select-group">
+          <label for="reasoning-effort" title="配置模型的深度思考与推理强度">
+            思考强度
+          </label>
+          <CustomSelect
+            id="reasoning-effort"
+            v-model="activeConfig.reasoningEffort"
+            :options="reasoningOptions"
+            :disabled="isCurrentRunning"
+          />
+        </div>
       </div>
 
       <!-- 更多设置折叠区 -->
@@ -356,13 +377,10 @@ defineExpose({
         :is-open="currentAdvancedOpen"
         :summary="currentSettingsSummary"
         :api-format="activeConfig.apiFormat"
-        :reasoning-effort="activeConfig.reasoningEffort"
-        :model-name="activeConfig.modelName"
         :stream="activeConfig.stream"
         :disabled="isCurrentRunning"
         @update:is-open="handleUpdateAdvanced"
         @update:api-format="(v) => (activeConfig.apiFormat = v)"
-        @update:reasoning-effort="(v) => (activeConfig.reasoningEffort = v)"
         @update:stream="(v) => (activeConfig.stream = v)"
       />
 
@@ -588,6 +606,20 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: 8px;
+
+  .model-select-group {
+    min-width: 0;
+  }
+
+  .reasoning-select-group {
+    flex: 0 0 210px;
+    width: 210px;
+
+    @media (max-width: 600px) {
+      flex: 1 1 auto;
+      width: 100%;
+    }
+  }
 }
 
 .test-mode-tabs {

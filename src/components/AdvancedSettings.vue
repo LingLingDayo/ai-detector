@@ -1,24 +1,16 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import { Settings, ChevronDown } from "@lucide/vue";
-import {
-  findModelReasoningRule,
-  getReasoningOptionsForModel,
-} from "../constants";
 
 const props = withDefaults(
   defineProps<{
     isOpen: boolean;
     summary: string;
     apiFormat: string;
-    reasoningEffort: string;
     stream?: boolean;
-    modelName?: string;
     disabled?: boolean;
   }>(),
   {
     stream: true,
-    modelName: "",
     disabled: false,
   }
 );
@@ -26,12 +18,8 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "update:isOpen", value: boolean): void;
   (e: "update:apiFormat", value: string): void;
-  (e: "update:reasoningEffort", value: string): void;
   (e: "update:stream", value: boolean): void;
 }>();
-
-const matchedRule = computed(() => findModelReasoningRule(props.modelName));
-const effortOptions = computed(() => getReasoningOptionsForModel(props.modelName));
 </script>
 
 <template>
@@ -122,42 +110,6 @@ const effortOptions = computed(() => getReasoningOptionsForModel(props.modelName
                 @change="emit('update:apiFormat', 'anthropic')"
               />
               <span class="segment-label">/v1/messages 端点</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- 思考强度选择 (Reasoning Effort) -->
-        <div class="advanced-row">
-          <div class="advanced-row-header">
-            <label title="配置模型的深度思考与推理强度">思考强度</label>
-            <span
-              v-if="matchedRule"
-              class="field-hint"
-              :title="matchedRule.notes ? `${matchedRule.notes} (默认: ${matchedRule.defaultEffort})` : `默认: ${matchedRule.defaultEffort}`"
-            >
-              {{ matchedRule.model }} 限定 {{ effortOptions.length }} 档
-            </span>
-          </div>
-          <div
-            class="segmented-control reasoning-control"
-            :style="{ '--reasoning-cols': effortOptions.length }"
-          >
-            <label
-              v-for="opt in effortOptions"
-              :key="opt.value"
-              class="segment"
-              :class="{ 'is-disabled': disabled }"
-              :title="opt.isDefault ? `${opt.description} (默认)` : opt.description"
-            >
-              <input
-                type="radio"
-                name="reasoning-effort"
-                :value="opt.value"
-                :checked="reasoningEffort === opt.value"
-                :disabled="disabled"
-                @change="emit('update:reasoningEffort', opt.value)"
-              />
-              <span class="segment-label">{{ opt.label }}</span>
             </label>
           </div>
         </div>
@@ -270,20 +222,12 @@ const effortOptions = computed(() => getReasoningOptionsForModel(props.modelName
           border-radius: var(--radius-sm);
           border: 1px solid var(--border-subtle);
 
-          &.reasoning-control {
-            grid-template-columns: repeat(var(--reasoning-cols, 8), 1fr);
-          }
-
           &.stream-control {
             grid-template-columns: repeat(2, 1fr);
           }
 
           @media (max-width: 640px) {
             grid-template-columns: 1fr;
-
-            &.reasoning-control {
-              grid-template-columns: repeat(4, 1fr);
-            }
 
             &.stream-control {
               grid-template-columns: repeat(2, 1fr);

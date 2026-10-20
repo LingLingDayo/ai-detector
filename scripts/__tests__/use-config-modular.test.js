@@ -63,9 +63,7 @@ test("configHelpers 单元测试", () => {
   assert.equal(isConfigEqual({ ...cfgA, modelName: "gpt-5" }, itemA), false);
 
   // formatSettingsSummary
-  assert.ok(formatSettingsSummary(cfgA).includes("/v1/chat/completions"));
-  assert.ok(formatSettingsSummary(cfgA).includes("流式"));
-  assert.ok(formatSettingsSummary(cfgA).includes("高"));
+  assert.equal(formatSettingsSummary(cfgA), "/v1/chat/completions · 流式");
 });
 
 test("configStorage 单元测试", () => {

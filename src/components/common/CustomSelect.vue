@@ -167,6 +167,7 @@ onUnmounted(() => {
     <div
       class="custom-select-trigger"
       :class="{ 'has-value': !!selectedOption }"
+      :title="selectedOption ? `${selectedOption.label}${selectedOption.description ? ' - ' + selectedOption.description : ''}` : placeholder"
       @click="toggleDropdown"
     >
       <div class="trigger-content">
@@ -243,6 +244,10 @@ onUnmounted(() => {
   width: 100%;
   user-select: none;
   outline: none;
+
+  &.is-open {
+    z-index: 100;
+  }
 
   &.is-disabled {
     opacity: 0.5;
