@@ -153,7 +153,20 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
 
   const activeConfig = computed<ConfigItem | undefined>(() => {
     if (!activeConfigId.value) return undefined;
-    return configList.value.find((item) => item.id === activeConfigId.value);
+    const item = configList.value.find((item) => item.id === activeConfigId.value);
+    if (!item) return undefined;
+
+    const curBaseUrl = (config.baseUrl || "").trim();
+    const curApiKey = (config.apiKey || "").trim();
+    const itemBaseUrl = (item.baseUrl || "").trim();
+    const itemApiKey = (item.apiKey || "").trim();
+
+    // 当 Base URL 或 API Key 被修改后，当前不再处于该配置的生效状态
+    if (curBaseUrl !== itemBaseUrl || curApiKey !== itemApiKey) {
+      return undefined;
+    }
+
+    return item;
   });
 
   const activeConfigName = computed<string>(() => {
@@ -249,8 +262,8 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     const matched = matchedConfigItem.value;
     configEditModalMode.value = "save-current";
     editingConfigItem.value = {
-      id: matched?.id || "",
-      name: matched?.name || activeConfigName.value || "",
+      id: activeConfigId.value ? (matched?.id || "") : "",
+      name: activeConfigId.value ? (matched?.name || activeConfigName.value || "") : "",
       baseUrl: config.baseUrl,
       apiKey: config.apiKey,
       apiFormat: config.apiFormat,
@@ -492,11 +505,31 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
         activeConfigId.value = defaultItem.id;
       } else {
         configList.value = loadedList;
+        let candidateActiveId: string | null = null;
         if (savedActiveId && loadedList.some((item) => item.id === savedActiveId)) {
-          activeConfigId.value = savedActiveId;
-        } else if (loadedList.length > 0 && !savedActiveId) {
-          activeConfigId.value = loadedList[0].id;
+          candidateActiveId = savedActiveId;
+        } else if (
+          loadedList.length > 0 &&
+          !savedActiveId &&
+          !savedConfig.baseUrl &&
+          !savedConfig.apiKey
+        ) {
+          candidateActiveId = loadedList[0].id;
         }
+
+        if (candidateActiveId) {
+          const target = loadedList.find((item) => item.id === candidateActiveId);
+          if (target) {
+            const curUrl = (savedConfig.baseUrl || "").trim();
+            const curKey = (savedConfig.apiKey || "").trim();
+            const targetUrl = (target.baseUrl || "").trim();
+            const targetKey = (target.apiKey || "").trim();
+            if ((curUrl || curKey) && (curUrl !== targetUrl || curKey !== targetKey)) {
+              candidateActiveId = null;
+            }
+          }
+        }
+        activeConfigId.value = candidateActiveId;
       }
 
       configList.value = loadedList;
@@ -622,6 +655,41 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
         probeConfig.baseUrl = newUrl;
         probeConfig.apiKey = newKey;
       }
+    }
+  );
+
+  function checkAndClearActiveConfigOnCredentialChange(): void {
+    if (isInitializing) return;
+    if (!activeConfigId.value) return;
+
+    const currentItem = configList.value.find((item) => item.id === activeConfigId.value);
+    if (!currentItem) {
+      activeConfigId.value = null;
+      saveConfigListToStorage();
+      return;
+    }
+
+    const curBaseUrl = (config.baseUrl || "").trim();
+    const curApiKey = (config.apiKey || "").trim();
+    const itemBaseUrl = (currentItem.baseUrl || "").trim();
+    const itemApiKey = (currentItem.apiKey || "").trim();
+
+    if (curBaseUrl !== itemBaseUrl || curApiKey !== itemApiKey) {
+      activeConfigId.value = null;
+      saveConfigListToStorage();
+    }
+  }
+
+  // 监听 Base URL 与 API Key 变动，一旦凭据与激活配置不一致，立即清空 active-config-tag 标记
+  watch(
+    [
+      () => probeConfig.baseUrl,
+      () => probeConfig.apiKey,
+      () => pelicanConfig.baseUrl,
+      () => pelicanConfig.apiKey,
+    ],
+    () => {
+      checkAndClearActiveConfigOnCredentialChange();
     }
   );
 
