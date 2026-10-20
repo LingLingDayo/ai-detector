@@ -111,6 +111,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
 
   const configList = ref<ConfigItem[]>([]);
   const activeConfigId = ref<string | null>(null);
+  const lastActiveConfigId = ref<string | null>(null);
   let isInitializing = true;
 
   const activeConfig = computed<ConfigItem | undefined>(() => {
@@ -234,6 +235,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
 
     configList.value.splice(index, 1, updatedItem);
     activeConfigId.value = updatedItem.id;
+    lastActiveConfigId.value = updatedItem.id;
     saveConfig();
     saveConfigListToStorage();
     return true;
@@ -261,6 +263,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     }
 
     activeConfigId.value = item.id;
+    lastActiveConfigId.value = item.id;
     saveConfig();
     saveConfigListToStorage();
     options?.onApply?.(item);
@@ -303,6 +306,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
         applyConfig(newItem);
       } else if (modal.configEditModalMode.value === "save-current") {
         activeConfigId.value = newId;
+        lastActiveConfigId.value = newId;
       }
     }
     saveConfigListToStorage();
@@ -329,6 +333,9 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     if (activeConfigId.value === id) {
       activeConfigId.value = null;
     }
+    if (lastActiveConfigId.value === id) {
+      lastActiveConfigId.value = null;
+    }
     saveConfigListToStorage();
     return true;
   }
@@ -353,6 +360,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
 
       configList.value = loadedList;
       activeConfigId.value = candidateActiveId;
+      lastActiveConfigId.value = candidateActiveId;
       saveConfigListToStorage();
 
       applyPersistedConfigToTarget(savedConfig, probeConfig);
@@ -391,28 +399,55 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     if (!isPelicanRunningRef.value) resetOne(pelicanConfig);
 
     activeConfigId.value = null;
+    lastActiveConfigId.value = null;
     clearActiveConfigIdStorage();
     return true;
   }
 
-  function checkAndClearActiveConfigOnCredentialChange(): void {
+  function checkAndSyncActiveConfigOnCredentialChange(): void {
     if (isInitializing) return;
-    if (!activeConfigId.value) return;
-
-    const currentItem = configList.value.find((item) => item.id === activeConfigId.value);
-    if (!currentItem) {
-      activeConfigId.value = null;
-      saveConfigListToStorage();
-      return;
-    }
 
     const curBaseUrl = (config.baseUrl || "").trim();
     const curApiKey = (config.apiKey || "").trim();
-    const itemBaseUrl = (currentItem.baseUrl || "").trim();
-    const itemApiKey = (currentItem.apiKey || "").trim();
 
-    if (curBaseUrl !== itemBaseUrl || curApiKey !== itemApiKey) {
-      activeConfigId.value = null;
+    // 1. 若当前凭据与当前激活配置依然匹配，保持当前激活状态
+    if (activeConfigId.value) {
+      const currentItem = configList.value.find((item) => item.id === activeConfigId.value);
+      if (
+        currentItem &&
+        isSameConfigIdentity(curBaseUrl, curApiKey, currentItem.baseUrl, currentItem.apiKey)
+      ) {
+        return;
+      }
+    }
+
+    // 2. 若凭据不匹配或当前无激活配置，尝试恢复或匹配已保存配置
+    let targetItem: ConfigItem | undefined = undefined;
+
+    // 优先尝试恢复最近激活过的配置（如用户输入额外字符后又删除改回）
+    if (lastActiveConfigId.value) {
+      const lastItem = configList.value.find((item) => item.id === lastActiveConfigId.value);
+      if (
+        lastItem &&
+        isSameConfigIdentity(curBaseUrl, curApiKey, lastItem.baseUrl, lastItem.apiKey)
+      ) {
+        targetItem = lastItem;
+      }
+    }
+
+    // 若非上一个激活项，在配置列表中按当前凭据寻找其他匹配项
+    if (!targetItem && curBaseUrl && curApiKey) {
+      targetItem = configList.value.find((item) =>
+        isSameConfigIdentity(curBaseUrl, curApiKey, item.baseUrl, item.apiKey)
+      );
+    }
+
+    const nextActiveId = targetItem ? targetItem.id : null;
+    if (activeConfigId.value !== nextActiveId) {
+      activeConfigId.value = nextActiveId;
+      if (nextActiveId) {
+        lastActiveConfigId.value = nextActiveId;
+      }
       saveConfigListToStorage();
     }
   }
@@ -459,7 +494,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     }
   );
 
-  // 监听 Base URL 与 API Key 变动，一旦凭据与激活配置不一致，立即清空 active-config-tag 标记
+  // 监听 Base URL 与 API Key 变动，实时同步并恢复 active-config-tag 标记
   watch(
     [
       () => probeConfig.baseUrl,
@@ -468,7 +503,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
       () => pelicanConfig.apiKey,
     ],
     () => {
-      checkAndClearActiveConfigOnCredentialChange();
+      checkAndSyncActiveConfigOnCredentialChange();
     }
   );
 

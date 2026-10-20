@@ -174,4 +174,11 @@ test("重构后的 useConfig 核心集成逻辑测试", async (t) => {
     assert.equal(configService.editingConfigItem.value?.name, "");
     configService.closeConfigEditModal();
   });
+
+  await t.test("改回原 Base URL 时，activeConfigName 与 activeConfigId 自动恢复", async () => {
+    configService.config.baseUrl = "https://api.mod-a.com";
+    await nextTick();
+    assert.equal(configService.activeConfigName.value, "模块配置A");
+    assert.equal(configService.activeConfigId.value, "cfg_a_modular");
+  });
 });

@@ -73,6 +73,13 @@ test("配置凭据修改与 active-config-tag 自动清空测试套件", async (
     store.closeConfigEditModal();
   });
 
+  await t.test("将修改后的 Base URL 改回原配置地址时，active-config-tag (activeConfigName) 与 activeConfigId 自动恢复", async () => {
+    store.config.baseUrl = "https://api.test-a.com";
+    await nextTick();
+    assert.equal(store.activeConfigName, "配置A");
+    assert.equal(store.activeConfigId, "cfg_a_123");
+  });
+
   await t.test("重新应用配置A后，修改 API Key，同样清空 activeConfigName 并重置保存弹窗名称为 \"\"", async () => {
     store.applyConfig(mockItemA);
     assert.equal(store.activeConfigId, "cfg_a_123");
@@ -90,6 +97,13 @@ test("配置凭据修改与 active-config-tag 自动清空测试套件", async (
     store.closeConfigEditModal();
   });
 
+  await t.test("将修改后的 API Key 改回原密钥时，active-config-tag (activeConfigName) 与 activeConfigId 自动恢复", async () => {
+    store.config.apiKey = "sk-key-a";
+    await nextTick();
+    assert.equal(store.activeConfigName, "配置A");
+    assert.equal(store.activeConfigId, "cfg_a_123");
+  });
+
   await t.test("在 pelican 模式下修改 Base URL，同样清空 activeConfigName 与 activeConfigId", async () => {
     store.applyConfig(mockItemA);
     store.setActiveMode("pelican");
@@ -104,10 +118,20 @@ test("配置凭据修改与 active-config-tag 自动清空测试套件", async (
     store.openSaveCurrentModal();
     assert.equal(store.editingConfigItem?.name, "");
     store.closeConfigEditModal();
+  });
+
+  await t.test("在 pelican 模式下改回原 Base URL，activeConfigName 与 activeConfigId 自动恢复", async () => {
+    store.pelicanConfig.baseUrl = "https://api.test-a.com";
+    await nextTick();
+    assert.equal(store.activeConfigName, "配置A");
+    assert.equal(store.activeConfigId, "cfg_a_123");
     store.setActiveMode("probe");
   });
 
-  await t.test("修改 url 后保存为新配置「配置B」，activeConfigId 自动成为新配置 ID 并更新 activeConfigName", () => {
+  await t.test("修改 url 后保存为新配置「配置B」，activeConfigId 自动成为新配置 ID 并更新 activeConfigName", async () => {
+    store.config.baseUrl = "https://api.pelican-custom.com";
+    await nextTick();
+
     store.handleSaveConfigItem(
       {
         name: "配置B",
@@ -125,6 +149,13 @@ test("配置凭据修改与 active-config-tag 自动清空测试套件", async (
     assert.equal(store.activeConfigName, "配置B");
     assert.ok(store.activeConfigId !== null);
     assert.ok(store.activeConfigId !== "cfg_a_123");
+  });
+
+  await t.test("切换回「配置A」的凭据后，activeConfigName 与 activeConfigId 自动切回「配置A」", async () => {
+    store.config.baseUrl = "https://api.test-a.com";
+    await nextTick();
+    assert.equal(store.activeConfigName, "配置A");
+    assert.equal(store.activeConfigId, "cfg_a_123");
   });
 
   await t.test("loadConfig 启动校验：若缓存表单凭据与缓存 activeConfigId 不一致，清空 activeConfigId", () => {
