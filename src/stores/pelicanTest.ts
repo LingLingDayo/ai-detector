@@ -4,10 +4,12 @@ import { sendProbe } from "../services/api";
 import type { ClientConfig, PelicanHistoryItem } from "../types";
 import {
   PELICAN_PROMPT_STORAGE_KEY,
+  PELICAN_CUSTOM_PROMPT_STORAGE_KEY,
   PELICAN_HISTORY_STORAGE_KEY,
   DEFAULT_REQUEST_RETRY_COUNT,
   DEFAULT_REQUEST_RETRY_DELAY_MS,
 } from "../constants";
+import { PELICAN_PRESETS } from "../data/pelicanPresets";
 import { sleep } from "../utils/timer";
 import { isTimeoutError } from "../utils/retry";
 import { maskApiKey } from "../utils/pelicanFormatters";
@@ -137,6 +139,23 @@ function loadInitialPelicanPrompt(): string {
   return DEFAULT_PELICAN_PROMPT;
 }
 
+function isPresetPrompt(prompt: string): boolean {
+  return PELICAN_PRESETS.some((preset) => preset.prompt === prompt);
+}
+
+function loadInitialPelicanCustomPrompt(currentPrompt: string): string {
+  try {
+    const saved = localStorage.getItem(PELICAN_CUSTOM_PROMPT_STORAGE_KEY);
+    if (saved && saved.trim()) {
+      return saved;
+    }
+  } catch {
+    // 忽略存储读取异常
+  }
+  // 旧版本仅持久化了当前提示词，非预设内容即视为上次的自定义内容
+  return isPresetPrompt(currentPrompt) ? "" : currentPrompt;
+}
+
 const MAX_PELICAN_HISTORY_COUNT = 60;
 
 function loadInitialPelicanHistory(): PelicanHistoryItem[] {
@@ -184,6 +203,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
   const hasTested = ref(false);
   const hasResult = ref(false);
   const pelicanPrompt = ref(loadInitialPelicanPrompt());
+  const pelicanCustomPrompt = ref(loadInitialPelicanCustomPrompt(pelicanPrompt.value));
   const pelicanHistoryList = ref<PelicanHistoryItem[]>(loadInitialPelicanHistory());
 
   function addPelicanHistoryItem(item: Omit<PelicanHistoryItem, "id" | "createdAt">): void {
@@ -221,6 +241,11 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
         localStorage.removeItem(PELICAN_PROMPT_STORAGE_KEY);
       } else {
         localStorage.setItem(PELICAN_PROMPT_STORAGE_KEY, finalPrompt);
+      }
+      // 与任何预设都不一致的提示词归入「自定义」预设，供下次直接复用
+      if (!isPresetPrompt(finalPrompt)) {
+        pelicanCustomPrompt.value = finalPrompt;
+        localStorage.setItem(PELICAN_CUSTOM_PROMPT_STORAGE_KEY, finalPrompt);
       }
     } catch {
       // 忽略存储写入异常
@@ -464,6 +489,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     hasTested,
     hasResult,
     pelicanPrompt,
+    pelicanCustomPrompt,
     pelicanHistoryList,
     setPelicanPrompt,
     resetPelicanPrompt,

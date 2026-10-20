@@ -192,6 +192,7 @@ function handleOpenGithub(): void {
           :error-message="pelicanStore.errorMsg"
           :has-tested="pelicanStore.hasTested"
           :prompt="pelicanStore.pelicanPrompt"
+          :custom-prompt="pelicanStore.pelicanCustomPrompt"
           @update:prompt="pelicanStore.setPelicanPrompt"
           @reset-prompt="pelicanStore.resetPelicanPrompt"
         />

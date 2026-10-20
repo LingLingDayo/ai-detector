@@ -7,6 +7,7 @@ export const STORAGE_KEY = "modeltrace_client_config";
 export const CONFIG_LIST_STORAGE_KEY = "modeltrace_config_list";
 export const ACTIVE_CONFIG_ID_KEY = "modeltrace_active_config_id";
 export const PELICAN_PROMPT_STORAGE_KEY = "modeltrace_pelican_prompt";
+export const PELICAN_CUSTOM_PROMPT_STORAGE_KEY = "modeltrace_pelican_custom_prompt";
 export const PELICAN_HISTORY_STORAGE_KEY = "modeltrace_pelican_history";
 export const PROBE_HISTORY_STORAGE_KEY = "modeltrace_probe_history";
 export {

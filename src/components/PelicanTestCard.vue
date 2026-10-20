@@ -23,6 +23,7 @@ const props = withDefaults(
     errorMessage: string | null;
     hasTested: boolean;
     prompt?: string;
+    customPrompt?: string;
   }>(),
   {
     isGenerating: false,
@@ -30,6 +31,7 @@ const props = withDefaults(
     content: "",
     contentType: "svg",
     prompt: DEFAULT_PELICAN_PROMPT,
+    customPrompt: "",
   }
 );
 
@@ -142,6 +144,7 @@ function handleDownloadContent(): void {
     <!-- 提示词展示与编辑模块 -->
     <PelicanPromptBox
       :prompt="prompt"
+      :custom-prompt="customPrompt"
       :is-running="isRunning"
       @update:prompt="emit('update:prompt', $event)"
     />

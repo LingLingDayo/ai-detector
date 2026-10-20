@@ -8,10 +8,12 @@ import { PELICAN_PRESETS, type PelicanPreset } from "../../data/pelicanPresets";
 const props = withDefaults(
   defineProps<{
     prompt?: string;
+    customPrompt?: string;
     isRunning?: boolean;
   }>(),
   {
     prompt: DEFAULT_PELICAN_PROMPT,
+    customPrompt: "",
     isRunning: false,
   }
 );
@@ -30,6 +32,10 @@ const presetWrapperRef = ref<HTMLDivElement | null>(null);
 const isPresetDropdownOpen = ref(false);
 
 const currentPrompt = computed(() => props.prompt || DEFAULT_PELICAN_PROMPT);
+const savedCustomPrompt = computed(() => props.customPrompt.trim());
+const isCustomSelected = computed(
+  () => Boolean(savedCustomPrompt.value) && savedCustomPrompt.value === currentPrompt.value
+);
 
 function handleCopyPrompt(): void {
   copyPrompt(currentPrompt.value);
@@ -75,6 +81,26 @@ function handleSelectPreset(preset: PelicanPreset): void {
     editingPrompt.value = preset.prompt;
   }
   emit("update:prompt", preset.prompt);
+  closePresetDropdown();
+}
+
+function handleSelectCustomPreset(): void {
+  if (props.isRunning) return;
+  const saved = savedCustomPrompt.value;
+
+  // 没有已保存的自定义内容时直接带空文本框进入编辑模式
+  if (!saved) {
+    editingPrompt.value = "";
+    isEditingPrompt.value = true;
+    closePresetDropdown();
+    nextTick(() => promptTextareaRef.value?.focus());
+    return;
+  }
+
+  if (isEditingPrompt.value) {
+    editingPrompt.value = saved;
+  }
+  emit("update:prompt", saved);
   closePresetDropdown();
 }
 
@@ -201,6 +227,25 @@ watch(
                     :stroke-width="2.5"
                   />
                 </button>
+
+                <div class="preset-dropdown-divider" role="separator"></div>
+
+                <button
+                  type="button"
+                  class="preset-dropdown-item"
+                  :class="{ 'is-selected': isCustomSelected }"
+                  :title="savedCustomPrompt || '编辑并保存不属于任何预设的提示词'"
+                  role="menuitem"
+                  @click="handleSelectCustomPreset"
+                >
+                  <span class="preset-name">自定义</span>
+                  <Check
+                    v-if="isCustomSelected"
+                    :size="12"
+                    class="preset-check-icon"
+                    :stroke-width="2.5"
+                  />
+                </button>
               </div>
             </Transition>
           </div>
@@ -314,6 +359,13 @@ watch(
     flex-direction: column;
     gap: 1px;
     box-sizing: border-box;
+  }
+
+  .preset-dropdown-divider {
+    height: 1px;
+    flex-shrink: 0;
+    margin: 3px 5px;
+    background: rgba(51, 65, 85, 0.8);
   }
 
   .preset-dropdown-item {
