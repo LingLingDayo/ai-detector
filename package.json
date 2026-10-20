@@ -19,6 +19,7 @@
     "test:sync": "node --test scripts/__tests__/sync-upstream.test.js",
     "test:fingerprint": "node --experimental-strip-types --test scripts/__tests__/fingerprint-sync.test.js",
     "test:config-tag": "npx tsx --test scripts/__tests__/config-tag-clear.test.js",
+    "test:config-modular": "npx tsx --test scripts/__tests__/use-config-modular.test.js",
     "sync": "node scripts/sync-upstream.js",
     "sync:check": "node scripts/sync-upstream.js --check"
   },

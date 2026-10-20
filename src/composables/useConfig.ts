@@ -1,56 +1,25 @@
 import { ref, reactive, computed, watch, type Ref, type ComputedRef } from "vue";
-import {
-  STORAGE_KEY,
-  CONFIG_LIST_STORAGE_KEY,
-  ACTIVE_CONFIG_ID_KEY,
-  resolveValidReasoningEffort,
-} from "../constants";
+import { resolveValidReasoningEffort } from "../constants";
 import type { ClientConfig, ConfigItem } from "../types";
 import { useConfirm } from "./useConfirm";
+import { useConfigModal } from "./useConfigModal";
+import {
+  generateConfigId,
+  isSameConfigIdentity,
+  isConfigEqual,
+  formatSettingsSummary,
+} from "../utils/configHelpers";
+import {
+  loadStoredConfigs,
+  persistConfigList,
+  persistCurrentConfig,
+  clearCurrentConfigStorage,
+  clearActiveConfigIdStorage,
+  applyPersistedConfigToTarget,
+} from "../utils/configStorage";
 
-function generateConfigId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `cfg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export function isSameConfigIdentity(
-  urlA: string | undefined,
-  keyA: string | undefined,
-  urlB: string | undefined,
-  keyB: string | undefined
-): boolean {
-  const normUrlA = (urlA || "").trim();
-  const normKeyA = (keyA || "").trim();
-  const normUrlB = (urlB || "").trim();
-  const normKeyB = (keyB || "").trim();
-  return Boolean(normUrlA && normKeyA && normUrlA === normUrlB && normKeyA === normKeyB);
-}
-
-export function isConfigEqual(current: ClientConfig, item: ConfigItem): boolean {
-  const normCurrentBaseUrl = (current.baseUrl || "").trim();
-  const normItemBaseUrl = (item.baseUrl || "").trim();
-  const normCurrentApiKey = (current.apiKey || "").trim();
-  const normItemApiKey = (item.apiKey || "").trim();
-  const normCurrentModel = (current.modelName || "").trim();
-  const normItemModel = (item.modelName || "").trim();
-  const normCurrentFormat = current.apiFormat || "chat_completions";
-  const normItemFormat = item.apiFormat || "chat_completions";
-  const normCurrentEffort = current.reasoningEffort || "high";
-  const normItemEffort = item.reasoningEffort || "high";
-  const normCurrentStream = current.stream !== false;
-  const normItemStream = item.stream !== false;
-
-  return (
-    normCurrentBaseUrl === normItemBaseUrl &&
-    normCurrentApiKey === normItemApiKey &&
-    normCurrentModel === normItemModel &&
-    normCurrentFormat === normItemFormat &&
-    normCurrentEffort === normItemEffort &&
-    normCurrentStream === normItemStream
-  );
-}
+// 重新导出纯函数，确保外部引用的向后兼容性
+export { isSameConfigIdentity, isConfigEqual };
 
 export interface UseConfigOptions {
   activeMode?: Ref<"probe" | "pelican">;
@@ -104,6 +73,7 @@ export interface UseConfigReturn {
 
 export function useConfig(options?: UseConfigOptions): UseConfigReturn {
   const { confirm } = useConfirm();
+  const modal = useConfigModal();
 
   const activeModeRef = options?.activeMode || ref<"probe" | "pelican">("probe");
   const isRunningRef = options?.isRunning || ref(false);
@@ -141,19 +111,11 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
 
   const configList = ref<ConfigItem[]>([]);
   const activeConfigId = ref<string | null>(null);
-
-  const isPasswordVisible = ref(false);
-  const isAdvancedOpen = ref(false);
-  const isConfigListModalOpen = ref(false);
-  const isConfigEditModalOpen = ref(false);
-  const configEditModalMode = ref<"create" | "edit" | "save-current">("save-current");
-  const editingConfigItem = ref<ConfigItem | null>(null);
-
   let isInitializing = true;
 
   const activeConfig = computed<ConfigItem | undefined>(() => {
     if (!activeConfigId.value) return undefined;
-    const item = configList.value.find((item) => item.id === activeConfigId.value);
+    const item = configList.value.find((c) => c.id === activeConfigId.value);
     if (!item) return undefined;
 
     const curBaseUrl = (config.baseUrl || "").trim();
@@ -219,76 +181,25 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     );
   });
 
-  const settingsSummary = computed(() => {
-    let formatName = "/v1/chat/completions";
-    if (config.apiFormat === "responses") {
-      formatName = "/v1/responses";
-    } else if (config.apiFormat === "anthropic") {
-      formatName = "/v1/messages";
-    }
+  const settingsSummary = computed(() => formatSettingsSummary(config));
 
-    const effortMap: Record<string, string> = {
-      none: "关闭",
-      minimal: "极低",
-      low: "低",
-      medium: "中",
-      high: "高",
-      xhigh: "极高",
-      max: "最高",
-    };
-    const effortLabel = effortMap[config.reasoningEffort] || "高";
-    const streamLabel = config.stream !== false ? "流式" : "同步";
-
-    return `${formatName} · ${streamLabel} · 思考强度:${effortLabel}`;
-  });
-
-  function togglePasswordVisibility(): void {
-    isPasswordVisible.value = !isPasswordVisible.value;
+  function saveConfigListToStorage(): void {
+    persistConfigList(configList.value, activeConfigId.value);
   }
 
-  function toggleAdvanced(): void {
-    isAdvancedOpen.value = !isAdvancedOpen.value;
+  function saveConfig(): void {
+    if (isInitializing) return;
+    const cur = activeModeRef.value === "pelican" ? pelicanConfig : probeConfig;
+    persistCurrentConfig(cur);
   }
 
-  function openConfigListModal(): void {
-    isConfigListModalOpen.value = true;
-  }
-
-  function closeConfigListModal(): void {
-    isConfigListModalOpen.value = false;
-  }
-
-  function openSaveCurrentModal(): void {
-    const matched = matchedConfigItem.value;
-    configEditModalMode.value = "save-current";
-    editingConfigItem.value = {
-      id: activeConfigId.value ? (matched?.id || "") : "",
-      name: activeConfigId.value ? (matched?.name || activeConfigName.value || "") : "",
-      baseUrl: config.baseUrl,
-      apiKey: config.apiKey,
-      apiFormat: config.apiFormat,
-      modelName: config.modelName,
-      reasoningEffort: config.reasoningEffort,
-      stream: config.stream !== false,
-    };
-    isConfigEditModalOpen.value = true;
-  }
-
-  function openCreateConfigModal(): void {
-    configEditModalMode.value = "create";
-    editingConfigItem.value = null;
-    isConfigEditModalOpen.value = true;
-  }
-
-  function openEditConfigModal(item: ConfigItem): void {
-    configEditModalMode.value = "edit";
-    editingConfigItem.value = { ...item };
-    isConfigEditModalOpen.value = true;
-  }
-
-  function closeConfigEditModal(): void {
-    isConfigEditModalOpen.value = false;
-    editingConfigItem.value = null;
+  function handleOpenSaveCurrentModal(): void {
+    modal.openSaveCurrentModal({
+      matchedItem: matchedConfigItem.value,
+      activeConfigId: activeConfigId.value,
+      activeConfigName: activeConfigName.value,
+      config,
+    });
   }
 
   function updateCurrentConfig(): boolean {
@@ -326,29 +237,6 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     saveConfig();
     saveConfigListToStorage();
     return true;
-  }
-
-  function saveConfigListToStorage(): void {
-    try {
-      localStorage.setItem(CONFIG_LIST_STORAGE_KEY, JSON.stringify(configList.value));
-      if (activeConfigId.value) {
-        localStorage.setItem(ACTIVE_CONFIG_ID_KEY, activeConfigId.value);
-      } else {
-        localStorage.removeItem(ACTIVE_CONFIG_ID_KEY);
-      }
-    } catch (err) {
-      console.warn("保存配置列表到本地存储失败:", err);
-    }
-  }
-
-  function saveConfig(): void {
-    if (isInitializing) return;
-    try {
-      const cur = activeModeRef.value === "pelican" ? pelicanConfig : probeConfig;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cur));
-    } catch (err) {
-      console.warn("保存当前配置失败:", err);
-    }
   }
 
   function applyConfig(item: ConfigItem): void {
@@ -390,7 +278,6 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     };
 
     if (id) {
-      // 编辑已有项
       const index = configList.value.findIndex((item) => item.id === id);
       if (index !== -1) {
         const updatedItem: ConfigItem = {
@@ -404,7 +291,6 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
         }
       }
     } else {
-      // 新建项
       const newId = generateConfigId();
       const newItem: ConfigItem = {
         ...sanitizedData,
@@ -415,12 +301,12 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
       configList.value.push(newItem);
       if (applyImmediately) {
         applyConfig(newItem);
-      } else if (configEditModalMode.value === "save-current") {
+      } else if (modal.configEditModalMode.value === "save-current") {
         activeConfigId.value = newId;
       }
     }
     saveConfigListToStorage();
-    closeConfigEditModal();
+    modal.closeConfigEditModal();
   }
 
   async function deleteConfigItem(id: string): Promise<boolean> {
@@ -462,116 +348,15 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
 
   function loadConfig(): void {
     try {
-      // 1. 读取保存的配置列表
-      const rawList = localStorage.getItem(CONFIG_LIST_STORAGE_KEY);
-      let loadedList: ConfigItem[] = [];
-      if (rawList) {
-        try {
-          loadedList = JSON.parse(rawList);
-        } catch {
-          loadedList = [];
-        }
-      }
-
-      // 2. 读取当前活跃配置 ID
-      const savedActiveId = localStorage.getItem(ACTIVE_CONFIG_ID_KEY);
-
-      // 3. 读取旧版或当前活跃表单配置
-      const rawConfig = localStorage.getItem(STORAGE_KEY);
-      let savedConfig: Partial<ClientConfig> = {};
-      if (rawConfig) {
-        try {
-          savedConfig = JSON.parse(rawConfig);
-        } catch {
-          savedConfig = {};
-        }
-      }
-
-      // 4. 数据迁移：如果列表为空但旧单配置有有效数据，自动转为默认配置项
-      if (loadedList.length === 0 && (savedConfig.baseUrl || savedConfig.apiKey)) {
-        const defaultItem: ConfigItem = {
-          id: generateConfigId(),
-          name: "默认配置",
-          baseUrl: savedConfig.baseUrl || "",
-          apiKey: savedConfig.apiKey || "",
-          apiFormat: savedConfig.apiFormat || "chat_completions",
-          modelName: savedConfig.modelName || "",
-          reasoningEffort: savedConfig.reasoningEffort || "high",
-          stream: savedConfig.stream !== false,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-        loadedList = [defaultItem];
-        activeConfigId.value = defaultItem.id;
-      } else {
-        configList.value = loadedList;
-        let candidateActiveId: string | null = null;
-        if (savedActiveId && loadedList.some((item) => item.id === savedActiveId)) {
-          candidateActiveId = savedActiveId;
-        } else if (
-          loadedList.length > 0 &&
-          !savedActiveId &&
-          !savedConfig.baseUrl &&
-          !savedConfig.apiKey
-        ) {
-          candidateActiveId = loadedList[0].id;
-        }
-
-        if (candidateActiveId) {
-          const target = loadedList.find((item) => item.id === candidateActiveId);
-          if (target) {
-            const curUrl = (savedConfig.baseUrl || "").trim();
-            const curKey = (savedConfig.apiKey || "").trim();
-            const targetUrl = (target.baseUrl || "").trim();
-            const targetKey = (target.apiKey || "").trim();
-            if ((curUrl || curKey) && (curUrl !== targetUrl || curKey !== targetKey)) {
-              candidateActiveId = null;
-            }
-          }
-        }
-        activeConfigId.value = candidateActiveId;
-      }
+      const { configList: loadedList, activeConfigId: candidateActiveId, savedConfig } =
+        loadStoredConfigs();
 
       configList.value = loadedList;
+      activeConfigId.value = candidateActiveId;
       saveConfigListToStorage();
 
-      // 5. 应用表单初始值
-      const applyInitial = (target: ClientConfig) => {
-        if (savedConfig.baseUrl !== undefined) target.baseUrl = savedConfig.baseUrl;
-        if (savedConfig.apiKey !== undefined) target.apiKey = savedConfig.apiKey;
-        if (savedConfig.modelName !== undefined) target.modelName = savedConfig.modelName;
-        if (savedConfig.apiFormat !== undefined) {
-          if (
-            savedConfig.apiFormat === "responses" ||
-            savedConfig.apiFormat === "openai_responses" ||
-            savedConfig.apiFormat === "openai_native"
-          ) {
-            target.apiFormat = "responses";
-          } else if (savedConfig.apiFormat === "anthropic") {
-            target.apiFormat = "anthropic";
-          } else {
-            target.apiFormat = "chat_completions";
-          }
-        }
-        if (savedConfig.reasoningEffort !== undefined) {
-          target.reasoningEffort = resolveValidReasoningEffort(
-            target.modelName,
-            savedConfig.reasoningEffort
-          );
-        } else {
-          target.reasoningEffort = resolveValidReasoningEffort(target.modelName, "high");
-        }
-        if (savedConfig.stream !== undefined) {
-          target.stream = savedConfig.stream !== false;
-        } else {
-          target.stream = true;
-        }
-      };
-
-      applyInitial(probeConfig);
-      applyInitial(pelicanConfig);
-    } catch (err) {
-      console.warn("加载本地配置失败:", err);
+      applyPersistedConfigToTarget(savedConfig, probeConfig);
+      applyPersistedConfigToTarget(savedConfig, pelicanConfig);
     } finally {
       isInitializing = false;
     }
@@ -591,11 +376,7 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
       return false;
     }
 
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (err) {
-      console.warn("清除配置缓存失败:", err);
-    }
+    clearCurrentConfigStorage();
 
     const resetOne = (cfg: ClientConfig) => {
       cfg.baseUrl = "";
@@ -610,10 +391,30 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     if (!isPelicanRunningRef.value) resetOne(pelicanConfig);
 
     activeConfigId.value = null;
-    try {
-      localStorage.removeItem(ACTIVE_CONFIG_ID_KEY);
-    } catch {}
+    clearActiveConfigIdStorage();
     return true;
+  }
+
+  function checkAndClearActiveConfigOnCredentialChange(): void {
+    if (isInitializing) return;
+    if (!activeConfigId.value) return;
+
+    const currentItem = configList.value.find((item) => item.id === activeConfigId.value);
+    if (!currentItem) {
+      activeConfigId.value = null;
+      saveConfigListToStorage();
+      return;
+    }
+
+    const curBaseUrl = (config.baseUrl || "").trim();
+    const curApiKey = (config.apiKey || "").trim();
+    const itemBaseUrl = (currentItem.baseUrl || "").trim();
+    const itemApiKey = (currentItem.apiKey || "").trim();
+
+    if (curBaseUrl !== itemBaseUrl || curApiKey !== itemApiKey) {
+      activeConfigId.value = null;
+      saveConfigListToStorage();
+    }
   }
 
   // 监听模型变动，限定思考强度到指定支持档位
@@ -658,28 +459,6 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     }
   );
 
-  function checkAndClearActiveConfigOnCredentialChange(): void {
-    if (isInitializing) return;
-    if (!activeConfigId.value) return;
-
-    const currentItem = configList.value.find((item) => item.id === activeConfigId.value);
-    if (!currentItem) {
-      activeConfigId.value = null;
-      saveConfigListToStorage();
-      return;
-    }
-
-    const curBaseUrl = (config.baseUrl || "").trim();
-    const curApiKey = (config.apiKey || "").trim();
-    const itemBaseUrl = (currentItem.baseUrl || "").trim();
-    const itemApiKey = (currentItem.apiKey || "").trim();
-
-    if (curBaseUrl !== itemBaseUrl || curApiKey !== itemApiKey) {
-      activeConfigId.value = null;
-      saveConfigListToStorage();
-    }
-  }
-
   // 监听 Base URL 与 API Key 变动，一旦凭据与激活配置不一致，立即清空 active-config-tag 标记
   watch(
     [
@@ -720,26 +499,26 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     activeConfig,
     activeConfigName,
     configListCount,
-    isPasswordVisible,
-    isAdvancedOpen,
-    isConfigListModalOpen,
-    isConfigEditModalOpen,
-    configEditModalMode,
-    editingConfigItem,
+    isPasswordVisible: modal.isPasswordVisible,
+    isAdvancedOpen: modal.isAdvancedOpen,
+    isConfigListModalOpen: modal.isConfigListModalOpen,
+    isConfigEditModalOpen: modal.isConfigEditModalOpen,
+    configEditModalMode: modal.configEditModalMode,
+    editingConfigItem: modal.editingConfigItem,
     settingsSummary,
     hasCurrentInput,
     isCurrentConfigSaved,
     canSaveCurrent,
     matchedConfigItem,
     isConfigModified,
-    togglePasswordVisibility,
-    toggleAdvanced,
-    openConfigListModal,
-    closeConfigListModal,
-    openSaveCurrentModal,
-    openCreateConfigModal,
-    openEditConfigModal,
-    closeConfigEditModal,
+    togglePasswordVisibility: modal.togglePasswordVisibility,
+    toggleAdvanced: modal.toggleAdvanced,
+    openConfigListModal: modal.openConfigListModal,
+    closeConfigListModal: modal.closeConfigListModal,
+    openSaveCurrentModal: handleOpenSaveCurrentModal,
+    openCreateConfigModal: modal.openCreateConfigModal,
+    openEditConfigModal: modal.openEditConfigModal,
+    closeConfigEditModal: modal.closeConfigEditModal,
     updateCurrentConfig,
     saveConfig,
     loadConfig,
@@ -750,4 +529,3 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     swapConfigItems,
   };
 }
-

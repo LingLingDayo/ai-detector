@@ -8,50 +8,13 @@ import {
 } from "../constants";
 import type { ClientConfig, ConfigItem } from "../types";
 import { useConfirm } from "../composables/useConfirm";
+import {
+  generateConfigId,
+  isSameConfigIdentity,
+  isConfigEqual,
+} from "../utils/configHelpers";
 
-function generateConfigId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `cfg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export function isSameConfigIdentity(
-  urlA: string | undefined,
-  keyA: string | undefined,
-  urlB: string | undefined,
-  keyB: string | undefined
-): boolean {
-  const normUrlA = (urlA || "").trim();
-  const normKeyA = (keyA || "").trim();
-  const normUrlB = (urlB || "").trim();
-  const normKeyB = (keyB || "").trim();
-  return Boolean(normUrlA && normKeyA && normUrlA === normUrlB && normKeyA === normKeyB);
-}
-
-export function isConfigEqual(current: ClientConfig, item: ConfigItem): boolean {
-  const normCurrentBaseUrl = (current.baseUrl || "").trim();
-  const normItemBaseUrl = (item.baseUrl || "").trim();
-  const normCurrentApiKey = (current.apiKey || "").trim();
-  const normItemApiKey = (item.apiKey || "").trim();
-  const normCurrentModel = (current.modelName || "").trim();
-  const normItemModel = (item.modelName || "").trim();
-  const normCurrentFormat = current.apiFormat || "chat_completions";
-  const normItemFormat = item.apiFormat || "chat_completions";
-  const normCurrentEffort = current.reasoningEffort || "high";
-  const normItemEffort = item.reasoningEffort || "high";
-  const normCurrentStream = current.stream !== false;
-  const normItemStream = item.stream !== false;
-
-  return (
-    normCurrentBaseUrl === normItemBaseUrl &&
-    normCurrentApiKey === normItemApiKey &&
-    normCurrentModel === normItemModel &&
-    normCurrentFormat === normItemFormat &&
-    normCurrentEffort === normItemEffort &&
-    normCurrentStream === normItemStream
-  );
-}
+export { isSameConfigIdentity, isConfigEqual };
 
 export const useConfigStore = defineStore("config", () => {
   const { confirm } = useConfirm();
