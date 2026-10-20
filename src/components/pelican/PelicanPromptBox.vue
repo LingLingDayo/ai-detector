@@ -36,6 +36,11 @@ const savedCustomPrompt = computed(() => props.customPrompt.trim());
 const isCustomSelected = computed(
   () => Boolean(savedCustomPrompt.value) && savedCustomPrompt.value === currentPrompt.value
 );
+const customPresetTitle = computed(() =>
+  savedCustomPrompt.value
+    ? `载入上次的自定义提示词：${savedCustomPrompt.value}`
+    : "暂无自定义提示词，点击后进入编辑"
+);
 
 function handleCopyPrompt(): void {
   copyPrompt(currentPrompt.value);
@@ -234,7 +239,7 @@ watch(
                   type="button"
                   class="preset-dropdown-item"
                   :class="{ 'is-selected': isCustomSelected }"
-                  :title="savedCustomPrompt || '编辑并保存不属于任何预设的提示词'"
+                  :title="customPresetTitle"
                   role="menuitem"
                   @click="handleSelectCustomPreset"
                 >
