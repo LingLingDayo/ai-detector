@@ -5,4 +5,5 @@ export { useConnectionTestStore } from "./connectionTest";
 export { useAppStore } from "./app";
 export { useModelsStore } from "./models";
 export { useConfirmStore } from "./confirm";
+export { useToastStore } from "./toast";
 
