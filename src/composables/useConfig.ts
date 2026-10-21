@@ -507,15 +507,21 @@ export function useConfig(options?: UseConfigOptions): UseConfigReturn {
     }
   );
 
-  // 当切换到 pelican 时，若 pelican 未选择模型且未在运行，自动继承 probe 的配置
+  // 当切换测试模式时，平滑顺延当前配置（除非目标测试正在进行中）
   watch(
     () => activeModeRef.value,
-    (newMode) => {
-      if (newMode === "pelican" && !isPelicanRunningRef.value && !pelicanConfig.modelName) {
-        pelicanConfig.modelName = probeConfig.modelName;
-        pelicanConfig.apiFormat = probeConfig.apiFormat;
-        pelicanConfig.reasoningEffort = probeConfig.reasoningEffort;
-        pelicanConfig.stream = probeConfig.stream;
+    (newMode, oldMode) => {
+      if (!newMode || !oldMode || newMode === oldMode) return;
+      const isTargetRunning = newMode === "pelican" ? isPelicanRunningRef.value : isRunningRef.value;
+      if (!isTargetRunning) {
+        const sourceConfig = oldMode === "pelican" ? pelicanConfig : probeConfig;
+        const targetConfig = newMode === "pelican" ? pelicanConfig : probeConfig;
+        targetConfig.baseUrl = sourceConfig.baseUrl;
+        targetConfig.apiKey = sourceConfig.apiKey;
+        targetConfig.apiFormat = sourceConfig.apiFormat;
+        targetConfig.modelName = sourceConfig.modelName;
+        targetConfig.reasoningEffort = sourceConfig.reasoningEffort;
+        targetConfig.stream = sourceConfig.stream;
       }
     }
   );

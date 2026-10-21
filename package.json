@@ -21,6 +21,7 @@
     "test:config-tag": "npx tsx --test scripts/__tests__/config-tag-clear.test.js",
     "test:pelican-prompt": "npx tsx --test scripts/__tests__/pelican-custom-prompt.test.js",
     "test:config-modular": "npx tsx --test scripts/__tests__/use-config-modular.test.js",
+    "test:mode-sync": "npx tsx --test scripts/__tests__/test-mode-tabs-config-sync.test.js",
     "sync": "node scripts/sync-upstream.js",
     "sync:check": "node scripts/sync-upstream.js --check"
   },
