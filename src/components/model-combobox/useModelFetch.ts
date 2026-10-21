@@ -18,11 +18,34 @@ export interface UseModelFetchOptions {
   };
 }
 
+export type CredentialModelResolution =
+  | { action: "keep" }
+  | { action: "clear" }
+  | { action: "select"; model: string };
+
+export function resolveModelAfterCredentialChange(
+  currentModel: string,
+  models: string[],
+  fetchFailed: boolean
+): CredentialModelResolution {
+  if (fetchFailed || models.length === 0) {
+    return { action: "clear" };
+  }
+
+  const model = currentModel.trim();
+  if (model && models.includes(model)) {
+    return { action: "keep" };
+  }
+
+  return { action: "select", model: models[0] };
+}
+
 export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
   const modelsStore = useModelsStore();
   const hasAutoSelected = ref(false);
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastFetchCredentials: { baseUrl: string; apiKey: string } | null = null;
 
   const currentStatus = computed(() => modelsStore.getStatus(getProps().baseUrl));
   const availableModels = computed(() => modelsStore.getModels(getProps().baseUrl));
@@ -30,6 +53,21 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
   const isFetchedFromApi = computed(() => currentStatus.value.isFetched);
   const statusBarText = computed(() => currentStatus.value.statusBarText);
   const statusColor = computed(() => currentStatus.value.statusColor);
+
+  function syncReasoningEffort(model: string): void {
+    const matchedRule = findModelReasoningRule(model);
+    if (matchedRule) {
+      emit("update:reasoningEffort", matchedRule.defaultEffort);
+    }
+  }
+
+  function applyAutoSelectedModel(model: string): void {
+    emit("update:modelValue", model);
+    if (model.toLowerCase().includes("claude")) {
+      emit("update:apiFormat", "anthropic");
+    }
+    syncReasoningEffort(model);
+  }
 
   async function fetchModels(options: { autoSelectFirst?: boolean } = {}): Promise<void> {
     const props = getProps();
@@ -41,19 +79,43 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
       return;
     }
 
+    const isCredentialChange =
+      lastFetchCredentials !== null &&
+      (url !== lastFetchCredentials.baseUrl || key !== lastFetchCredentials.apiKey) &&
+      Boolean(props.autoSelectFirst);
+    lastFetchCredentials = { baseUrl: url, apiKey: key };
+
     const list = await modelsStore.fetchModels(url, key, props.apiFormat || "chat_completions");
 
-    if (list && list.length > 0 && options.autoSelectFirst) {
+    const current = getProps();
+    if (current.baseUrl.trim() !== url || current.apiKey.trim() !== key) {
+      return;
+    }
+
+    if (isCredentialChange) {
+      const resolution = resolveModelAfterCredentialChange(
+        current.modelValue,
+        list,
+        modelsStore.getStatus(url).lastFetchFailed
+      );
+
+      if (resolution.action === "clear") {
+        if (current.modelValue.trim()) {
+          emit("update:modelValue", "");
+        }
+        return;
+      }
+
+      if (resolution.action === "select") {
+        hasAutoSelected.value = true;
+        applyAutoSelectedModel(resolution.model);
+      }
+      return;
+    }
+
+    if (list.length > 0 && options.autoSelectFirst && !current.modelValue.trim()) {
       hasAutoSelected.value = true;
-      const firstModel = list[0];
-      emit("update:modelValue", firstModel);
-      if (firstModel.toLowerCase().includes("claude")) {
-        emit("update:apiFormat", "anthropic");
-      }
-      const matchedRule = findModelReasoningRule(firstModel);
-      if (matchedRule) {
-        emit("update:reasoningEffort", matchedRule.defaultEffort);
-      }
+      applyAutoSelectedModel(list[0]);
     }
   }
 
@@ -91,10 +153,7 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
     } else if (props.apiFormat !== "responses") {
       emit("update:apiFormat", "chat_completions");
     }
-    const matchedRule = findModelReasoningRule(model);
-    if (matchedRule) {
-      emit("update:reasoningEffort", matchedRule.defaultEffort);
-    }
+    syncReasoningEffort(model);
   }
 
   function resetModelList(): void {
