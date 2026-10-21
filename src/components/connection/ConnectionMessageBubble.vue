@@ -463,7 +463,7 @@ function handleCopy(): void {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin-top: 1px;
+  margin-top: 8px;
 
   :deep(.message-meta) {
     flex: 1;
@@ -475,7 +475,6 @@ function handleCopy(): void {
   display: grid;
   justify-items: end;
   align-items: start;
-  margin-top: 5px;
 
   > * {
     grid-area: 1 / 1;

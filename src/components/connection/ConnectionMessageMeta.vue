@@ -80,7 +80,6 @@ const hasCacheUsage = computed(
   align-items: center;
   flex-wrap: wrap;
   gap: 5px 10px;
-  margin-top: 7px;
   min-height: 18px;
   color: #64748b;
   font-size: 0.66rem;
