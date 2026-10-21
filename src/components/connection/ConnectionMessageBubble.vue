@@ -487,7 +487,9 @@ function handleCopy(): void {
   font-size: 0.66rem;
   line-height: 22px;
   white-space: nowrap;
-  transition: opacity var(--transition-fast);
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--transition-fast), visibility var(--transition-fast);
 }
 
 .message-actions {
@@ -495,8 +497,8 @@ function handleCopy(): void {
   align-items: flex-start;
   gap: 4px;
   opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--transition-fast);
+  visibility: hidden;
+  transition: opacity var(--transition-fast), visibility var(--transition-fast);
 }
 
 .copy-message-btn,
@@ -523,12 +525,13 @@ function handleCopy(): void {
 .assistant-body:hover .message-time,
 .footer-trailing:focus-within .message-time {
   opacity: 0;
+  visibility: hidden;
 }
 
 .assistant-body:hover .message-actions,
 .footer-trailing:focus-within .message-actions {
   opacity: 1;
-  pointer-events: auto;
+  visibility: visible;
 }
 
 @keyframes message-in {
