@@ -270,7 +270,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
                     <ShieldCheck :size="11" />
                     {{ formatApiFormat(item.apiFormat) }}
                   </span>
-                  <span class="footer-tag">{{ item.stream ? "流式" : "同步" }}</span>
+                  <span class="footer-tag">{{ item.stream ? "流式请求" : "同步请求" }}</span>
                   <span class="footer-tag">KEY {{ item.apiKey }}</span>
                   <span v-if="item.lastRequestedModel" class="footer-tag is-model">
                     请求 {{ item.lastRequestedModel }}
