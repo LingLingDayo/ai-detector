@@ -205,7 +205,7 @@ export function formatSpeed(speed?: number | null): string {
   if (speed === undefined || speed === null || !Number.isFinite(speed) || speed <= 0) {
     return "—";
   }
-  return `${speed.toFixed(1)} tok/s`;
+  return `${speed.toFixed(1)} token/s`;
 }
 
 export function formatRate(rate?: number | null): string {

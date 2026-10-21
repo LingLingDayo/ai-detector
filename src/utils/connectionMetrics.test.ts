@@ -158,7 +158,7 @@ describe("连接测试统计格式化", () => {
     expect(formatTokenCount(999)).toBe("999");
     expect(formatTokenCount(1500)).toBe("1.5k");
     expect(formatTokenCount(1_250_000)).toBe("1.25M");
-    expect(formatSpeed(42.34)).toBe("42.3 tok/s");
+    expect(formatSpeed(42.34)).toBe("42.3 token/s");
     expect(formatSpeed(null)).toBe("—");
     expect(formatCacheRate(0.785)).toBe("78.5%");
     expect(formatCacheRate(0.8)).toBe("80%");

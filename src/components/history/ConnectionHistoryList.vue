@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import {
-  Activity,
   CheckCircle2,
   ChevronDown,
   Database,
@@ -145,20 +144,17 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
                 <CheckCircle2 :size="11" />
                 {{ formatSuccessRate(getSuccessRate(item)) }}
               </span>
-              <span class="mini-stat" title="输出速度">
+              <span class="mini-stat" title="输出速度（token/s）">
                 <Gauge :size="11" />
-                {{ formatSpeed(item.outputSpeed) }}
+                {{
+                  item.outputSpeed && item.outputSpeed > 0
+                    ? item.outputSpeed.toFixed(1)
+                    : "—"
+                }}
               </span>
               <span class="mini-stat" title="缓存命中率">
                 <Database :size="11" />
                 {{ formatCacheRate(item.cacheRate) }}
-              </span>
-              <span class="mini-stat" title="输出 token">
-                <Activity :size="11" />
-                {{ item.usageEstimated ? "≈ " : "" }}{{ formatTokenCount(item.outputTokens) }}
-              </span>
-              <span class="mini-stat" title="累计请求耗时">
-                {{ formatDurationMs(item.totalDurationMs) }}
               </span>
             </div>
 
