@@ -40,7 +40,7 @@ const elapsedMs = computed(
       :actual-model="message.responseModel"
     />
 
-    <template v-if="message.streaming">
+    <template v-if="message.streaming && message.content">
       <span class="meta-item is-live">
         <span class="live-dot"></span>
         生成中 · {{ message.content.length }} 字符
@@ -50,7 +50,7 @@ const elapsedMs = computed(
       </span>
     </template>
 
-    <template v-else>
+    <template v-if="!message.streaming">
       <span
         v-if="message.usage?.inputTokens !== undefined"
         class="meta-item"
