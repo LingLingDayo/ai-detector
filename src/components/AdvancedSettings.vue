@@ -160,17 +160,13 @@ const emit = defineEmits<{
       }
 
       span {
-        display: inline-flex;
-        align-items: center;
-        line-height: 1;
+        display: block;
+        line-height: 1rem;
       }
 
       .settings-summary {
         font-size: 0.72rem;
         color: var(--text-muted);
-        display: inline-flex;
-        align-items: center;
-        line-height: 1;
       }
     }
 
