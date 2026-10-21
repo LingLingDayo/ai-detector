@@ -88,7 +88,6 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     <template v-else>
       <div class="history-summary-bar">
         <span>共 {{ connectionList.length }} 个会话 · {{ totalRequests }} 次请求</span>
-        <span>仅保留汇总统计，点击条目展开详情，不会回填会话</span>
       </div>
 
       <div class="connection-history-list">
@@ -284,10 +283,6 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
                   最近错误：{{ truncate(item.lastError) }}
                 </p>
               </div>
-
-              <p class="no-refill-hint">
-                连接测试历史仅记录汇总统计，不保存完整会话内容，点击条目不会回填到主界面。
-              </p>
             </div>
           </Transition>
         </article>
@@ -676,13 +671,6 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-}
-
-.no-refill-hint {
-  margin-top: 8px;
-  color: #475569;
-  font-size: 0.6rem;
-  line-height: 1.5;
 }
 
 .history-expand-enter-active,
