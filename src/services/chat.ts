@@ -101,7 +101,7 @@ function buildAnthropicContent(message: ChatRequestMessage): unknown {
 function buildResponsesContent(message: ChatRequestMessage): unknown {
   const images = message.images ?? [];
   if (images.length === 0) {
-    return [{ type: "input_text", text: message.content }];
+    return message.content;
   }
   const parts: Array<Record<string, unknown>> = [];
   if (message.content.trim()) {
@@ -289,27 +289,43 @@ async function sendChatViaTauri(
     }
   }
 
-  try {
-    const result = await invoke<SendChatResult>("send_chat_request", {
-      req: {
-        request_id: requestId,
-        base_url: options.baseUrl,
-        api_key: options.apiKey,
-        model: options.model,
-        messages: mergeAdjacentMessages(options.messages).map((message) => ({
-          role: message.role,
-          content: message.content,
-          images: (message.images ?? []).map((image) => ({
-            mime_type: image.mimeType,
-            data: image.data,
-          })),
+  if (options.signal?.aborted) {
+    unlistenStart?.();
+    unlistenProgress?.();
+    throw new DOMException("The user aborted a request.", "AbortError");
+  }
+
+  const invokePromise = invoke<SendChatResult>("send_chat_request", {
+    req: {
+      request_id: requestId,
+      base_url: options.baseUrl,
+      api_key: options.apiKey,
+      model: options.model,
+      messages: mergeAdjacentMessages(options.messages).map((message) => ({
+        role: message.role,
+        content: message.content,
+        images: (message.images ?? []).map((image) => ({
+          mime_type: image.mimeType,
+          data: image.data,
         })),
-        api_format: options.apiFormat,
-        reasoning_effort: options.reasoningEffort,
-        stream: isStream,
-        timeout_seconds: timeoutSeconds,
-      },
-    });
+      })),
+      api_format: options.apiFormat,
+      reasoning_effort: options.reasoningEffort,
+      stream: isStream,
+      timeout_seconds: timeoutSeconds,
+    },
+  });
+
+  const abortPromise = new Promise<never>((_resolve, reject) => {
+    options.signal?.addEventListener(
+      "abort",
+      () => reject(new DOMException("The user aborted a request.", "AbortError")),
+      { once: true }
+    );
+  });
+
+  try {
+    const result = await Promise.race([invokePromise, abortPromise]);
 
     if (result.responseModel) {
       options.onResponseModel?.(result.responseModel);
@@ -321,9 +337,25 @@ async function sendChatViaTauri(
       ...result,
       usage: result.usage ?? {},
     };
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      await invoke("cancel_chat_request", { requestId }).catch(() => undefined);
+    }
+    throw err;
   } finally {
     unlistenStart?.();
     unlistenProgress?.();
+  }
+}
+
+export async function cancelChatRequest(requestId: string): Promise<void> {
+  if (!isTauriApp()) return;
+  const invoke = getTauriInvoke();
+  if (!invoke) return;
+  try {
+    await invoke("cancel_chat_request", { requestId });
+  } catch (err) {
+    console.warn("取消连接测试请求失败:", err);
   }
 }
 

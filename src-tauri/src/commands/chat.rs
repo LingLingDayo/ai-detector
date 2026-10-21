@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 use serde_json::{json, Value};
@@ -14,6 +16,37 @@ use crate::utils::{
 use super::probe::DEFAULT_USER_AGENT;
 
 const MAX_OUTPUT_TOKENS: u64 = 8192;
+
+static CANCELED_CHAT_REQUESTS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+
+fn canceled_requests() -> &'static Mutex<HashSet<String>> {
+    CANCELED_CHAT_REQUESTS.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+fn mark_chat_canceled(request_id: &str) {
+    if let Ok(mut requests) = canceled_requests().lock() {
+        requests.insert(request_id.to_string());
+    }
+}
+
+fn take_chat_canceled(request_id: &str) -> bool {
+    canceled_requests()
+        .lock()
+        .map(|mut requests| requests.remove(request_id))
+        .unwrap_or(false)
+}
+
+fn is_chat_canceled(request_id: &str) -> bool {
+    canceled_requests()
+        .lock()
+        .map(|requests| requests.contains(request_id))
+        .unwrap_or(false)
+}
+
+#[tauri::command]
+pub fn cancel_chat_request(request_id: String) {
+    mark_chat_canceled(&request_id);
+}
 
 fn anthropic_budget(effort: &str) -> u64 {
     match effort {
@@ -95,6 +128,13 @@ fn build_chat_body(req: &ChatRequest, is_stream: bool) -> Value {
             .messages
             .iter()
             .map(|message| {
+                if message.images.is_empty() {
+                    return json!({
+                        "type": "message",
+                        "role": message.role,
+                        "content": message.content
+                    });
+                }
                 let mut parts: Vec<Value> = Vec::new();
                 if !message.content.trim().is_empty() {
                     parts.push(json!({
@@ -258,6 +298,7 @@ pub async fn send_chat_request(
     let target_url = normalize_url(&req.base_url, &req.api_format);
     let body = build_chat_body(&req, is_stream);
     let start_time = Instant::now();
+    let _ = take_chat_canceled(&req.request_id);
 
     let mut request_builder = client
         .post(&target_url)
@@ -313,6 +354,11 @@ pub async fn send_chat_request(
         }
     };
 
+    if is_chat_canceled(&req.request_id) {
+        let _ = take_chat_canceled(&req.request_id);
+        return Err("请求已取消".to_string());
+    }
+
     let status = resp.status();
     if !status.is_success() {
         let error_body = resp.text().await.unwrap_or_default();
@@ -366,6 +412,10 @@ pub async fn send_chat_request(
         }
 
         loop {
+            if is_chat_canceled(&req.request_id) {
+                let _ = take_chat_canceled(&req.request_id);
+                return Err("请求已取消".to_string());
+            }
             let chunk_res =
                 tokio::time::timeout(Duration::from_secs(90), resp.chunk()).await;
             match chunk_res {
@@ -415,6 +465,7 @@ pub async fn send_chat_request(
         let body_text = String::from_utf8_lossy(&raw_bytes);
         let parsed = parse_chat_streaming_body(&body_text, &req.api_format)?;
         let duration_ms = start_time.elapsed().as_millis() as u64;
+        let _ = take_chat_canceled(&req.request_id);
 
         return Ok(ChatResponse {
             text: parsed.text,
@@ -436,6 +487,7 @@ pub async fn send_chat_request(
     if state.text.trim().is_empty() {
         return Err("上游响应未包含有效文本内容".to_string());
     }
+    let _ = take_chat_canceled(&req.request_id);
 
     Ok(ChatResponse {
         text: state.text,
@@ -445,4 +497,77 @@ pub async fn send_chat_request(
         duration_ms: start_time.elapsed().as_millis() as u64,
         first_token_ms: None,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::{ChatImagePayload, ChatMessagePayload};
+
+    fn sample_request(api_format: &str) -> ChatRequest {
+        ChatRequest {
+            request_id: "test-request".to_string(),
+            base_url: "https://api.example.com".to_string(),
+            api_key: "sk-test".to_string(),
+            model: "test-model".to_string(),
+            messages: vec![
+                ChatMessagePayload {
+                    role: "user".to_string(),
+                    content: "看看这张图".to_string(),
+                    images: vec![ChatImagePayload {
+                        mime_type: "image/png".to_string(),
+                        data: "aGVsbG8=".to_string(),
+                    }],
+                },
+                ChatMessagePayload {
+                    role: "assistant".to_string(),
+                    content: "收到".to_string(),
+                    images: vec![],
+                },
+            ],
+            api_format: api_format.to_string(),
+            reasoning_effort: Some("high".to_string()),
+            stream: Some(true),
+            timeout_seconds: Some(90),
+        }
+    }
+
+    #[test]
+    fn test_build_chat_body_chat_completions_with_image() {
+        let body = build_chat_body(&sample_request("chat_completions"), true);
+        assert_eq!(body["stream"], true);
+        assert_eq!(body["stream_options"]["include_usage"], true);
+        assert_eq!(body["messages"][0]["content"][0]["type"], "text");
+        assert_eq!(body["messages"][0]["content"][1]["type"], "image_url");
+        assert_eq!(
+            body["messages"][0]["content"][1]["image_url"]["url"],
+            "data:image/png;base64,aGVsbG8="
+        );
+        assert_eq!(body["reasoning_effort"], "high");
+    }
+
+    #[test]
+    fn test_build_chat_body_anthropic_and_responses_images() {
+        let anthropic = build_chat_body(&sample_request("anthropic"), true);
+        assert_eq!(anthropic["messages"][0]["content"][0]["type"], "image");
+        assert_eq!(
+            anthropic["messages"][0]["content"][0]["source"]["media_type"],
+            "image/png"
+        );
+        assert_eq!(anthropic["thinking"]["type"], "enabled");
+
+        let responses = build_chat_body(&sample_request("responses"), false);
+        assert_eq!(responses["input"][0]["content"][1]["type"], "input_image");
+        assert!(responses.get("stream").is_none());
+        assert_eq!(responses["reasoning"]["effort"], "high");
+    }
+
+    #[test]
+    fn test_cancel_flags() {
+        let request_id = "cancel-test-request";
+        mark_chat_canceled(request_id);
+        assert!(is_chat_canceled(request_id));
+        assert!(take_chat_canceled(request_id));
+        assert!(!is_chat_canceled(request_id));
+    }
 }

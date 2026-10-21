@@ -13,6 +13,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             send_probe_request,
             send_chat_request,
+            cancel_chat_request,
             fetch_models_list,
             open_external_url
         ])
