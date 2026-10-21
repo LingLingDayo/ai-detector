@@ -80,6 +80,13 @@ function cleanupDrag(): void {
   dragOverId.value = null;
 }
 
+function handleQuickApply(item: ConfigItem): void {
+  if (item.id !== props.activeConfigId) {
+    emit("apply", item);
+  }
+  emit("close");
+}
+
 const filteredConfigs = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
   if (!query) return props.configs;
@@ -127,6 +134,7 @@ const filteredConfigs = computed(() => {
               :is-dragging="draggedId === item.id"
               :is-drag-over="dragOverId === item.id && draggedId !== item.id"
               @apply="emit('apply', $event)"
+              @quick-apply="handleQuickApply"
               @open-edit="emit('openEdit', $event)"
               @delete="emit('delete', $event)"
               @dragstart="handleDragStart"

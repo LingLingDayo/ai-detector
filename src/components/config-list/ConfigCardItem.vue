@@ -18,6 +18,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: "apply", item: ConfigItem): void;
+  (e: "quickApply", item: ConfigItem): void;
   (e: "openEdit", item: ConfigItem): void;
   (e: "delete", id: string): void;
   (e: "dragstart", event: DragEvent, id: string): void;
@@ -32,9 +33,9 @@ let isDragHappening = false;
 
 const cardTooltip = computed(() => {
   if (props.isActive) {
-    return "当前正在使用此配置 · 拖动可调整顺序";
+    return "当前正在使用此配置 · 双击快速切换并关闭 · 拖动可调整顺序";
   }
-  return "点击可切换此配置 · 拖动可调整顺序";
+  return "点击可切换此配置 · 双击快速切换并关闭 · 拖动可调整顺序";
 });
 
 function handleDragStart(event: DragEvent) {
@@ -55,6 +56,11 @@ function handleCardClick() {
   emit("apply", props.item);
 }
 
+function handleCardDoubleClick() {
+  if (isDragHappening || props.isDragging) return;
+  emit("quickApply", props.item);
+}
+
 function maskApiKey(key?: string): string {
   if (!key) return "未设置";
   if (key.length <= 8) return "••••••••";
@@ -73,6 +79,7 @@ function maskApiKey(key?: string): string {
     :title="cardTooltip"
     draggable="true"
     @click="handleCardClick"
+    @dblclick="handleCardDoubleClick"
     @dragstart="handleDragStart"
     @dragover.prevent="emit('dragover', $event, item.id)"
     @dragenter.prevent="emit('dragenter', $event, item.id)"
@@ -95,7 +102,7 @@ function maskApiKey(key?: string): string {
         </span>
       </div>
 
-      <div class="card-actions" @mousedown.stop>
+      <div class="card-actions" @mousedown.stop @dblclick.stop>
         <button
           type="button"
           class="btn-action btn-edit"
