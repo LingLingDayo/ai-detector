@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
-import type { PelicanHistoryItem, ProbeHistoryItem } from "../../types";
-import { History, Radar, Trash2, X } from "@lucide/vue";
+import { computed } from "vue";
+import type {
+  ConnectionHistoryItem,
+  HistoryTab,
+  PelicanHistoryItem,
+  ProbeHistoryItem,
+} from "../../types";
+import { History, MessagesSquare, Radar, Trash2, X } from "@lucide/vue";
 import { useConfirm } from "../../composables/useConfirm";
 import ProbeHistoryList from "./ProbeHistoryList.vue";
 import PelicanHistoryGrid from "./PelicanHistoryGrid.vue";
-
-export type HistoryTab = "pelican" | "probe";
+import ConnectionHistoryList from "./ConnectionHistoryList.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -14,6 +18,8 @@ const props = withDefaults(
     initialTab?: HistoryTab;
     pelicanList: PelicanHistoryItem[];
     probeList?: ProbeHistoryItem[];
+    connectionList?: ConnectionHistoryItem[];
+    connectionActiveId?: string | null;
     probeRunning?: boolean;
     pelicanRunning?: boolean;
   }>(),
@@ -22,6 +28,8 @@ const props = withDefaults(
     initialTab: "probe",
     pelicanList: () => [],
     probeList: () => [],
+    connectionList: () => [],
+    connectionActiveId: null,
     probeRunning: false,
     pelicanRunning: false,
   }
@@ -35,6 +43,8 @@ const emit = defineEmits<{
   (e: "delete-probe", id: string): void;
   (e: "clear-probe"): void;
   (e: "apply-probe", item: ProbeHistoryItem): void;
+  (e: "delete-connection", id: string): void;
+  (e: "clear-connection"): void;
 }>();
 
 import { useAppStore } from "../../stores";
@@ -50,13 +60,36 @@ const activeTab = computed<HistoryTab>({
 
 const pelicanTotalCount = computed(() => props.pelicanList.length);
 const probeTotalCount = computed(() => (props.probeList || []).length);
+const connectionTotalCount = computed(
+  () => (props.connectionList || []).length
+);
+
+const activeTotalCount = computed(() => {
+  if (activeTab.value === "probe") return probeTotalCount.value;
+  if (activeTab.value === "pelican") return pelicanTotalCount.value;
+  return connectionTotalCount.value;
+});
+
+const clearButtonTitle = computed(() => {
+  if (activeTab.value === "probe") return "清空模型测试历史";
+  if (activeTab.value === "pelican") return "清空鹈鹕测试历史";
+  return "清空连接测试历史";
+});
 
 async function handleClearHistory(): Promise<void> {
-  const isProbe = activeTab.value === "probe";
-  const title = isProbe ? "确认清空模型测试历史？" : "确认清空鹈鹕测试历史？";
-  const message = isProbe
-    ? "清空后将永久删除所有模型探测历史记录，数据无法恢复。"
-    : "清空后将永久删除所有鹈鹕测试生成的图片历史，数据无法恢复。";
+  const tab = activeTab.value;
+  const title =
+    tab === "probe"
+      ? "确认清空模型测试历史？"
+      : tab === "pelican"
+      ? "确认清空鹈鹕测试历史？"
+      : "确认清空连接测试历史？";
+  const message =
+    tab === "probe"
+      ? "清空后将永久删除所有模型探测历史记录，数据无法恢复。"
+      : tab === "pelican"
+      ? "清空后将永久删除所有鹈鹕测试生成的图片历史，数据无法恢复。"
+      : "清空后将永久删除所有连接测试的会话汇总记录，数据无法恢复。";
 
   const confirmed = await confirm({
     type: "danger",
@@ -69,10 +102,12 @@ async function handleClearHistory(): Promise<void> {
 
   if (!confirmed) return;
 
-  if (isProbe) {
+  if (tab === "probe") {
     emit("clear-probe");
-  } else {
+  } else if (tab === "pelican") {
     emit("clear-pelican");
+  } else {
+    emit("clear-connection");
   }
 }
 </script>
@@ -139,28 +174,28 @@ async function handleClearHistory(): Promise<void> {
                 </svg>
                 <span>鹈鹕测试</span>
               </button>
+
+              <button
+                type="button"
+                role="tab"
+                class="tab-btn"
+                :class="{ active: activeTab === 'connection' }"
+                :aria-selected="activeTab === 'connection'"
+                @click="activeTab = 'connection'"
+              >
+                <MessagesSquare :size="13" />
+                <span>连接测试</span>
+              </button>
             </nav>
           </div>
 
           <div class="header-actions">
-            <!-- 模型测试清空按钮 -->
+            <!-- 当前 Tab 的清空按钮 -->
             <button
-              v-if="activeTab === 'probe' && probeTotalCount > 0"
+              v-if="activeTotalCount > 0"
               type="button"
               class="clear-btn"
-              title="清空模型测试历史"
-              @click="handleClearHistory"
-            >
-              <Trash2 :size="13" />
-              <span>清空记录</span>
-            </button>
-
-            <!-- 鹈鹕测试清空按钮 -->
-            <button
-              v-else-if="activeTab === 'pelican' && pelicanTotalCount > 0"
-              type="button"
-              class="clear-btn"
-              title="清空鹈鹕测试历史"
+              :title="clearButtonTitle"
               @click="handleClearHistory"
             >
               <Trash2 :size="13" />
@@ -197,6 +232,14 @@ async function handleClearHistory(): Promise<void> {
             :apply-disabled="pelicanRunning"
             @apply="emit('apply-pelican', $event)"
             @delete="emit('delete-pelican', $event)"
+          />
+
+          <!-- 3. 连接测试历史视图（仅汇总统计，不回填会话） -->
+          <ConnectionHistoryList
+            v-else-if="activeTab === 'connection'"
+            :connection-list="connectionList"
+            :active-session-id="connectionActiveId"
+            @delete="emit('delete-connection', $event)"
           />
         </main>
       </div>

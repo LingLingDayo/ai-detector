@@ -63,6 +63,7 @@ export function aggregateConnectionMessages(
   let usageEstimated = false;
   let totalDurationMs = 0;
   let generationMs = 0;
+  let completedOutputTokens = 0;
   let firstTokenSum = 0;
   let firstTokenCount = 0;
 
@@ -100,8 +101,11 @@ export function aggregateConnectionMessages(
     }
     if (usage?.outputTokens !== undefined) {
       outputTokens += usage.outputTokens;
+      if (!message.streaming) completedOutputTokens += usage.outputTokens;
     } else if (message.content.trim()) {
-      outputTokens += estimateTokenCount(message.content);
+      const estimated = estimateTokenCount(message.content);
+      outputTokens += estimated;
+      if (!message.streaming) completedOutputTokens += estimated;
       usageEstimated = true;
     }
 
@@ -132,11 +136,47 @@ export function aggregateConnectionMessages(
     cachedTokens,
     cacheWriteTokens,
     totalDurationMs,
-    outputSpeed: generationMs > 0 ? outputTokens / (generationMs / 1000) : null,
+    outputSpeed:
+      generationMs > 0 ? completedOutputTokens / (generationMs / 1000) : null,
     cacheRate: hasInputUsage && inputTokens > 0 ? cachedTokens / inputTokens : null,
     avgFirstTokenMs: firstTokenCount > 0 ? firstTokenSum / firstTokenCount : null,
     usageEstimated,
   };
+}
+
+export function getMessageOutputTokens(message: ConnectionChatMessage): {
+  count: number;
+  estimated: boolean;
+} {
+  if (message.usage?.outputTokens !== undefined) {
+    return { count: message.usage.outputTokens, estimated: false };
+  }
+  return {
+    count: estimateTokenCount(message.content),
+    estimated: Boolean(message.content.trim()),
+  };
+}
+
+export function getMessageOutputSpeed(
+  message: ConnectionChatMessage
+): number | null {
+  const { count } = getMessageOutputTokens(message);
+  if (count <= 0 || !message.durationMs || message.durationMs <= 0) return null;
+  const firstToken = message.firstTokenMs;
+  const generationMs =
+    firstToken !== undefined && message.durationMs > firstToken
+      ? message.durationMs - firstToken
+      : message.durationMs;
+  return generationMs > 0 ? count / (generationMs / 1000) : null;
+}
+
+export function getMessageCacheRate(
+  message: ConnectionChatMessage
+): number | null {
+  const input = message.usage?.inputTokens;
+  const cached = message.usage?.cachedTokens;
+  if (input === undefined || input <= 0 || cached === undefined) return null;
+  return cached / input;
 }
 
 export function formatTokenCount(count?: number | null): string {

@@ -9,6 +9,7 @@ import {
 import { useConfigStore } from "./config";
 import { useProbeTestStore } from "./probeTest";
 import { usePelicanTestStore } from "./pelicanTest";
+import { useConnectionTestStore } from "./connectionTest";
 import type { ConfigItem } from "../types";
 
 // Mock localStorage for node environment
@@ -317,5 +318,63 @@ describe("切换不同测试时(test-mode-tabs)配置同步与保持规则测试
     configStore.setActiveMode("pelican");
     expect(configStore.pelicanConfig.modelName).toBe("new-final-model");
     expect(configStore.pelicanConfig.stream).toBe(false);
+  });
+});
+
+describe("连接测试作为第三模式时的配置同步规则", () => {
+  it("未运行时从 probe 切换到 connection，完整继承当前配置", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+
+    const configStore = useConfigStore();
+    configStore.probeConfig.baseUrl = "https://api.connection-test.com";
+    configStore.probeConfig.apiKey = "sk-connection-key";
+    configStore.probeConfig.modelName = "gemini-4-argon";
+    configStore.probeConfig.apiFormat = "anthropic";
+    configStore.probeConfig.reasoningEffort = "medium";
+    configStore.probeConfig.stream = false;
+
+    configStore.setActiveMode("connection");
+
+    expect(configStore.activeMode).toBe("connection");
+    expect(configStore.connectionConfig.baseUrl).toBe("https://api.connection-test.com");
+    expect(configStore.connectionConfig.apiKey).toBe("sk-connection-key");
+    expect(configStore.connectionConfig.modelName).toBe("gemini-4-argon");
+    expect(configStore.connectionConfig.apiFormat).toBe("anthropic");
+    expect(configStore.connectionConfig.reasoningEffort).toBe("medium");
+    expect(configStore.connectionConfig.stream).toBe(false);
+    expect(configStore.config.modelName).toBe("gemini-4-argon");
+  });
+
+  it("connection 模式修改凭据会同步到其他未运行模式", async () => {
+    storage.clear();
+    setActivePinia(createPinia());
+
+    const configStore = useConfigStore();
+    configStore.setActiveMode("connection");
+    configStore.connectionConfig.baseUrl = "https://api.shared.com";
+    configStore.connectionConfig.apiKey = "sk-shared";
+    await nextTick();
+
+    expect(configStore.probeConfig.baseUrl).toBe("https://api.shared.com");
+    expect(configStore.probeConfig.apiKey).toBe("sk-shared");
+    expect(configStore.pelicanConfig.baseUrl).toBe("https://api.shared.com");
+    expect(configStore.pelicanConfig.apiKey).toBe("sk-shared");
+  });
+
+  it("connection 正在运行时切换模式不会覆盖其配置", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+
+    const configStore = useConfigStore();
+    const connectionStore = useConnectionTestStore();
+    configStore.connectionConfig.modelName = "connection-running-model";
+    connectionStore.isConnectionRunning = true;
+
+    configStore.activeMode = "probe";
+    configStore.probeConfig.modelName = "probe-model";
+    configStore.setActiveMode("connection");
+
+    expect(configStore.connectionConfig.modelName).toBe("connection-running-model");
   });
 });

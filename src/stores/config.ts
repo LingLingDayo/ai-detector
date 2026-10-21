@@ -6,7 +6,7 @@ import {
   ACTIVE_CONFIG_ID_KEY,
   resolveValidReasoningEffort,
 } from "../constants";
-import type { ClientConfig, ConfigItem } from "../types";
+import type { ActiveTestMode, ClientConfig, ConfigItem } from "../types";
 import { useConfirm } from "../composables/useConfirm";
 import {
   generateConfigId,
@@ -16,33 +16,28 @@ import {
 
 import { useProbeTestStore } from "./probeTest";
 import { usePelicanTestStore } from "./pelicanTest";
+import { useConnectionTestStore } from "./connectionTest";
 
 export { isSameConfigIdentity, isConfigEqual };
 
 export const useConfigStore = defineStore("config", () => {
   const { confirm } = useConfirm();
 
-  // 当前测试模式：probe（模型测试）或 pelican（鹈鹕测试）
-  const activeMode = ref<"probe" | "pelican">("probe");
+  // 当前测试模式：probe（模型测试）、pelican（鹈鹕测试）或 connection（连接测试）
+  const activeMode = ref<ActiveTestMode>("probe");
 
-  function isTestRunning(mode: "probe" | "pelican"): boolean {
-    if (mode === "probe") {
-      try {
-        const probeStore = useProbeTestStore();
-        return Boolean(probeStore.isRunning);
-      } catch {
-        return false;
+  function isTestRunning(mode: ActiveTestMode): boolean {
+    try {
+      if (mode === "probe") {
+        return Boolean(useProbeTestStore().isRunning);
       }
-    }
-    if (mode === "pelican") {
-      try {
-        const pelicanStore = usePelicanTestStore();
-        return Boolean(pelicanStore.isPelicanRunning);
-      } catch {
-        return false;
+      if (mode === "pelican") {
+        return Boolean(usePelicanTestStore().isPelicanRunning);
       }
+      return Boolean(useConnectionTestStore().isConnectionRunning);
+    } catch {
+      return false;
     }
-    return false;
   }
 
   function copyConfig(source: ClientConfig, target: ClientConfig): void {
@@ -54,17 +49,15 @@ export const useConfigStore = defineStore("config", () => {
     target.stream = source.stream;
   }
 
-  function syncConfigOnModeSwitch(fromMode: "probe" | "pelican", toMode: "probe" | "pelican"): void {
+  function syncConfigOnModeSwitch(fromMode: ActiveTestMode, toMode: ActiveTestMode): void {
     if (fromMode === toMode) return;
     // 除非切换后的那个测试正在进行，否则任何时候切换测试类型都应该平滑顺延当前配置
     if (!isTestRunning(toMode)) {
-      const sourceConfig = fromMode === "pelican" ? pelicanConfig : probeConfig;
-      const targetConfig = toMode === "pelican" ? pelicanConfig : probeConfig;
-      copyConfig(sourceConfig, targetConfig);
+      copyConfig(getModeConfig(fromMode), getModeConfig(toMode));
     }
   }
 
-  function setActiveMode(mode: "probe" | "pelican"): void {
+  function setActiveMode(mode: ActiveTestMode): void {
     if (activeMode.value === mode) return;
     const previousMode = activeMode.value;
     syncConfigOnModeSwitch(previousMode, mode);
@@ -90,14 +83,35 @@ export const useConfigStore = defineStore("config", () => {
     stream: true,
   });
 
+  const connectionConfig = reactive<ClientConfig>({
+    baseUrl: "",
+    apiKey: "",
+    apiFormat: "chat_completions",
+    modelName: "",
+    reasoningEffort: "high",
+    stream: true,
+  });
+
+  function getModeConfig(mode: ActiveTestMode): ClientConfig {
+    if (mode === "pelican") return pelicanConfig;
+    if (mode === "connection") return connectionConfig;
+    return probeConfig;
+  }
+
+  const modeConfigEntries: Array<[ActiveTestMode, ClientConfig]> = [
+    ["probe", probeConfig],
+    ["pelican", pelicanConfig],
+    ["connection", connectionConfig],
+  ];
+
   // 根据当前激活模式，提供统一的动态代理对象
   const config = new Proxy({} as ClientConfig, {
     get(_, prop: string) {
-      const activeObj = activeMode.value === "pelican" ? pelicanConfig : probeConfig;
+      const activeObj = getModeConfig(activeMode.value);
       return (activeObj as any)[prop];
     },
     set(_, prop: string, value: any) {
-      const activeObj = activeMode.value === "pelican" ? pelicanConfig : probeConfig;
+      const activeObj = getModeConfig(activeMode.value);
       (activeObj as any)[prop] = value;
       return true;
     },
@@ -262,7 +276,7 @@ export const useConfigStore = defineStore("config", () => {
   function saveConfig(): void {
     if (isInitializing) return;
     try {
-      const cur = activeMode.value === "pelican" ? pelicanConfig : probeConfig;
+      const cur = getModeConfig(activeMode.value);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cur));
     } catch (err) {
       console.warn("保存当前配置失败:", err);
@@ -320,11 +334,10 @@ export const useConfigStore = defineStore("config", () => {
       cfg.stream = item.stream !== false;
     };
 
-    if (!isTestRunning("probe")) {
-      applyTo(probeConfig);
-    }
-    if (!isTestRunning("pelican")) {
-      applyTo(pelicanConfig);
+    for (const [mode, targetConfig] of modeConfigEntries) {
+      if (!isTestRunning(mode)) {
+        applyTo(targetConfig);
+      }
     }
 
     activeConfigId.value = item.id;
@@ -531,6 +544,7 @@ export const useConfigStore = defineStore("config", () => {
 
       applyInitial(probeConfig);
       applyInitial(pelicanConfig);
+      applyInitial(connectionConfig);
     } catch (err) {
       console.warn("加载本地配置失败:", err);
     } finally {
@@ -569,6 +583,7 @@ export const useConfigStore = defineStore("config", () => {
 
     resetOne(probeConfig);
     resetOne(pelicanConfig);
+    resetOne(connectionConfig);
 
     activeConfigId.value = null;
     lastActiveConfigId.value = null;
@@ -601,26 +616,33 @@ export const useConfigStore = defineStore("config", () => {
     }
   );
 
-  // 在目标测试未运行时，Base URL 与 API Key 自动在双模式之间同步
   watch(
-    () => [probeConfig.baseUrl, probeConfig.apiKey],
-    ([newUrl, newKey]) => {
-      if (activeMode.value === "probe" && !isTestRunning("pelican")) {
-        pelicanConfig.baseUrl = newUrl;
-        pelicanConfig.apiKey = newKey;
+    () => connectionConfig.modelName,
+    (newModel) => {
+      const validEffort = resolveValidReasoningEffort(
+        newModel,
+        connectionConfig.reasoningEffort
+      );
+      if (validEffort !== connectionConfig.reasoningEffort) {
+        connectionConfig.reasoningEffort = validEffort;
       }
     }
   );
 
-  watch(
-    () => [pelicanConfig.baseUrl, pelicanConfig.apiKey],
-    ([newUrl, newKey]) => {
-      if (activeMode.value === "pelican" && !isTestRunning("probe")) {
-        probeConfig.baseUrl = newUrl;
-        probeConfig.apiKey = newKey;
+  // 在目标测试未运行时，Base URL 与 API Key 自动在三种模式之间同步
+  for (const [mode, sourceConfig] of modeConfigEntries) {
+    watch(
+      () => [sourceConfig.baseUrl, sourceConfig.apiKey],
+      ([newUrl, newKey]) => {
+        if (activeMode.value !== mode) return;
+        for (const [otherMode, targetConfig] of modeConfigEntries) {
+          if (otherMode === mode || isTestRunning(otherMode)) continue;
+          targetConfig.baseUrl = newUrl;
+          targetConfig.apiKey = newKey;
+        }
       }
-    }
-  );
+    );
+  }
 
   function checkAndSyncActiveConfigOnCredentialChange(): void {
     if (isInitializing) return;
@@ -677,6 +699,8 @@ export const useConfigStore = defineStore("config", () => {
       () => probeConfig.apiKey,
       () => pelicanConfig.baseUrl,
       () => pelicanConfig.apiKey,
+      () => connectionConfig.baseUrl,
+      () => connectionConfig.apiKey,
     ],
     () => {
       checkAndSyncActiveConfigOnCredentialChange();
@@ -684,7 +708,7 @@ export const useConfigStore = defineStore("config", () => {
   );
 
   // 监听表单输入变化并自动持久化当前输入
-  watch([probeConfig, pelicanConfig], () => {
+  watch([probeConfig, pelicanConfig, connectionConfig], () => {
     saveConfig();
   });
 
@@ -694,6 +718,7 @@ export const useConfigStore = defineStore("config", () => {
     config,
     probeConfig,
     pelicanConfig,
+    connectionConfig,
     configList,
     activeConfigId,
     activeConfig,

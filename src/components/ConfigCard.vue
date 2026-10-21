@@ -1,18 +1,25 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from "vue";
-import type { ClientConfig } from "../types";
+import type { ActiveTestMode, ClientConfig } from "../types";
 import { resolveValidReasoningEffort, getReasoningOptionsForModel } from "../constants";
 import { Check, Save, List, History, Eye, EyeOff, Copy } from "@lucide/vue";
 import ModelCombobox from "./ModelCombobox.vue";
 import AdvancedSettings from "./AdvancedSettings.vue";
 import { CustomSelect, type SelectOption } from "./common";
-import { useConfigStore, useAppStore, useProbeTestStore, usePelicanTestStore } from "../stores";
+import {
+  useConfigStore,
+  useAppStore,
+  useProbeTestStore,
+  usePelicanTestStore,
+  useConnectionTestStore,
+} from "../stores";
 import { useClipboard } from "../composables/useClipboard";
 
 const configStore = useConfigStore();
 const appStore = useAppStore();
 const probeStore = useProbeTestStore();
 const pelicanStore = usePelicanTestStore();
+const connectionStore = useConnectionTestStore();
 
 const props = withDefaults(
   defineProps<{
@@ -20,7 +27,8 @@ const props = withDefaults(
     activeConfigName?: string;
     isRunning?: boolean;
     isPelicanRunning?: boolean;
-    activeMode?: "probe" | "pelican";
+    isConnectionRunning?: boolean;
+    activeMode?: ActiveTestMode;
     hasResult?: boolean;
     isPasswordVisible?: boolean;
     isAdvancedOpen?: boolean;
@@ -34,6 +42,7 @@ const props = withDefaults(
     activeConfigName: undefined,
     isRunning: undefined,
     isPelicanRunning: undefined,
+    isConnectionRunning: undefined,
     activeMode: undefined,
     hasResult: undefined,
     isPasswordVisible: undefined,
@@ -48,7 +57,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "toggle-password"): void;
   (e: "update:isAdvancedOpen", value: boolean): void;
-  (e: "update:activeMode", value: "probe" | "pelican"): void;
+  (e: "update:activeMode", value: ActiveTestMode): void;
   (e: "submit"): void;
   (e: "cancel"): void;
   (e: "reset"): void;
@@ -65,6 +74,9 @@ const activeConfig = computed(() => props.config ?? configStore.config);
 const activeConfigNameDisplay = computed(() => props.activeConfigName ?? configStore.activeConfigName);
 const currentProbeRunning = computed(() => props.isRunning ?? probeStore.isRunning);
 const currentPelicanRunning = computed(() => props.isPelicanRunning ?? pelicanStore.isPelicanRunning);
+const currentConnectionRunning = computed(
+  () => props.isConnectionRunning ?? connectionStore.isConnectionRunning
+);
 const currentActiveMode = computed(() => props.activeMode ?? appStore.activeMode);
 const currentHasResult = computed(() => props.hasResult ?? appStore.hasActiveResult);
 const currentPasswordVisible = computed(() => props.isPasswordVisible ?? configStore.isPasswordVisible);
@@ -93,19 +105,40 @@ const reasoningOptions = computed<SelectOption[]>(() => {
 });
 
 const isCurrentRunning = computed(() => {
-  return currentActiveMode.value === "probe"
-    ? currentProbeRunning.value
-    : Boolean(currentPelicanRunning.value);
+  if (currentActiveMode.value === "probe") return currentProbeRunning.value;
+  if (currentActiveMode.value === "pelican") return Boolean(currentPelicanRunning.value);
+  return Boolean(currentConnectionRunning.value);
 });
 
 const isOtherRunning = computed(() => {
-  return currentActiveMode.value === "probe"
-    ? Boolean(currentPelicanRunning.value)
-    : currentProbeRunning.value;
+  if (currentActiveMode.value === "probe") {
+    return Boolean(currentPelicanRunning.value) || Boolean(currentConnectionRunning.value);
+  }
+  if (currentActiveMode.value === "pelican") {
+    return currentProbeRunning.value || Boolean(currentConnectionRunning.value);
+  }
+  return currentProbeRunning.value || Boolean(currentPelicanRunning.value);
+});
+
+const showCancelState = computed(
+  () =>
+    currentActiveMode.value !== "connection" &&
+    Boolean(isCurrentRunning.value)
+);
+
+const startButtonLabel = computed(() => {
+  if (currentActiveMode.value === "connection") {
+    return currentHasResult.value ? "继续对话" : "开始对话";
+  }
+  return showCancelState.value
+    ? "取消测试"
+    : currentHasResult.value
+    ? "重新生成"
+    : "开始测试";
 });
 
 function handleStartButtonClick(e: MouseEvent): void {
-  if (isCurrentRunning.value) {
+  if (showCancelState.value) {
     e.preventDefault();
     emit("cancel");
     appStore.handleCancelTest();
@@ -114,6 +147,13 @@ function handleStartButtonClick(e: MouseEvent): void {
 
 function handleFormSubmit(): void {
   emit("submit");
+  if (currentActiveMode.value === "connection") {
+    document
+      .getElementById("connection-section")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    connectionStore.requestComposerFocus();
+    return;
+  }
   appStore.handleStartTest();
 }
 
@@ -123,6 +163,7 @@ async function handleReset(): Promise<void> {
   if (confirmed) {
     probeStore.resetTest();
     pelicanStore.resetPelicanTest();
+    connectionStore.clearConnectionContext();
     comboboxRef.value?.resetModelList();
   }
 }
@@ -145,7 +186,7 @@ function handleUpdateAdvanced(val: boolean): void {
   configStore.isAdvancedOpen = val;
 }
 
-function handleUpdateMode(mode: "probe" | "pelican"): void {
+function handleUpdateMode(mode: ActiveTestMode): void {
   emit("update:activeMode", mode);
   appStore.setActiveMode(mode);
 }
@@ -280,7 +321,7 @@ defineExpose({
           type="button"
           class="btn-header-action btn-history"
           id="btn-history"
-          title="查看历史测试结果（鹈鹕测试、模型测试）"
+          title="查看历史测试结果（模型测试、鹈鹕测试、连接测试）"
           @click="handleOpenHistory"
         >
           <History :size="13" />
@@ -439,17 +480,32 @@ defineExpose({
           <span>鹈鹕测试</span>
           <span v-if="currentPelicanRunning" class="tab-running-dot" title="鹈鹕测试进行中"></span>
         </button>
+
+        <button
+          type="button"
+          class="tab-item"
+          :class="{ active: currentActiveMode === 'connection', 'is-running': currentConnectionRunning }"
+          role="tab"
+          :aria-selected="currentActiveMode === 'connection'"
+          title="多轮自由对话，支持图片输入，并实时核对上游实际响应模型"
+          @click="handleUpdateMode('connection')"
+        >
+          <span>连接测试</span>
+          <span v-if="currentConnectionRunning" class="tab-running-dot" title="连接测试进行中"></span>
+        </button>
       </div>
 
-      <!-- 操作按钮：两个测试模式彼此独立并发，当前模式不受另一模式阻塞 -->
+      <!-- 操作按钮：三种测试模式彼此独立并发，当前模式不受另一模式阻塞 -->
       <div class="form-actions">
         <button
-          :type="isCurrentRunning ? 'button' : 'submit'"
+          :type="showCancelState ? 'button' : 'submit'"
           class="btn btn-primary"
-          :class="{ 'btn-cancel': isCurrentRunning }"
+          :class="{ 'btn-cancel': showCancelState }"
           id="btn-start"
           :title="
-            isCurrentRunning
+            currentActiveMode === 'connection'
+              ? '滚动到下方对话框并聚焦输入框'
+              : showCancelState
               ? '点击取消当前正在进行的测试'
               : currentHasResult
               ? (currentActiveMode === 'probe' ? '重新执行 3 轮探测并计算模型归因' : '重新发起鹈鹕测试，让 AI 重新绘制 SVG')
@@ -459,24 +515,16 @@ defineExpose({
         >
           <span
             class="btn-spinner"
-            :class="{ hidden: !isCurrentRunning }"
+            :class="{ hidden: !showCancelState }"
             id="start-spinner"
           ></span>
-          <span class="btn-text">
-            {{
-              isCurrentRunning
-                ? '取消测试'
-                : currentHasResult
-                ? '重新生成'
-                : '开始测试'
-            }}
-          </span>
+          <span class="btn-text">{{ startButtonLabel }}</span>
         </button>
         <button
           type="button"
           class="btn btn-ghost"
           id="btn-reset"
-          :disabled="currentProbeRunning || currentPelicanRunning"
+          :disabled="currentProbeRunning || currentPelicanRunning || currentConnectionRunning"
           title="清空已保存的 Base URL 与 Key 等本地配置"
           @click="handleReset"
         >

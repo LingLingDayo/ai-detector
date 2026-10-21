@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Globe, Image } from "@lucide/vue";
+import { Globe, Image, MessagesSquare } from "@lucide/vue";
 
 defineProps<{
-  type: "probe" | "pelican";
+  type: "probe" | "pelican" | "connection";
 }>();
 </script>
 
@@ -10,20 +10,36 @@ defineProps<{
   <div class="empty-state">
     <div
       class="empty-icon-wrap"
-      :class="{ 'probe-icon-wrap': type === 'probe' }"
+      :class="{
+        'probe-icon-wrap': type === 'probe',
+        'connection-icon-wrap': type === 'connection',
+      }"
     >
       <Globe v-if="type === 'probe'" :size="40" :stroke-width="1.6" />
+      <MessagesSquare
+        v-else-if="type === 'connection'"
+        :size="40"
+        :stroke-width="1.6"
+      />
       <Image v-else :size="40" :stroke-width="1.6" />
     </div>
 
     <p class="empty-title">
-      {{ type === "probe" ? "暂无模型测试历史记录" : "暂无鹈鹕测试历史记录" }}
+      {{
+        type === "probe"
+          ? "暂无模型测试历史记录"
+          : type === "pelican"
+          ? "暂无鹈鹕测试历史记录"
+          : "暂无连接测试历史记录"
+      }}
     </p>
     <p class="empty-desc">
       {{
         type === "probe"
           ? "在“模型测试”模式中，完成探测并生成模型归因诊断后，记录将自动保存在这里。"
-          : "在“鹈鹕测试”模式中，AI 模型成功生成的图片将会自动保存在这里。"
+          : type === "pelican"
+          ? "在“鹈鹕测试”模式中，AI 模型成功生成的图片将会自动保存在这里。"
+          : "在“连接测试”模式中发送消息后，本次会话的模型路由、输出速度与缓存率汇总将实时更新并保存在这里。"
       }}
     </p>
   </div>
@@ -56,6 +72,12 @@ defineProps<{
       background: rgba(56, 189, 248, 0.08);
       border-color: rgba(56, 189, 248, 0.25);
       color: #38bdf8;
+    }
+
+    &.connection-icon-wrap {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.25);
+      color: #34d399;
     }
   }
 

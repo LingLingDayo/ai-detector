@@ -4,6 +4,7 @@ import {
   useConfigStore,
   useProbeTestStore,
   usePelicanTestStore,
+  useConnectionTestStore,
   useAppStore,
 } from "./stores";
 import AppHeader from "./components/AppHeader.vue";
@@ -14,6 +15,7 @@ import ConfirmModal from "./components/common/ConfirmModal.vue";
 import ProgressCard from "./components/ProgressCard.vue";
 import ResultCard from "./components/ResultCard.vue";
 import PelicanTestCard from "./components/PelicanTestCard.vue";
+import ConnectionTestCard from "./components/connection/ConnectionTestCard.vue";
 import TestHistoryModal from "./components/history/TestHistoryModal.vue";
 import { APP_VERSION, GITHUB_REPO_URL } from "./constants";
 import { openExternalUrl } from "./services/api";
@@ -21,6 +23,7 @@ import { openExternalUrl } from "./services/api";
 const configStore = useConfigStore();
 const probeStore = useProbeTestStore();
 const pelicanStore = usePelicanTestStore();
+const connectionStore = useConnectionTestStore();
 const appStore = useAppStore();
 
 onMounted(() => {
@@ -197,6 +200,11 @@ function handleOpenGithub(): void {
           @reset-prompt="pelicanStore.resetPelicanPrompt"
         />
       </div>
+
+      <!-- 连接测试模式卡片（多轮对话与真实模型核对） -->
+      <div v-show="appStore.activeMode === 'connection'" class="mode-view-group">
+        <ConnectionTestCard />
+      </div>
     </main>
 
     <!-- 配置列表弹窗 -->
@@ -209,6 +217,7 @@ function handleOpenGithub(): void {
       @apply="(item) => {
         if (!probeStore.isRunning) probeStore.resetTest();
         if (!pelicanStore.isPelicanRunning) pelicanStore.resetPelicanTest();
+        if (!connectionStore.isConnectionRunning) connectionStore.clearConnectionContext();
         configStore.applyConfig(item);
       }"
       @open-create="configStore.openCreateConfigModal"
@@ -233,6 +242,8 @@ function handleOpenGithub(): void {
       :initial-tab="appStore.historyActiveTab"
       :pelican-list="pelicanStore.pelicanHistoryList"
       :probe-list="probeStore.probeHistoryList"
+      :connection-list="connectionStore.connectionHistoryList"
+      :connection-active-id="connectionStore.activeSessionHistoryId"
       :probe-running="probeStore.isRunning"
       :pelican-running="pelicanStore.isPelicanRunning"
       @close="appStore.closeHistoryModal"
@@ -242,6 +253,8 @@ function handleOpenGithub(): void {
       @delete-probe="probeStore.deleteProbeHistoryItem"
       @clear-probe="probeStore.clearProbeHistory"
       @apply-probe="(item) => { appStore.applyProbeHistory(item); scrollToElement('#result-section', 10); }"
+      @delete-connection="connectionStore.deleteConnectionHistoryItem"
+      @clear-connection="connectionStore.clearConnectionHistory"
     />
 
     <!-- 全局通用公共确认弹窗 -->

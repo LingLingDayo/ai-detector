@@ -3,12 +3,18 @@ import { ref, computed } from "vue";
 import { useConfigStore } from "./config";
 import { useProbeTestStore } from "./probeTest";
 import { usePelicanTestStore } from "./pelicanTest";
-import type { PelicanHistoryItem, ProbeHistoryItem } from "../types";
+import { useConnectionTestStore } from "./connectionTest";
+import type {
+  ActiveTestMode,
+  HistoryTab,
+  PelicanHistoryItem,
+  ProbeHistoryItem,
+} from "../types";
 
 export const useAppStore = defineStore("app", () => {
   const configStore = useConfigStore();
 
-  const activeMode = computed<"probe" | "pelican">({
+  const activeMode = computed<ActiveTestMode>({
     get: () => configStore.activeMode,
     set: (mode) => configStore.setActiveMode(mode),
   });
@@ -20,44 +26,56 @@ export const useAppStore = defineStore("app", () => {
   const hasActiveResult = computed(() => {
     const probeStore = useProbeTestStore();
     const pelicanStore = usePelicanTestStore();
-    return activeMode.value === "probe"
-      ? probeStore.hasResult
-      : pelicanStore.hasResult;
+    const connectionStore = useConnectionTestStore();
+    if (activeMode.value === "probe") return probeStore.hasResult;
+    if (activeMode.value === "pelican") return pelicanStore.hasResult;
+    return connectionStore.hasMessages;
   });
 
   const totalHistoryCount = computed(() => {
     const probeStore = useProbeTestStore();
     const pelicanStore = usePelicanTestStore();
-    return probeStore.probeHistoryList.length + pelicanStore.pelicanHistoryList.length;
+    const connectionStore = useConnectionTestStore();
+    return (
+      probeStore.probeHistoryList.length +
+      pelicanStore.pelicanHistoryList.length +
+      connectionStore.connectionHistoryList.length
+    );
   });
 
   const isCurrentRunning = computed(() => {
     const probeStore = useProbeTestStore();
     const pelicanStore = usePelicanTestStore();
-    return activeMode.value === "probe"
-      ? probeStore.isRunning
-      : pelicanStore.isPelicanRunning;
+    const connectionStore = useConnectionTestStore();
+    if (activeMode.value === "probe") return probeStore.isRunning;
+    if (activeMode.value === "pelican") return pelicanStore.isPelicanRunning;
+    return connectionStore.isConnectionRunning;
   });
 
   const isOtherRunning = computed(() => {
     const probeStore = useProbeTestStore();
     const pelicanStore = usePelicanTestStore();
-    return activeMode.value === "probe"
-      ? pelicanStore.isPelicanRunning
-      : probeStore.isRunning;
+    const connectionStore = useConnectionTestStore();
+    if (activeMode.value === "probe") {
+      return pelicanStore.isPelicanRunning || connectionStore.isConnectionRunning;
+    }
+    if (activeMode.value === "pelican") {
+      return probeStore.isRunning || connectionStore.isConnectionRunning;
+    }
+    return probeStore.isRunning || pelicanStore.isPelicanRunning;
   });
 
-  const historyActiveTab = ref<"probe" | "pelican">("probe");
+  const historyActiveTab = ref<HistoryTab>("probe");
 
-  function setActiveMode(mode: "probe" | "pelican"): void {
+  function setActiveMode(mode: ActiveTestMode): void {
     activeMode.value = mode;
   }
 
-  function setHistoryActiveTab(tab: "probe" | "pelican"): void {
+  function setHistoryActiveTab(tab: HistoryTab): void {
     historyActiveTab.value = tab;
   }
 
-  function openHistoryModal(tab?: "probe" | "pelican"): void {
+  function openHistoryModal(tab?: HistoryTab): void {
     historyActiveTab.value = tab || activeMode.value;
     isHistoryModalOpen.value = true;
   }
@@ -70,6 +88,11 @@ export const useAppStore = defineStore("app", () => {
     const configStore = useConfigStore();
     const probeStore = useProbeTestStore();
     const pelicanStore = usePelicanTestStore();
+
+    if (activeMode.value === "connection") {
+      useConnectionTestStore().requestComposerFocus();
+      return;
+    }
 
     if (activeMode.value === "probe") {
       if (probeStore.isRunning) {
@@ -99,13 +122,16 @@ export const useAppStore = defineStore("app", () => {
   function handleCancelTest(): void {
     const probeStore = useProbeTestStore();
     const pelicanStore = usePelicanTestStore();
+    const connectionStore = useConnectionTestStore();
 
     if (activeMode.value === "probe") {
       isProbeCancelled.value = true;
       probeStore.cancelTest();
-    } else {
+    } else if (activeMode.value === "pelican") {
       isPelicanCancelled.value = true;
       pelicanStore.cancelPelicanTest();
+    } else if (connectionStore.isConnectionRunning) {
+      connectionStore.stopConnectionReply();
     }
   }
 
