@@ -175,7 +175,6 @@ function handleCopy(): void {
   background: rgba(99, 102, 241, 0.1);
   border: 1px solid rgba(99, 102, 241, 0.24);
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.12);
-  margin-top: 1px;
 
   img {
     width: 20px;
@@ -250,6 +249,10 @@ function handleCopy(): void {
   min-width: 0;
   width: 100%;
   padding-top: 1px;
+}
+
+.assistant-body:has(> .assistant-footer:first-child) {
+  padding-top: 0;
 }
 
 .markdown-body {
@@ -467,6 +470,8 @@ function handleCopy(): void {
 
   &:first-child {
     margin-top: 0;
+    min-height: 26px;
+    align-items: center;
   }
 
   :deep(.message-meta) {
