@@ -75,11 +75,19 @@ function handleCopy(): void {
           v-html="renderedContent"
         ></div>
 
-        <div v-else-if="message.streaming" class="waiting-state">
-          <span class="typing-dots">
+        <div
+          v-if="message.streaming"
+          class="stream-state"
+          :class="{ 'has-content': Boolean(message.content) }"
+        >
+          <span v-if="!message.content" class="typing-dots">
             <span></span><span></span><span></span>
           </span>
-          <span>正在等待模型响应</span>
+          <span v-else class="stream-live-dot"></span>
+          <span>{{ message.content ? "生成中" : "正在等待模型响应" }}</span>
+          <span v-if="message.content" class="stream-char-count">
+            {{ message.content.length }} 字符
+          </span>
           <span v-if="liveElapsedMs > 0" class="waiting-time">
             {{ formatDurationMs(liveElapsedMs) }}
           </span>
@@ -90,13 +98,10 @@ function handleCopy(): void {
           <span>{{ message.error }}</span>
         </div>
 
-        <div class="assistant-footer">
-          <ConnectionMessageMeta
-            :message="message"
-            :live-elapsed-ms="liveElapsedMs"
-          />
+        <div v-if="!message.streaming" class="assistant-footer">
+          <ConnectionMessageMeta :message="message" />
           <button
-            v-if="!message.streaming && message.content"
+            v-if="message.content"
             type="button"
             class="copy-message-btn"
             :title="copied ? '已复制' : '复制回复内容'"
@@ -352,7 +357,7 @@ function handleCopy(): void {
   }
 }
 
-.waiting-state {
+.stream-state {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -360,10 +365,25 @@ function handleCopy(): void {
   color: #94a3b8;
   font-size: 0.72rem;
 
+  &.has-content {
+    margin-top: 3px;
+  }
+
+  .stream-char-count,
   .waiting-time {
     color: #64748b;
     font-size: 0.66rem;
   }
+}
+
+.stream-live-dot {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #818cf8;
+  box-shadow: 0 0 7px rgba(129, 140, 248, 0.9);
+  animation: stream-pulse 1.2s infinite ease-in-out;
 }
 
 .typing-dots {
@@ -478,6 +498,18 @@ function handleCopy(): void {
   40% {
     transform: translateY(-3px);
     opacity: 1;
+  }
+}
+
+@keyframes stream-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.18);
   }
 }
 

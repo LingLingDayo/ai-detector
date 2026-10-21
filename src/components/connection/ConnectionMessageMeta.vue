@@ -11,15 +11,9 @@ import {
 } from "../../utils/connectionMetrics";
 import ModelRouteBadge from "./ModelRouteBadge.vue";
 
-const props = withDefaults(
-  defineProps<{
-    message: ConnectionChatMessage;
-    liveElapsedMs?: number;
-  }>(),
-  {
-    liveElapsedMs: 0,
-  }
-);
+const props = defineProps<{
+  message: ConnectionChatMessage;
+}>();
 
 const outputTokens = computed(() => getMessageOutputTokens(props.message));
 const outputSpeed = computed(() => getMessageOutputSpeed(props.message));
@@ -27,9 +21,6 @@ const hasCacheUsage = computed(
   () =>
     props.message.usage?.cachedTokens !== undefined ||
     props.message.usage?.cacheWriteTokens !== undefined
-);
-const elapsedMs = computed(
-  () => props.message.durationMs ?? props.liveElapsedMs
 );
 </script>
 
@@ -40,58 +31,46 @@ const elapsedMs = computed(
       :actual-model="message.responseModel"
     />
 
-    <template v-if="message.streaming && message.content">
-      <span class="meta-item is-live">
-        <span class="live-dot"></span>
-        生成中 · {{ message.content.length }} 字符
+    <span
+      v-if="message.usage?.inputTokens !== undefined"
+      class="meta-item"
+      title="上游返回的输入 token 数"
+    >
+      输入 {{ formatTokenCount(message.usage.inputTokens) }}
+    </span>
+    <span
+      v-if="outputTokens.count > 0"
+      class="meta-item"
+      :title="outputTokens.estimated ? '上游未返回输出 token，按字符数估算' : '上游返回的输出 token 数'"
+    >
+      {{ outputTokens.estimated ? "≈ " : "" }}输出 {{ formatTokenCount(outputTokens.count) }}
+    </span>
+    <template v-if="hasCacheUsage">
+      <span class="meta-item" title="从缓存读取的输入 token 数">
+        缓存读 {{ formatTokenCount(message.usage?.cachedTokens ?? 0) }}
       </span>
-      <span v-if="elapsedMs > 0" class="meta-item">
-        {{ formatDurationMs(elapsedMs) }}
+      <span class="meta-item" title="写入缓存的输入 token 数">
+        缓存写 {{ formatTokenCount(message.usage?.cacheWriteTokens ?? 0) }}
       </span>
     </template>
-
-    <template v-if="!message.streaming">
-      <span
-        v-if="message.usage?.inputTokens !== undefined"
-        class="meta-item"
-        title="上游返回的输入 token 数"
-      >
-        输入 {{ formatTokenCount(message.usage.inputTokens) }}
-      </span>
-      <span
-        v-if="outputTokens.count > 0"
-        class="meta-item"
-        :title="outputTokens.estimated ? '上游未返回输出 token，按字符数估算' : '上游返回的输出 token 数'"
-      >
-        {{ outputTokens.estimated ? "≈ " : "" }}输出 {{ formatTokenCount(outputTokens.count) }}
-      </span>
-      <template v-if="hasCacheUsage">
-        <span class="meta-item" title="从缓存读取的输入 token 数">
-          缓存读 {{ formatTokenCount(message.usage?.cachedTokens ?? 0) }}
-        </span>
-        <span class="meta-item" title="写入缓存的输入 token 数">
-          缓存写 {{ formatTokenCount(message.usage?.cacheWriteTokens ?? 0) }}
-        </span>
-      </template>
-      <span
-        v-if="outputSpeed !== null"
-        class="meta-item"
-        title="按首个输出 token 之后的生成时长计算"
-      >
-        {{ formatSpeed(outputSpeed) }}
-      </span>
-      <span
-        v-if="message.firstTokenMs !== undefined"
-        class="meta-item"
-        title="从发起请求到收到首个文本 token"
-      >
-        首字 {{ formatFirstToken(message.firstTokenMs) }}
-      </span>
-      <span v-if="elapsedMs > 0" class="meta-item">
-        {{ formatDurationMs(elapsedMs) }}
-      </span>
-      <span v-if="message.stopped" class="meta-item is-stopped">已停止</span>
-    </template>
+    <span
+      v-if="outputSpeed !== null"
+      class="meta-item"
+      title="按首个输出 token 之后的生成时长计算"
+    >
+      {{ formatSpeed(outputSpeed) }}
+    </span>
+    <span
+      v-if="message.firstTokenMs !== undefined"
+      class="meta-item"
+      title="从发起请求到收到首个文本 token"
+    >
+      首字 {{ formatFirstToken(message.firstTokenMs) }}
+    </span>
+    <span v-if="message.durationMs !== undefined" class="meta-item">
+      {{ formatDurationMs(message.durationMs) }}
+    </span>
+    <span v-if="message.stopped" class="meta-item is-stopped">已停止</span>
   </div>
 </template>
 
@@ -114,33 +93,8 @@ const elapsedMs = computed(
   gap: 5px;
   white-space: nowrap;
 
-  &.is-live {
-    color: #a5b4fc;
-  }
-
   &.is-stopped {
     color: #fbbf24;
-  }
-}
-
-.live-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #818cf8;
-  box-shadow: 0 0 7px rgba(129, 140, 248, 0.9);
-  animation: meta-pulse 1.2s infinite ease-in-out;
-}
-
-@keyframes meta-pulse {
-  0%,
-  100% {
-    opacity: 0.45;
-    transform: scale(0.9);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.25);
   }
 }
 </style>
