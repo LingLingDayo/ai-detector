@@ -128,8 +128,6 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
                   </span>
                 </div>
                 <div class="sub-line">
-                  <span>{{ item.userMessageCount }} 轮对话</span>
-                  <span class="sep">·</span>
                   <span>{{ formatHistoryTime(item.updatedAt) }}</span>
                   <span class="sep">·</span>
                   <span class="base-url" :title="item.baseUrl">{{ item.baseUrl || "—" }}</span>
@@ -260,6 +258,10 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
               <div class="metric-cell">
                 <span>累计耗时</span>
                 <strong>{{ formatDurationMs(item.totalDurationMs) }}</strong>
+              </div>
+              <div class="metric-cell">
+                <span>对话轮次</span>
+                <strong>{{ item.userMessageCount }} 轮</strong>
               </div>
             </div>
 
