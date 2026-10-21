@@ -1,3 +1,5 @@
+use crate::types::ChatUsage;
+
 pub fn extract_models_from_json(json_val: &serde_json::Value) -> Vec<String> {
     let mut models = Vec::new();
 
@@ -234,6 +236,10 @@ fn extract_stream_delta_text(val: &serde_json::Value, api_format: &str) -> Optio
             }
             return None;
         }
+        // done/completed 事件包含完整文本，不能再次累加
+        if val_type.starts_with("response.") {
+            return None;
+        }
         if let Some(delta) = val.get("delta").and_then(|d| d.as_str()) {
             return Some(delta.to_string());
         }
@@ -387,6 +393,307 @@ pub fn parse_streaming_body(body: &str, api_format: &str) -> Result<String, Stri
     Ok(content_accum)
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct ChatParseState {
+    pub text: String,
+    pub response_model: Option<String>,
+    pub usage: ChatUsage,
+    pub error_message: Option<String>,
+    pub saw_sse_data: bool,
+}
+
+fn value_as_u64(value: &serde_json::Value) -> Option<u64> {
+    value
+        .as_u64()
+        .or_else(|| value.as_str().and_then(|s| s.trim().parse::<u64>().ok()))
+}
+
+fn object_value_as_u64(obj: &serde_json::Value, keys: &[&str]) -> Option<u64> {
+    for key in keys {
+        if let Some(value) = obj.get(*key) {
+            if let Some(parsed) = value_as_u64(value) {
+                return Some(parsed);
+            }
+        }
+    }
+    None
+}
+
+fn extract_error_message(value: &serde_json::Value) -> Option<String> {
+    value
+        .pointer("/error/message")
+        .and_then(|message| message.as_str())
+        .or_else(|| value.get("error").and_then(|error| error.as_str()))
+        .map(|message| message.trim().to_string())
+        .filter(|message| !message.is_empty())
+}
+
+fn extract_chat_usage(value: &serde_json::Value, api_format: &str) -> ChatUsage {
+    if !value.is_object() {
+        return ChatUsage::default();
+    }
+
+    if api_format == "anthropic" {
+        let Some(usage) = value
+            .get("usage")
+            .filter(|usage| usage.is_object())
+            .or_else(|| value.pointer("/message/usage"))
+            .or_else(|| value.pointer("/delta/usage"))
+        else {
+            return ChatUsage::default();
+        };
+        let input = object_value_as_u64(usage, &["input_tokens"]);
+        let cache_read = object_value_as_u64(usage, &["cache_read_input_tokens"]);
+        let cache_write = object_value_as_u64(usage, &["cache_creation_input_tokens"]);
+        let has_input_parts = input.is_some() || cache_read.is_some() || cache_write.is_some();
+        return ChatUsage {
+            input_tokens: if has_input_parts {
+                Some(input.unwrap_or(0) + cache_read.unwrap_or(0) + cache_write.unwrap_or(0))
+            } else {
+                None
+            },
+            output_tokens: object_value_as_u64(usage, &["output_tokens"]),
+            cached_tokens: cache_read,
+            cache_write_tokens: cache_write,
+        };
+    }
+
+    if api_format == "responses" || api_format == "openai_responses" {
+        let Some(usage) = value
+            .get("usage")
+            .filter(|usage| usage.is_object())
+            .or_else(|| value.pointer("/response/usage"))
+        else {
+            return ChatUsage::default();
+        };
+        let details = usage
+            .get("input_tokens_details")
+            .or_else(|| usage.get("prompt_tokens_details"));
+        return ChatUsage {
+            input_tokens: object_value_as_u64(usage, &["input_tokens", "prompt_tokens"]),
+            output_tokens: object_value_as_u64(usage, &["output_tokens", "completion_tokens"]),
+            cached_tokens: details.and_then(|details| {
+                object_value_as_u64(details, &["cached_tokens", "cache_read_tokens"])
+            }),
+            cache_write_tokens: object_value_as_u64(usage, &["cache_creation_input_tokens"]),
+        };
+    }
+
+    let Some(usage) = value
+        .get("usage")
+        .filter(|usage| usage.is_object())
+        .or_else(|| value.get("usageMetadata"))
+    else {
+        return ChatUsage::default();
+    };
+    let details = usage
+        .get("prompt_tokens_details")
+        .or_else(|| usage.get("input_tokens_details"));
+    ChatUsage {
+        input_tokens: object_value_as_u64(usage, &["prompt_tokens", "input_tokens"]),
+        output_tokens: object_value_as_u64(usage, &["completion_tokens", "output_tokens"]),
+        cached_tokens: details
+            .and_then(|details| object_value_as_u64(details, &["cached_tokens", "cache_read_tokens"]))
+            .or_else(|| object_value_as_u64(usage, &["cached_tokens", "prompt_cache_hit_tokens"])),
+        cache_write_tokens: object_value_as_u64(
+            usage,
+            &["cache_creation_input_tokens", "prompt_cache_miss_tokens"],
+        ),
+    }
+}
+
+fn extract_response_model(value: &serde_json::Value, api_format: &str) -> Option<String> {
+    let model = if api_format == "anthropic" {
+        value
+            .pointer("/message/model")
+            .or_else(|| value.get("model"))
+    } else if api_format == "responses" || api_format == "openai_responses" {
+        value
+            .pointer("/response/model")
+            .or_else(|| value.get("model"))
+    } else {
+        value
+            .get("model")
+            .or_else(|| value.pointer("/response/model"))
+    };
+    model
+        .and_then(|model| model.as_str())
+        .map(|model| model.trim().to_string())
+        .filter(|model| !model.is_empty())
+}
+
+fn extract_content_blocks_text(content: &serde_json::Value) -> String {
+    if let Some(text) = content.as_str() {
+        return text.to_string();
+    }
+    let mut text = String::new();
+    if let Some(parts) = content.as_array() {
+        for part in parts {
+            if let Some(part_text) = part.as_str() {
+                text.push_str(part_text);
+                continue;
+            }
+            let part_type = part.get("type").and_then(|t| t.as_str()).unwrap_or("");
+            if part_type == "thinking" || part_type == "redacted_thinking" || part_type == "input_text"
+            {
+                continue;
+            }
+            if let Some(part_text) = part.get("text").and_then(|t| t.as_str()) {
+                text.push_str(part_text);
+            }
+        }
+    }
+    text
+}
+
+fn extract_chat_non_streaming_text(parsed: &serde_json::Value, api_format: &str) -> String {
+    if api_format == "anthropic" {
+        return parsed
+            .get("content")
+            .map(extract_content_blocks_text)
+            .unwrap_or_default();
+    }
+
+    if api_format == "responses" || api_format == "openai_responses" {
+        if let Some(text) = parsed.get("output_text").and_then(|text| text.as_str()) {
+            if !text.is_empty() {
+                return text.to_string();
+            }
+        }
+        if let Some(outputs) = parsed.get("output").and_then(|output| output.as_array()) {
+            let mut text = String::new();
+            for item in outputs {
+                let item_type = item.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                if item_type == "reasoning"
+                    || item_type == "function_call"
+                    || item_type == "compaction_summary"
+                {
+                    continue;
+                }
+                if let Some(item_text) = item.get("text").and_then(|t| t.as_str()) {
+                    text.push_str(item_text);
+                    continue;
+                }
+                if let Some(content) = item.get("content") {
+                    text.push_str(&extract_content_blocks_text(content));
+                }
+            }
+            if !text.is_empty() {
+                return text;
+            }
+        }
+        if let Some(content) = parsed.get("content") {
+            return extract_content_blocks_text(content);
+        }
+        return parsed
+            .pointer("/choices/0/message/content")
+            .map(extract_content_blocks_text)
+            .unwrap_or_default();
+    }
+
+    parsed
+        .pointer("/choices/0/message/content")
+        .map(extract_content_blocks_text)
+        .or_else(|| parsed.get("content").map(extract_content_blocks_text))
+        .unwrap_or_default()
+}
+
+pub fn parse_chat_non_streaming_json(
+    parsed: &serde_json::Value,
+    api_format: &str,
+) -> Result<ChatParseState, String> {
+    if let Some(message) = extract_error_message(parsed) {
+        return Err(message);
+    }
+    Ok(ChatParseState {
+        text: extract_chat_non_streaming_text(parsed, api_format),
+        response_model: extract_response_model(parsed, api_format),
+        usage: extract_chat_usage(parsed, api_format),
+        error_message: None,
+        saw_sse_data: false,
+    })
+}
+
+/// 宽松扫描 SSE 流：供实时进度使用，不因错误或尚未完整的中间态中断。
+pub fn scan_chat_stream(body: &str, api_format: &str) -> ChatParseState {
+    let mut state = ChatParseState::default();
+
+    for line in body.lines() {
+        let trimmed = line.trim();
+        let Some(data_str) = trimmed.strip_prefix("data:") else {
+            continue;
+        };
+        let data_str = data_str.trim();
+        if data_str.is_empty() || data_str == "[DONE]" {
+            continue;
+        }
+        state.saw_sse_data = true;
+
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(data_str) else {
+            continue;
+        };
+        if let Some(message) = extract_error_message(&value) {
+            if state.error_message.is_none() {
+                state.error_message = Some(message);
+            }
+            continue;
+        }
+        if let Some(model) = extract_response_model(&value, api_format) {
+            state.response_model = Some(model);
+        }
+        let usage = extract_chat_usage(&value, api_format);
+        if usage.has_any() {
+            state.usage.merge(&usage);
+        }
+        if let Some(delta) = extract_stream_delta_text(&value, api_format) {
+            state.text.push_str(&delta);
+            continue;
+        }
+        // 兼容只发送 done 事件的少数中转实现
+        if state.text.is_empty() {
+            if api_format == "responses" || api_format == "openai_responses" {
+                if value.get("type").and_then(|t| t.as_str())
+                    == Some("response.output_text.done")
+                {
+                    if let Some(text) = value.get("text").and_then(|text| text.as_str()) {
+                        state.text = text.to_string();
+                    }
+                }
+            } else if api_format != "anthropic" {
+                if let Some(text) = value
+                    .pointer("/choices/0/message/content")
+                    .and_then(|content| content.as_str())
+                {
+                    state.text = text.to_string();
+                }
+            }
+        }
+    }
+
+    state
+}
+
+pub fn parse_chat_streaming_body(body: &str, api_format: &str) -> Result<ChatParseState, String> {
+    let state = scan_chat_stream(body, api_format);
+    if let Some(message) = &state.error_message {
+        return Err(message.clone());
+    }
+
+    if !state.saw_sse_data || state.text.is_empty() {
+        if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(body) {
+            let fallback = parse_chat_non_streaming_json(&parsed, api_format)?;
+            if !fallback.text.is_empty() {
+                return Ok(fallback);
+            }
+        }
+        if state.text.is_empty() {
+            return Err("流式响应未包含有效文本内容".to_string());
+        }
+    }
+
+    Ok(state)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -454,5 +761,70 @@ mod tests {
     fn test_parse_streaming_progress_anthropic() {
         let sse = "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n";
         assert_eq!(parse_streaming_progress(sse, "anthropic"), "Hello");
+    }
+
+    #[test]
+    fn test_parse_chat_non_streaming_with_model_and_usage() {
+        let json = serde_json::json!({
+            "model": "relay/gpt-4o",
+            "choices": [{ "message": { "role": "assistant", "content": "你好" } }],
+            "usage": {
+                "prompt_tokens": 120,
+                "completion_tokens": 8,
+                "prompt_tokens_details": { "cached_tokens": 64 }
+            }
+        });
+        let state = parse_chat_non_streaming_json(&json, "chat_completions").unwrap();
+        assert_eq!(state.text, "你好");
+        assert_eq!(state.response_model.as_deref(), Some("relay/gpt-4o"));
+        assert_eq!(state.usage.input_tokens, Some(120));
+        assert_eq!(state.usage.output_tokens, Some(8));
+        assert_eq!(state.usage.cached_tokens, Some(64));
+    }
+
+    #[test]
+    fn test_parse_chat_streaming_chat_completions() {
+        let sse = concat!(
+            "data: {\"model\":\"relay/gpt-4o\",\"choices\":[{\"delta\":{\"content\":\"你\"}}]}\n\n",
+            "data: {\"model\":\"relay/gpt-4o\",\"choices\":[{\"delta\":{\"content\":\"好\"}}]}\n\n",
+            "data: {\"model\":\"relay/gpt-4o\",\"choices\":[],\"usage\":{\"prompt_tokens\":100,\"completion_tokens\":2,\"prompt_cache_hit_tokens\":80}}\n\n",
+            "data: [DONE]\n\n"
+        );
+        let state = parse_chat_streaming_body(sse, "chat_completions").unwrap();
+        assert_eq!(state.text, "你好");
+        assert_eq!(state.response_model.as_deref(), Some("relay/gpt-4o"));
+        assert_eq!(state.usage.input_tokens, Some(100));
+        assert_eq!(state.usage.output_tokens, Some(2));
+        assert_eq!(state.usage.cached_tokens, Some(80));
+    }
+
+    #[test]
+    fn test_parse_chat_streaming_anthropic_cache_usage() {
+        let sse = concat!(
+            "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-sonnet-4-5\",\"usage\":{\"input_tokens\":100,\"cache_read_input_tokens\":800,\"cache_creation_input_tokens\":50,\"output_tokens\":1}}}\n\n",
+            "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n",
+            "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":20}}\n\n"
+        );
+        let state = parse_chat_streaming_body(sse, "anthropic").unwrap();
+        assert_eq!(state.text, "Hello");
+        assert_eq!(state.usage.input_tokens, Some(950));
+        assert_eq!(state.usage.cached_tokens, Some(800));
+        assert_eq!(state.usage.cache_write_tokens, Some(50));
+        assert_eq!(state.usage.output_tokens, Some(20));
+    }
+
+    #[test]
+    fn test_parse_chat_streaming_responses_without_duplicate_done_text() {
+        let sse = concat!(
+            "data: {\"type\":\"response.created\",\"response\":{\"model\":\"gpt-5.1\"}}\n\n",
+            "data: {\"type\":\"response.output_text.delta\",\"delta\":\"Hi\"}\n\n",
+            "data: {\"type\":\"response.output_text.done\",\"text\":\"Hi\"}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"model\":\"gpt-5.1\",\"usage\":{\"input_tokens\":50,\"output_tokens\":2,\"input_tokens_details\":{\"cached_tokens\":40}}}}\n\n"
+        );
+        let state = parse_chat_streaming_body(sse, "responses").unwrap();
+        assert_eq!(state.text, "Hi");
+        assert_eq!(state.response_model.as_deref(), Some("gpt-5.1"));
+        assert_eq!(state.usage.input_tokens, Some(50));
+        assert_eq!(state.usage.cached_tokens, Some(40));
     }
 }

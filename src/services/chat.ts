@@ -296,7 +296,7 @@ async function sendChatViaTauri(
         base_url: options.baseUrl,
         api_key: options.apiKey,
         model: options.model,
-        messages: options.messages.map((message) => ({
+        messages: mergeAdjacentMessages(options.messages).map((message) => ({
           role: message.role,
           content: message.content,
           images: (message.images ?? []).map((image) => ({

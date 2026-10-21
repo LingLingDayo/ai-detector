@@ -159,6 +159,8 @@ describe("连接测试响应解析", () => {
       "",
       'data: {"type":"response.output_text.delta","delta":"Hi"}',
       "",
+      'data: {"type":"response.output_text.done","text":"Hi"}',
+      "",
       'data: {"type":"response.completed","response":{"model":"gpt-5.1","usage":{"input_tokens":500,"output_tokens":10,"input_tokens_details":{"cached_tokens":400}}}}',
       "",
     ].join("\n");

@@ -204,6 +204,10 @@ function extractStreamDeltaText(value: any, apiFormat: string): string {
     if (value.type === "response.output_text.delta" && typeof value.delta === "string") {
       return value.delta;
     }
+    // done/completed 事件包含完整文本，不能再次累加
+    if (typeof value.type === "string" && value.type.startsWith("response.")) {
+      return "";
+    }
     if (typeof value.delta === "string") return value.delta;
     if (typeof value.output_text === "string") return value.output_text;
     if (typeof value.text === "string") return value.text;

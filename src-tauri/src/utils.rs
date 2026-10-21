@@ -1,3 +1,27 @@
+pub fn is_adaptive_thinking_required(model: &str) -> bool {
+    let m = model.to_lowercase();
+    if m.contains("claude") {
+        // 仅对 Anthropic 官方强制要求 adaptive thinking 的模型生效
+        if m.contains("-5")
+            || m.contains(".5")
+            || m.contains("-4-7")
+            || m.contains("-4-8")
+            || m.contains(".4.7")
+            || m.contains(".4.8")
+        {
+            return true;
+        }
+    }
+    false
+}
+
+/// MiMo V2.6 仅支持 thinking.type 开关与 max_completion_tokens，不支持 reasoning_effort
+pub fn is_mimo_thinking_switch_model(model: &str) -> bool {
+    let m = model.trim().to_lowercase();
+    let base = m.rsplit('/').next().unwrap_or(&m);
+    base.starts_with("mimo-v2.6-pro") || base.starts_with("mimo-v2.6-flash")
+}
+
 pub fn normalize_url(base_url: &str, api_format: &str) -> String {
     let raw = base_url.trim().trim_end_matches('/');
     let trimmed = if raw.is_empty() {

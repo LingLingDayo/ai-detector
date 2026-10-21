@@ -4,30 +4,12 @@ use tauri::Emitter;
 
 use crate::parser::{parse_non_streaming_json, parse_streaming_body, parse_streaming_progress};
 use crate::types::{ProbeRequest, ProbeResponse};
-use crate::utils::{compact_error, normalize_url};
+use crate::utils::{
+    compact_error, is_adaptive_thinking_required, is_mimo_thinking_switch_model, normalize_url,
+};
 
 pub const DEFAULT_USER_AGENT: &str =
     "Codex Desktop/0.147.0-alpha.1.2 (Windows 10.0.26200; x86_64) unknown (codex_exec; 0.147.0-alpha.1.2)";
-
-fn is_adaptive_thinking_required(model: &str) -> bool {
-    let m = model.to_lowercase();
-    if m.contains("claude") {
-        // 仅对 Anthropic 官方强制要求 adaptive thinking (即拒绝 budget_tokens 报 400) 的模型生效：
-        // Claude 4.7, 4.8 以及 5.x+ 系列 (如 5, 5.1, 5.5 等)。
-        // 注意：Claude 4.6 (如 claude-sonnet-4-6, claude-opus-4-6) 虽然支持 adaptive，但并不强制，使用 budget_tokens 仍可正常请求，严禁在此强制配置。
-        if m.contains("-5") || m.contains(".5") || m.contains("-4-7") || m.contains("-4-8") || m.contains(".4.7") || m.contains(".4.8") {
-            return true;
-        }
-    }
-    false
-}
-
-/// MiMo V2.6 仅支持 thinking.type 开关与 max_completion_tokens，不支持 reasoning_effort
-fn is_mimo_thinking_switch_model(model: &str) -> bool {
-    let m = model.trim().to_lowercase();
-    let base = m.rsplit('/').next().unwrap_or(&m);
-    base.starts_with("mimo-v2.6-pro") || base.starts_with("mimo-v2.6-flash")
-}
 
 #[tauri::command]
 pub async fn send_probe_request(
