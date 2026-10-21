@@ -134,6 +134,14 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     allowDisableReasoning: false,
     patterns: ["glm-5.3-flash"],
   },
+  {
+    vendor: "Zhipu GLM-5.3",
+    model: "GLM-5.3 FlashX",
+    supportedEfforts: ["low", "high", "max"],
+    defaultEffort: "max",
+    allowDisableReasoning: false,
+    patterns: ["glm-5.3-flashx"],
+  },
 
   // ==================== Moonshot Kimi ====================
   {
@@ -142,6 +150,32 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
     allowDisableReasoning: false,
+  },
+  {
+    vendor: "Moonshot Kimi",
+    model: "Kimi K2.8 Preview",
+    supportedEfforts: ["low", "high", "max"],
+    defaultEffort: "max",
+    allowDisableReasoning: false,
+    patterns: ["kimi-k2.8-preview", "kimi-k2.8"],
+  },
+
+  // ==================== Alibaba Qwen ====================
+  {
+    vendor: "Alibaba Qwen",
+    model: "Qwen3.8 Max",
+    supportedEfforts: ["none", "low", "medium", "xhigh"],
+    defaultEffort: "xhigh",
+    allowDisableReasoning: true,
+    patterns: ["qwen3.8-max"],
+  },
+  {
+    vendor: "Alibaba Qwen",
+    model: "Qwen3.8 Flash",
+    supportedEfforts: ["none", "low", "medium", "xhigh"],
+    defaultEffort: "xhigh",
+    allowDisableReasoning: true,
+    patterns: ["qwen3.8-flash"],
   },
 
   // ==================== DeepSeek ====================
@@ -235,6 +269,30 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     defaultEffort: "medium",
     allowDisableReasoning: false,
     patterns: ["gemini-3.8-flash"],
+  },
+  {
+    vendor: "Google Gemini",
+    model: "Gemini 3.7 Flash",
+    supportedEfforts: ["low", "medium", "high"],
+    defaultEffort: "medium",
+    allowDisableReasoning: false,
+    patterns: ["gemini-3.7-flash"],
+  },
+  {
+    vendor: "Google Gemini",
+    model: "Gemini 3.6 Flash",
+    supportedEfforts: ["low", "medium", "high"],
+    defaultEffort: "medium",
+    allowDisableReasoning: false,
+    patterns: ["gemini-3.6-flash"],
+  },
+  {
+    vendor: "Google Gemini",
+    model: "Gemini 3.1 Pro",
+    supportedEfforts: ["low", "medium", "high"],
+    defaultEffort: "medium",
+    allowDisableReasoning: false,
+    patterns: ["gemini-3.1-pro", "gemini-3.1-pro-preview"],
   },
 ] as const;
 

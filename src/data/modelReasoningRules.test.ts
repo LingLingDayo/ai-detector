@@ -9,8 +9,8 @@ import {
 } from "./modelReasoningRules";
 
 describe("modelReasoningRules", () => {
-  it("MODEL_REASONING_RULES 包含了全部 20 个模型规则", () => {
-    expect(MODEL_REASONING_RULES).toHaveLength(20);
+  it("MODEL_REASONING_RULES 包含了全部 27 个模型规则", () => {
+    expect(MODEL_REASONING_RULES).toHaveLength(27);
 
     const modelNames = MODEL_REASONING_RULES.map((r) => r.model);
     const expectedModels = [
@@ -23,7 +23,11 @@ describe("modelReasoningRules", () => {
       "GPT-6.1 Sol",
       "GLM-5.3",
       "GLM-5.3 Flash",
+      "GLM-5.3 FlashX",
       "Kimi K3",
+      "Kimi K2.8 Preview",
+      "Qwen3.8 Max",
+      "Qwen3.8 Flash",
       "DeepSeek V4 Pro",
       "DeepSeek V4.1 Flash",
       "Grok 4.6",
@@ -34,6 +38,9 @@ describe("modelReasoningRules", () => {
       "Claude 5.5 Opus",
       "Gemini 4 Argon",
       "Gemini 3.8 Flash",
+      "Gemini 3.7 Flash",
+      "Gemini 3.6 Flash",
+      "Gemini 3.1 Pro",
     ];
 
     for (const expected of expectedModels) {
@@ -51,6 +58,27 @@ describe("modelReasoningRules", () => {
 
     const baseGlm = findModelReasoningRule("glm-5.3");
     expect(baseGlm?.model).toBe("GLM-5.3");
+
+    // GLM-5.3 FlashX 必须优先于 Flash，避免被短词规则劫持
+    const flashxRule = findModelReasoningRule("glm-5.3-flashx");
+    expect(flashxRule?.model).toBe("GLM-5.3 FlashX");
+    expect(flashxRule?.supportedEfforts).toEqual(["low", "high", "max"]);
+    expect(flashxRule?.defaultEffort).toBe("max");
+
+    // Kimi 当前主力效率模型
+    const kimiPreviewRule = findModelReasoningRule("kimi-k2.8-preview");
+    expect(kimiPreviewRule?.model).toBe("Kimi K2.8 Preview");
+    expect(kimiPreviewRule?.defaultEffort).toBe("max");
+
+    // Qwen3.8 当前主力模型与快照/供应商前缀兼容
+    const qwenMaxRule = findModelReasoningRule("qwen3.8-max-0902");
+    expect(qwenMaxRule?.model).toBe("Qwen3.8 Max");
+    expect(qwenMaxRule?.supportedEfforts).toEqual(["none", "low", "medium", "xhigh"]);
+    expect(qwenMaxRule?.defaultEffort).toBe("xhigh");
+
+    const qwenFlashRule = findModelReasoningRule("dashscope/qwen3.8-flash");
+    expect(qwenFlashRule?.model).toBe("Qwen3.8 Flash");
+    expect(qwenFlashRule?.defaultEffort).toBe("xhigh");
 
     // OpenAI 模型测试
     const solRule = findModelReasoningRule("gpt-5.6-sol");
@@ -138,7 +166,7 @@ describe("modelReasoningRules", () => {
     expect(findModelReasoningRule("gemini-3.8-pro")).toBeUndefined();
   });
 
-  it("表格全部 20 个模型的思考强度与默认值完全对齐需求表", () => {
+  it("表格全部 27 个模型的思考强度与默认值完全对齐需求表", () => {
     const tableData = [
       {
         vendor: "OpenAI GPT-5.6",
@@ -204,11 +232,39 @@ describe("modelReasoningRules", () => {
         allowDisable: false,
       },
       {
+        vendor: "Zhipu GLM-5.3",
+        model: "GLM-5.3 FlashX",
+        supported: ["low", "high", "max"],
+        defaultEffort: "max",
+        allowDisable: false,
+      },
+      {
         vendor: "Moonshot Kimi",
         model: "Kimi K3",
         supported: ["low", "high", "max"],
         defaultEffort: "max",
         allowDisable: false,
+      },
+      {
+        vendor: "Moonshot Kimi",
+        model: "Kimi K2.8 Preview",
+        supported: ["low", "high", "max"],
+        defaultEffort: "max",
+        allowDisable: false,
+      },
+      {
+        vendor: "Alibaba Qwen",
+        model: "Qwen3.8 Max",
+        supported: ["none", "low", "medium", "xhigh"],
+        defaultEffort: "xhigh",
+        allowDisable: true,
+      },
+      {
+        vendor: "Alibaba Qwen",
+        model: "Qwen3.8 Flash",
+        supported: ["none", "low", "medium", "xhigh"],
+        defaultEffort: "xhigh",
+        allowDisable: true,
       },
       {
         vendor: "DeepSeek",
@@ -280,6 +336,27 @@ describe("modelReasoningRules", () => {
         defaultEffort: "medium",
         allowDisable: false,
       },
+      {
+        vendor: "Google Gemini",
+        model: "Gemini 3.7 Flash",
+        supported: ["low", "medium", "high"],
+        defaultEffort: "medium",
+        allowDisable: false,
+      },
+      {
+        vendor: "Google Gemini",
+        model: "Gemini 3.6 Flash",
+        supported: ["low", "medium", "high"],
+        defaultEffort: "medium",
+        allowDisable: false,
+      },
+      {
+        vendor: "Google Gemini",
+        model: "Gemini 3.1 Pro",
+        supported: ["low", "medium", "high"],
+        defaultEffort: "medium",
+        allowDisable: false,
+      },
     ];
 
     for (const item of tableData) {
@@ -333,6 +410,18 @@ describe("modelReasoningRules", () => {
 
     // Gemini 3.8 Flash 支持 high，应正常保留 high
     expect(resolveValidReasoningEffort("gemini-3.8-flash", "high")).toBe("high");
+
+    // Qwen3.8 系列：max/high 收敛到 xhigh，low 保留，none 允许关闭思考
+    expect(resolveValidReasoningEffort("qwen3.8-max", "max")).toBe("xhigh");
+    expect(resolveValidReasoningEffort("qwen3.8-max", "high")).toBe("xhigh");
+    expect(resolveValidReasoningEffort("qwen3.8-flash", "low")).toBe("low");
+    expect(resolveValidReasoningEffort("qwen3.8-flash", "none")).toBe("none");
+
+    // GLM-5.3 FlashX 不支持 medium，应修正为默认 max
+    expect(resolveValidReasoningEffort("glm-5.3-flashx", "medium")).toBe("max");
+
+    // Kimi K2.8 Preview 不支持 medium，应修正为默认 max
+    expect(resolveValidReasoningEffort("kimi-k2.8-preview", "medium")).toBe("max");
   });
 
   it("ALL_REASONING_EFFORT_OPTIONS 不再包含已移除的 ultra 档位", () => {
