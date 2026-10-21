@@ -2,11 +2,12 @@
 import { ref, computed, watch, onUnmounted } from "vue";
 import type { ClientConfig } from "../types";
 import { resolveValidReasoningEffort, getReasoningOptionsForModel } from "../constants";
-import { Check, Save, List, History, Eye, EyeOff } from "@lucide/vue";
+import { Check, Save, List, History, Eye, EyeOff, Copy } from "@lucide/vue";
 import ModelCombobox from "./ModelCombobox.vue";
 import AdvancedSettings from "./AdvancedSettings.vue";
 import { CustomSelect, type SelectOption } from "./common";
 import { useConfigStore, useAppStore, useProbeTestStore, usePelicanTestStore } from "../stores";
+import { useClipboard } from "../composables/useClipboard";
 
 const configStore = useConfigStore();
 const appStore = useAppStore();
@@ -124,6 +125,14 @@ async function handleReset(): Promise<void> {
     pelicanStore.resetPelicanTest();
     comboboxRef.value?.resetModelList();
   }
+}
+
+const { copied: isKeyCopied, copy: copyKey } = useClipboard();
+
+function handleCopyKey(): void {
+  const key = activeConfig.value.apiKey;
+  if (!key) return;
+  copyKey(key);
 }
 
 function handleTogglePassword(): void {
@@ -304,7 +313,7 @@ defineExpose({
 
         <div class="form-group flex-1">
           <label for="api-key" title="用于鉴权的 API 密钥，仅保存在本电脑本地">API Key</label>
-          <div class="input-wrapper">
+          <div class="input-wrapper has-key-actions">
             <input
               :type="currentPasswordVisible ? 'text' : 'password'"
               id="api-key"
@@ -318,25 +327,44 @@ defineExpose({
               @blur="comboboxRef?.triggerAutoFetch(true)"
               @keydown.enter="comboboxRef?.triggerAutoFetch(true)"
             />
-            <button
-              type="button"
-              class="btn-icon"
-              id="toggle-key-visibility"
-              :disabled="isCurrentRunning"
-              title="切换显示/隐藏 Key"
-              @click="handleTogglePassword"
-            >
-              <Eye
-                class="eye-open"
-                :class="{ hidden: currentPasswordVisible }"
-                :size="16"
-              />
-              <EyeOff
-                class="eye-closed"
-                :class="{ hidden: !currentPasswordVisible }"
-                :size="16"
-              />
-            </button>
+            <div class="key-actions">
+              <button
+                type="button"
+                class="btn-icon"
+                id="copy-key"
+                :title="isKeyCopied ? '已复制 Key' : '复制 API Key'"
+                :disabled="!activeConfig.apiKey"
+                @click="handleCopyKey"
+              >
+                <Check
+                  v-if="isKeyCopied"
+                  class="icon-success"
+                  :size="15"
+                />
+                <Copy
+                  v-else
+                  :size="15"
+                />
+              </button>
+              <button
+                type="button"
+                class="btn-icon"
+                id="toggle-key-visibility"
+                title="切换显示/隐藏 Key"
+                @click="handleTogglePassword"
+              >
+                <Eye
+                  class="eye-open"
+                  :class="{ hidden: currentPasswordVisible }"
+                  :size="16"
+                />
+                <EyeOff
+                  class="eye-closed"
+                  :class="{ hidden: !currentPasswordVisible }"
+                  :size="16"
+                />
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -6,9 +6,10 @@ import {
   getReasoningOptionsForModel,
   resolveValidReasoningEffort,
 } from "../constants";
-import { Pencil, Save, X, Eye, EyeOff, ChevronDown } from "@lucide/vue";
+import { Pencil, Save, X, Eye, EyeOff, ChevronDown, Copy, Check } from "@lucide/vue";
 import CustomSelect, { type SelectOption } from "./common/CustomSelect.vue";
 import ModelCombobox from "./ModelCombobox.vue";
+import { useClipboard } from "../composables/useClipboard";
 
 const API_FORMAT_OPTIONS: SelectOption[] = [
   { value: "chat_completions", label: "/v1/chat/completions", description: "OpenAI" },
@@ -42,6 +43,14 @@ const nameInputRef = ref<HTMLInputElement | null>(null);
 const modalComboboxRef = ref<InstanceType<typeof ModelCombobox> | null>(null);
 const isKeyVisible = ref(false);
 const isAdvancedExpanded = ref(false);
+
+const { copied: isModalKeyCopied, copy: copyModalKey } = useClipboard();
+
+function handleCopyKey(): void {
+  const key = formData.apiKey;
+  if (!key) return;
+  copyModalKey(key);
+}
 
 const formData = reactive({
   name: "",
@@ -262,7 +271,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
               <label for="cfg-api-key">
                 API Key <span class="required">*</span>
               </label>
-              <div class="input-wrapper">
+              <div class="input-wrapper has-key-actions">
                 <input
                   :type="isKeyVisible ? 'text' : 'password'"
                   id="cfg-api-key"
@@ -274,21 +283,40 @@ function handleSubmit(applyImmediately: boolean = false): void {
                   @blur="modalComboboxRef?.triggerAutoFetch(true)"
                   @keydown.enter="modalComboboxRef?.triggerAutoFetch(true)"
                 />
-                <button
-                  type="button"
-                  class="btn-icon"
-                  title="切换显示/隐藏 Key"
-                  @click="isKeyVisible = !isKeyVisible"
-                >
-                  <Eye
-                    v-if="!isKeyVisible"
-                    :size="15"
-                  />
-                  <EyeOff
-                    v-else
-                    :size="15"
-                  />
-                </button>
+                <div class="key-actions">
+                  <button
+                    type="button"
+                    class="btn-icon"
+                    :title="isModalKeyCopied ? '已复制 Key' : '复制 API Key'"
+                    :disabled="!formData.apiKey"
+                    @click="handleCopyKey"
+                  >
+                    <Check
+                      v-if="isModalKeyCopied"
+                      class="icon-success"
+                      :size="15"
+                    />
+                    <Copy
+                      v-else
+                      :size="15"
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-icon"
+                    title="切换显示/隐藏 Key"
+                    @click="isKeyVisible = !isKeyVisible"
+                  >
+                    <Eye
+                      v-if="!isKeyVisible"
+                      :size="15"
+                    />
+                    <EyeOff
+                      v-else
+                      :size="15"
+                    />
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -188,6 +188,10 @@ input[type="number"] {
   padding-right: 32px;
 }
 
+.input-wrapper.has-key-actions input {
+  padding-right: 58px;
+}
+
 input[type="text"]:focus,
 input[type="url"]:focus,
 input[type="password"]:focus,
@@ -221,16 +225,54 @@ input::placeholder {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  transition: color var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
-.btn-icon:hover {
+.btn-icon:hover:not(:disabled) {
   color: var(--text-primary);
+}
+
+.btn-icon:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-icon .icon-success {
+  color: #34d399;
 }
 
 .input-wrapper .btn-icon {
   position: absolute;
   right: 6px;
+}
+
+.input-actions,
+.key-actions {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.input-actions .btn-icon,
+.key-actions .btn-icon {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+}
+
+.input-actions .btn-icon:hover:not(:disabled),
+.key-actions .btn-icon:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .btn {
