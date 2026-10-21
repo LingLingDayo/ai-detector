@@ -47,11 +47,18 @@ export const useAppStore = defineStore("app", () => {
       : probeStore.isRunning;
   });
 
+  const historyActiveTab = ref<"probe" | "pelican">("probe");
+
   function setActiveMode(mode: "probe" | "pelican"): void {
     activeMode.value = mode;
   }
 
-  function openHistoryModal(): void {
+  function setHistoryActiveTab(tab: "probe" | "pelican"): void {
+    historyActiveTab.value = tab;
+  }
+
+  function openHistoryModal(tab?: "probe" | "pelican"): void {
+    historyActiveTab.value = tab || activeMode.value;
     isHistoryModalOpen.value = true;
   }
 
@@ -119,6 +126,7 @@ export const useAppStore = defineStore("app", () => {
   return {
     activeMode,
     isHistoryModalOpen,
+    historyActiveTab,
     isProbeCancelled,
     isPelicanCancelled,
     hasActiveResult,
@@ -126,6 +134,7 @@ export const useAppStore = defineStore("app", () => {
     isCurrentRunning,
     isOtherRunning,
     setActiveMode,
+    setHistoryActiveTab,
     openHistoryModal,
     closeHistoryModal,
     handleStartTest,

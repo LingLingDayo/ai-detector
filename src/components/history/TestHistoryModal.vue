@@ -37,19 +37,16 @@ const emit = defineEmits<{
   (e: "apply-probe", item: ProbeHistoryItem): void;
 }>();
 
+import { useAppStore } from "../../stores";
+
+const appStore = useAppStore();
 const { confirm } = useConfirm();
 
-// 当前选中的 Tab 菜单，支持无缝切换与扩展
-const activeTab = ref<HistoryTab>(props.initialTab);
-
-watch(
-  () => props.isOpen,
-  (open) => {
-    if (open) {
-      activeTab.value = props.initialTab || "probe";
-    }
-  }
-);
+// 当前选中的 Tab 菜单，优先对齐 Store 的活跃测试模式与记录
+const activeTab = computed<HistoryTab>({
+  get: () => appStore.historyActiveTab || props.initialTab || "probe",
+  set: (tab) => appStore.setHistoryActiveTab(tab),
+});
 
 const pelicanTotalCount = computed(() => props.pelicanList.length);
 const probeTotalCount = computed(() => (props.probeList || []).length);

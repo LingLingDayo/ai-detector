@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { PelicanContentType } from "../../composables/usePelicanTest";
+import type { PelicanContentType } from "../../stores/pelicanTest";
 
 const props = withDefaults(
   defineProps<{

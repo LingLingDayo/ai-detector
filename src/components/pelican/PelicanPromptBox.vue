@@ -2,7 +2,7 @@
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from "vue";
 import { Terminal, RotateCcw, Check, SquarePen, Copy, Sparkles, ChevronDown } from "@lucide/vue";
 import { useClipboard } from "../../composables/useClipboard";
-import { DEFAULT_PELICAN_PROMPT } from "../../composables/usePelicanTest";
+import { DEFAULT_PELICAN_PROMPT } from "../../stores/pelicanTest";
 import { PELICAN_PRESETS, type PelicanPreset } from "../../data/pelicanPresets";
 
 const props = withDefaults(

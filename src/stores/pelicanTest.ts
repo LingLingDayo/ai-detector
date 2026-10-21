@@ -206,6 +206,24 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
   const pelicanCustomPrompt = ref(loadInitialPelicanCustomPrompt(pelicanPrompt.value));
   const pelicanHistoryList = ref<PelicanHistoryItem[]>(loadInitialPelicanHistory());
 
+  const bgTheme = ref<"dark" | "light">(
+    (typeof localStorage !== "undefined" && (localStorage.getItem("pelican_bg_theme") as "dark" | "light")) || "dark"
+  );
+  const showCode = ref(false);
+
+  function setBgTheme(theme: "dark" | "light"): void {
+    bgTheme.value = theme;
+    try {
+      localStorage.setItem("pelican_bg_theme", theme);
+    } catch {
+      // ignore
+    }
+  }
+
+  function setShowCode(show: boolean): void {
+    showCode.value = show;
+  }
+
   function addPelicanHistoryItem(item: Omit<PelicanHistoryItem, "id" | "createdAt">): void {
     const newItem: PelicanHistoryItem = {
       ...item,
@@ -491,6 +509,10 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     pelicanPrompt,
     pelicanCustomPrompt,
     pelicanHistoryList,
+    bgTheme,
+    showCode,
+    setBgTheme,
+    setShowCode,
     setPelicanPrompt,
     resetPelicanPrompt,
     startPelicanTest,

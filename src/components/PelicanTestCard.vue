@@ -40,20 +40,19 @@ const emit = defineEmits<{
   (e: "reset-prompt"): void;
 }>();
 
+import { usePelicanTestStore } from "../stores";
+
+const pelicanStore = usePelicanTestStore();
 const { copied: svgCopied, copy: copySvg } = useClipboard();
 
-const showCode = ref(false);
-const bgTheme = ref<"dark" | "light">(
-  (localStorage.getItem("pelican_bg_theme") as "dark" | "light") || "dark"
-);
-
-watch(bgTheme, (val) => {
-  try {
-    localStorage.setItem("pelican_bg_theme", val);
-  } catch {
-    // ignore
+watch(
+  () => pelicanStore.showCode,
+  (val) => {
+    if (val) {
+      scrollToBottom();
+    }
   }
-});
+);
 
 function scrollToBottom(): void {
   nextTick(() => {
@@ -103,12 +102,6 @@ function scrollToBottom(): void {
     });
   });
 }
-
-watch(showCode, (val) => {
-  if (val) {
-    scrollToBottom();
-  }
-});
 
 const displayContent = computed(() => props.content || props.svg || "");
 
@@ -160,11 +153,11 @@ function handleDownloadContent(): void {
       :content-type="contentType"
       :model-name="modelName"
       :duration-ms="durationMs"
-      :bg-theme="bgTheme"
-      :show-code="showCode"
+      :bg-theme="pelicanStore.bgTheme"
+      :show-code="pelicanStore.showCode"
       :svg-copied="svgCopied"
-      @update:bg-theme="bgTheme = $event"
-      @update:show-code="showCode = $event"
+      @update:bg-theme="pelicanStore.setBgTheme"
+      @update:show-code="pelicanStore.setShowCode"
       @copy-svg="handleCopyContent"
       @download-svg="handleDownloadContent"
     />
@@ -186,12 +179,12 @@ function handleDownloadContent(): void {
       :content="displayContent"
       :content-type="contentType"
       :raw-text="rawText"
-      :bg-theme="bgTheme"
+      :bg-theme="pelicanStore.bgTheme"
     />
 
     <!-- 可折叠的源码展示区 -->
     <PelicanCodeViewer
-      v-if="showCode && displayContent && !isRunning"
+      v-if="pelicanStore.showCode && displayContent && !isRunning"
       :svg="displayContent"
       :content="displayContent"
       :content-type="contentType"

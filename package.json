@@ -21,7 +21,8 @@
     "test:probe": "vitest run src/stores/probeTest.test.ts",
     "test:pelican-prompt": "vitest run src/stores/pelicanTest.test.ts",
     "test:config": "vitest run src/stores/config.test.ts",
-    "test:use-config": "vitest run src/composables/useConfig.test.ts",
+    "test:models": "vitest run src/stores/models.test.ts",
+    "test:confirm": "vitest run src/stores/confirm.test.ts",
     "sync": "node scripts/sync-upstream.js",
     "sync:check": "node scripts/sync-upstream.js --check"
   },
