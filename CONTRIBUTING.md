@@ -16,8 +16,11 @@ npm run tauri dev
 # 执行前端构建与 TypeScript 类型检查
 npm run build
 
-# 运行全部测试（测试文件与对应源码模块同目录）
+# 运行全部测试（Vitest，测试文件与对应源码模块同目录）
 npm test
+
+# 以监听模式运行测试
+npx vitest
 
 # 运行更新日志解析测试
 npm run test:changelog
