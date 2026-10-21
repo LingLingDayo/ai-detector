@@ -206,7 +206,7 @@ export const useConfigStore = defineStore("config", () => {
       formatName = "/v1/messages";
     }
 
-    const streamLabel = config.stream !== false ? "流式" : "同步";
+    const streamLabel = config.stream !== false ? "流式请求" : "同步请求";
 
     return `${formatName} · ${streamLabel}`;
   });
