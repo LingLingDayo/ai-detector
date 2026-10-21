@@ -187,6 +187,8 @@ export interface ConnectionSessionStats {
   requestCount: number;
   successCount: number;
   errorCount: number;
+  stoppedCount: number;
+  successRate: number | null;
   mismatchCount: number;
   requestModelStats: ConnectionModelCount[];
   responseModelStats: ConnectionModelCount[];
@@ -215,6 +217,8 @@ export interface ConnectionHistoryItem {
   requestCount: number;
   successCount: number;
   errorCount: number;
+  stoppedCount?: number;
+  successRate?: number;
   mismatchCount: number;
   requestModelStats: ConnectionModelCount[];
   responseModelStats: ConnectionModelCount[];

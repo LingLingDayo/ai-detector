@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import {
   Activity,
+  CheckCircle2,
   Database,
   Eraser,
   Gauge,
@@ -12,6 +13,7 @@ import type { ConnectionSessionStats } from "../../types";
 import {
   formatCacheRate,
   formatSpeed,
+  formatSuccessRate,
   formatTokenCount,
 } from "../../utils/connectionMetrics";
 
@@ -50,6 +52,23 @@ const routeTitle = computed(() => {
   const actual = props.latestResponseModel || "上游未返回";
   return `最近一次请求模型：${requested}\n最近一次响应模型：${actual}`;
 });
+
+const successStatus = computed(() => {
+  const finished =
+    props.stats.successCount + props.stats.errorCount + props.stats.stoppedCount;
+  const rate = props.stats.successRate;
+  if (finished === 0 || rate === null) {
+    return { label: "—", tone: "waiting" };
+  }
+  if (rate >= 1) return { label: formatSuccessRate(rate), tone: "success" };
+  if (rate >= 0.8) return { label: formatSuccessRate(rate), tone: "warning" };
+  return { label: formatSuccessRate(rate), tone: "danger" };
+});
+
+const successTitle = computed(
+  () =>
+    `成功 ${props.stats.successCount} · 失败 ${props.stats.errorCount} · 停止 ${props.stats.stoppedCount}`
+);
 </script>
 
 <template>
@@ -90,6 +109,16 @@ const routeTitle = computed(() => {
       <span class="stat-icon"><Activity :size="12" /></span>
       <span class="stat-label">请求轮次</span>
       <strong>{{ stats.requestCount }}</strong>
+    </div>
+
+    <div
+      class="stat-item"
+      :class="`is-${successStatus.tone}`"
+      :title="successTitle"
+    >
+      <span class="stat-icon"><CheckCircle2 :size="12" /></span>
+      <span class="stat-label">成功率</span>
+      <strong>{{ successStatus.label }}</strong>
     </div>
 
     <div
@@ -293,6 +322,10 @@ const routeTitle = computed(() => {
 
   &.is-warning strong {
     color: #fbbf24;
+  }
+
+  &.is-danger strong {
+    color: #f87171;
   }
 
   &.is-waiting strong {

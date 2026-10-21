@@ -45,6 +45,16 @@ export function sortModelCounts(list: ConnectionModelCount[]): ConnectionModelCo
   return [...list].sort((a, b) => b.count - a.count || a.model.localeCompare(b.model));
 }
 
+export function computeSuccessRate(
+  successCount: number,
+  errorCount: number,
+  stoppedCount = 0
+): number | null {
+  const finishedCount = successCount + errorCount + stoppedCount;
+  if (finishedCount <= 0) return null;
+  return successCount / finishedCount;
+}
+
 export function aggregateConnectionMessages(
   messages: readonly ConnectionChatMessage[]
 ): ConnectionSessionStats {
@@ -54,6 +64,7 @@ export function aggregateConnectionMessages(
   let requestCount = 0;
   let successCount = 0;
   let errorCount = 0;
+  let stoppedCount = 0;
   let mismatchCount = 0;
   let inputTokens = 0;
   let outputTokens = 0;
@@ -77,7 +88,9 @@ export function aggregateConnectionMessages(
 
     if (message.error) {
       errorCount += 1;
-    } else if (!message.streaming && !message.stopped) {
+    } else if (message.stopped) {
+      stoppedCount += 1;
+    } else if (!message.streaming) {
       successCount += 1;
     }
 
@@ -128,6 +141,8 @@ export function aggregateConnectionMessages(
     requestCount,
     successCount,
     errorCount,
+    stoppedCount,
+    successRate: computeSuccessRate(successCount, errorCount, stoppedCount),
     mismatchCount,
     requestModelStats: sortModelCounts(requestModelStats),
     responseModelStats: sortModelCounts(responseModelStats),
@@ -193,10 +208,18 @@ export function formatSpeed(speed?: number | null): string {
   return `${speed.toFixed(1)} tok/s`;
 }
 
-export function formatCacheRate(rate?: number | null): string {
+export function formatRate(rate?: number | null): string {
   if (rate === undefined || rate === null || !Number.isFinite(rate)) return "—";
   const percent = Math.max(0, Math.min(1, rate)) * 100;
   return `${percent.toFixed(1).replace(/\.0$/, "")}%`;
+}
+
+export function formatCacheRate(rate?: number | null): string {
+  return formatRate(rate);
+}
+
+export function formatSuccessRate(rate?: number | null): string {
+  return formatRate(rate);
 }
 
 export function formatDurationMs(ms?: number | null): string {

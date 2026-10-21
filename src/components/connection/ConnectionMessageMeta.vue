@@ -2,12 +2,10 @@
 import { computed } from "vue";
 import type { ConnectionChatMessage } from "../../types";
 import {
-  formatCacheRate,
   formatDurationMs,
   formatFirstToken,
   formatSpeed,
   formatTokenCount,
-  getMessageCacheRate,
   getMessageOutputSpeed,
   getMessageOutputTokens,
 } from "../../utils/connectionMetrics";
@@ -25,7 +23,11 @@ const props = withDefaults(
 
 const outputTokens = computed(() => getMessageOutputTokens(props.message));
 const outputSpeed = computed(() => getMessageOutputSpeed(props.message));
-const cacheRate = computed(() => getMessageCacheRate(props.message));
+const hasCacheUsage = computed(
+  () =>
+    props.message.usage?.cachedTokens !== undefined ||
+    props.message.usage?.cacheWriteTokens !== undefined
+);
 const elapsedMs = computed(
   () => props.message.durationMs ?? props.liveElapsedMs
 );
@@ -63,20 +65,14 @@ const elapsedMs = computed(
       >
         {{ outputTokens.estimated ? "≈ " : "" }}输出 {{ formatTokenCount(outputTokens.count) }}
       </span>
-      <span
-        v-if="cacheRate !== null"
-        class="meta-item"
-        title="命中缓存的输入 token 占比"
-      >
-        缓存 {{ formatCacheRate(cacheRate) }}
-      </span>
-      <span
-        v-if="message.usage?.cacheWriteTokens"
-        class="meta-item"
-        title="写入缓存的输入 token 数"
-      >
-        缓存写入 {{ formatTokenCount(message.usage.cacheWriteTokens) }}
-      </span>
+      <template v-if="hasCacheUsage">
+        <span class="meta-item" title="从缓存读取的输入 token 数">
+          缓存读 {{ formatTokenCount(message.usage?.cachedTokens ?? 0) }}
+        </span>
+        <span class="meta-item" title="写入缓存的输入 token 数">
+          缓存写 {{ formatTokenCount(message.usage?.cacheWriteTokens ?? 0) }}
+        </span>
+      </template>
       <span
         v-if="outputSpeed !== null"
         class="meta-item"

@@ -150,6 +150,8 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
       requestCount: stats.requestCount,
       successCount: stats.successCount,
       errorCount: stats.errorCount,
+      stoppedCount: stats.stoppedCount,
+      successRate: stats.successRate ?? undefined,
       mismatchCount: stats.mismatchCount,
       requestModelStats: stats.requestModelStats,
       responseModelStats: stats.responseModelStats,

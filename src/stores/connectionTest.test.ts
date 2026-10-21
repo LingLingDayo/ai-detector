@@ -93,6 +93,8 @@ describe("连接测试会话状态", () => {
       requestCount: 1,
       successCount: 1,
       errorCount: 0,
+      stoppedCount: 0,
+      successRate: 1,
       mismatchCount: 1,
       inputTokens: 100,
       outputTokens: 20,
@@ -112,6 +114,8 @@ describe("连接测试会话状态", () => {
       userMessageCount: 1,
       requestCount: 1,
       successCount: 1,
+      stoppedCount: 0,
+      successRate: 1,
       mismatchCount: 1,
       outputSpeed: 25,
       cacheRate: 0.75,
@@ -227,10 +231,13 @@ describe("连接测试会话状态", () => {
     expect(store.isConnectionRunning).toBe(false);
     expect(store.sessionStats.errorCount).toBe(1);
     expect(store.sessionStats.requestCount).toBe(1);
+    expect(store.sessionStats.successRate).toBe(0);
     expect(store.connectionHistoryList[0]).toMatchObject({
       title: "会失败",
       errorCount: 1,
       successCount: 0,
+      stoppedCount: 0,
+      successRate: 0,
       lastError: "上游接口返回错误 (HTTP 500)",
     });
   });
@@ -264,6 +271,12 @@ describe("连接测试会话状态", () => {
     expect(store.isConnectionRunning).toBe(false);
     expect(store.sessionStats.errorCount).toBe(0);
     expect(store.sessionStats.successCount).toBe(0);
-    expect(store.connectionHistoryList[0].requestCount).toBe(1);
+    expect(store.sessionStats.stoppedCount).toBe(1);
+    expect(store.sessionStats.successRate).toBe(0);
+    expect(store.connectionHistoryList[0]).toMatchObject({
+      requestCount: 1,
+      stoppedCount: 1,
+      successRate: 0,
+    });
   });
 });

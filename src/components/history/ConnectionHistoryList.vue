@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import {
   Activity,
+  CheckCircle2,
   ChevronDown,
   Database,
   Gauge,
@@ -12,10 +13,12 @@ import {
 import type { ConnectionHistoryItem, ConnectionModelCount } from "../../types";
 import { formatHistoryTime } from "../../utils/pelicanFormatters";
 import {
+  computeSuccessRate,
   formatCacheRate,
   formatDurationMs,
   formatFirstToken,
   formatSpeed,
+  formatSuccessRate,
   formatTokenCount,
 } from "../../utils/connectionMetrics";
 import HistoryEmptyState from "./HistoryEmptyState.vue";
@@ -63,6 +66,19 @@ function formatApiFormat(apiFormat: string): string {
 function truncate(text: string, max = 80): string {
   const normalized = text.replace(/\s+/g, " ").trim();
   return normalized.length > max ? `${normalized.slice(0, max)}…` : normalized;
+}
+
+function getSuccessRate(item: ConnectionHistoryItem): number | null {
+  if (item.successRate !== undefined) return item.successRate;
+  return computeSuccessRate(
+    item.successCount,
+    item.errorCount,
+    item.stoppedCount ?? 0
+  );
+}
+
+function getSuccessTitle(item: ConnectionHistoryItem): string {
+  return `成功 ${item.successCount} · 失败 ${item.errorCount} · 停止 ${item.stoppedCount ?? 0}`;
 }
 </script>
 
@@ -125,6 +141,10 @@ function truncate(text: string, max = 80): string {
             </div>
 
             <div class="row-stats">
+              <span class="mini-stat" :title="`成功率：${getSuccessTitle(item)}`">
+                <CheckCircle2 :size="11" />
+                {{ formatSuccessRate(getSuccessRate(item)) }}
+              </span>
               <span class="mini-stat" title="输出速度">
                 <Gauge :size="11" />
                 {{ formatSpeed(item.outputSpeed) }}
@@ -225,11 +245,15 @@ function truncate(text: string, max = 80): string {
                   </strong>
                 </div>
                 <div class="metric-cell">
-                  <span>缓存命中 / 写入</span>
+                  <span>缓存读 / 写</span>
                   <strong>
                     {{ formatTokenCount(item.cachedTokens) }} /
                     {{ formatTokenCount(item.cacheWriteTokens) }}
                   </strong>
+                </div>
+                <div class="metric-cell" :title="getSuccessTitle(item)">
+                  <span>成功率</span>
+                  <strong>{{ formatSuccessRate(getSuccessRate(item)) }}</strong>
                 </div>
                 <div class="metric-cell">
                   <span>平均首字</span>
@@ -595,7 +619,7 @@ function truncate(text: string, max = 80): string {
 
 .detail-metrics {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   margin-top: 12px;
   padding-top: 10px;
