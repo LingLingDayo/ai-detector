@@ -245,6 +245,88 @@ describe("连接测试会话状态", () => {
     });
   });
 
+  it("重试最后一条回复时复用原用户消息并更新同一历史项", async () => {
+    storage.clear();
+    const store = newStore();
+    const contexts: SendChatOptions["messages"][] = [];
+    const spy = mockSuccessfulReply();
+    spy.mockImplementation(async (options) => {
+      contexts.push(options.messages);
+      return {
+        text: contexts.length === 1 ? "第一次回复" : "第二次回复",
+        responseModel: "upstream-model",
+        usage: { inputTokens: 10, outputTokens: 5 },
+        rawStatus: 200,
+        durationMs: 400,
+        firstTokenMs: 100,
+      };
+    });
+
+    await store.sendConnectionMessage(
+      { text: "原始问题", images: [] },
+      config,
+      "测试配置"
+    );
+    const historyId = store.activeSessionHistoryId;
+    const assistantId = store.messages[1].id;
+
+    await store.retryConnectionReply(assistantId, config, "测试配置");
+
+    expect(store.messages).toHaveLength(2);
+    expect(store.messages[0]).toMatchObject({
+      role: "user",
+      content: "原始问题",
+    });
+    expect(store.messages[1]).toMatchObject({
+      role: "assistant",
+      content: "第二次回复",
+      streaming: false,
+    });
+    expect(contexts[1]).toHaveLength(1);
+    expect(contexts[1][0]).toMatchObject({ role: "user", content: "原始问题" });
+    expect(store.activeSessionHistoryId).toBe(historyId);
+    expect(store.connectionHistoryList).toHaveLength(1);
+    expect(store.connectionHistoryList[0]).toMatchObject({
+      id: historyId,
+      title: "原始问题",
+      userMessageCount: 1,
+      requestCount: 1,
+      successCount: 1,
+    });
+  });
+
+  it("重试较早回复会移除该轮之后的对话并复用对应上下文", async () => {
+    storage.clear();
+    const store = newStore();
+    const spy = mockSuccessfulReply();
+
+    await store.sendConnectionMessage({ text: "第一轮", images: [] }, config);
+    const firstAssistantId = store.messages[1].id;
+    await store.sendConnectionMessage({ text: "第二轮", images: [] }, config);
+    const callCount = spy.mock.calls.length;
+
+    await store.retryConnectionReply(firstAssistantId, config);
+
+    expect(spy.mock.calls).toHaveLength(callCount + 1);
+    const lastContext = spy.mock.calls[callCount][0].messages;
+    expect(lastContext).toHaveLength(1);
+    expect(lastContext[0]).toMatchObject({ role: "user", content: "第一轮" });
+
+    expect(store.messages).toHaveLength(2);
+    expect(store.messages[0]).toMatchObject({ role: "user", content: "第一轮" });
+    expect(store.messages[1]).toMatchObject({
+      role: "assistant",
+      content: "你好世界",
+      streaming: false,
+    });
+    expect(store.connectionHistoryList).toHaveLength(1);
+    expect(store.connectionHistoryList[0]).toMatchObject({
+      userMessageCount: 1,
+      requestCount: 1,
+      successCount: 1,
+    });
+  });
+
   it("连接测试模式会持久化并在新建 store 后恢复", () => {
     storage.clear();
     let store = newStore();

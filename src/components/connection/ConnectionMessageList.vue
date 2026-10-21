@@ -21,6 +21,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: "suggest", text: string): void;
+  (e: "retry", messageId: string): void;
 }>();
 
 const scrollRef = ref<HTMLElement | null>(null);
@@ -43,6 +44,16 @@ const suggestions = [
 
 const lastMessage = computed(() => props.messages[props.messages.length - 1]);
 const lastContentLength = computed(() => lastMessage.value?.content.length ?? 0);
+
+function canRetryMessage(message: ConnectionChatMessage): boolean {
+  return !props.isRunning && !message.streaming && message.role === "assistant";
+}
+
+function getRetryHint(index: number): string {
+  return index < props.messages.length - 1
+    ? "重新生成此回复，后续对话将被移除"
+    : "重新生成回复";
+}
 
 function scrollToBottom(force = false): void {
   if (!force && !stickToBottom.value) return;
@@ -112,6 +123,9 @@ defineExpose({ scrollToBottom });
             ? activeElapsedMs
             : 0
         "
+        :can-retry="canRetryMessage(message)"
+        :retry-hint="getRetryHint(index)"
+        @retry="emit('retry', $event)"
       />
     </div>
   </div>

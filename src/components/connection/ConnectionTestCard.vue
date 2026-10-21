@@ -50,6 +50,15 @@ function handleSend(payload: {
   );
 }
 
+function handleRetry(messageId: string): void {
+  messageListRef.value?.scrollToBottom(true);
+  void connectionStore.retryConnectionReply(
+    messageId,
+    configStore.connectionConfig,
+    activeConfigName.value
+  );
+}
+
 async function handleClearContext(): Promise<void> {
   const confirmed = await confirm({
     type: "warning",
@@ -96,6 +105,7 @@ watch(
       :is-generating="connectionStore.isConnectionGenerating"
       :active-elapsed-ms="connectionStore.activeElapsedMs"
       @suggest="handleSuggestion"
+      @retry="handleRetry"
     />
 
     <ConnectionComposer

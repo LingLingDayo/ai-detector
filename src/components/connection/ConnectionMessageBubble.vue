@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { AlertCircle, Check, Copy } from "@lucide/vue";
+import { AlertCircle, Check, Copy, RefreshCw } from "@lucide/vue";
 import logoUrl from "../../assets/logo.png";
 import type { ConnectionChatMessage } from "../../types";
 import { useClipboard } from "../../composables/useClipboard";
@@ -12,11 +12,19 @@ const props = withDefaults(
   defineProps<{
     message: ConnectionChatMessage;
     liveElapsedMs?: number;
+    canRetry?: boolean;
+    retryHint?: string;
   }>(),
   {
     liveElapsedMs: 0,
+    canRetry: false,
+    retryHint: "重新生成回复",
   }
 );
+
+const emit = defineEmits<{
+  (e: "retry", messageId: string): void;
+}>();
 
 const { copied, copy } = useClipboard();
 
@@ -109,6 +117,16 @@ function handleCopy(): void {
           >
             <Check v-if="copied" :size="12" />
             <Copy v-else :size="12" />
+          </button>
+          <button
+            v-if="canRetry"
+            type="button"
+            class="retry-message-btn"
+            :title="retryHint"
+            :aria-label="retryHint"
+            @click="emit('retry', message.id)"
+          >
+            <RefreshCw :size="12" />
           </button>
         </div>
       </div>
@@ -439,7 +457,8 @@ function handleCopy(): void {
   }
 }
 
-.copy-message-btn {
+.copy-message-btn,
+.retry-message-btn {
   flex-shrink: 0;
   width: 22px;
   height: 22px;
@@ -462,7 +481,9 @@ function handleCopy(): void {
 }
 
 .assistant-body:hover .copy-message-btn,
-.copy-message-btn:focus-visible {
+.assistant-body:hover .retry-message-btn,
+.copy-message-btn:focus-visible,
+.retry-message-btn:focus-visible {
   opacity: 1;
 }
 

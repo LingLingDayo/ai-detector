@@ -212,6 +212,18 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
     persistConnectionHistory(updated);
   }
 
+  function validateRequestConfig(config: ClientConfig): boolean {
+    if (!config.baseUrl?.trim() || !config.apiKey?.trim()) {
+      errorMsg.value = "请先在上方填写 Base URL 和 API Key";
+      return false;
+    }
+    if (!config.modelName?.trim()) {
+      errorMsg.value = "请先在上方选择或输入模型名称";
+      return false;
+    }
+    return true;
+  }
+
   async function sendConnectionMessage(
     payload: { text: string; images: ConnectionImageAttachment[] },
     config: ClientConfig,
@@ -223,21 +235,14 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
     const images = payload.images.slice(0, MAX_IMAGES_PER_MESSAGE);
     if (!text && images.length === 0) return;
 
+    if (!validateRequestConfig(config)) return;
+
     const baseUrl = config.baseUrl?.trim() || "";
     const apiKey = config.apiKey?.trim() || "";
     const modelName = config.modelName?.trim() || "";
     const apiFormat = config.apiFormat || "chat_completions";
     const reasoningEffort = config.reasoningEffort || "high";
     const isStream = config.stream !== false;
-
-    if (!baseUrl || !apiKey) {
-      errorMsg.value = "请先在上方填写 Base URL 和 API Key";
-      return;
-    }
-    if (!modelName) {
-      errorMsg.value = "请先在上方选择或输入模型名称";
-      return;
-    }
 
     const runId = ++currentRunId;
     stopRequested = false;
@@ -398,6 +403,31 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
     }
   }
 
+  async function retryConnectionReply(
+    messageId: string,
+    config: ClientConfig,
+    configName?: string
+  ): Promise<void> {
+    if (isConnectionRunning.value) return;
+
+    const assistantIndex = messages.value.findIndex(
+      (message) => message.id === messageId && message.role === "assistant"
+    );
+    if (assistantIndex < 0) return;
+
+    const userMessage = messages.value[assistantIndex - 1];
+    if (!userMessage || userMessage.role !== "user") return;
+    if (!validateRequestConfig(config)) return;
+
+    const payload = {
+      text: userMessage.content,
+      images: userMessage.images,
+    };
+    messages.value = messages.value.slice(0, assistantIndex - 1);
+
+    await sendConnectionMessage(payload, config, configName);
+  }
+
   function stopConnectionReply(): void {
     if (!isConnectionRunning.value) return;
     stopRequested = true;
@@ -464,6 +494,7 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
     requestComposerFocus,
     setConnectionMode,
     sendConnectionMessage,
+    retryConnectionReply,
     stopConnectionReply,
     clearConnectionContext,
     deleteConnectionHistoryItem,
