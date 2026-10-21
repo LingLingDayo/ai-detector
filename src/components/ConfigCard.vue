@@ -128,7 +128,7 @@ const showCancelState = computed(
 
 const startButtonLabel = computed(() => {
   if (currentActiveMode.value === "connection") {
-    return currentHasResult.value ? "继续对话" : "开始对话";
+    return "开始测试";
   }
   return showCancelState.value
     ? "取消测试"
@@ -136,6 +136,33 @@ const startButtonLabel = computed(() => {
     ? "重新生成"
     : "开始测试";
 });
+
+const connectionQuickTestReady = computed(() => {
+  const config = activeConfig.value;
+  return Boolean(
+    config.baseUrl?.trim() && config.apiKey?.trim() && config.modelName?.trim()
+  );
+});
+
+function startConnectionQuickTest(): void {
+  document
+    .getElementById("connection-section")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  if (currentConnectionRunning.value) return;
+  if (!connectionQuickTestReady.value) {
+    connectionStore.requestComposerFocus();
+    return;
+  }
+
+  connectionStore.clearConnectionContext();
+  void connectionStore.sendConnectionMessage(
+    { text: "Hi", images: [] },
+    activeConfig.value,
+    activeConfigNameDisplay.value
+  );
+  connectionStore.requestComposerFocus();
+}
 
 function handleStartButtonClick(e: MouseEvent): void {
   if (showCancelState.value) {
@@ -148,10 +175,7 @@ function handleStartButtonClick(e: MouseEvent): void {
 function handleFormSubmit(): void {
   emit("submit");
   if (currentActiveMode.value === "connection") {
-    document
-      .getElementById("connection-section")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    connectionStore.requestComposerFocus();
+    startConnectionQuickTest();
     return;
   }
   appStore.handleStartTest();
@@ -504,7 +528,7 @@ defineExpose({
           id="btn-start"
           :title="
             currentActiveMode === 'connection'
-              ? '滚动到下方对话框并聚焦输入框'
+              ? '清空当前上下文并发送 Hi 进行快速测试'
               : showCancelState
               ? '点击取消当前正在进行的测试'
               : currentHasResult
