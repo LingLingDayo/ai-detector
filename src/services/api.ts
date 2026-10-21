@@ -315,6 +315,35 @@ function parseStreamingText(body: string, apiFormat: string): string {
   return content;
 }
 
+export function resolveApiEndpoint(baseUrl: string, apiFormat: string): string {
+  let endpoint = baseUrl.replace(/\/+$/, "");
+  if (!endpoint) {
+    if (apiFormat === "anthropic") endpoint = "https://api.anthropic.com";
+    else endpoint = "https://api.openai.com";
+  }
+
+  if (apiFormat === "anthropic") {
+    endpoint += endpoint.endsWith("/messages")
+      ? ""
+      : endpoint.endsWith("/v1")
+      ? "/messages"
+      : "/v1/messages";
+  } else if (apiFormat === "responses" || apiFormat === "openai_responses") {
+    endpoint += endpoint.endsWith("/responses")
+      ? ""
+      : endpoint.endsWith("/v1")
+      ? "/responses"
+      : "/v1/responses";
+  } else {
+    endpoint += endpoint.endsWith("/chat/completions")
+      ? ""
+      : endpoint.endsWith("/v1")
+      ? "/chat/completions"
+      : "/v1/chat/completions";
+  }
+  return endpoint;
+}
+
 export async function sendProbe({
   baseUrl,
   apiKey,
@@ -372,32 +401,7 @@ export async function sendProbe({
   }
 
   // Web fallback for browser preview
-  let endpoint = baseUrl.replace(/\/+$/, "");
-  if (!endpoint) {
-    if (apiFormat === "anthropic") endpoint = "https://api.anthropic.com";
-    else endpoint = "https://api.openai.com";
-  }
-
-  if (apiFormat === "anthropic") {
-    endpoint += endpoint.endsWith("/messages")
-      ? ""
-      : endpoint.endsWith("/v1")
-      ? "/messages"
-      : "/v1/messages";
-  } else if (apiFormat === "responses" || apiFormat === "openai_responses") {
-    endpoint += endpoint.endsWith("/responses")
-      ? ""
-      : endpoint.endsWith("/v1")
-      ? "/responses"
-      : "/v1/responses";
-  } else {
-    endpoint += endpoint.endsWith("/chat/completions")
-      ? ""
-      : endpoint.endsWith("/v1")
-      ? "/chat/completions"
-      : "/v1/chat/completions";
-  }
-
+  const endpoint = resolveApiEndpoint(baseUrl, apiFormat);
   const startTime = Date.now();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
