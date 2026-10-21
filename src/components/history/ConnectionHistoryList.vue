@@ -174,117 +174,115 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
             </div>
           </div>
 
-          <Transition name="history-expand">
-            <div v-if="expandedId === item.id" class="detail-panel">
-              <div class="model-columns">
-                <section class="model-column">
-                  <header>
-                    <span class="column-title">请求模型</span>
-                    <span class="column-total">{{ item.requestCount }} 次</span>
-                  </header>
-                  <div
-                    v-for="model in item.requestModelStats"
-                    :key="`req-${model.model}`"
-                    class="model-bar-row"
-                  >
-                    <span class="model-name" :title="model.model">{{ model.model }}</span>
-                    <span class="bar-track">
-                      <span
-                        class="bar-fill is-request"
-                        :style="{ width: getModelBarWidth(model, item.requestModelStats) }"
-                      ></span>
-                    </span>
-                    <span class="model-count">×{{ model.count }}</span>
-                  </div>
-                  <p v-if="item.requestModelStats.length === 0" class="column-empty">
-                    暂无请求模型数据
-                  </p>
-                </section>
-
-                <section class="model-column">
-                  <header>
-                    <span class="column-title">实际响应模型</span>
-                    <span class="column-total">
-                      {{ item.responseModelStats.reduce((sum, model) => sum + model.count, 0) }} 次
-                    </span>
-                  </header>
-                  <div
-                    v-for="model in item.responseModelStats"
-                    :key="`res-${model.model}`"
-                    class="model-bar-row"
-                  >
-                    <span class="model-name" :title="model.model">{{ model.model }}</span>
-                    <span class="bar-track">
-                      <span
-                        class="bar-fill is-response"
-                        :style="{ width: getModelBarWidth(model, item.responseModelStats) }"
-                      ></span>
-                    </span>
-                    <span class="model-count">×{{ model.count }}</span>
-                  </div>
-                  <p v-if="item.responseModelStats.length === 0" class="column-empty">
-                    上游未返回模型信息
-                  </p>
-                </section>
-              </div>
-
-              <div class="detail-metrics">
-                <div class="metric-cell">
-                  <span>输入 Token</span>
-                  <strong>{{ formatTokenCount(item.inputTokens) }}</strong>
-                </div>
-                <div class="metric-cell">
-                  <span>输出 Token</span>
-                  <strong>
-                    {{ item.usageEstimated ? "≈ " : "" }}{{ formatTokenCount(item.outputTokens) }}
-                  </strong>
-                </div>
-                <div class="metric-cell">
-                  <span>缓存读 / 写</span>
-                  <strong>
-                    {{ formatTokenCount(item.cachedTokens) }} /
-                    {{ formatTokenCount(item.cacheWriteTokens) }}
-                  </strong>
-                </div>
-                <div class="metric-cell" :title="getSuccessTitle(item)">
-                  <span>成功率</span>
-                  <strong>{{ formatSuccessRate(getSuccessRate(item)) }}</strong>
-                </div>
-                <div class="metric-cell">
-                  <span>平均首字</span>
-                  <strong>{{ formatFirstToken(item.avgFirstTokenMs) }}</strong>
-                </div>
-                <div class="metric-cell">
-                  <span>输出速度</span>
-                  <strong>{{ formatSpeed(item.outputSpeed) }}</strong>
-                </div>
-                <div class="metric-cell">
-                  <span>累计耗时</span>
-                  <strong>{{ formatDurationMs(item.totalDurationMs) }}</strong>
-                </div>
-              </div>
-
-              <div class="detail-footer">
-                <div class="footer-tags">
-                  <span class="footer-tag">
-                    <ShieldCheck :size="11" />
-                    {{ formatApiFormat(item.apiFormat) }}
+          <div v-if="expandedId === item.id" class="detail-panel">
+            <div class="model-columns">
+              <section class="model-column">
+                <header>
+                  <span class="column-title">请求模型</span>
+                  <span class="column-total">{{ item.requestCount }} 次</span>
+                </header>
+                <div
+                  v-for="model in item.requestModelStats"
+                  :key="`req-${model.model}`"
+                  class="model-bar-row"
+                >
+                  <span class="model-name" :title="model.model">{{ model.model }}</span>
+                  <span class="bar-track">
+                    <span
+                      class="bar-fill is-request"
+                      :style="{ width: getModelBarWidth(model, item.requestModelStats) }"
+                    ></span>
                   </span>
-                  <span class="footer-tag">{{ item.stream ? "流式请求" : "同步请求" }}</span>
-                  <span class="footer-tag">KEY {{ item.apiKey }}</span>
-                  <span v-if="item.lastRequestedModel" class="footer-tag is-model">
-                    请求 {{ item.lastRequestedModel }}
-                  </span>
-                  <span v-if="item.lastResponseModel" class="footer-tag is-model">
-                    响应 {{ item.lastResponseModel }}
-                  </span>
+                  <span class="model-count">×{{ model.count }}</span>
                 </div>
-                <p v-if="item.lastError" class="last-error" :title="item.lastError">
-                  最近错误：{{ truncate(item.lastError) }}
+                <p v-if="item.requestModelStats.length === 0" class="column-empty">
+                  暂无请求模型数据
                 </p>
+              </section>
+
+              <section class="model-column">
+                <header>
+                  <span class="column-title">实际响应模型</span>
+                  <span class="column-total">
+                    {{ item.responseModelStats.reduce((sum, model) => sum + model.count, 0) }} 次
+                  </span>
+                </header>
+                <div
+                  v-for="model in item.responseModelStats"
+                  :key="`res-${model.model}`"
+                  class="model-bar-row"
+                >
+                  <span class="model-name" :title="model.model">{{ model.model }}</span>
+                  <span class="bar-track">
+                    <span
+                      class="bar-fill is-response"
+                      :style="{ width: getModelBarWidth(model, item.responseModelStats) }"
+                    ></span>
+                  </span>
+                  <span class="model-count">×{{ model.count }}</span>
+                </div>
+                <p v-if="item.responseModelStats.length === 0" class="column-empty">
+                  上游未返回模型信息
+                </p>
+              </section>
+            </div>
+
+            <div class="detail-metrics">
+              <div class="metric-cell">
+                <span>输入 Token</span>
+                <strong>{{ formatTokenCount(item.inputTokens) }}</strong>
+              </div>
+              <div class="metric-cell">
+                <span>输出 Token</span>
+                <strong>
+                  {{ item.usageEstimated ? "≈ " : "" }}{{ formatTokenCount(item.outputTokens) }}
+                </strong>
+              </div>
+              <div class="metric-cell">
+                <span>缓存读 / 写</span>
+                <strong>
+                  {{ formatTokenCount(item.cachedTokens) }} /
+                  {{ formatTokenCount(item.cacheWriteTokens) }}
+                </strong>
+              </div>
+              <div class="metric-cell" :title="getSuccessTitle(item)">
+                <span>成功率</span>
+                <strong>{{ formatSuccessRate(getSuccessRate(item)) }}</strong>
+              </div>
+              <div class="metric-cell">
+                <span>平均首字</span>
+                <strong>{{ formatFirstToken(item.avgFirstTokenMs) }}</strong>
+              </div>
+              <div class="metric-cell">
+                <span>输出速度</span>
+                <strong>{{ formatSpeed(item.outputSpeed) }}</strong>
+              </div>
+              <div class="metric-cell">
+                <span>累计耗时</span>
+                <strong>{{ formatDurationMs(item.totalDurationMs) }}</strong>
               </div>
             </div>
-          </Transition>
+
+            <div class="detail-footer">
+              <div class="footer-tags">
+                <span class="footer-tag">
+                  <ShieldCheck :size="11" />
+                  {{ formatApiFormat(item.apiFormat) }}
+                </span>
+                <span class="footer-tag">{{ item.stream ? "流式请求" : "同步请求" }}</span>
+                <span class="footer-tag">KEY {{ item.apiKey }}</span>
+                <span v-if="item.lastRequestedModel" class="footer-tag is-model">
+                  请求 {{ item.lastRequestedModel }}
+                </span>
+                <span v-if="item.lastResponseModel" class="footer-tag is-model">
+                  响应 {{ item.lastResponseModel }}
+                </span>
+              </div>
+              <p v-if="item.lastError" class="last-error" :title="item.lastError">
+                最近错误：{{ truncate(item.lastError) }}
+              </p>
+            </div>
+          </div>
         </article>
       </div>
     </template>
@@ -320,7 +318,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.55);
   overflow: hidden;
-  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  transition: border-color 0.18s ease;
 
   &:hover {
     border-color: rgba(99, 102, 241, 0.28);
@@ -671,18 +669,6 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-}
-
-.history-expand-enter-active,
-.history-expand-leave-active {
-  transition: opacity 0.16s ease, transform 0.16s ease;
-  transform-origin: top;
-}
-
-.history-expand-enter-from,
-.history-expand-leave-to {
-  opacity: 0;
-  transform: translateY(-3px);
 }
 
 @keyframes active-session-pulse {
