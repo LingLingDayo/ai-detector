@@ -29,7 +29,12 @@ const editingPrompt = ref("");
 const promptTextareaRef = ref<HTMLTextAreaElement | null>(null);
 
 const presetWrapperRef = ref<HTMLDivElement | null>(null);
+const presetDropdownRef = ref<HTMLDivElement | null>(null);
 const isPresetDropdownOpen = ref(false);
+const isPresetDropdownDropUp = ref(false);
+const presetDropdownStyle = ref<Record<string, string>>({});
+
+const PRESET_DROPDOWN_ESTIMATED_HEIGHT = 148;
 
 const currentPrompt = computed(() => props.prompt || DEFAULT_PELICAN_PROMPT);
 const savedCustomPrompt = computed(() => props.customPrompt.trim());
@@ -71,9 +76,43 @@ function handleResetToDefault(): void {
   editingPrompt.value = DEFAULT_PELICAN_PROMPT;
 }
 
+function updatePresetDropdownPosition(): void {
+  const anchor = presetWrapperRef.value;
+  if (!anchor) return;
+  const rect = anchor.getBoundingClientRect();
+  const menuHeight = presetDropdownRef.value?.offsetHeight || PRESET_DROPDOWN_ESTIMATED_HEIGHT;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  const dropUp = spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow;
+
+  isPresetDropdownDropUp.value = dropUp;
+  presetDropdownStyle.value = {
+    right: `${Math.max(8, window.innerWidth - rect.right)}px`,
+    ...(dropUp
+      ? { bottom: `${window.innerHeight - rect.top + 4}px`, top: "auto" }
+      : { top: `${rect.bottom + 4}px`, bottom: "auto" }),
+  };
+}
+
+function handleViewportChange(): void {
+  if (isPresetDropdownOpen.value) {
+    updatePresetDropdownPosition();
+  }
+}
+
 function togglePresetDropdown(): void {
   if (props.isRunning) return;
-  isPresetDropdownOpen.value = !isPresetDropdownOpen.value;
+  if (isPresetDropdownOpen.value) {
+    closePresetDropdown();
+    return;
+  }
+  updatePresetDropdownPosition();
+  isPresetDropdownOpen.value = true;
+  nextTick(() => {
+    if (isPresetDropdownOpen.value) {
+      updatePresetDropdownPosition();
+    }
+  });
 }
 
 function closePresetDropdown(): void {
@@ -125,11 +164,15 @@ function handleDocumentKeydown(e: KeyboardEvent): void {
 onMounted(() => {
   document.addEventListener("click", handleDocumentClick);
   document.addEventListener("keydown", handleDocumentKeydown);
+  window.addEventListener("resize", handleViewportChange);
+  window.addEventListener("scroll", handleViewportChange, true);
 });
 
 onUnmounted(() => {
   document.removeEventListener("click", handleDocumentClick);
   document.removeEventListener("keydown", handleDocumentKeydown);
+  window.removeEventListener("resize", handleViewportChange);
+  window.removeEventListener("scroll", handleViewportChange, true);
 });
 
 watch(
@@ -206,53 +249,58 @@ watch(
               />
             </button>
 
-            <!-- 预设下拉浮层 -->
-            <Transition name="preset-dropdown-fade">
-              <div
-                v-if="isPresetDropdownOpen"
-                class="preset-dropdown-menu"
-                role="menu"
-                @click.stop
-              >
-                <button
-                  v-for="preset in PELICAN_PRESETS"
-                  :key="preset.id"
-                  type="button"
-                  class="preset-dropdown-item"
-                  :class="{ 'is-selected': preset.prompt === currentPrompt }"
-                  :title="preset.prompt"
-                  role="menuitem"
-                  @click="handleSelectPreset(preset)"
+            <!-- 预设下拉浮层：Teleport 至 body，避免被卡片层叠上下文裁剪 -->
+            <Teleport to="body">
+              <Transition name="preset-dropdown-fade">
+                <div
+                  v-if="isPresetDropdownOpen"
+                  ref="presetDropdownRef"
+                  class="preset-dropdown-menu"
+                  :class="{ 'is-drop-up': isPresetDropdownDropUp }"
+                  :style="presetDropdownStyle"
+                  role="menu"
+                  @click.stop
                 >
-                  <span class="preset-name">{{ preset.name }}</span>
-                  <Check
-                    v-if="preset.prompt === currentPrompt"
-                    :size="12"
-                    class="preset-check-icon"
-                    :stroke-width="2.5"
-                  />
-                </button>
+                  <button
+                    v-for="preset in PELICAN_PRESETS"
+                    :key="preset.id"
+                    type="button"
+                    class="preset-dropdown-item"
+                    :class="{ 'is-selected': preset.prompt === currentPrompt }"
+                    :title="preset.prompt"
+                    role="menuitem"
+                    @click="handleSelectPreset(preset)"
+                  >
+                    <span class="preset-name">{{ preset.name }}</span>
+                    <Check
+                      v-if="preset.prompt === currentPrompt"
+                      :size="12"
+                      class="preset-check-icon"
+                      :stroke-width="2.5"
+                    />
+                  </button>
 
-                <div class="preset-dropdown-divider" role="separator"></div>
+                  <div class="preset-dropdown-divider" role="separator"></div>
 
-                <button
-                  type="button"
-                  class="preset-dropdown-item"
-                  :class="{ 'is-selected': isCustomSelected }"
-                  :title="customPresetTitle"
-                  role="menuitem"
-                  @click="handleSelectCustomPreset"
-                >
-                  <span class="preset-name">自定义</span>
-                  <Check
-                    v-if="isCustomSelected"
-                    :size="12"
-                    class="preset-check-icon"
-                    :stroke-width="2.5"
-                  />
-                </button>
-              </div>
-            </Transition>
+                  <button
+                    type="button"
+                    class="preset-dropdown-item"
+                    :class="{ 'is-selected': isCustomSelected }"
+                    :title="customPresetTitle"
+                    role="menuitem"
+                    @click="handleSelectCustomPreset"
+                  >
+                    <span class="preset-name">自定义</span>
+                    <Check
+                      v-if="isCustomSelected"
+                      :size="12"
+                      class="preset-check-icon"
+                      :stroke-width="2.5"
+                    />
+                  </button>
+                </div>
+              </Transition>
+            </Teleport>
           </div>
 
           <button
@@ -346,89 +394,6 @@ watch(
     align-items: center;
   }
 
-  .preset-dropdown-menu {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    min-width: 120px;
-    width: max-content;
-    background: #0f172a;
-    border: 1px solid rgba(51, 65, 85, 0.8);
-    border-radius: var(--radius-sm, 6px);
-    box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    z-index: 100;
-    padding: 3px;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    box-sizing: border-box;
-  }
-
-  .preset-dropdown-divider {
-    height: 1px;
-    flex-shrink: 0;
-    margin: 3px 5px;
-    background: rgba(51, 65, 85, 0.8);
-  }
-
-  .preset-dropdown-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    height: 25px;
-    padding: 0 7px;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-xs, 4px);
-    color: var(--text-secondary);
-    font-size: 0.7rem;
-    line-height: 1;
-    cursor: pointer;
-    text-align: left;
-    white-space: nowrap;
-    transition: all var(--transition-fast);
-    font-family: inherit;
-
-    .preset-name {
-      line-height: 1;
-    }
-
-    .preset-check-icon {
-      color: #10b981;
-      flex-shrink: 0;
-    }
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-primary);
-    }
-
-    &.is-selected {
-      background: rgba(99, 102, 241, 0.16);
-      color: #a5b4fc;
-      font-weight: 500;
-
-      &:hover {
-        background: rgba(99, 102, 241, 0.22);
-        color: #c7d2fe;
-      }
-    }
-  }
-
-  .preset-dropdown-fade-enter-active,
-  .preset-dropdown-fade-leave-active {
-    transition: opacity 0.15s ease, transform 0.15s ease;
-  }
-
-  .preset-dropdown-fade-enter-from,
-  .preset-dropdown-fade-leave-to {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.98);
-  }
-
   .btn-prompt-action {
     display: inline-flex;
     align-items: center;
@@ -513,6 +478,94 @@ watch(
       }
     }
   }
+}
+
+.preset-dropdown-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  min-width: 120px;
+  width: max-content;
+  background: #0f172a;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  border-radius: var(--radius-sm, 6px);
+  box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1000;
+  padding: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  box-sizing: border-box;
+}
+
+.preset-dropdown-divider {
+  height: 1px;
+  flex-shrink: 0;
+  margin: 3px 5px;
+  background: rgba(51, 65, 85, 0.8);
+}
+
+.preset-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 25px;
+  padding: 0 7px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs, 4px);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+
+  .preset-name {
+    line-height: 1;
+  }
+
+  .preset-check-icon {
+    color: #10b981;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+  }
+
+  &.is-selected {
+    background: rgba(99, 102, 241, 0.16);
+    color: #a5b4fc;
+    font-weight: 500;
+
+    &:hover {
+      background: rgba(99, 102, 241, 0.22);
+      color: #c7d2fe;
+    }
+  }
+}
+
+.preset-dropdown-fade-enter-active,
+.preset-dropdown-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.preset-dropdown-fade-enter-from,
+.preset-dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+}
+
+.preset-dropdown-menu.is-drop-up.preset-dropdown-fade-enter-from,
+.preset-dropdown-menu.is-drop-up.preset-dropdown-fade-leave-to {
+  transform: translateY(4px) scale(0.98);
 }
 
 .prompt-content {
