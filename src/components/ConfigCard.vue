@@ -249,9 +249,6 @@ async function handleReset(): Promise<void> {
   emit("reset");
   const confirmed = await configStore.resetConfig();
   if (confirmed) {
-    probeStore.resetTest();
-    pelicanStore.resetPelicanTest();
-    connectionStore.clearConnectionContext();
     comboboxRef.value?.resetModelList();
   }
 }

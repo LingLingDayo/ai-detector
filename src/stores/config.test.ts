@@ -10,6 +10,7 @@ import { useConfigStore } from "./config";
 import { useProbeTestStore } from "./probeTest";
 import { usePelicanTestStore } from "./pelicanTest";
 import { useConnectionTestStore } from "./connectionTest";
+import { useConfirmStore } from "./confirm";
 import type { ConfigItem } from "../types";
 
 // Mock localStorage for node environment
@@ -318,6 +319,67 @@ describe("切换不同测试时(test-mode-tabs)配置同步与保持规则测试
     configStore.setActiveMode("pelican");
     expect(configStore.pelicanConfig.modelName).toBe("new-final-model");
     expect(configStore.pelicanConfig.stream).toBe(false);
+  });
+});
+
+describe("重置当前配置的作用范围", () => {
+  it("只清空主页面配置，不删除或修改已保存的配置预设", async () => {
+    storage.clear();
+    setActivePinia(createPinia());
+
+    const savedItem: ConfigItem = {
+      id: "cfg_saved_001",
+      name: "已保存配置",
+      baseUrl: "https://api.saved.com",
+      apiKey: "sk-saved-key",
+      apiFormat: "chat_completions",
+      modelName: "gpt-4o",
+      reasoningEffort: "high",
+      stream: true,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    storage.set(CONFIG_LIST_STORAGE_KEY, JSON.stringify([savedItem]));
+    storage.set(ACTIVE_CONFIG_ID_KEY, savedItem.id);
+    storage.set(
+      STORAGE_KEY,
+      JSON.stringify({
+        baseUrl: savedItem.baseUrl,
+        apiKey: savedItem.apiKey,
+        apiFormat: savedItem.apiFormat,
+        modelName: savedItem.modelName,
+        reasoningEffort: savedItem.reasoningEffort,
+        stream: savedItem.stream,
+      })
+    );
+
+    const store = useConfigStore();
+    const confirmStore = useConfirmStore();
+    store.loadConfig();
+
+    expect(store.activeConfigId).toBe(savedItem.id);
+    const savedListSnapshot = storage.get(CONFIG_LIST_STORAGE_KEY);
+
+    const resetPromise = store.resetConfig();
+    expect(confirmStore.confirmState.isOpen).toBe(true);
+    confirmStore.handleConfirm();
+
+    await expect(resetPromise).resolves.toBe(true);
+
+    expect(store.config.baseUrl).toBe("");
+    expect(store.config.apiKey).toBe("");
+    expect(store.config.modelName).toBe("");
+    expect(store.probeConfig.baseUrl).toBe("");
+    expect(store.pelicanConfig.baseUrl).toBe("");
+    expect(store.connectionConfig.baseUrl).toBe("");
+
+    expect(store.activeConfigId).toBeNull();
+    expect(storage.get(ACTIVE_CONFIG_ID_KEY)).toBeUndefined();
+
+    expect(store.configList).toHaveLength(1);
+    expect(store.configList[0]).toEqual(savedItem);
+    expect(storage.get(CONFIG_LIST_STORAGE_KEY)).toBe(savedListSnapshot);
   });
 });
 

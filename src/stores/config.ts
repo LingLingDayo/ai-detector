@@ -556,8 +556,9 @@ export const useConfigStore = defineStore("config", () => {
     const confirmed = await confirm({
       type: "warning",
       styleVariant: "spotlight",
-      title: "确认重置探测配置？",
-      message: "重置后将清空当前界面的 Base URL、API Key 与已选模型，已保存的配置预设不受影响。",
+      title: "确认重置当前配置？",
+      message:
+        "重置后将清空当前界面的 Base URL、API Key、已选模型与请求参数，已保存的配置预设不受影响。",
       confirmText: "确认重置",
       cancelText: "取消",
     });
