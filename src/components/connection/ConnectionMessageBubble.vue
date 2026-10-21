@@ -108,26 +108,28 @@ function handleCopy(): void {
 
         <div v-if="!message.streaming" class="assistant-footer">
           <ConnectionMessageMeta :message="message" />
-          <button
-            v-if="message.content"
-            type="button"
-            class="copy-message-btn"
-            :title="copied ? '已复制' : '复制回复内容'"
-            @click="handleCopy"
-          >
-            <Check v-if="copied" :size="12" />
-            <Copy v-else :size="12" />
-          </button>
-          <button
-            v-if="canRetry"
-            type="button"
-            class="retry-message-btn"
-            :title="retryHint"
-            :aria-label="retryHint"
-            @click="emit('retry', message.id)"
-          >
-            <RefreshCw :size="12" />
-          </button>
+          <div class="message-actions">
+            <button
+              v-if="message.content"
+              type="button"
+              class="copy-message-btn"
+              :title="copied ? '已复制' : '复制回复内容'"
+              @click="handleCopy"
+            >
+              <Check v-if="copied" :size="12" />
+              <Copy v-else :size="12" />
+            </button>
+            <button
+              v-if="canRetry"
+              type="button"
+              class="retry-message-btn"
+              :title="retryHint"
+              :aria-label="retryHint"
+              @click="emit('retry', message.id)"
+            >
+              <RefreshCw :size="12" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -457,12 +459,19 @@ function handleCopy(): void {
   }
 }
 
+.message-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 5px;
+}
+
 .copy-message-btn,
 .retry-message-btn {
   flex-shrink: 0;
   width: 22px;
   height: 22px;
-  margin-top: 5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
