@@ -100,8 +100,8 @@ const wrappedHtml = computed(() => {
     <div v-if="isRunning" class="loading-state">
       <div class="radar-spinner"></div>
       <div class="loading-text">
-        <p class="loading-title">正在调用模型绘制鹈鹕骑自行车...</p>
-        <p class="loading-desc">图形生成通常耗时 10 ~ 60 秒，请稍候</p>
+        <p class="loading-title">正在调用模型生成...</p>
+        <p class="loading-desc">生成通常耗时 10 ~ 60 秒，请稍候</p>
       </div>
     </div>
 
