@@ -22,6 +22,7 @@ describe("模型路由名称一致性判断", () => {
     expect(modelsMatch("gpt-4o", "gpt-4o-2024-08-06")).toBe(true);
     expect(modelsMatch("claude-sonnet-4-5", "claude-sonnet-4-5-20250929")).toBe(true);
     expect(modelsMatch("gemini-4-argon", "gemini-4-argon-latest")).toBe(true);
+    expect(modelsMatch("gemini-2.5-pro", "gemini-2.5-pro-preview-05-06")).toBe(true);
     expect(modelsMatch("model", "model:free")).toBe(true);
   });
 

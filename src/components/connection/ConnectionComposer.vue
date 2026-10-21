@@ -262,6 +262,8 @@ defineExpose({ focus, fillText });
         type="file"
         accept="image/*"
         multiple
+        aria-label="选择图片"
+        tabindex="-1"
         class="hidden-file-input"
         @change="handleFileInput"
       />

@@ -17,8 +17,11 @@ export function getModelLeafName(name?: string): string {
 }
 
 // 允许上游在模型名后追加日期版本、路由变体等后缀，但不把 -mini / -pro 等不同型号误判为一致
-const MODEL_VARIANT_SUFFIX =
-  /^(?:[-@:](?:latest|preview|beta|alpha|thinking|high|low|free|extended|online|stable|v\d+(?:-\d+)*)|-?\d{4}-?\d{2}-?\d{2})$/;
+const MODEL_VARIANT_TOKEN =
+  "(?:latest|preview|beta|alpha|thinking|high|low|free|extended|online|stable|v\\d+(?:-\\d+)*|\\d{4}-?\\d{2}-?\\d{2}|\\d{2}-\\d{2}|\\d{8}|\\d{6})";
+const MODEL_VARIANT_SUFFIX = new RegExp(
+  `^(?:[-@:]${MODEL_VARIANT_TOKEN}|-?\\d{4}-?\\d{2}-?\\d{2})(?:[-@:]${MODEL_VARIANT_TOKEN})*$`
+);
 
 export function modelsMatch(requested?: string, actual?: string): boolean {
   const req = normalizeModelName(requested);

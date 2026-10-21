@@ -311,6 +311,13 @@ pub fn parse_streaming_progress(body: &str, api_format: &str) -> String {
             }
             if let Some(text) = extract_stream_delta_text(&val, api_format) {
                 content_accum.push_str(&text);
+            } else if content_accum.is_empty()
+                && (api_format == "responses" || api_format == "openai_responses")
+                && val.get("type").and_then(|t| t.as_str()) == Some("response.output_text.done")
+            {
+                if let Some(text) = val.get("text").and_then(|t| t.as_str()) {
+                    content_accum.push_str(text);
+                }
             }
         }
     }
@@ -366,6 +373,14 @@ pub fn parse_streaming_body(body: &str, api_format: &str) -> Result<String, Stri
 
                 if let Some(text) = extract_stream_delta_text(&val, api_format) {
                     content_accum.push_str(&text);
+                } else if content_accum.is_empty()
+                    && (api_format == "responses" || api_format == "openai_responses")
+                    && val.get("type").and_then(|t| t.as_str())
+                        == Some("response.output_text.done")
+                {
+                    if let Some(text) = val.get("text").and_then(|t| t.as_str()) {
+                        content_accum.push_str(text);
+                    }
                 }
             }
         }
@@ -811,6 +826,13 @@ mod tests {
         assert_eq!(state.usage.cached_tokens, Some(800));
         assert_eq!(state.usage.cache_write_tokens, Some(50));
         assert_eq!(state.usage.output_tokens, Some(20));
+    }
+
+    #[test]
+    fn test_parse_streaming_body_responses_done_only() {
+        let sse = "data: {\"type\":\"response.output_text.done\",\"text\":\"Hello\"}\n\n";
+        assert_eq!(parse_streaming_body(sse, "responses").unwrap(), "Hello");
+        assert_eq!(parse_streaming_progress(sse, "responses"), "Hello");
     }
 
     #[test]
