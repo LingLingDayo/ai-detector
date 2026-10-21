@@ -465,6 +465,10 @@ function handleCopy(): void {
   gap: 8px;
   margin-top: 8px;
 
+  &:first-child {
+    margin-top: 0;
+  }
+
   :deep(.message-meta) {
     flex: 1;
   }
