@@ -7,8 +7,12 @@ import type {
   ConnectionChatMessage,
   ConnectionHistoryItem,
   ConnectionImageAttachment,
+  ConnectionTestMode,
 } from "../types";
-import { CONNECTION_HISTORY_STORAGE_KEY } from "../constants";
+import {
+  CONNECTION_HISTORY_STORAGE_KEY,
+  CONNECTION_MODE_STORAGE_KEY,
+} from "../constants";
 import { aggregateConnectionMessages } from "../utils/connectionMetrics";
 import { maskApiKey } from "../utils/pelicanFormatters";
 
@@ -62,6 +66,24 @@ function persistConnectionHistory(list: ConnectionHistoryItem[]): void {
   }
 }
 
+function loadConnectionMode(): ConnectionTestMode {
+  try {
+    return localStorage.getItem(CONNECTION_MODE_STORAGE_KEY) === "quick"
+      ? "quick"
+      : "chat";
+  } catch {
+    return "chat";
+  }
+}
+
+function persistConnectionMode(mode: ConnectionTestMode): void {
+  try {
+    localStorage.setItem(CONNECTION_MODE_STORAGE_KEY, mode);
+  } catch (err) {
+    console.error("保存连接测试模式失败:", err);
+  }
+}
+
 function buildHistoryTitle(message?: ConnectionChatMessage): string {
   const text = (message?.content || "").replace(/\s+/g, " ").trim();
   if (text) {
@@ -87,6 +109,7 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
   const activeSessionHistoryId = ref<string | null>(null);
   const sessionMeta = ref<ConnectionSessionMeta | null>(null);
   const composerFocusSignal = ref(0);
+  const connectionMode = ref<ConnectionTestMode>(loadConnectionMode());
 
   const sessionStats = computed(() => aggregateConnectionMessages(messages.value));
   const hasMessages = computed(() => messages.value.length > 0);
@@ -118,6 +141,12 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
 
   function requestComposerFocus(): void {
     composerFocusSignal.value += 1;
+  }
+
+  function setConnectionMode(mode: ConnectionTestMode): void {
+    if (connectionMode.value === mode) return;
+    connectionMode.value = mode;
+    persistConnectionMode(mode);
   }
 
   function buildSessionHistoryItem(): ConnectionHistoryItem {
@@ -431,7 +460,9 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
     latestRequestedModel,
     latestResponseModel,
     composerFocusSignal,
+    connectionMode,
     requestComposerFocus,
+    setConnectionMode,
     sendConnectionMessage,
     stopConnectionReply,
     clearConnectionContext,

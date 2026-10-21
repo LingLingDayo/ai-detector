@@ -1,8 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from "vue";
-import type { ActiveTestMode, ClientConfig } from "../types";
+import type { ActiveTestMode, ClientConfig, ConnectionTestMode } from "../types";
 import { resolveValidReasoningEffort, getReasoningOptionsForModel } from "../constants";
-import { Check, Save, List, History, Eye, EyeOff, Copy } from "@lucide/vue";
+import {
+  Check,
+  Save,
+  List,
+  History,
+  Eye,
+  EyeOff,
+  Copy,
+  MessagesSquare,
+  Zap,
+} from "@lucide/vue";
 import ModelCombobox from "./ModelCombobox.vue";
 import AdvancedSettings from "./AdvancedSettings.vue";
 import { CustomSelect, type SelectOption } from "./common";
@@ -14,12 +24,14 @@ import {
   useConnectionTestStore,
 } from "../stores";
 import { useClipboard } from "../composables/useClipboard";
+import { useToast } from "../composables/useToast";
 
 const configStore = useConfigStore();
 const appStore = useAppStore();
 const probeStore = useProbeTestStore();
 const pelicanStore = usePelicanTestStore();
 const connectionStore = useConnectionTestStore();
+const { showToast } = useToast();
 
 const props = withDefaults(
   defineProps<{
@@ -84,6 +96,7 @@ const currentAdvancedOpen = computed(() => props.isAdvancedOpen ?? configStore.i
 const currentSettingsSummary = computed(() => props.settingsSummary ?? configStore.settingsSummary);
 const currentConfigModified = computed(() => props.isConfigModified ?? configStore.isConfigModified);
 const currentConfigSaved = computed(() => props.isCurrentConfigSaved ?? configStore.isCurrentConfigSaved);
+const currentConnectionMode = computed(() => connectionStore.connectionMode);
 
 // 监听当前选定模型变更，自动将思考强度限定或修正到合法档位
 watch(
@@ -120,15 +133,20 @@ const isOtherRunning = computed(() => {
   return currentProbeRunning.value || Boolean(currentPelicanRunning.value);
 });
 
-const showCancelState = computed(
-  () =>
-    currentActiveMode.value !== "connection" &&
-    Boolean(isCurrentRunning.value)
-);
+const showCancelState = computed(() => {
+  if (!isCurrentRunning.value) return false;
+  return (
+    currentActiveMode.value !== "connection" ||
+    currentConnectionMode.value === "quick"
+  );
+});
 
 const startButtonLabel = computed(() => {
   if (currentActiveMode.value === "connection") {
-    return "开始测试";
+    if (currentConnectionMode.value === "quick") {
+      return showCancelState.value ? "取消测试" : "开始测试";
+    }
+    return currentHasResult.value ? "继续对话" : "开始对话";
   }
   return showCancelState.value
     ? "取消测试"
@@ -144,24 +162,66 @@ const connectionQuickTestReady = computed(() => {
   );
 });
 
-function startConnectionQuickTest(): void {
+function focusConnectionComposer(): void {
   document
     .getElementById("connection-section")
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  connectionStore.requestComposerFocus();
+}
 
+async function startConnectionQuickTest(): Promise<void> {
   if (currentConnectionRunning.value) return;
   if (!connectionQuickTestReady.value) {
-    connectionStore.requestComposerFocus();
+    showToast({
+      type: "error",
+      title: "测试失败",
+      message: "请先填写 Base URL、API Key 并选择测试模型",
+      duration: 6000,
+    });
     return;
   }
 
   connectionStore.clearConnectionContext();
-  void connectionStore.sendConnectionMessage(
+  await connectionStore.sendConnectionMessage(
     { text: "Hi", images: [] },
     activeConfig.value,
     activeConfigNameDisplay.value
   );
-  connectionStore.requestComposerFocus();
+
+  const lastMessage = connectionStore.messages[connectionStore.messages.length - 1];
+  if (lastMessage?.role === "assistant" && lastMessage.error) {
+    showToast({
+      type: "error",
+      title: "测试失败",
+      message: lastMessage.error,
+      duration: 6000,
+    });
+    return;
+  }
+  if (lastMessage?.role === "assistant" && lastMessage.stopped) {
+    showToast({
+      type: "warning",
+      title: "测试已取消",
+      message: "已停止本次快速测试",
+      duration: 3000,
+    });
+    return;
+  }
+  if (lastMessage?.role === "assistant") {
+    showToast({ type: "success", title: "测试成功", duration: 3000 });
+    return;
+  }
+  showToast({
+    type: "error",
+    title: "测试失败",
+    message: connectionStore.errorMsg || "请求未返回结果",
+    duration: 6000,
+  });
+}
+
+function handleConnectionModeChange(mode: ConnectionTestMode): void {
+  if (currentConnectionRunning.value) return;
+  connectionStore.setConnectionMode(mode);
 }
 
 function handleStartButtonClick(e: MouseEvent): void {
@@ -175,7 +235,11 @@ function handleStartButtonClick(e: MouseEvent): void {
 function handleFormSubmit(): void {
   emit("submit");
   if (currentActiveMode.value === "connection") {
-    startConnectionQuickTest();
+    if (currentConnectionMode.value === "quick") {
+      void startConnectionQuickTest();
+    } else {
+      focusConnectionComposer();
+    }
     return;
   }
   appStore.handleStartTest();
@@ -528,7 +592,11 @@ defineExpose({
           id="btn-start"
           :title="
             currentActiveMode === 'connection'
-              ? '清空当前上下文并发送 Hi 进行快速测试'
+              ? (showCancelState
+                  ? '点击取消当前正在进行的测试'
+                  : currentConnectionMode === 'quick'
+                  ? '清空当前上下文并发送 Hi 进行快速测试'
+                  : '滚动到下方对话框并聚焦输入框')
               : showCancelState
               ? '点击取消当前正在进行的测试'
               : currentHasResult
@@ -544,6 +612,39 @@ defineExpose({
           ></span>
           <span class="btn-text">{{ startButtonLabel }}</span>
         </button>
+
+        <div
+          v-if="currentActiveMode === 'connection'"
+          class="connection-mode-switch"
+          role="group"
+          aria-label="连接测试模式"
+        >
+          <button
+            type="button"
+            class="mode-switch-item"
+            :class="{ active: currentConnectionMode === 'chat' }"
+            :aria-pressed="currentConnectionMode === 'chat'"
+            :disabled="currentConnectionRunning"
+            title="完整多轮对话，展示回复、图片与统计"
+            @click="handleConnectionModeChange('chat')"
+          >
+            <MessagesSquare :size="12" />
+            <span>对话模式</span>
+          </button>
+          <button
+            type="button"
+            class="mode-switch-item"
+            :class="{ active: currentConnectionMode === 'quick' }"
+            :aria-pressed="currentConnectionMode === 'quick'"
+            :disabled="currentConnectionRunning"
+            title="清空上下文并发送 Hi，仅通过顶部提示反馈结果"
+            @click="handleConnectionModeChange('quick')"
+          >
+            <Zap :size="12" />
+            <span>精简模式</span>
+          </button>
+        </div>
+
         <button
           type="button"
           class="btn btn-ghost"
@@ -795,6 +896,7 @@ defineExpose({
 
 .form-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   margin-top: 2px;
 
@@ -812,6 +914,58 @@ defineExpose({
     &:active:not(:disabled) {
       transform: translateY(0);
     }
+  }
+}
+
+.connection-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 30px;
+  flex-shrink: 0;
+  padding: 1px;
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid var(--border-subtle);
+}
+
+.mode-switch-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover:not(:disabled) {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.045);
+  }
+
+  &.active {
+    color: #c7d2fe;
+    background: rgba(99, 102, 241, 0.16);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 </style>

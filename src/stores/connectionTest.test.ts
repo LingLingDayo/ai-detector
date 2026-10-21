@@ -1,7 +1,10 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import * as chat from "../services/chat";
-import { CONNECTION_HISTORY_STORAGE_KEY } from "../constants";
+import {
+  CONNECTION_HISTORY_STORAGE_KEY,
+  CONNECTION_MODE_STORAGE_KEY,
+} from "../constants";
 import type {
   ClientConfig,
   ConnectionImageAttachment,
@@ -240,6 +243,28 @@ describe("连接测试会话状态", () => {
       successRate: 0,
       lastError: "上游接口返回错误 (HTTP 500)",
     });
+  });
+
+  it("连接测试模式会持久化并在新建 store 后恢复", () => {
+    storage.clear();
+    let store = newStore();
+    expect(store.connectionMode).toBe("chat");
+
+    store.setConnectionMode("quick");
+    expect(store.connectionMode).toBe("quick");
+    expect(storage.get(CONNECTION_MODE_STORAGE_KEY)).toBe("quick");
+
+    setActivePinia(createPinia());
+    store = useConnectionTestStore();
+    expect(store.connectionMode).toBe("quick");
+
+    store.setConnectionMode("chat");
+    expect(storage.get(CONNECTION_MODE_STORAGE_KEY)).toBe("chat");
+
+    storage.set(CONNECTION_MODE_STORAGE_KEY, "unknown");
+    setActivePinia(createPinia());
+    store = useConnectionTestStore();
+    expect(store.connectionMode).toBe("chat");
   });
 
   it("停止生成时保留已接收内容且不标记为错误", async () => {

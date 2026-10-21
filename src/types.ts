@@ -1,5 +1,6 @@
 export type ActiveTestMode = "probe" | "pelican" | "connection";
 export type HistoryTab = ActiveTestMode;
+export type ConnectionTestMode = "chat" | "quick";
 
 export interface ClientConfig {
   baseUrl: string;

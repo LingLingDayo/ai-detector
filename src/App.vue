@@ -11,6 +11,7 @@ import AppHeader from "./components/AppHeader.vue";
 import ConfigCard from "./components/ConfigCard.vue";
 import ConfigListModal from "./components/ConfigListModal.vue";
 import ConfigEditModal from "./components/ConfigEditModal.vue";
+import AppToast from "./components/common/AppToast.vue";
 import ConfirmModal from "./components/common/ConfirmModal.vue";
 import ProgressCard from "./components/ProgressCard.vue";
 import ResultCard from "./components/ResultCard.vue";
@@ -201,8 +202,11 @@ function handleOpenGithub(): void {
         />
       </div>
 
-      <!-- 连接测试模式卡片（多轮对话与真实模型核对） -->
-      <div v-show="appStore.activeMode === 'connection'" class="mode-view-group">
+      <!-- 连接测试模式卡片（仅对话模式展示，精简模式通过顶部提示反馈结果） -->
+      <div
+        v-show="appStore.activeMode === 'connection' && connectionStore.connectionMode === 'chat'"
+        class="mode-view-group"
+      >
         <ConnectionTestCard />
       </div>
     </main>
@@ -256,6 +260,9 @@ function handleOpenGithub(): void {
       @delete-connection="connectionStore.deleteConnectionHistoryItem"
       @clear-connection="connectionStore.clearConnectionHistory"
     />
+
+    <!-- 全局公共顶部提示 -->
+    <AppToast />
 
     <!-- 全局通用公共确认弹窗 -->
     <ConfirmModal />
