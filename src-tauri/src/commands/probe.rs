@@ -22,6 +22,13 @@ fn is_adaptive_thinking_required(model: &str) -> bool {
     false
 }
 
+/// MiMo V2.6 仅支持 thinking.type 开关与 max_completion_tokens，不支持 reasoning_effort
+fn is_mimo_thinking_switch_model(model: &str) -> bool {
+    let m = model.trim().to_lowercase();
+    let base = m.rsplit('/').next().unwrap_or(&m);
+    base.starts_with("mimo-v2.6-pro") || base.starts_with("mimo-v2.6-flash")
+}
+
 #[tauri::command]
 pub async fn send_probe_request(
     app: tauri::AppHandle,
@@ -156,6 +163,7 @@ pub async fn send_probe_request(
 
             let m = req.model.trim().to_lowercase();
             let is_o_series = m.starts_with("o1") || m.starts_with("o3") || m.starts_with("o4");
+            let is_thinking_switch = is_mimo_thinking_switch_model(&req.model);
 
             let mut map = serde_json::json!({
                 "model": req.model.trim(),
@@ -163,7 +171,7 @@ pub async fn send_probe_request(
                     { "role": "user", "content": &req.prompt }
                 ]
             });
-            if is_o_series {
+            if is_o_series || is_thinking_switch {
                 map["max_completion_tokens"] = serde_json::json!(65536);
             } else {
                 map["max_tokens"] = serde_json::json!(65536);
@@ -173,7 +181,11 @@ pub async fn send_probe_request(
             }
             if let Some(effort) = &req.reasoning_effort {
                 let trimmed = effort.trim();
-                if trimmed != "none" && !trimmed.is_empty() {
+                if is_thinking_switch {
+                    map["thinking"] = serde_json::json!({
+                        "type": if trimmed == "none" || trimmed.is_empty() { "disabled" } else { "enabled" }
+                    });
+                } else if trimmed != "none" && !trimmed.is_empty() {
                     if let Ok(num) = trimmed.parse::<u64>() {
                         map["max_completion_tokens"] = serde_json::json!(num);
                         map.as_object_mut().and_then(|o| o.remove("max_tokens"));

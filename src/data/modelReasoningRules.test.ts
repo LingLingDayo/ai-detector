@@ -6,11 +6,12 @@ import {
   getReasoningOptionsForModel,
   resolveValidReasoningEffort,
   isAdaptiveThinkingRequired,
+  isThinkingSwitchModel,
 } from "./modelReasoningRules";
 
 describe("modelReasoningRules", () => {
-  it("MODEL_REASONING_RULES 包含了全部 27 个模型规则", () => {
-    expect(MODEL_REASONING_RULES).toHaveLength(27);
+  it("MODEL_REASONING_RULES 包含了全部 30 个模型规则", () => {
+    expect(MODEL_REASONING_RULES).toHaveLength(30);
 
     const modelNames = MODEL_REASONING_RULES.map((r) => r.model);
     const expectedModels = [
@@ -28,6 +29,9 @@ describe("modelReasoningRules", () => {
       "Kimi K2.8 Preview",
       "Qwen3.8 Max",
       "Qwen3.8 Flash",
+      "MiMo V2.6 Pro",
+      "MiMo V2.6 Flash",
+      "MiMo V2.6 Pro-UltraSpeed",
       "DeepSeek V4 Pro",
       "DeepSeek V4.1 Flash",
       "Grok 4.6",
@@ -79,6 +83,26 @@ describe("modelReasoningRules", () => {
     const qwenFlashRule = findModelReasoningRule("dashscope/qwen3.8-flash");
     expect(qwenFlashRule?.model).toBe("Qwen3.8 Flash");
     expect(qwenFlashRule?.defaultEffort).toBe("xhigh");
+
+    // Xiaomi MiMo V2.6 仅支持 thinking 开关，长型号必须优先于短词
+    const mimoProRule = findModelReasoningRule("mimo-v2.6-pro");
+    expect(mimoProRule?.model).toBe("MiMo V2.6 Pro");
+    expect(mimoProRule?.supportedEfforts).toEqual(["none", "high"]);
+    expect(mimoProRule?.defaultEffort).toBe("high");
+    expect(mimoProRule?.thinkingSwitchOnly).toBe(true);
+
+    const mimoFlashRule = findModelReasoningRule("xiaomi/mimo-v2.6-flash");
+    expect(mimoFlashRule?.model).toBe("MiMo V2.6 Flash");
+    expect(mimoFlashRule?.defaultEffort).toBe("high");
+
+    const mimoUltraRule = findModelReasoningRule("mimo-v2.6-pro-ultraspeed");
+    expect(mimoUltraRule?.model).toBe("MiMo V2.6 Pro-UltraSpeed");
+
+    expect(isThinkingSwitchModel("mimo-v2.6-pro")).toBe(true);
+    expect(isThinkingSwitchModel("mimo-v2.6-flash")).toBe(true);
+    expect(isThinkingSwitchModel("mimo-v2.6-pro-ultraspeed")).toBe(true);
+    expect(isThinkingSwitchModel("gpt-5.6-sol")).toBe(false);
+    expect(isThinkingSwitchModel("glm-5.3")).toBe(false);
 
     // OpenAI 模型测试
     const solRule = findModelReasoningRule("gpt-5.6-sol");
@@ -166,7 +190,7 @@ describe("modelReasoningRules", () => {
     expect(findModelReasoningRule("gemini-3.8-pro")).toBeUndefined();
   });
 
-  it("表格全部 27 个模型的思考强度与默认值完全对齐需求表", () => {
+  it("表格全部 30 个模型的思考强度与默认值完全对齐需求表", () => {
     const tableData = [
       {
         vendor: "OpenAI GPT-5.6",
@@ -264,6 +288,27 @@ describe("modelReasoningRules", () => {
         model: "Qwen3.8 Flash",
         supported: ["none", "low", "medium", "xhigh"],
         defaultEffort: "xhigh",
+        allowDisable: true,
+      },
+      {
+        vendor: "Xiaomi MiMo",
+        model: "MiMo V2.6 Pro",
+        supported: ["none", "high"],
+        defaultEffort: "high",
+        allowDisable: true,
+      },
+      {
+        vendor: "Xiaomi MiMo",
+        model: "MiMo V2.6 Flash",
+        supported: ["none", "high"],
+        defaultEffort: "high",
+        allowDisable: true,
+      },
+      {
+        vendor: "Xiaomi MiMo",
+        model: "MiMo V2.6 Pro-UltraSpeed",
+        supported: ["none", "high"],
+        defaultEffort: "high",
         allowDisable: true,
       },
       {
@@ -422,6 +467,11 @@ describe("modelReasoningRules", () => {
 
     // Kimi K2.8 Preview 不支持 medium，应修正为默认 max
     expect(resolveValidReasoningEffort("kimi-k2.8-preview", "medium")).toBe("max");
+
+    // MiMo V2.6 仅支持开关：其他档位收敛为 high，none 保留用于关闭思考
+    expect(resolveValidReasoningEffort("mimo-v2.6-pro", "medium")).toBe("high");
+    expect(resolveValidReasoningEffort("mimo-v2.6-flash", "max")).toBe("high");
+    expect(resolveValidReasoningEffort("mimo-v2.6-pro-ultraspeed", "none")).toBe("none");
   });
 
   it("ALL_REASONING_EFFORT_OPTIONS 不再包含已移除的 ultra 档位", () => {

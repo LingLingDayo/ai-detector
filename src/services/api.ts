@@ -1,5 +1,5 @@
 import type { ProbeResponse, SendProbeOptions, TauriInvokeFn } from "../types";
-import { isAdaptiveThinkingRequired } from "../data/modelReasoningRules";
+import { isAdaptiveThinkingRequired, isThinkingSwitchModel } from "../data/modelReasoningRules";
 
 let tauriInvoke: TauriInvokeFn | null = null;
 
@@ -467,14 +467,22 @@ export async function sendProbe({
     headers["Authorization"] = `Bearer ${apiKey}`;
     const m = model.trim().toLowerCase();
     const isOSeries = m.startsWith("o1") || m.startsWith("o3") || m.startsWith("o4");
+    // MiMo 仅支持 thinking.type 开关与 max_completion_tokens，不支持 reasoning_effort
+    const isThinkingSwitch = isThinkingSwitchModel(model);
 
     bodyObj = {
       model,
       messages: [{ role: "user", content: prompt }],
       stream: isStream ? true : undefined,
-      ...(isOSeries ? { max_completion_tokens: 65536 } : { max_tokens: 65536 }),
+      ...(isOSeries || isThinkingSwitch
+        ? { max_completion_tokens: 65536 }
+        : { max_tokens: 65536 }),
     };
-    if (reasoningEffort && reasoningEffort !== "none") {
+    if (isThinkingSwitch) {
+      bodyObj.thinking = {
+        type: reasoningEffort && reasoningEffort.trim() === "none" ? "disabled" : "enabled",
+      };
+    } else if (reasoningEffort && reasoningEffort !== "none") {
       const trimmed = reasoningEffort.trim();
       if (/^\d+$/.test(trimmed)) {
         delete bodyObj.max_tokens;

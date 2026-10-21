@@ -49,6 +49,8 @@ export interface ModelReasoningRule {
   allowDisableReasoning: boolean;
   /** 是否强制要求自适应思考 (即 API 拒绝 budget_tokens 且强制要求 type: "adaptive") */
   requiresAdaptiveThinking?: boolean;
+  /** 是否仅支持 thinking.type 开关 (enabled/disabled)，不支持 reasoning_effort */
+  thinkingSwitchOnly?: boolean;
   /** 备注说明 */
   notes?: string;
   /**
@@ -176,6 +178,38 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
     defaultEffort: "xhigh",
     allowDisableReasoning: true,
     patterns: ["qwen3.8-flash"],
+  },
+
+  // ==================== Xiaomi MiMo ====================
+  {
+    vendor: "Xiaomi MiMo",
+    model: "MiMo V2.6 Pro",
+    supportedEfforts: ["none", "high"],
+    defaultEffort: "high",
+    allowDisableReasoning: true,
+    thinkingSwitchOnly: true,
+    notes: "仅支持 thinking 开关，high 表示开启思考",
+    patterns: ["mimo-v2.6-pro"],
+  },
+  {
+    vendor: "Xiaomi MiMo",
+    model: "MiMo V2.6 Flash",
+    supportedEfforts: ["none", "high"],
+    defaultEffort: "high",
+    allowDisableReasoning: true,
+    thinkingSwitchOnly: true,
+    notes: "仅支持 thinking 开关，high 表示开启思考",
+    patterns: ["mimo-v2.6-flash"],
+  },
+  {
+    vendor: "Xiaomi MiMo",
+    model: "MiMo V2.6 Pro-UltraSpeed",
+    supportedEfforts: ["none", "high"],
+    defaultEffort: "high",
+    allowDisableReasoning: true,
+    thinkingSwitchOnly: true,
+    notes: "仅支持 thinking 开关，high 表示开启思考",
+    patterns: ["mimo-v2.6-pro-ultraspeed"],
   },
 
   // ==================== DeepSeek ====================
@@ -372,6 +406,13 @@ export function findModelReasoningRule(modelName?: string): ModelReasoningRule |
 }
 
 export const REASONING_EFFORT_OPTIONS = ALL_REASONING_EFFORT_OPTIONS;
+
+/**
+ * 判定模型是否仅支持 thinking.type 开关（不支持 reasoning_effort）
+ */
+export function isThinkingSwitchModel(modelName?: string): boolean {
+  return findModelReasoningRule(modelName)?.thinkingSwitchOnly === true;
+}
 
 /**
  * 判定模型是否为 Claude 家族模型
