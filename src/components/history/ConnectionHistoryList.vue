@@ -104,7 +104,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
             class="history-row"
             role="button"
             tabindex="0"
-            :title="expandedId === item.id ? '收起汇总统计' : '展开汇总统计（不会回填会话）'"
+            :title="expandedId === item.id ? '收起汇总统计' : '展开汇总统计'"
             @click="toggle(item.id)"
             @keydown.enter.prevent="toggle(item.id)"
             @keydown.space.prevent="toggle(item.id)"

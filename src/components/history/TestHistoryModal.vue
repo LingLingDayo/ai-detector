@@ -234,7 +234,7 @@ async function handleClearHistory(): Promise<void> {
             @delete="emit('delete-pelican', $event)"
           />
 
-          <!-- 3. 连接测试历史视图（仅汇总统计，不回填会话） -->
+          <!-- 3. 连接测试历史视图 -->
           <ConnectionHistoryList
             v-else-if="activeTab === 'connection'"
             :connection-list="connectionList"
