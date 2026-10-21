@@ -43,16 +43,11 @@ const alertLines = computed<string[]>(() => {
     .filter(Boolean);
 });
 
-const selectedIndex = ref<number>(0);
-const isModalOpen = ref(false);
+import { useProbeTestStore } from "../stores";
+const probeStore = useProbeTestStore();
 
 function openDetail(idx: number): void {
-  selectedIndex.value = idx;
-  isModalOpen.value = true;
-}
-
-function closeModal(): void {
-  isModalOpen.value = false;
+  probeStore.openDetailModal(idx);
 }
 </script>
 
@@ -161,13 +156,13 @@ function closeModal(): void {
 
     <!-- 题目内容与模型回答弹窗 -->
     <ProbeDetailModal
-      :is-open="isModalOpen"
+      :is-open="probeStore.isDetailModalOpen"
       :steps="steps"
-      :initial-index="selectedIndex"
+      :initial-index="probeStore.selectedDetailIndex"
       :is-running="isRunning"
       @refresh-single-question="(idx) => emit('refreshSingleQuestion', idx)"
       @retry-single-question="(idx) => emit('retrySingleQuestion', idx)"
-      @close="closeModal"
+      @close="probeStore.closeDetailModal"
     />
   </section>
 </template>

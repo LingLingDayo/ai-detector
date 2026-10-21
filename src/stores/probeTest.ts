@@ -12,15 +12,7 @@ import { loadActiveUnifiedBank, getPersistedUpdateStatus, setPersistedUpdateStat
 
 const unifiedBank = rawUnifiedBank as unknown as UnifiedBank;
 
-interface ResolvedProbeOptions {
-  baseUrl: string;
-  apiKey: string;
-  model: string;
-  apiFormat?: string;
-  reasoningEffort?: string;
-  isStream: boolean;
-  timeoutSeconds: number;
-}
+type ResolvedProbeOptions = { baseUrl: string; apiKey: string; model: string; apiFormat?: string; reasoningEffort?: string; isStream: boolean; timeoutSeconds: number };
 
 export const useProbeTestStore = defineStore("probeTest", () => {
   const isRunning = ref(false);
@@ -40,8 +32,19 @@ export const useProbeTestStore = defineStore("probeTest", () => {
   const hasFingerprintUpdate = ref<boolean>(getPersistedUpdateStatus());
   const isUpdatingFingerprint = ref<boolean>(false);
 
-  // 重要保留：供 sync-upstream.js 自动同步与备用
   const totalBankModelsCount = unifiedBank?.models?.length || 18;
+
+  const isDetailModalOpen = ref(false);
+  const selectedDetailIndex = ref(0);
+
+  function openDetailModal(index: number = 0): void {
+    selectedDetailIndex.value = Math.max(0, Math.min(totalCount - 1, index));
+    isDetailModalOpen.value = true;
+  }
+
+  function closeDetailModal(): void {
+    isDetailModalOpen.value = false;
+  }
 
   function addProbeHistoryItem(item: Omit<ProbeHistoryItem, "id" | "createdAt">): ProbeHistoryItem {
     const newItem = createProbeHistoryRecord(item);
@@ -474,6 +477,10 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     hasFingerprintUpdate,
     isUpdatingFingerprint,
     activeUnifiedBank,
+    isDetailModalOpen,
+    selectedDetailIndex,
+    openDetailModal,
+    closeDetailModal,
     performFingerprintUpdate,
     initStartupFingerprintCheck,
     startTest,

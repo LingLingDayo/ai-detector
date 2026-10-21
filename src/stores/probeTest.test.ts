@@ -61,4 +61,11 @@ describe("probeTest 模块结构", () => {
       expect(probeTestSource, `useProbeTestStore 导出对象应包含 ${exp}`).toContain(exp);
     }
   });
+
+  it("useProbeTestStore 包含详情弹窗管理状态与方法", () => {
+    expect(probeTestSource).toContain("isDetailModalOpen");
+    expect(probeTestSource).toContain("selectedDetailIndex");
+    expect(probeTestSource).toContain("openDetailModal");
+    expect(probeTestSource).toContain("closeDetailModal");
+  });
 });
