@@ -23,8 +23,6 @@ const probeStore = useProbeTestStore();
 const pelicanStore = usePelicanTestStore();
 const appStore = useAppStore();
 
-const configCardRef = ref<InstanceType<typeof ConfigCard> | null>(null);
-
 onMounted(() => {
   configStore.loadConfig();
   probeStore.initStartupFingerprintCheck();
@@ -147,7 +145,7 @@ function handleOpenGithub(): void {
     <!-- 主体区域 -->
     <main class="app-main">
       <!-- 参数配置卡片 -->
-      <ConfigCard ref="configCardRef" />
+      <ConfigCard />
 
       <!-- 常规探测题目与测试进度卡片（常规模式展示） -->
       <div v-show="appStore.activeMode === 'probe'" class="mode-view-group">
@@ -209,7 +207,7 @@ function handleOpenGithub(): void {
       @apply="(item) => {
         if (!probeStore.isRunning) probeStore.resetTest();
         if (!pelicanStore.isPelicanRunning) pelicanStore.resetPelicanTest();
-        configStore.applyConfig(item, () => configCardRef?.resetModelList());
+        configStore.applyConfig(item);
       }"
       @open-create="configStore.openCreateConfigModal"
       @open-edit="configStore.openEditConfigModal"
@@ -230,7 +228,7 @@ function handleOpenGithub(): void {
     <!-- 统一测试历史记录弹窗（包含鹈鹕测试与模型测试 Tab 架构） -->
     <TestHistoryModal
       :is-open="appStore.isHistoryModalOpen"
-      initial-tab="probe"
+      :initial-tab="appStore.historyActiveTab"
       :pelican-list="pelicanStore.pelicanHistoryList"
       :probe-list="probeStore.probeHistoryList"
       :probe-running="probeStore.isRunning"

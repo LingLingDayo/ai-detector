@@ -1,13 +1,7 @@
-import { ref, watch, onMounted, onUnmounted } from "vue";
-import { fetchRemoteModels } from "../../services/api";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { findModelReasoningRule } from "../../data/modelReasoningRules";
-import {
-  saveModelsToStorage,
-  loadSavedModels,
-  mergeModelList,
-  isValidBaseUrl,
-  isValidApiKey,
-} from "./modelStorage";
+import { useModelsStore } from "../../stores/models";
+import { isValidBaseUrl, isValidApiKey } from "./modelStorage";
 
 export interface UseModelFetchOptions {
   getProps: () => {
@@ -25,29 +19,17 @@ export interface UseModelFetchOptions {
 }
 
 export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
-  const availableModels = ref<string[]>([]);
-  const isFetchedFromApi = ref(false);
-  const isFetching = ref(false);
-  const statusBarText = ref("未获取模型，可点击右侧 ↻ 按钮自动拉取");
-  const statusColor = ref<string>("");
+  const modelsStore = useModelsStore();
   const hasAutoSelected = ref(false);
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function loadInitialModels(url: string): void {
-    const saved = loadSavedModels(url);
-    if (saved && saved.length > 0) {
-      availableModels.value = saved;
-      isFetchedFromApi.value = true;
-      statusBarText.value = `已加载本地保存的 ${saved.length} 个模型`;
-      statusColor.value = "";
-    } else {
-      availableModels.value = [];
-      isFetchedFromApi.value = false;
-      statusBarText.value = "未获取模型，可点击右侧 ↻ 按钮自动拉取";
-      statusColor.value = "";
-    }
-  }
+  const currentStatus = computed(() => modelsStore.getStatus(getProps().baseUrl));
+  const availableModels = computed(() => modelsStore.getModels(getProps().baseUrl));
+  const isFetching = computed(() => currentStatus.value.isFetching);
+  const isFetchedFromApi = computed(() => currentStatus.value.isFetched);
+  const statusBarText = computed(() => currentStatus.value.statusBarText);
+  const statusColor = computed(() => currentStatus.value.statusColor);
 
   async function fetchModels(options: { autoSelectFirst?: boolean } = {}): Promise<void> {
     const props = getProps();
@@ -55,53 +37,23 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
     const key = props.apiKey.trim();
 
     if (!url || !key) {
-      statusBarText.value = "请先填写 Base URL 和 API Key 以获取模型";
-      statusColor.value = "var(--warning)";
+      void modelsStore.fetchModels(url, key, props.apiFormat || "chat_completions");
       return;
     }
 
-    if (isFetching.value) return;
-    isFetching.value = true;
-    statusBarText.value = "正在从 /v1/models 拉取可用模型列表...";
-    statusColor.value = "";
+    const list = await modelsStore.fetchModels(url, key, props.apiFormat || "chat_completions");
 
-    try {
-      const list = await fetchRemoteModels(url, key, props.apiFormat || "chat_completions");
-      isFetchedFromApi.value = true;
-      if (list && list.length > 0) {
-        // 保留用户已排好的顺序，过滤远端已移除的，新模型追加到末尾
-        const saved = loadSavedModels(url);
-        const mergedList = mergeModelList(saved, list);
-
-        availableModels.value = mergedList;
-        saveModelsToStorage(url, mergedList);
-        statusBarText.value = `已成功获取 ${mergedList.length} 个模型`;
-        statusColor.value = "var(--success)";
-
-        if (options.autoSelectFirst) {
-          hasAutoSelected.value = true;
-          const firstModel = mergedList[0];
-          emit("update:modelValue", firstModel);
-          if (firstModel.toLowerCase().includes("claude")) {
-            emit("update:apiFormat", "anthropic");
-          }
-          const matchedRule = findModelReasoningRule(firstModel);
-          if (matchedRule) {
-            emit("update:reasoningEffort", matchedRule.defaultEffort);
-          }
-        }
-      } else {
-        availableModels.value = [];
-        statusBarText.value = "上游未返回可用模型列表，仍可手动输入";
-        statusColor.value = "";
+    if (list && list.length > 0 && options.autoSelectFirst) {
+      hasAutoSelected.value = true;
+      const firstModel = list[0];
+      emit("update:modelValue", firstModel);
+      if (firstModel.toLowerCase().includes("claude")) {
+        emit("update:apiFormat", "anthropic");
       }
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      console.warn("获取模型列表异常:", err);
-      statusBarText.value = `获取失败(${errMsg || "请求受限"})，可手动输入`;
-      statusColor.value = "var(--danger)";
-    } finally {
-      isFetching.value = false;
+      const matchedRule = findModelReasoningRule(firstModel);
+      if (matchedRule) {
+        emit("update:reasoningEffort", matchedRule.defaultEffort);
+      }
     }
   }
 
@@ -147,8 +99,7 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
 
   function resetModelList(): void {
     const props = getProps();
-    loadInitialModels(props.baseUrl);
-    isFetching.value = false;
+    modelsStore.resetModels(props.baseUrl);
     hasAutoSelected.value = false;
     if (debounceTimer) {
       clearTimeout(debounceTimer);
@@ -161,14 +112,12 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
     ([newUrl, newKey], [oldUrl, oldKey]) => {
       if (newUrl !== oldUrl || newKey !== oldKey) {
         hasAutoSelected.value = false;
-        loadInitialModels(newUrl || "");
       }
       checkAndTriggerAutoFetch(false);
     }
   );
 
   onMounted(() => {
-    loadInitialModels(getProps().baseUrl);
     setTimeout(() => {
       checkAndTriggerAutoFetch(false);
     }, 100);
@@ -187,7 +136,6 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
     isFetching,
     statusBarText,
     statusColor,
-    loadInitialModels,
     fetchModels,
     checkAndTriggerAutoFetch,
     selectModel,
