@@ -326,20 +326,29 @@ export async function sendProbe({
   timeoutSeconds,
   signal,
   onStreamStart,
+  onStreamProgress,
 }: SendProbeOptions): Promise<ProbeResponse> {
   const isStream = stream !== false;
   const actualTimeout = timeoutSeconds ?? (isStream ? 90 : 240);
 
   if (tauriInvoke && isTauriApp()) {
-    let unlisten: (() => void) | null = null;
-    if (isStream && onStreamStart) {
+    let unlistenStart: (() => void) | null = null;
+    let unlistenProgress: (() => void) | null = null;
+    if (isStream && (onStreamStart || onStreamProgress)) {
       try {
         const { listen } = await import("@tauri-apps/api/event");
-        unlisten = await listen("pelican-stream-start", () => {
-          onStreamStart();
-        });
+        if (onStreamStart) {
+          unlistenStart = await listen("pelican-stream-start", () => {
+            onStreamStart();
+          });
+        }
+        if (onStreamProgress) {
+          unlistenProgress = await listen<string>("pelican-stream-progress", (event) => {
+            onStreamProgress(event.payload);
+          });
+        }
       } catch (err) {
-        console.warn("监听流式启动事件失败:", err);
+        console.warn("监听流式进度事件失败:", err);
       }
     }
 
@@ -357,9 +366,8 @@ export async function sendProbe({
         },
       });
     } finally {
-      if (unlisten) {
-        unlisten();
-      }
+      unlistenStart?.();
+      unlistenProgress?.();
     }
   }
 
@@ -527,6 +535,24 @@ export async function sendProbe({
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let streamBuffer = "";
+      let lastProgressAt = 0;
+      let lastProgressText = "";
+
+      const emitStreamProgress = (force = false): void => {
+        if (!onStreamProgress) return;
+        const now = Date.now();
+        if (!force && now - lastProgressAt < 100) return;
+        lastProgressAt = now;
+        try {
+          const preview = parseStreamingText(streamBuffer, apiFormat);
+          if (preview && preview !== lastProgressText) {
+            lastProgressText = preview;
+            onStreamProgress(preview);
+          }
+        } catch {
+          // 中间态响应可能尚未完整，忽略预览解析异常
+        }
+      };
 
       // 首包等待
       const firstChunk = await reader.read();
@@ -536,6 +562,7 @@ export async function sendProbe({
       if (firstChunk.value) {
         onStreamStart?.();
         streamBuffer += decoder.decode(firstChunk.value, { stream: true });
+        emitStreamProgress();
       }
 
       while (!firstChunk.done) {
@@ -543,9 +570,11 @@ export async function sendProbe({
         if (done) break;
         if (value) {
           streamBuffer += decoder.decode(value, { stream: true });
+          emitStreamProgress();
         }
       }
       streamBuffer += decoder.decode();
+      emitStreamProgress(true);
       text = parseStreamingText(streamBuffer, apiFormat);
     } else {
       firstResponseReceived = true;

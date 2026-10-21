@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import {
   PELICAN_PROMPT_STORAGE_KEY,
@@ -6,6 +6,7 @@ import {
 } from "../constants";
 import { PELICAN_PRESETS } from "../data/pelicanPresets";
 import { DEFAULT_PELICAN_PROMPT, usePelicanTestStore } from "./pelicanTest";
+import * as api from "../services/api";
 
 const storage = new Map<string, string>();
 vi.stubGlobal("localStorage", {
@@ -21,6 +22,10 @@ vi.stubGlobal("localStorage", {
 
 afterAll(() => {
   vi.unstubAllGlobals();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 const CUSTOM_PROMPT = "Generate an SVG of a pelican riding a skateboard.";
@@ -83,5 +88,38 @@ describe("鹈鹕测试自定义提示词预设测试套件", () => {
     storage.set(PELICAN_PROMPT_STORAGE_KEY, CUSTOM_PROMPT);
     const store = newStore();
     expect(store.pelicanCustomPrompt).toBe(CUSTOM_PROMPT);
+  });
+});
+
+describe("鹈鹕测试流式输出进度测试套件", () => {
+  it("流式回调会更新实时字符数与输出尾段", async () => {
+    storage.clear();
+    const store = newStore();
+    const firstPreview = "<svg><rect ";
+    const lastPreview = '<svg><rect width="10" />';
+
+    vi.spyOn(api, "sendProbe").mockImplementation(async (options) => {
+      options.onStreamStart?.();
+      options.onStreamProgress?.(firstPreview);
+      options.onStreamProgress?.(lastPreview);
+      return {
+        text: '<svg><rect width="10" /></svg>',
+        raw_status: 200,
+        duration_ms: 10,
+      };
+    });
+
+    await store.startPelicanTest({
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-test",
+      apiFormat: "openai",
+      modelName: "test-model",
+      reasoningEffort: "high",
+      stream: true,
+    });
+
+    expect(store.streamedCharCount).toBe(lastPreview.length);
+    expect(store.streamedTextTail).toBe(lastPreview);
+    expect(store.isPelicanGenerating).toBe(false);
   });
 });

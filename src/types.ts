@@ -32,6 +32,8 @@ export interface SendProbeOptions {
   timeoutSeconds?: number;
   signal?: AbortSignal;
   onStreamStart?: () => void;
+  /** 流式输出过程中回调当前累计的模型文本 */
+  onStreamProgress?: (text: string) => void;
 }
 
 export interface ProbeResponse {

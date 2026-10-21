@@ -11,6 +11,8 @@ const props = withDefaults(
     svg?: string;
     content?: string;
     contentType?: PelicanContentType;
+    streamedCharCount?: number;
+    streamedTextTail?: string;
     modelName: string;
     durationMs: number;
     bgTheme?: "dark" | "light";
@@ -22,6 +24,8 @@ const props = withDefaults(
     svg: "",
     content: "",
     contentType: "svg",
+    streamedCharCount: 0,
+    streamedTextTail: "",
     bgTheme: "dark",
   }
 );
@@ -36,6 +40,10 @@ const emit = defineEmits<{
 const displayContent = computed(() => props.content || props.svg || "");
 const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG"));
 const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
+const streamTail = computed(() => {
+  const compact = props.streamedTextTail.replace(/\s+/g, " ").trim();
+  return compact.length > 48 ? `…${compact.slice(-48)}` : compact;
+});
 
 function toggleBgTheme(): void {
   emit("update:bgTheme", props.bgTheme === "dark" ? "light" : "dark");
@@ -68,6 +76,17 @@ function toggleBgTheme(): void {
       <span v-if="durationMs > 0 || isRunning" class="meta-item">
         耗时: <strong>{{ durationSeconds }}s</strong>
       </span>
+    </div>
+
+    <!-- 流式输出实时进度 -->
+    <div
+      v-if="isRunning && isGenerating"
+      class="stream-progress"
+      :title="`已实时接收 ${streamedCharCount} 个字符`"
+    >
+      <span class="stream-pulse"></span>
+      <span class="stream-count">{{ streamedCharCount }} 字符</span>
+      <span v-if="streamTail" class="stream-tail">{{ streamTail }}</span>
     </div>
 
     <!-- 背景样式与视图切换 -->
@@ -209,6 +228,55 @@ function toggleBgTheme(): void {
       font-weight: 500;
       font-variant-numeric: tabular-nums;
     }
+  }
+}
+
+.stream-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 38%;
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+
+  .stream-pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #818cf8;
+    flex-shrink: 0;
+    animation: stream-pulse 1.1s ease-in-out infinite;
+  }
+
+  .stream-count {
+    flex-shrink: 0;
+    color: #a5b4fc;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stream-tail {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--text-secondary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    opacity: 0.8;
+  }
+}
+
+@keyframes stream-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

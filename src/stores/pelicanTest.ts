@@ -157,6 +157,7 @@ function loadInitialPelicanCustomPrompt(currentPrompt: string): string {
 }
 
 const MAX_PELICAN_HISTORY_COUNT = 60;
+const STREAM_TEXT_TAIL_LENGTH = 160;
 
 function loadInitialPelicanHistory(): PelicanHistoryItem[] {
   try {
@@ -197,6 +198,8 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
   const pelicanContent = ref("");
   const pelicanContentType = ref<PelicanContentType>("svg");
   const rawResponseText = ref("");
+  const streamedCharCount = ref(0);
+  const streamedTextTail = ref("");
   const durationMs = ref(0);
   const testedModel = ref("");
   const errorMsg = ref<string | null>(null);
@@ -311,6 +314,8 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     }
     isPelicanRunning.value = false;
     isPelicanGenerating.value = false;
+    streamedCharCount.value = 0;
+    streamedTextTail.value = "";
     errorMsg.value = "测试已取消，再次点击开始按钮重新测试";
   }
 
@@ -356,6 +361,8 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     pelicanContent.value = "";
     pelicanContentType.value = "svg";
     rawResponseText.value = "";
+    streamedCharCount.value = 0;
+    streamedTextTail.value = "";
     testedModel.value = modelName;
 
     timerId = setInterval(() => {
@@ -373,6 +380,10 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         if (runId !== currentRunId || abortController?.signal.aborted) return;
 
+        streamedCharCount.value = 0;
+        streamedTextTail.value = "";
+        isPelicanGenerating.value = false;
+
         try {
           const res = await sendProbe({
             baseUrl,
@@ -387,6 +398,12 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
             onStreamStart: () => {
               if (runId === currentRunId && !abortController?.signal.aborted) {
                 isPelicanGenerating.value = true;
+              }
+            },
+            onStreamProgress: (text) => {
+              if (runId === currentRunId && !abortController?.signal.aborted) {
+                streamedCharCount.value = text.length;
+                streamedTextTail.value = text.slice(-STREAM_TEXT_TAIL_LENGTH);
               }
             },
           });
@@ -482,6 +499,8 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     pelicanContent.value = "";
     pelicanContentType.value = "svg";
     rawResponseText.value = "";
+    streamedCharCount.value = 0;
+    streamedTextTail.value = "";
     durationMs.value = 0;
     testStartTime = 0;
     testedModel.value = "";
@@ -501,6 +520,8 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     pelicanContent,
     pelicanContentType,
     rawResponseText,
+    streamedCharCount,
+    streamedTextTail,
     durationMs,
     testedModel,
     errorMsg,

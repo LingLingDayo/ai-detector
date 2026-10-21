@@ -205,6 +205,113 @@ pub fn parse_non_streaming_json(parsed: &serde_json::Value, api_format: &str) ->
     }
 }
 
+fn extract_stream_delta_text(val: &serde_json::Value, api_format: &str) -> Option<String> {
+    if api_format == "anthropic" {
+        if val.get("type").and_then(|t| t.as_str()) == Some("content_block_delta") {
+            let delta = val.get("delta")?;
+            if delta.get("type").and_then(|t| t.as_str()) == Some("text_delta") {
+                return delta
+                    .get("text")
+                    .and_then(|t| t.as_str())
+                    .map(|text| text.to_string());
+            }
+        }
+        return None;
+    }
+
+    if api_format == "responses" || api_format == "openai_responses" {
+        let val_type = val.get("type").and_then(|t| t.as_str()).unwrap_or("");
+        if val_type == "response.output_text.delta" {
+            if let Some(delta) = val.get("delta").and_then(|d| d.as_str()) {
+                return Some(delta.to_string());
+            }
+            if let Some(delta) = val
+                .get("delta")
+                .and_then(|d| d.get("text"))
+                .and_then(|t| t.as_str())
+            {
+                return Some(delta.to_string());
+            }
+            return None;
+        }
+        if let Some(delta) = val.get("delta").and_then(|d| d.as_str()) {
+            return Some(delta.to_string());
+        }
+        if let Some(output_text) = val.get("output_text").and_then(|o| o.as_str()) {
+            return Some(output_text.to_string());
+        }
+        if let Some(text) = val.get("text").and_then(|t| t.as_str()) {
+            return Some(text.to_string());
+        }
+        return val
+            .get("choices")
+            .and_then(|c| c.as_array())
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("delta"))
+            .and_then(|d| d.get("content"))
+            .and_then(|c| c.as_str())
+            .map(|text| text.to_string());
+    }
+
+    let choice = val.get("choices").and_then(|c| c.as_array())?.get(0)?;
+    let delta = choice.get("delta")?;
+    if let Some(content) = delta.get("content").and_then(|c| c.as_str()) {
+        return Some(content.to_string());
+    }
+    if let Some(parts) = delta.get("content").and_then(|c| c.as_array()) {
+        let mut text = String::new();
+        for part in parts {
+            if let Some(t) = part.get("text").and_then(|s| s.as_str()) {
+                text.push_str(t);
+            }
+        }
+        if !text.is_empty() {
+            return Some(text);
+        }
+    }
+    None
+}
+
+fn extract_stream_finish_reason(val: &serde_json::Value) -> Option<String> {
+    val.get("choices")
+        .and_then(|c| c.as_array())
+        .and_then(|c| c.get(0))
+        .and_then(|c| c.get("finish_reason"))
+        .and_then(|r| r.as_str())
+        .map(|reason| reason.to_string())
+}
+
+/// 流式输出过程中提取当前累计文本，用于前端实时展示；不校验错误与结束原因。
+pub fn parse_streaming_progress(body: &str, api_format: &str) -> String {
+    let mut content_accum = String::new();
+
+    for line in body.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with(':') {
+            continue;
+        }
+
+        let Some(data_str) = trimmed.strip_prefix("data:") else {
+            continue;
+        };
+        let data_str = data_str.trim();
+        if data_str.is_empty() || data_str == "[DONE]" {
+            continue;
+        }
+
+        if let Ok(val) = serde_json::from_str::<serde_json::Value>(data_str) {
+            if val.get("error").is_some() {
+                continue;
+            }
+            if let Some(text) = extract_stream_delta_text(&val, api_format) {
+                content_accum.push_str(&text);
+            }
+        }
+    }
+
+    content_accum
+}
+
 pub fn parse_streaming_body(body: &str, api_format: &str) -> Result<String, String> {
     let mut content_accum = String::new();
     let mut finish_reason: Option<String> = None;
@@ -233,18 +340,7 @@ pub fn parse_streaming_body(body: &str, api_format: &str) -> Result<String, Stri
                 }
 
                 if api_format == "anthropic" {
-                    let event_type = val.get("type").and_then(|t| t.as_str()).unwrap_or("");
-                    if event_type == "content_block_delta" {
-                        if let Some(delta) = val.get("delta") {
-                            let delta_type =
-                                delta.get("type").and_then(|t| t.as_str()).unwrap_or("");
-                            if delta_type == "text_delta" {
-                                if let Some(text) = delta.get("text").and_then(|s| s.as_str()) {
-                                    content_accum.push_str(text);
-                                }
-                            }
-                        }
-                    } else if event_type == "message_delta" {
+                    if val.get("type").and_then(|t| t.as_str()) == Some("message_delta") {
                         if let Some(stop_reason) = val
                             .get("delta")
                             .and_then(|d| d.get("stop_reason"))
@@ -258,54 +354,12 @@ pub fn parse_streaming_body(body: &str, api_format: &str) -> Result<String, Stri
                             }
                         }
                     }
-                } else if api_format == "responses" || api_format == "openai_responses" {
-                    let val_type = val.get("type").and_then(|t| t.as_str()).unwrap_or("");
-                    if val_type == "response.output_text.delta" {
-                        if let Some(delta) = val.get("delta").and_then(|d| d.as_str()) {
-                            content_accum.push_str(delta);
-                        } else if let Some(delta_obj) = val.get("delta") {
-                            if let Some(t) = delta_obj.get("text").and_then(|s| s.as_str()) {
-                                content_accum.push_str(t);
-                            }
-                        }
-                    } else if let Some(delta_str) = val.get("delta").and_then(|d| d.as_str()) {
-                        content_accum.push_str(delta_str);
-                    } else if let Some(output_text) = val.get("output_text").and_then(|o| o.as_str()) {
-                        content_accum.push_str(output_text);
-                    } else if let Some(text) = val.get("text").and_then(|t| t.as_str()) {
-                        content_accum.push_str(text);
-                    } else if let Some(choices) = val.get("choices").and_then(|c| c.as_array()) {
-                        if let Some(choice) = choices.get(0) {
-                            if let Some(r) = choice.get("finish_reason").and_then(|s| s.as_str()) {
-                                finish_reason = Some(r.to_string());
-                            }
-                            if let Some(delta) = choice.get("delta") {
-                                if let Some(content) = delta.get("content").and_then(|c| c.as_str()) {
-                                    content_accum.push_str(content);
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // chat_completions
-                    if let Some(choices) = val.get("choices").and_then(|c| c.as_array()) {
-                        if let Some(choice) = choices.get(0) {
-                            if let Some(r) = choice.get("finish_reason").and_then(|s| s.as_str()) {
-                                finish_reason = Some(r.to_string());
-                            }
-                            if let Some(delta) = choice.get("delta") {
-                                if let Some(content) = delta.get("content").and_then(|c| c.as_str()) {
-                                    content_accum.push_str(content);
-                                } else if let Some(parts) = delta.get("content").and_then(|c| c.as_array()) {
-                                    for part in parts {
-                                        if let Some(t) = part.get("text").and_then(|s| s.as_str()) {
-                                            content_accum.push_str(t);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                } else if let Some(reason) = extract_stream_finish_reason(&val) {
+                    finish_reason = Some(reason);
+                }
+
+                if let Some(text) = extract_stream_delta_text(&val, api_format) {
+                    content_accum.push_str(&text);
                 }
             }
         }
@@ -384,5 +438,21 @@ mod tests {
         let sse = "data: {\"choices\": [{\"delta\": {\"content\": \"Hello\"}}]}\n\ndata: {\"choices\": [{\"delta\": {\"content\": \" World\"}}]}\n\ndata: [DONE]\n\n";
         let result = parse_streaming_body(sse, "chat_completions").unwrap();
         assert_eq!(result, "Hello World");
+    }
+
+    #[test]
+    fn test_parse_streaming_progress_ignores_partial_lines() {
+        let sse = concat!(
+            "data: {\"choices\":[{\"delta\":{\"content\":\"<svg\"}}]}\n\n",
+            "data: {\"choices\":[{\"delta\":{\"content\":\">\"}}]}\n\n",
+            "data: {\"choices\":[{\"delta\":{\"cont"
+        );
+        assert_eq!(parse_streaming_progress(sse, "chat_completions"), "<svg>");
+    }
+
+    #[test]
+    fn test_parse_streaming_progress_anthropic() {
+        let sse = "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n";
+        assert_eq!(parse_streaming_progress(sse, "anthropic"), "Hello");
     }
 }

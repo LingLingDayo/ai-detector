@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use tauri::Emitter;
 
-use crate::parser::{parse_non_streaming_json, parse_streaming_body};
+use crate::parser::{parse_non_streaming_json, parse_streaming_body, parse_streaming_progress};
 use crate::types::{ProbeRequest, ProbeResponse};
 use crate::utils::{compact_error, normalize_url};
 
@@ -265,12 +265,29 @@ pub async fn send_probe_request(
             // 首包数据到达，通知前端模型真正开始流式输出
             let _ = app.emit("pelican-stream-start", ());
 
+            // 将已解析的累计文本节流推送给前端，便于展示实时输出进度
+            let mut last_progress_at = Instant::now();
+            let mut last_progress_len = 0usize;
+            let mut emit_progress = |raw_bytes: &[u8]| {
+                let body_text = String::from_utf8_lossy(raw_bytes);
+                let preview = parse_streaming_progress(&body_text, &req.api_format);
+                if preview.len() > last_progress_len {
+                    last_progress_len = preview.len();
+                    let _ = app.emit("pelican-stream-progress", preview);
+                }
+            };
+            emit_progress(&raw_bytes);
+
             // 读取后续数据分片，每个分片之间设置 90 秒空闲超时防止连接死锁
             loop {
                 let chunk_res = tokio::time::timeout(Duration::from_secs(90), resp.chunk()).await;
                 match chunk_res {
                     Ok(Ok(Some(bytes))) => {
                         raw_bytes.extend_from_slice(&bytes);
+                        if last_progress_at.elapsed() >= Duration::from_millis(100) {
+                            emit_progress(&raw_bytes);
+                            last_progress_at = Instant::now();
+                        }
                     }
                     Ok(Ok(None)) => break,
                     Ok(Err(e)) => return Err(format!("读取上游流式响应数据中断: {}", e)),
@@ -279,6 +296,7 @@ pub async fn send_probe_request(
                     }
                 }
             }
+            emit_progress(&raw_bytes);
 
             let duration_ms = start_time.elapsed().as_millis() as u64;
             let text_body = String::from_utf8_lossy(&raw_bytes);

@@ -185,6 +185,8 @@ function handleOpenGithub(): void {
           :content="pelicanStore.pelicanContent"
           :content-type="pelicanStore.pelicanContentType"
           :raw-text="pelicanStore.rawResponseText"
+          :streamed-char-count="pelicanStore.streamedCharCount"
+          :streamed-text-tail="pelicanStore.streamedTextTail"
           :duration-ms="pelicanStore.durationMs"
           :model-name="pelicanStore.testedModel || configStore.pelicanConfig.modelName"
           :error-message="pelicanStore.errorMsg"
