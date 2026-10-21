@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 test("probeTest.ts 保证 sync-upstream.js 正则兼容性", () => {
   const storeContent = fs.readFileSync(
-    path.resolve(__dirname, "../../src/stores/probeTest.ts"),
+    path.resolve(__dirname, "probeTest.ts"),
     "utf-8"
   );
   const regex = /(const\s+totalBankModelsCount\s*=\s*unifiedBank\?\.models\?\.length\s*\|\|\s*)\d+;/;
@@ -17,7 +17,7 @@ test("probeTest.ts 保证 sync-upstream.js 正则兼容性", () => {
 
 test("probeTest.ts 拆分后代码量大幅精简至 500 行以内（原 812 行）", () => {
   const storeContent = fs.readFileSync(
-    path.resolve(__dirname, "../../src/stores/probeTest.ts"),
+    path.resolve(__dirname, "probeTest.ts"),
     "utf-8"
   );
   const lineCount = storeContent.split("\n").length;
@@ -29,15 +29,15 @@ test("probeTest.ts 拆分后代码量大幅精简至 500 行以内（原 812 行
 
 test("拆分文件均已存在且包含核心导出", () => {
   const runnerFile = fs.readFileSync(
-    path.resolve(__dirname, "../../src/services/probeRunner.ts"),
+    path.resolve(__dirname, "../services/probeRunner.ts"),
     "utf-8"
   );
   const evalFile = fs.readFileSync(
-    path.resolve(__dirname, "../../src/utils/probeEvaluation.ts"),
+    path.resolve(__dirname, "../utils/probeEvaluation.ts"),
     "utf-8"
   );
   const histFile = fs.readFileSync(
-    path.resolve(__dirname, "../../src/utils/probeHistory.ts"),
+    path.resolve(__dirname, "../utils/probeHistory.ts"),
     "utf-8"
   );
 
@@ -51,7 +51,7 @@ test("拆分文件均已存在且包含核心导出", () => {
 
 test("useProbeTestStore 包含所有既有导出方法与状态属性", () => {
   const storeContent = fs.readFileSync(
-    path.resolve(__dirname, "../../src/stores/probeTest.ts"),
+    path.resolve(__dirname, "probeTest.ts"),
     "utf-8"
   );
 

@@ -14,12 +14,12 @@ globalThis.localStorage = {
 import {
   PELICAN_PROMPT_STORAGE_KEY,
   PELICAN_CUSTOM_PROMPT_STORAGE_KEY,
-} from "../../src/constants.ts";
-import { PELICAN_PRESETS } from "../../src/data/pelicanPresets.ts";
+} from "../constants.ts";
+import { PELICAN_PRESETS } from "../data/pelicanPresets.ts";
 import {
   usePelicanTestStore,
   DEFAULT_PELICAN_PROMPT,
-} from "../../src/stores/pelicanTest.ts";
+} from "./pelicanTest.ts";
 
 const CUSTOM_PROMPT = "Generate an SVG of a pelican riding a skateboard.";
 

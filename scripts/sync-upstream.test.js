@@ -9,7 +9,7 @@ import {
   compareBankFile,
   validateBank,
   checkFallbackDiff,
-} from "../sync-upstream.js";
+} from "./sync-upstream.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -112,7 +112,7 @@ test("validateBank 能防御非法指纹库结构", () => {
 });
 
 test("checkFallbackDiff 能正确识别默认模型数量差异", () => {
-  const tempFile = path.resolve(__dirname, "../../.temp/test-store-fallback.ts");
+  const tempFile = path.resolve(__dirname, "../.temp/test-store-fallback.ts");
   if (!fs.existsSync(path.dirname(tempFile))) {
     fs.mkdirSync(path.dirname(tempFile), { recursive: true });
   }
@@ -135,7 +135,7 @@ test("checkFallbackDiff 能正确识别默认模型数量差异", () => {
     assert.strictEqual(hasDiff[0].target, 20);
   } finally {
     // 移入 .temp/trash 或删除测试文件
-    const trashDir = path.resolve(__dirname, "../../.temp/trash");
+    const trashDir = path.resolve(__dirname, "../.temp/trash");
     if (!fs.existsSync(trashDir)) {
       fs.mkdirSync(trashDir, { recursive: true });
     }

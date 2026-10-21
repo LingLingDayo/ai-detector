@@ -13,7 +13,7 @@ import {
   resolveValidReasoningEffort,
   isAdaptiveThinkingRequired,
   isAdaptiveThinkingModel,
-} from "../../src/data/modelReasoningRules.ts";
+} from "./modelReasoningRules.ts";
 
 test("MODEL_REASONING_RULES 包含了全部 20 个模型规则", () => {
   assert.equal(MODEL_REASONING_RULES.length, 20);

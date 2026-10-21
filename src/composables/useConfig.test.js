@@ -6,7 +6,7 @@ import {
   isSameConfigIdentity,
   isConfigEqual,
   formatSettingsSummary,
-} from "../../src/utils/configHelpers.ts";
+} from "../utils/configHelpers.ts";
 import {
   loadStoredConfigs,
   persistConfigList,
@@ -14,14 +14,14 @@ import {
   clearCurrentConfigStorage,
   clearActiveConfigIdStorage,
   applyPersistedConfigToTarget,
-} from "../../src/utils/configStorage.ts";
-import { useConfigModal } from "../../src/composables/useConfigModal.ts";
-import { useConfig } from "../../src/composables/useConfig.ts";
+} from "../utils/configStorage.ts";
+import { useConfigModal } from "./useConfigModal.ts";
+import { useConfig } from "./useConfig.ts";
 import {
   STORAGE_KEY,
   CONFIG_LIST_STORAGE_KEY,
   ACTIVE_CONFIG_ID_KEY,
-} from "../../src/constants.ts";
+} from "../constants.ts";
 
 // Mock localStorage for node environment
 const storage = new Map();

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractChangelog } from '../extract-changelog.js';
+import { extractChangelog } from './extract-changelog.js';
 
 describe('extractChangelog', () => {
   const sampleChangelog = `# 更新日志 (Changelog)

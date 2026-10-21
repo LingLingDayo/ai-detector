@@ -7,7 +7,7 @@ import {
   loadActiveUnifiedBank,
   getPersistedUpdateStatus,
   setPersistedUpdateStatus,
-} from "../../src/services/fingerprintSync.ts";
+} from "./fingerprintSync.ts";
 
 test("validateUnifiedBank: 正确校验指纹库结构合法性", () => {
   assert.equal(validateUnifiedBank(null), false);
