@@ -220,19 +220,12 @@ defineExpose({ focus, fillText });
           <button
             type="button"
             class="attach-btn"
-            title="添加图片（也支持粘贴或拖入）"
+            title="添加图片，支持粘贴 / 拖入，最多 4 张"
             :disabled="running || images.length >= 4"
             @click="openFilePicker"
           >
             <ImagePlus :size="15" />
           </button>
-          <span class="composer-hint">
-            {{
-              isProcessing
-                ? "正在处理图片…"
-                : "支持粘贴 / 拖入图片，最多 4 张"
-            }}
-          </span>
         </div>
 
         <div class="toolbar-right">
@@ -426,18 +419,6 @@ defineExpose({ focus, fillText });
   &:disabled {
     opacity: 0.35;
     cursor: not-allowed;
-  }
-}
-
-.composer-hint {
-  font-size: 0.64rem;
-  color: #54647a;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  @media (max-width: 520px) {
-    display: none;
   }
 }
 
