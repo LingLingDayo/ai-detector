@@ -238,6 +238,7 @@ const successTitle = computed(
   border: 1px solid rgba(148, 163, 184, 0.16);
   color: #94a3b8;
   font-size: 0.7rem;
+  line-height: 1;
   font-family: inherit;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -272,7 +273,7 @@ const successTitle = computed(
 
 .stat-item {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 5px;
   padding: 2px 8px 2px 5px;
   border-radius: 5px;
@@ -286,6 +287,7 @@ const successTitle = computed(
 
   .stat-icon {
     display: inline-flex;
+    align-self: center;
     color: #64748b;
   }
 
