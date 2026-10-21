@@ -132,7 +132,7 @@ onBeforeUnmount(removeGlobalListeners);
   flex-shrink: 0;
   cursor: help;
   outline: none;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: box-shadow var(--transition-fast);
 
   &.is-match {
     color: #34d399;
@@ -154,7 +154,6 @@ onBeforeUnmount(removeGlobalListeners);
 
   &:hover,
   &:focus-visible {
-    transform: scale(1.08);
     box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
   }
 }
