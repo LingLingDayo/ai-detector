@@ -10,6 +10,7 @@ export const PELICAN_PROMPT_STORAGE_KEY = "modeltrace_pelican_prompt";
 export const PELICAN_CUSTOM_PROMPT_STORAGE_KEY = "modeltrace_pelican_custom_prompt";
 export const PELICAN_HISTORY_STORAGE_KEY = "modeltrace_pelican_history";
 export const PROBE_HISTORY_STORAGE_KEY = "modeltrace_probe_history";
+export const CONNECTION_HISTORY_STORAGE_KEY = "modeltrace_connection_history";
 export {
   FINGERPRINT_UPDATE_AVAILABLE_KEY,
   CUSTOM_UNIFIED_BANK_KEY,

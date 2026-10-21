@@ -76,7 +76,7 @@ export function aggregateConnectionMessages(
 
     if (message.error) {
       errorCount += 1;
-    } else if (!message.streaming) {
+    } else if (!message.streaming && !message.stopped) {
       successCount += 1;
     }
 
