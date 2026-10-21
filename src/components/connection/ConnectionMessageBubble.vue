@@ -6,6 +6,7 @@ import type { ConnectionChatMessage } from "../../types";
 import { useClipboard } from "../../composables/useClipboard";
 import { formatDurationMs } from "../../utils/connectionMetrics";
 import { renderMarkdown } from "../../utils/markdown";
+import { formatHistoryTime } from "../../utils/pelicanFormatters";
 import ConnectionMessageMeta from "./ConnectionMessageMeta.vue";
 
 const props = withDefaults(
@@ -44,6 +45,11 @@ const imageGridClass = computed(() => {
   if (count === 2) return "count-2";
   return "count-many";
 });
+
+const messageTime = computed(() => formatHistoryTime(props.message.createdAt));
+const messageDateTime = computed(() =>
+  new Date(props.message.createdAt).toISOString()
+);
 
 function handleCopy(): void {
   if (props.message.content) {
@@ -108,27 +114,32 @@ function handleCopy(): void {
 
         <div v-if="!message.streaming" class="assistant-footer">
           <ConnectionMessageMeta :message="message" />
-          <div class="message-actions">
-            <button
-              v-if="message.content"
-              type="button"
-              class="copy-message-btn"
-              :title="copied ? '已复制' : '复制回复内容'"
-              @click="handleCopy"
-            >
-              <Check v-if="copied" :size="12" />
-              <Copy v-else :size="12" />
-            </button>
-            <button
-              v-if="canRetry"
-              type="button"
-              class="retry-message-btn"
-              :title="retryHint"
-              :aria-label="retryHint"
-              @click="emit('retry', message.id)"
-            >
-              <RefreshCw :size="12" />
-            </button>
+          <div class="footer-trailing">
+            <time class="message-time" :datetime="messageDateTime">
+              {{ messageTime }}
+            </time>
+            <div class="message-actions">
+              <button
+                v-if="message.content"
+                type="button"
+                class="copy-message-btn"
+                :title="copied ? '已复制' : '复制回复内容'"
+                @click="handleCopy"
+              >
+                <Check v-if="copied" :size="12" />
+                <Copy v-else :size="12" />
+              </button>
+              <button
+                v-if="canRetry"
+                type="button"
+                class="retry-message-btn"
+                :title="retryHint"
+                :aria-label="retryHint"
+                @click="emit('retry', message.id)"
+              >
+                <RefreshCw :size="12" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -459,12 +470,33 @@ function handleCopy(): void {
   }
 }
 
-.message-actions {
+.footer-trailing {
   flex-shrink: 0;
+  display: grid;
+  justify-items: end;
+  align-items: start;
+  margin-top: 5px;
+
+  > * {
+    grid-area: 1 / 1;
+  }
+}
+
+.message-time {
+  color: #64748b;
+  font-size: 0.66rem;
+  line-height: 22px;
+  white-space: nowrap;
+  transition: opacity var(--transition-fast);
+}
+
+.message-actions {
   display: flex;
   align-items: flex-start;
   gap: 4px;
-  margin-top: 5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
 }
 
 .copy-message-btn,
@@ -480,7 +512,6 @@ function handleCopy(): void {
   border-radius: 4px;
   color: #64748b;
   cursor: pointer;
-  opacity: 0;
   transition: all var(--transition-fast);
 
   &:hover {
@@ -489,11 +520,15 @@ function handleCopy(): void {
   }
 }
 
-.assistant-body:hover .copy-message-btn,
-.assistant-body:hover .retry-message-btn,
-.copy-message-btn:focus-visible,
-.retry-message-btn:focus-visible {
+.assistant-body:hover .message-time,
+.footer-trailing:focus-within .message-time {
+  opacity: 0;
+}
+
+.assistant-body:hover .message-actions,
+.footer-trailing:focus-within .message-actions {
   opacity: 1;
+  pointer-events: auto;
 }
 
 @keyframes message-in {
