@@ -143,6 +143,7 @@ defineExpose({ scrollToBottom });
     radial-gradient(circle at 92% 0%, rgba(99, 102, 241, 0.07), transparent 36%),
     rgba(7, 11, 19, 0.52);
   box-shadow: inset 0 1px 14px rgba(0, 0, 0, 0.18);
+  user-select: auto;
 }
 
 .message-list {

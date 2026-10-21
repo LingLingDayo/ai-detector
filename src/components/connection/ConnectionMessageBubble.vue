@@ -175,6 +175,7 @@ function handleCopy(): void {
   background: rgba(99, 102, 241, 0.1);
   border: 1px solid rgba(99, 102, 241, 0.24);
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.12);
+  user-select: none;
 
   img {
     width: 20px;
@@ -467,6 +468,7 @@ function handleCopy(): void {
   align-items: flex-start;
   gap: 8px;
   margin-top: 8px;
+  user-select: none;
 
   &:first-child {
     margin-top: 0;
