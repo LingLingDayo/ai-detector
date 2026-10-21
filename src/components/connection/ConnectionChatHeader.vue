@@ -84,9 +84,6 @@ const successTitle = computed(
             <span class="live-dot"></span>
             {{ isGenerating ? "模型响应中" : "连接中" }}
           </span>
-          <span v-else-if="stats.requestCount > 0" class="session-badge">
-            上下文保留中
-          </span>
         </div>
         <p>多轮对话 · 图片输入 · 实时核对上游真实模型</p>
       </div>
@@ -204,8 +201,7 @@ const successTitle = computed(
   }
 }
 
-.live-badge,
-.session-badge {
+.live-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -215,18 +211,9 @@ const successTitle = computed(
   font-size: 0.62rem;
   font-weight: 500;
   white-space: nowrap;
-}
-
-.live-badge {
   background: rgba(99, 102, 241, 0.13);
   border: 1px solid rgba(99, 102, 241, 0.32);
   color: #a5b4fc;
-}
-
-.session-badge {
-  background: rgba(16, 185, 129, 0.09);
-  border: 1px solid rgba(16, 185, 129, 0.24);
-  color: #6ee7b7;
 }
 
 .live-dot {
