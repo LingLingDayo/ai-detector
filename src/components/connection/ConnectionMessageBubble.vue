@@ -16,11 +16,13 @@ const props = withDefaults(
     liveElapsedMs?: number;
     canRetry?: boolean;
     retryHint?: string;
+    isGenerating?: boolean;
   }>(),
   {
     liveElapsedMs: 0,
     canRetry: false,
     retryHint: "重新生成回复",
+    isGenerating: false,
   }
 );
 
@@ -109,7 +111,7 @@ async function handleCopy(): Promise<void> {
             <span></span><span></span><span></span>
           </span>
           <span v-else class="stream-live-dot"></span>
-          <span>{{ message.content ? "生成中" : "正在等待模型响应" }}</span>
+          <span>{{ message.content ? "生成中" : isGenerating ? "正在思考中..." : "正在等待模型响应" }}</span>
           <span v-if="message.content" class="stream-char-count">
             {{ message.content.length }} 字符
           </span>

@@ -125,6 +125,9 @@ defineExpose({ scrollToBottom });
         "
         :can-retry="canRetryMessage(message)"
         :retry-hint="getRetryHint(index)"
+        :is-generating="
+          message.streaming && index === messages.length - 1 && isGenerating
+        "
         @retry="emit('retry', $event)"
       />
     </div>
