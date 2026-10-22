@@ -118,11 +118,10 @@ export async function fetchRemoteUnifiedBank(timeoutMs = 12000): Promise<{
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
+      // 自定义 Cache-Control 头会触发 CORS 预检，改用 fetch 缓存选项
       const res = await fetch(url, {
-        headers: {
-          Accept: "application/json",
-          "Cache-Control": "no-cache",
-        },
+        headers: { Accept: "application/json" },
+        cache: "no-cache",
         signal: controller.signal,
       });
 

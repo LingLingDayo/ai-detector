@@ -3,6 +3,7 @@ import {
   validateUnifiedBank,
   normalizeBankText,
   areBanksDifferent,
+  fetchRemoteUnifiedBank,
   loadActiveUnifiedBank,
   getPersistedUpdateStatus,
   setPersistedUpdateStatus,
@@ -94,6 +95,28 @@ describe("fingerprintSync", () => {
 
     // 参数更新
     expect(areBanksDifferent(bankA, bankDifferentParam)).toBe(true);
+  });
+
+  it("fetchRemoteUnifiedBank: 不使用会触发 CORS 预检的 Cache-Control 头", async () => {
+    const bank = {
+      models: [{ id: "model-1" }],
+      calibration: { slope: 1.2 },
+      robust: { feature: "abc" },
+    };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(bank), { status: 200 })
+    );
+
+    try {
+      const result = await fetchRemoteUnifiedBank();
+      expect(result.parsedBank.models[0].id).toBe("model-1");
+
+      const options = fetchMock.mock.calls[0][1] as RequestInit;
+      expect(options.headers).toEqual({ Accept: "application/json" });
+      expect(options.cache).toBe("no-cache");
+    } finally {
+      fetchMock.mockRestore();
+    }
   });
 
   it("持久化更新标记读写与题库降级加载", () => {
