@@ -101,28 +101,6 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
   );
 }
 
-function sanitizeSvgMarkup(svg: string): string {
-  const template = document.createElement("template");
-  template.innerHTML = svg;
-
-  template.content.querySelectorAll("script").forEach((node) => node.remove());
-  template.content.querySelectorAll("*").forEach((element) => {
-    for (const attribute of Array.from(element.attributes)) {
-      const name = attribute.name.toLowerCase();
-      if (name.startsWith("on")) {
-        element.removeAttribute(attribute.name);
-      } else if (
-        (name === "href" || name === "xlink:href") &&
-        /^\s*javascript:/i.test(attribute.value)
-      ) {
-        element.removeAttribute(attribute.name);
-      }
-    }
-  });
-
-  return template.innerHTML;
-}
-
 function getPureSvgContent(rawContent: string): string {
   if (!rawContent) return "";
   const trimmed = rawContent.trim();
@@ -142,7 +120,7 @@ function getPureSvgContent(rawContent: string): string {
     }
     return `<svg ${newAttrs}>`;
   });
-  return /^<svg[\s>]/i.test(svg) ? sanitizeSvgMarkup(svg) : svg;
+  return svg;
 }
 
 function buildSvgPreviewDocument(rawContent: string): string {
@@ -196,10 +174,11 @@ function buildSvgPreviewDocument(rawContent: string): string {
           @click="handleApply(item)"
           title="点击将此图片载入主界面查看"
         >
+          <!-- 允许动态脚本运行；不授予同源权限，避免脚本访问主界面 -->
           <iframe
             class="svg-frame"
             :srcdoc="buildSvgPreviewDocument(item.content)"
-            sandbox=""
+            sandbox="allow-scripts"
             scrolling="no"
             loading="lazy"
             tabindex="-1"
