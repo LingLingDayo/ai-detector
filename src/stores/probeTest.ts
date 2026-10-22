@@ -12,6 +12,8 @@ import { loadActiveUnifiedBank, getPersistedUpdateStatus, setPersistedUpdateStat
 
 const unifiedBank = rawUnifiedBank as unknown as UnifiedBank;
 
+const PROBE_INTRO_DESC = "通过 3 道随机题目探测模型输出特征，并与统一指纹库比对进行模型归因";
+
 type ResolvedProbeOptions = { baseUrl: string; apiKey: string; model: string; apiFormat?: string; reasoningEffort?: string; isStream: boolean; timeoutSeconds: number };
 
 export const useProbeTestStore = defineStore("probeTest", () => {
@@ -22,7 +24,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
   const completedCount = ref(0);
   const totalCount = 3;
   const statusTitle = ref("探测题目");
-  const statusDesc = ref("已抽取 3 道测试题目，可点击卡片预览或直接开始测试");
+  const statusDesc = ref(PROBE_INTRO_DESC);
   const statusAlert = ref<StatusAlertInfo | null>(null);
   const analysisResult = ref<GlobalAnalysisResult | null>(null);
   const currentProbeHistoryItem = ref<ProbeHistoryItem | null>(null);
@@ -172,7 +174,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     progressPercent.value = 0;
     completedCount.value = 0;
     statusTitle.value = "探测题目";
-    statusDesc.value = "已就绪，点击开始测试发起探测";
+    statusDesc.value = PROBE_INTRO_DESC;
     statusAlert.value = null;
     analysisResult.value = null;
     currentProbeHistoryItem.value = null;
