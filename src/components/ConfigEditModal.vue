@@ -400,10 +400,10 @@ function handleSubmit(applyImmediately: boolean = false): void {
 
           <!-- 弹窗底部操作栏（固定显示） -->
           <div class="modal-footer">
-            <button type="button" class="btn btn-ghost" @click="emit('close')">
-              取消
-            </button>
-            <div class="footer-action-right">
+            <div class="footer-actions">
+              <button type="button" class="btn btn-ghost" @click="emit('close')">
+                取消
+              </button>
               <button
                 type="submit"
                 class="btn btn-primary"
@@ -602,14 +602,14 @@ function handleSubmit(applyImmediately: boolean = false): void {
 .modal-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 10px;
   padding: 12px 18px;
   border-top: 1px solid var(--border-subtle);
   background: rgba(18, 24, 38, 0.95);
   flex-shrink: 0;
 
-  .footer-action-right {
+  .footer-actions {
     display: flex;
     gap: 8px;
   }
