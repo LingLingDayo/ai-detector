@@ -101,6 +101,28 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
   );
 }
 
+function sanitizeSvgMarkup(svg: string): string {
+  const template = document.createElement("template");
+  template.innerHTML = svg;
+
+  template.content.querySelectorAll("script").forEach((node) => node.remove());
+  template.content.querySelectorAll("*").forEach((element) => {
+    for (const attribute of Array.from(element.attributes)) {
+      const name = attribute.name.toLowerCase();
+      if (name.startsWith("on")) {
+        element.removeAttribute(attribute.name);
+      } else if (
+        (name === "href" || name === "xlink:href") &&
+        /^\s*javascript:/i.test(attribute.value)
+      ) {
+        element.removeAttribute(attribute.name);
+      }
+    }
+  });
+
+  return template.innerHTML;
+}
+
 function getPureSvgContent(rawContent: string): string {
   if (!rawContent) return "";
   const trimmed = rawContent.trim();
@@ -120,7 +142,7 @@ function getPureSvgContent(rawContent: string): string {
     }
     return `<svg ${newAttrs}>`;
   });
-  return svg;
+  return /^<svg[\s>]/i.test(svg) ? sanitizeSvgMarkup(svg) : svg;
 }
 
 function buildSvgPreviewDocument(rawContent: string): string {
