@@ -117,8 +117,20 @@ function main() {
         console.log(`   ✓ src-tauri/Cargo.toml -> ${cleanVersion}`);
       }
 
+      const cargoLockPath = path.resolve(rootDir, 'src-tauri/Cargo.lock');
+      if (fs.existsSync(cargoLockPath)) {
+        let lockContent = fs.readFileSync(cargoLockPath, 'utf-8');
+        lockContent = lockContent.replace(/(\[\[package\]\]\s*name\s*=\s*"ai-detector"\s*version\s*=\s*)".*?"/, `$1"${cleanVersion}"`);
+        fs.writeFileSync(cargoLockPath, lockContent, 'utf-8');
+        console.log(`   ✓ src-tauri/Cargo.lock -> ${cleanVersion}`);
+      }
+
       // 提交版本文件更改
-      runGit(`git add "${pkgPath}" "${tauriConfPath}" "${cargoTomlPath}"`);
+      const filesToAdd = [pkgPath, tauriConfPath, cargoTomlPath];
+      if (fs.existsSync(cargoLockPath)) {
+        filesToAdd.push(cargoLockPath);
+      }
+      runGit(`git add ${filesToAdd.map(f => `"${f}"`).join(' ')}`);
       runGit(`git commit -m "chore: 升级版本号至 ${targetTag}"`);
       console.log(`   ✓ 已自动创建版本变更提交`);
     } else {
