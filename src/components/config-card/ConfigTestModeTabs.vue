@@ -67,6 +67,7 @@ const emit = defineEmits<{
   margin-top: 1px;
 
   .tab-item {
+    position: relative;
     flex: 1;
     display: inline-flex;
     align-items: center;
@@ -82,6 +83,18 @@ const emit = defineEmits<{
     cursor: pointer;
     transition: all var(--transition-fast);
     font-family: inherit;
+
+    & + .tab-item::before {
+      content: "";
+      position: absolute;
+      left: -2px;
+      top: 50%;
+      width: 1px;
+      height: 12px;
+      transform: translateY(-50%);
+      background: rgba(148, 163, 184, 0.22);
+      pointer-events: none;
+    }
 
     &:hover:not(:disabled):not(.active) {
       color: var(--text-primary);
