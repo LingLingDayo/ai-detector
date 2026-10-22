@@ -28,6 +28,8 @@ const emit = defineEmits<{
       <span v-if="probeRunning" class="tab-running-dot" title="模型测试进行中"></span>
     </button>
 
+    <span class="tab-divider" aria-hidden="true"></span>
+
     <button
       type="button"
       class="tab-item"
@@ -40,6 +42,8 @@ const emit = defineEmits<{
       <span>鹈鹕测试</span>
       <span v-if="pelicanRunning" class="tab-running-dot" title="鹈鹕测试进行中"></span>
     </button>
+
+    <span class="tab-divider" aria-hidden="true"></span>
 
     <button
       type="button"
@@ -63,11 +67,20 @@ const emit = defineEmits<{
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 2px;
-  gap: 3px;
+  gap: 2px;
   margin-top: 1px;
 
+  .tab-divider {
+    flex: 0 0 1px;
+    width: 1px;
+    height: 12px;
+    align-self: center;
+    border-radius: 1px;
+    background: rgba(148, 163, 184, 0.22);
+    pointer-events: none;
+  }
+
   .tab-item {
-    position: relative;
     flex: 1;
     display: inline-flex;
     align-items: center;
@@ -83,18 +96,6 @@ const emit = defineEmits<{
     cursor: pointer;
     transition: all var(--transition-fast);
     font-family: inherit;
-
-    & + .tab-item::before {
-      content: "";
-      position: absolute;
-      left: -2px;
-      top: 50%;
-      width: 1px;
-      height: 12px;
-      transform: translateY(-50%);
-      background: rgba(148, 163, 184, 0.22);
-      pointer-events: none;
-    }
 
     &:hover:not(:disabled):not(.active) {
       color: var(--text-primary);
