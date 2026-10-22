@@ -213,7 +213,7 @@ async function handleCopy(): Promise<void> {
   flex-direction: column;
   gap: 7px;
   padding: 9px 13px;
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.28), rgba(37, 99, 235, 0.2));
+  background: rgba(99, 102, 241, 0.1);
   border: 1px solid rgba(129, 140, 248, 0.25);
   border-radius: 13px 13px 4px 13px;
   box-shadow: 0 4px 16px rgba(30, 41, 59, 0.2);

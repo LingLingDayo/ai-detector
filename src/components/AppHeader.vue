@@ -43,13 +43,13 @@ import logoUrl from "../assets/logo.png";
         width: 100%;
         height: 100%;
         object-fit: contain;
-        filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.4));
+        filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.4));
         transition: transform var(--transition-normal), filter var(--transition-normal);
       }
 
       &:hover .brand-logo-img {
         transform: scale(1.06);
-        filter: drop-shadow(0 0 14px rgba(6, 182, 212, 0.65));
+        filter: drop-shadow(0 0 8px rgba(67, 38, 233, 0.65));
       }
     }
 
