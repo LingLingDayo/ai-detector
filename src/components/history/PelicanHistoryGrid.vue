@@ -122,6 +122,36 @@ function getPureSvgContent(rawContent: string): string {
   });
   return svg;
 }
+
+function buildSvgPreviewDocument(rawContent: string): string {
+  const svg = getPureSvgContent(rawContent);
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    svg {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+  </style>
+</head>
+<body>${svg}</body>
+</html>`;
+}
 </script>
 
 <template>
@@ -144,10 +174,15 @@ function getPureSvgContent(rawContent: string): string {
           @click="handleApply(item)"
           title="点击将此图片载入主界面查看"
         >
-          <div
-            class="svg-viewport"
-            v-html="getPureSvgContent(item.content)"
-          ></div>
+          <iframe
+            class="svg-frame"
+            :srcdoc="buildSvgPreviewDocument(item.content)"
+            sandbox=""
+            scrolling="no"
+            loading="lazy"
+            tabindex="-1"
+            :title="`${item.modelName} 鹈鹕测试预览`"
+          ></iframe>
         </div>
 
         <!-- 2. 左上角显示调用模型名（通透半透明，无 icon） -->
@@ -378,21 +413,15 @@ function getPureSvgContent(rawContent: string): string {
     cursor: not-allowed;
   }
 
-  .svg-viewport {
+  .svg-frame {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    :deep(svg) {
-      width: 100%;
-      height: 100%;
-      display: block;
-      object-fit: cover;
-      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
-      user-select: none;
-    }
+    border: 0;
+    display: block;
+    background: transparent;
+    pointer-events: none;
   }
 }
 
