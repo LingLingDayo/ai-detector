@@ -37,12 +37,12 @@ function updatePosition(): void {
   const trigger = triggerRef.value;
   if (!trigger) return;
   const rect = trigger.getBoundingClientRect();
-  const tooltipWidth = 290;
+  const tooltipWidth = 270;
   const tooltipHeight = tooltipRef.value?.offsetHeight || 128;
   const showBelow = window.innerHeight - rect.bottom > tooltipHeight + 16;
   const left = Math.max(
     8,
-    Math.min(rect.left - 20, window.innerWidth - tooltipWidth - 8)
+    Math.min(rect.left, window.innerWidth - tooltipWidth - 8)
   );
   tooltipStyle.value = {
     left: `${left}px`,
@@ -156,7 +156,7 @@ onBeforeUnmount(removeGlobalListeners);
 .route-tooltip {
   position: fixed;
   z-index: 10020;
-  width: 290px;
+  width: 270px;
   padding: 10px 12px;
   background: rgba(9, 14, 26, 0.97);
   border: 1px solid rgba(99, 102, 241, 0.32);
