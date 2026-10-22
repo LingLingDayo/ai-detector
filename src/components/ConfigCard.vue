@@ -16,6 +16,7 @@ import {
 } from "../stores";
 import { useClipboard } from "../composables/useClipboard";
 import { useToast } from "../composables/useToast";
+import { formatDurationMs } from "../utils/connectionMetrics";
 import { getModelRoutingStatus } from "../utils/modelRouting";
 
 const configStore = useConfigStore();
@@ -157,6 +158,7 @@ async function startConnectionQuickTest(): Promise<void> {
     return;
   }
   if (lastMessage?.role === "assistant") {
+    const responseTime = formatDurationMs(lastMessage.durationMs);
     if (
       getModelRoutingStatus(
         lastMessage.requestedModel,
@@ -166,12 +168,16 @@ async function startConnectionQuickTest(): Promise<void> {
       showToast({
         type: "warning",
         title: "测试成功，但模型不一致",
-        message: `请求模型：${lastMessage.requestedModel || "—"}\n实际响应：${lastMessage.responseModel}\n上游可能配置了模型映射。`,
+        message: `请求模型：${lastMessage.requestedModel || "—"}\n实际响应：${lastMessage.responseModel}\n响应时间：${responseTime}\n上游可能配置了模型映射。`,
         duration: 6000,
       });
       return;
     }
-    showToast({ type: "success", title: "测试成功", duration: 3000 });
+    showToast({
+      type: "success",
+      title: `测试成功 ${responseTime}`,
+      duration: 3000,
+    });
     return;
   }
   showToast({
