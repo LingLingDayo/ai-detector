@@ -457,7 +457,7 @@ defineExpose({ focus, fillText });
     box-shadow: 0 3px 12px rgba(99, 102, 241, 0.38);
 
     &:hover {
-      box-shadow: 0 5px 16px rgba(99, 102, 241, 0.55);
+      background: linear-gradient(135deg, #7274f4, #4f8ff8);
     }
   }
 
