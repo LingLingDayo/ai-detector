@@ -214,9 +214,16 @@ defineExpose({ scrollToBottom });
     border-radius: 9999px;
     color: #94a3b8;
     font-size: 0.7rem;
+    line-height: 1;
     font-family: inherit;
     cursor: pointer;
     transition: all var(--transition-fast);
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+    }
 
     svg {
       color: #818cf8;

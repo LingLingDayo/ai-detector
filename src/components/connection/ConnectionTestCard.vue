@@ -74,7 +74,11 @@ async function handleClearContext(): Promise<void> {
 }
 
 function handleSuggestion(text: string): void {
-  composerRef.value?.fillText(text);
+  if (!configReady.value || connectionStore.isConnectionRunning) {
+    composerRef.value?.fillText(text);
+    return;
+  }
+  handleSend({ text, images: [] });
 }
 
 watch(
