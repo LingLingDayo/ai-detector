@@ -436,8 +436,8 @@ defineExpose({ focus, fillText });
 }
 
 .send-btn {
-  width: 29px;
-  height: 29px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -457,7 +457,6 @@ defineExpose({ focus, fillText });
     box-shadow: 0 3px 12px rgba(99, 102, 241, 0.38);
 
     &:hover {
-      transform: translateY(-1px);
       box-shadow: 0 5px 16px rgba(99, 102, 241, 0.55);
     }
   }
