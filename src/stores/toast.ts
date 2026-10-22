@@ -29,6 +29,10 @@ export const useToastStore = defineStore("toast", () => {
   });
 
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let remainingMs = 0;
+  let timerStartedAt = 0;
+  let autoCloseEnabled = false;
+  let isPaused = false;
 
   function clearTimer(): void {
     if (timer) {
@@ -37,8 +41,36 @@ export const useToastStore = defineStore("toast", () => {
     }
   }
 
+  function startTimer(): void {
+    if (isPaused || timer || remainingMs <= 0) return;
+    timerStartedAt = Date.now();
+    timer = setTimeout(hideToast, remainingMs);
+  }
+
+  function pauseToast(): void {
+    if (!toastState.isOpen || isPaused) return;
+    isPaused = true;
+    if (!autoCloseEnabled || !timer) return;
+    remainingMs = Math.max(0, remainingMs - (Date.now() - timerStartedAt));
+    clearTimer();
+  }
+
+  function resumeToast(): void {
+    if (!isPaused) return;
+    isPaused = false;
+    if (!toastState.isOpen || !autoCloseEnabled) return;
+    if (remainingMs <= 0) {
+      hideToast();
+      return;
+    }
+    startTimer();
+  }
+
   function hideToast(): void {
     clearTimer();
+    remainingMs = 0;
+    autoCloseEnabled = false;
+    isPaused = false;
     toastState.isOpen = false;
   }
 
@@ -51,13 +83,16 @@ export const useToastStore = defineStore("toast", () => {
     toastState.isOpen = true;
 
     const duration = options.duration ?? DEFAULT_TOAST_DURATION;
-    if (duration > 0) {
-      timer = setTimeout(hideToast, duration);
-    }
+    remainingMs = Math.max(0, duration);
+    autoCloseEnabled = duration > 0;
+    startTimer();
   }
 
   function resetToast(): void {
     clearTimer();
+    remainingMs = 0;
+    autoCloseEnabled = false;
+    isPaused = false;
     Object.assign(toastState, {
       isOpen: false,
       type: "info",
@@ -72,6 +107,8 @@ export const useToastStore = defineStore("toast", () => {
     toastState,
     showToast,
     hideToast,
+    pauseToast,
+    resumeToast,
     resetToast,
   };
 });

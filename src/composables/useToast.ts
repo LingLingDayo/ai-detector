@@ -14,5 +14,7 @@ export function useToast() {
     toastState: toastStore.toastState,
     showToast: toastStore.showToast,
     hideToast: toastStore.hideToast,
+    pauseToast: toastStore.pauseToast,
+    resumeToast: toastStore.resumeToast,
   };
 }

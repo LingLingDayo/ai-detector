@@ -59,4 +59,52 @@ describe("公共顶部提示", () => {
 
     expect(store.toastState.isOpen).toBe(false);
   });
+
+  it("悬停时暂停自动关闭，移出后按剩余时间继续", () => {
+    const store = useToastStore();
+
+    store.showToast({ title: "测试成功", duration: 3000 });
+    vi.advanceTimersByTime(1000);
+
+    store.pauseToast();
+    vi.advanceTimersByTime(10_000);
+    expect(store.toastState.isOpen).toBe(true);
+
+    store.resumeToast();
+    vi.advanceTimersByTime(1999);
+    expect(store.toastState.isOpen).toBe(true);
+
+    vi.advanceTimersByTime(1);
+    expect(store.toastState.isOpen).toBe(false);
+  });
+
+  it("悬停期间展示新提示时保持暂停", () => {
+    const store = useToastStore();
+
+    store.showToast({ title: "第一条提示", duration: 2000 });
+    store.pauseToast();
+    vi.advanceTimersByTime(5000);
+
+    store.showToast({ title: "第二条提示", duration: 1000 });
+    vi.advanceTimersByTime(5000);
+    expect(store.toastState.isOpen).toBe(true);
+
+    store.resumeToast();
+    vi.advanceTimersByTime(999);
+    expect(store.toastState.isOpen).toBe(true);
+
+    vi.advanceTimersByTime(1);
+    expect(store.toastState.isOpen).toBe(false);
+  });
+
+  it("不自动关闭的提示在悬停移出后仍保持打开", () => {
+    const store = useToastStore();
+
+    store.showToast({ title: "持续提示", duration: 0 });
+    store.pauseToast();
+    store.resumeToast();
+    vi.advanceTimersByTime(10_000);
+
+    expect(store.toastState.isOpen).toBe(true);
+  });
 });

@@ -3,7 +3,7 @@ import { computed } from "vue";
 import { AlertTriangle, CheckCircle2, Info, X } from "@lucide/vue";
 import { useToast } from "../../composables/useToast";
 
-const { toastState, hideToast } = useToast();
+const { toastState, hideToast, pauseToast, resumeToast } = useToast();
 
 const toastIcon = computed(() => {
   if (toastState.type === "success") return CheckCircle2;
@@ -28,6 +28,8 @@ const hasMessage = computed(() => Boolean(toastState.message));
         :class="[`is-${toastState.type}`, { 'is-multiline': hasMessage }]"
         :role="ariaRole"
         :aria-live="toastState.type === 'error' ? 'assertive' : 'polite'"
+        @mouseenter="pauseToast"
+        @mouseleave="resumeToast"
       >
         <span class="toast-icon">
           <component :is="toastIcon" :size="16" />
@@ -124,6 +126,7 @@ const hasMessage = computed(() => Boolean(toastState.message));
 .toast-content {
   flex: 1;
   min-width: 0;
+  user-select: text;
 }
 
 .app-toast.is-multiline .toast-content {
