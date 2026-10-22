@@ -116,6 +116,7 @@ const ariaRole = computed(() =>
 }
 
 .toast-content {
+  flex: 1;
   min-width: 0;
   padding-top: 1px;
 }
