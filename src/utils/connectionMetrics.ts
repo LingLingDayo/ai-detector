@@ -55,6 +55,21 @@ export function computeSuccessRate(
   return successCount / finishedCount;
 }
 
+const MIN_GENERATION_WINDOW_MS = 100;
+
+/** 首字与结束时间过近时，差值受计时精度影响极大，回退到总耗时估算。 */
+function resolveGenerationDurationMs(
+  durationMs?: number,
+  firstTokenMs?: number
+): number {
+  if (durationMs === undefined || durationMs <= 0) return 0;
+  if (firstTokenMs === undefined) return durationMs;
+  const generationWindow = durationMs - firstTokenMs;
+  return generationWindow >= MIN_GENERATION_WINDOW_MS
+    ? generationWindow
+    : durationMs;
+}
+
 export function aggregateConnectionMessages(
   messages: readonly ConnectionChatMessage[]
 ): ConnectionSessionStats {
@@ -124,12 +139,10 @@ export function aggregateConnectionMessages(
 
     if (message.durationMs !== undefined) {
       totalDurationMs += message.durationMs;
-      const firstToken = message.firstTokenMs;
-      const generation =
-        firstToken !== undefined && message.durationMs > firstToken
-          ? message.durationMs - firstToken
-          : message.durationMs;
-      generationMs += generation;
+      generationMs += resolveGenerationDurationMs(
+        message.durationMs,
+        message.firstTokenMs
+      );
     }
     if (message.firstTokenMs !== undefined) {
       firstTokenSum += message.firstTokenMs;
@@ -177,11 +190,10 @@ export function getMessageOutputSpeed(
 ): number | null {
   const { count } = getMessageOutputTokens(message);
   if (count <= 0 || !message.durationMs || message.durationMs <= 0) return null;
-  const firstToken = message.firstTokenMs;
-  const generationMs =
-    firstToken !== undefined && message.durationMs > firstToken
-      ? message.durationMs - firstToken
-      : message.durationMs;
+  const generationMs = resolveGenerationDurationMs(
+    message.durationMs,
+    message.firstTokenMs
+  );
   return generationMs > 0 ? count / (generationMs / 1000) : null;
 }
 

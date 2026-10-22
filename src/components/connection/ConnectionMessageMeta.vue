@@ -56,7 +56,7 @@ const hasCacheUsage = computed(
     <span
       v-if="outputSpeed !== null"
       class="meta-item"
-      title="按首个输出 token 之后的生成时长计算"
+      title="按首字之后的生成时长估算，过短时按总耗时计算"
     >
       {{ formatSpeed(outputSpeed) }}
     </span>

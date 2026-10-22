@@ -9,6 +9,7 @@ import {
   formatSpeed,
   formatSuccessRate,
   formatTokenCount,
+  getMessageOutputSpeed,
 } from "./connectionMetrics";
 
 function assistantMessage(
@@ -101,6 +102,26 @@ describe("连接测试统计聚合", () => {
     expect(stats.avgFirstTokenMs).toBe(300);
     expect(stats.cacheRate).toBeCloseTo(2 / 3, 4);
     expect(stats.usageEstimated).toBe(false);
+  });
+
+  it("首字与结束时间过于接近时回退总耗时计算速度", () => {
+    const message = assistantMessage({
+      requestedModel: "gpt-4o",
+      responseModel: "gpt-4o",
+      content: "Hi! How can I help you today?",
+      durationMs: 1200,
+      firstTokenMs: 1199,
+      usage: {
+        inputTokens: 31,
+        outputTokens: 30,
+        cacheWriteTokens: 31,
+      },
+    });
+
+    expect(getMessageOutputSpeed(message)).toBeCloseTo(25, 4);
+
+    const stats = aggregateConnectionMessages([message]);
+    expect(stats.outputSpeed).toBeCloseTo(25, 4);
   });
 
   it("缺少 usage 时估算输出 token，并保留进行中的请求", () => {
