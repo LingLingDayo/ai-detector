@@ -4,6 +4,7 @@ import { AlertCircle, Check, Copy, RefreshCw } from "@lucide/vue";
 import logoUrl from "../../assets/logo.png";
 import type { ConnectionChatMessage } from "../../types";
 import { useClipboard } from "../../composables/useClipboard";
+import { useToast } from "../../composables/useToast";
 import { formatDurationMs } from "../../utils/connectionMetrics";
 import { renderMarkdown } from "../../utils/markdown";
 import { formatHistoryTime } from "../../utils/pelicanFormatters";
@@ -28,6 +29,7 @@ const emit = defineEmits<{
 }>();
 
 const { copied, copy } = useClipboard();
+const { showToast } = useToast();
 
 const renderedContent = computed(() => {
   let html = renderMarkdown(props.message.content);
@@ -51,10 +53,19 @@ const messageDateTime = computed(() =>
   new Date(props.message.createdAt).toISOString()
 );
 
-function handleCopy(): void {
-  if (props.message.content) {
-    copy(props.message.content);
-  }
+async function handleCopy(): Promise<void> {
+  if (!props.message.content) return;
+  const succeeded = await copy(props.message.content);
+  showToast(
+    succeeded
+      ? { type: "success", title: "已复制回复内容", duration: 2000 }
+      : {
+          type: "error",
+          title: "复制失败",
+          message: "请检查剪贴板权限后重试",
+          duration: 3000,
+        }
+  );
 }
 </script>
 

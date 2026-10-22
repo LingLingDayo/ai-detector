@@ -2,6 +2,7 @@
 import { ref, computed, watch, nextTick } from "vue";
 import { AlertCircle } from "@lucide/vue";
 import { useClipboard } from "../composables/useClipboard";
+import { useToast } from "../composables/useToast";
 import { DEFAULT_PELICAN_PROMPT, type PelicanContentType } from "../stores/pelicanTest";
 import PelicanHeader from "./pelican/PelicanHeader.vue";
 import PelicanPromptBox from "./pelican/PelicanPromptBox.vue";
@@ -48,6 +49,7 @@ import { usePelicanTestStore } from "../stores";
 
 const pelicanStore = usePelicanTestStore();
 const { copied: svgCopied, copy: copySvg } = useClipboard();
+const { showToast } = useToast();
 
 watch(
   () => pelicanStore.showCode,
@@ -124,12 +126,19 @@ function handleDownloadContent(): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   const cleanModel = (props.modelName || "model").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const fileName = `pelican-${cleanModel}-${Date.now()}.${ext}`;
   a.href = url;
-  a.download = `pelican-${cleanModel}-${Date.now()}.${ext}`;
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  showToast({
+    type: "success",
+    title: "下载完成",
+    message: fileName,
+    duration: 3000,
+  });
 }
 </script>
 

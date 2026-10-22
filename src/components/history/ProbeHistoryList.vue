@@ -4,6 +4,7 @@ import type { ProbeHistoryItem } from "../../types";
 import { formatHistoryTime } from "../../utils/pelicanFormatters";
 import { Info, Copy, X } from "@lucide/vue";
 import { useClipboard } from "../../composables/useClipboard";
+import { useToast } from "../../composables/useToast";
 import { usePopoverPin } from "./usePopoverPin";
 import HistoryEmptyState from "./HistoryEmptyState.vue";
 import HistoryDetailPopover from "./HistoryDetailPopover.vue";
@@ -19,6 +20,7 @@ const emit = defineEmits<{
 }>();
 
 const { copy: copyText } = useClipboard();
+const { showToast } = useToast();
 const { pinnedId, togglePin } = usePopoverPin();
 const popoverPlacementMap = ref<Record<string, "top" | "bottom">>({});
 
@@ -68,10 +70,20 @@ function handleTogglePin(id: string, e: Event): void {
   togglePin(id, e);
 }
 
-function handleCopyProbeSummary(item: ProbeHistoryItem): void {
+async function handleCopyProbeSummary(item: ProbeHistoryItem): Promise<void> {
   const prob = (item.probability * 100).toFixed(1);
   const text = `【模型测试诊断结果】\n调用模型: ${item.modelName}\n判定模型: ${item.predictionName} (${prob}%)\n模型家族: ${item.familyPredictionName || "通用系列"}\n有效样本: ${item.usedOutputs}/3\n测试时间: ${formatHistoryTime(item.createdAt)}`;
-  copyText(text);
+  const copied = await copyText(text);
+  showToast(
+    copied
+      ? { type: "success", title: "已复制诊断结果", duration: 2000 }
+      : {
+          type: "error",
+          title: "复制失败",
+          message: "请检查剪贴板权限后重试",
+          duration: 3000,
+        }
+  );
 }
 
 function formatProb(prob: number | undefined): string {

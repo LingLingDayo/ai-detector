@@ -4,6 +4,7 @@ import type { PelicanHistoryItem } from "../../types";
 import { formatHistoryTime } from "../../utils/pelicanFormatters";
 import { Info, Copy, Download, X } from "@lucide/vue";
 import { useClipboard } from "../../composables/useClipboard";
+import { useToast } from "../../composables/useToast";
 import { usePopoverPin } from "./usePopoverPin";
 import HistoryEmptyState from "./HistoryEmptyState.vue";
 import HistoryDetailPopover from "./HistoryDetailPopover.vue";
@@ -19,6 +20,7 @@ const emit = defineEmits<{
 }>();
 
 const { copy: copyText } = useClipboard();
+const { showToast } = useToast();
 const { pinnedId, togglePin } = usePopoverPin();
 const popoverPlacementMap = ref<Record<string, "top" | "bottom">>({});
 
@@ -70,16 +72,33 @@ function handleDownloadPelican(item: PelicanHistoryItem): void {
     /[^a-zA-Z0-9_-]/g,
     "_"
   );
+  const fileName = `pelican-${cleanModel}-${item.createdAt}.${ext}`;
   a.href = url;
-  a.download = `pelican-${cleanModel}-${item.createdAt}.${ext}`;
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  showToast({
+    type: "success",
+    title: "下载完成",
+    message: fileName,
+    duration: 3000,
+  });
 }
 
-function handleCopyPelican(item: PelicanHistoryItem): void {
-  copyText(item.content);
+async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
+  const copied = await copyText(item.content);
+  showToast(
+    copied
+      ? { type: "success", title: "已复制图形代码", duration: 2000 }
+      : {
+          type: "error",
+          title: "复制失败",
+          message: "请检查剪贴板权限后重试",
+          duration: 3000,
+        }
+  );
 }
 
 function getPureSvgContent(rawContent: string): string {
