@@ -124,6 +124,22 @@ describe("连接测试统计聚合", () => {
     expect(stats.outputSpeed).toBeCloseTo(25, 4);
   });
 
+  it("生成窗口小于 20ms 时回退总耗时，恰好 20ms 仍按差值计算", () => {
+    const base = {
+      requestedModel: "gpt-4o",
+      content: "Hi",
+      durationMs: 1200,
+      usage: { outputTokens: 30 },
+    };
+
+    expect(
+      getMessageOutputSpeed(assistantMessage({ ...base, firstTokenMs: 1181 }))
+    ).toBeCloseTo(25, 4);
+    expect(
+      getMessageOutputSpeed(assistantMessage({ ...base, firstTokenMs: 1180 }))
+    ).toBeCloseTo(1500, 4);
+  });
+
   it("缺少 usage 时估算输出 token，并保留进行中的请求", () => {
     const stats = aggregateConnectionMessages([
       assistantMessage({

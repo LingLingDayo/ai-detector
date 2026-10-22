@@ -55,7 +55,7 @@ export function computeSuccessRate(
   return successCount / finishedCount;
 }
 
-const MIN_GENERATION_WINDOW_MS = 100;
+const MIN_GENERATION_WINDOW_MS = 20;
 
 /** 首字与结束时间过近时，差值受计时精度影响极大，回退到总耗时估算。 */
 function resolveGenerationDurationMs(
