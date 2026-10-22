@@ -11,7 +11,6 @@ const props = withDefaults(
     configReady?: boolean;
     disabledHint?: string;
     focusSignal?: number;
-    contextRoundCount?: number;
   }>(),
   {
     running: false,
@@ -19,7 +18,6 @@ const props = withDefaults(
     configReady: true,
     disabledHint: "",
     focusSignal: 0,
-    contextRoundCount: 0,
   }
 );
 
@@ -229,9 +227,6 @@ defineExpose({ focus, fillText });
         </div>
 
         <div class="toolbar-right">
-          <span v-if="contextRoundCount > 0" class="context-hint">
-            上下文 {{ contextRoundCount }} 轮
-          </span>
           <span v-if="running" class="generating-hint">
             <span class="generating-dot"></span>
             {{ generating ? "生成中" : "连接中" }}
@@ -420,12 +415,6 @@ defineExpose({ focus, fillText });
     opacity: 0.35;
     cursor: not-allowed;
   }
-}
-
-.context-hint {
-  font-size: 0.64rem;
-  color: #64748b;
-  white-space: nowrap;
 }
 
 .generating-hint {

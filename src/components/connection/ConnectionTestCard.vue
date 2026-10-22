@@ -119,7 +119,6 @@ watch(
       :config-ready="configReady"
       :disabled-hint="disabledHint"
       :focus-signal="connectionStore.composerFocusSignal"
-      :context-round-count="connectionStore.userMessageCount"
       @send="handleSend"
       @stop="connectionStore.stopConnectionReply"
     />
