@@ -128,33 +128,26 @@ onBeforeUnmount(removeGlobalListeners);
   justify-content: center;
   width: 18px;
   height: 18px;
-  border-radius: 50%;
   flex-shrink: 0;
   cursor: help;
   outline: none;
-  transition: box-shadow var(--transition-fast);
+  transition: filter var(--transition-fast);
 
   &.is-match {
     color: #34d399;
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.28);
   }
 
   &.is-mismatch {
     color: #fbbf24;
-    background: rgba(245, 158, 11, 0.12);
-    border: 1px solid rgba(245, 158, 11, 0.3);
   }
 
   &.is-unknown {
     color: #94a3b8;
-    background: rgba(148, 163, 184, 0.1);
-    border: 1px solid rgba(148, 163, 184, 0.22);
   }
 
   &:hover,
   &:focus-visible {
-    box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+    filter: brightness(1.2);
   }
 }
 </style>
