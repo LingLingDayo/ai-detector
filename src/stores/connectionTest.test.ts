@@ -327,6 +327,87 @@ describe("连接测试会话状态", () => {
     });
   });
 
+  it("精简模式历史标题直接展示测试状态", async () => {
+    storage.clear();
+    const store = newStore();
+    store.setConnectionMode("quick");
+    const spy = vi.spyOn(chat, "sendChat").mockResolvedValue({
+      text: "Hi",
+      responseModel: "requested-model",
+      usage: {},
+      rawStatus: 200,
+      durationMs: 200,
+    });
+
+    await store.sendConnectionMessage({ text: "Hi", images: [] }, config);
+
+    expect(store.connectionHistoryList[0]).toMatchObject({
+      title: "测试成功",
+      mode: "quick",
+    });
+
+    store.clearConnectionContext();
+    spy.mockResolvedValue({
+      text: "Hi",
+      responseModel: "relay-routed-model",
+      usage: {},
+      rawStatus: 200,
+      durationMs: 200,
+    });
+
+    await store.sendConnectionMessage({ text: "Hi", images: [] }, config);
+
+    expect(store.connectionHistoryList[0]).toMatchObject({
+      title: "测试成功，但模型不一致",
+      mode: "quick",
+    });
+  });
+
+  it("精简模式请求失败时历史标题展示测试失败", async () => {
+    storage.clear();
+    const store = newStore();
+    store.setConnectionMode("quick");
+    vi.spyOn(chat, "sendChat").mockRejectedValue(
+      new Error("上游接口返回错误 (HTTP 500)")
+    );
+
+    await store.sendConnectionMessage({ text: "Hi", images: [] }, config);
+
+    expect(store.connectionHistoryList[0]).toMatchObject({
+      title: "测试失败",
+      mode: "quick",
+      errorCount: 1,
+    });
+  });
+
+  it("精简模式取消测试时历史标题展示测试已取消", async () => {
+    storage.clear();
+    const store = newStore();
+    store.setConnectionMode("quick");
+    vi.spyOn(chat, "sendChat").mockImplementation((options) => {
+      options.onStreamStart?.();
+      return new Promise((_resolve, reject) => {
+        options.signal?.addEventListener("abort", () => {
+          reject(new DOMException("Aborted", "AbortError"));
+        });
+      });
+    });
+
+    const pending = store.sendConnectionMessage(
+      { text: "Hi", images: [] },
+      config
+    );
+    await Promise.resolve();
+    store.stopConnectionReply();
+    await pending;
+
+    expect(store.connectionHistoryList[0]).toMatchObject({
+      title: "测试已取消",
+      mode: "quick",
+      stoppedCount: 1,
+    });
+  });
+
   it("连接测试模式会持久化并在新建 store 后恢复", () => {
     storage.clear();
     let store = newStore();

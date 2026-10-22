@@ -209,6 +209,7 @@ export interface ConnectionHistoryItem {
   createdAt: number;
   updatedAt: number;
   title: string;
+  mode?: ConnectionTestMode;
   configName?: string;
   baseUrl: string;
   apiKey: string; // 存储时已脱敏

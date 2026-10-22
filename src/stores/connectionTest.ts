@@ -15,6 +15,7 @@ import {
 } from "../constants";
 import { aggregateConnectionMessages } from "../utils/connectionMetrics";
 import { maskApiKey } from "../utils/pelicanFormatters";
+import { getModelRoutingStatus } from "../utils/modelRouting";
 
 const MAX_CONNECTION_HISTORY_COUNT = 40;
 const STREAM_TEXT_TAIL_LENGTH = 120;
@@ -27,6 +28,7 @@ interface ConnectionSessionMeta {
   apiKey: string;
   apiFormat: string;
   stream: boolean;
+  mode: ConnectionTestMode;
 }
 
 function generateId(prefix: string): string {
@@ -93,6 +95,21 @@ function buildHistoryTitle(message?: ConnectionChatMessage): string {
   }
   if (message?.images.length) return "图片对话";
   return "新连接会话";
+}
+
+function buildQuickHistoryTitle(lastAssistant?: ConnectionChatMessage): string {
+  if (!lastAssistant || lastAssistant.streaming) return "测试中";
+  if (lastAssistant.stopped) return "测试已取消";
+  if (lastAssistant.error) return "测试失败";
+  if (
+    getModelRoutingStatus(
+      lastAssistant.requestedModel,
+      lastAssistant.responseModel
+    ) === "mismatch"
+  ) {
+    return "测试成功，但模型不一致";
+  }
+  return "测试成功";
 }
 
 export const useConnectionTestStore = defineStore("connectionTest", () => {
@@ -163,13 +180,19 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
       apiKey: "-",
       apiFormat: "chat_completions",
       stream: true,
+      mode: connectionMode.value,
     };
+    const title =
+      meta.mode === "quick"
+        ? buildQuickHistoryTitle(lastAssistant)
+        : buildHistoryTitle(userMessages[0]);
 
     return {
       id: activeSessionHistoryId.value ?? generateId("connection"),
       createdAt: existing?.createdAt ?? Date.now(),
       updatedAt: Date.now(),
-      title: buildHistoryTitle(userMessages[0]),
+      title,
+      mode: meta.mode,
       configName: meta.configName,
       baseUrl: meta.baseUrl,
       apiKey: meta.apiKey,
@@ -264,6 +287,7 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
         apiKey: maskApiKey(apiKey),
         apiFormat,
         stream: isStream,
+        mode: connectionMode.value,
       };
     }
 
