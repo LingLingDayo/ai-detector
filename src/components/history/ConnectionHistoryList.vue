@@ -7,6 +7,7 @@ import {
   Gauge,
   MessagesSquare,
   ShieldCheck,
+  Timer,
   Trash2,
 } from "@lucide/vue";
 import type { ConnectionHistoryItem, ConnectionModelCount } from "../../types";
@@ -152,6 +153,10 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
               <span class="mini-stat" title="缓存命中率">
                 <Database :size="11" />
                 {{ formatCacheRate(item.cacheRate) }}
+              </span>
+              <span class="mini-stat" title="平均首字延迟">
+                <Timer :size="11" />
+                {{ formatFirstToken(item.avgFirstTokenMs) }}
               </span>
             </div>
 
