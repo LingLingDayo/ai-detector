@@ -110,6 +110,51 @@ async function handleClearHistory(): Promise<void> {
     emit("clear-connection");
   }
 }
+
+async function handleDeleteProbe(id: string): Promise<void> {
+  const item = props.probeList?.find((entry) => entry.id === id);
+  const confirmed = await confirm({
+    type: "danger",
+    styleVariant: "spotlight",
+    title: "确认删除此条模型测试记录？",
+    message: `模型 ${item?.modelName || "—"} 的测试记录删除后将无法恢复。`,
+    confirmText: "确认删除",
+    cancelText: "取消",
+  });
+  if (confirmed) {
+    emit("delete-probe", id);
+  }
+}
+
+async function handleDeletePelican(id: string): Promise<void> {
+  const item = props.pelicanList.find((entry) => entry.id === id);
+  const confirmed = await confirm({
+    type: "danger",
+    styleVariant: "spotlight",
+    title: "确认删除此条鹈鹕测试记录？",
+    message: `模型 ${item?.modelName || "—"} 生成的图片删除后将无法恢复。`,
+    confirmText: "确认删除",
+    cancelText: "取消",
+  });
+  if (confirmed) {
+    emit("delete-pelican", id);
+  }
+}
+
+async function handleDeleteConnection(id: string): Promise<void> {
+  const item = props.connectionList?.find((entry) => entry.id === id);
+  const confirmed = await confirm({
+    type: "danger",
+    styleVariant: "spotlight",
+    title: "确认删除此条连接测试记录？",
+    message: `会话「${item?.title || "—"}」删除后将无法恢复。`,
+    confirmText: "确认删除",
+    cancelText: "取消",
+  });
+  if (confirmed) {
+    emit("delete-connection", id);
+  }
+}
 </script>
 
 <template>
@@ -222,7 +267,7 @@ async function handleClearHistory(): Promise<void> {
             :probe-list="probeList"
             :apply-disabled="probeRunning"
             @apply="emit('apply-probe', $event)"
-            @delete="emit('delete-probe', $event)"
+            @delete="handleDeleteProbe"
           />
 
           <!-- 2. 鹈鹕测试历史视图 -->
@@ -231,7 +276,7 @@ async function handleClearHistory(): Promise<void> {
             :pelican-list="pelicanList"
             :apply-disabled="pelicanRunning"
             @apply="emit('apply-pelican', $event)"
-            @delete="emit('delete-pelican', $event)"
+            @delete="handleDeletePelican"
           />
 
           <!-- 3. 连接测试历史视图 -->
@@ -239,7 +284,7 @@ async function handleClearHistory(): Promise<void> {
             v-else-if="activeTab === 'connection'"
             :connection-list="connectionList"
             :active-session-id="connectionActiveId"
-            @delete="emit('delete-connection', $event)"
+            @delete="handleDeleteConnection"
           />
         </main>
       </div>
