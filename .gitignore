@@ -13,3 +13,6 @@ src-tauri/gen/
 .temp/trash/
 .DS_Store
 Thumbs.db
+
+# IDE & AI Tools
+.qoder/
