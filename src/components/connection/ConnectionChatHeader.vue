@@ -90,9 +90,9 @@ const successTitle = computed(
     </div>
 
     <button
+      v-if="stats.requestCount > 0"
       type="button"
       class="clear-context-btn"
-      :disabled="stats.requestCount === 0 && !isRunning"
       title="清空当前会话上下文（已保存的历史汇总不会删除）"
       @click="emit('clear')"
     >
@@ -247,15 +247,10 @@ const successTitle = computed(
     flex-shrink: 0;
   }
 
-  &:hover:not(:disabled) {
+  &:hover {
     color: #fca5a5;
     background: rgba(239, 68, 68, 0.1);
     border-color: rgba(239, 68, 68, 0.28);
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
   }
 }
 
