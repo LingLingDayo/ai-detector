@@ -17,6 +17,11 @@ const tooltipRef = ref<HTMLElement | null>(null);
 const isOpen = ref(false);
 const tooltipStyle = ref<Record<string, string>>({});
 
+const TOOLTIP_CLOSE_DELAY = 180;
+let closeTimer: ReturnType<typeof setTimeout> | null = null;
+let isPointerOverTrigger = false;
+let isPointerOverTooltip = false;
+
 const statusLabel = computed(() => {
   if (status.value === "match") return "模型路由一致";
   if (status.value === "mismatch") return "检测到模型映射";
@@ -62,7 +67,24 @@ function removeGlobalListeners(): void {
   window.removeEventListener("resize", updatePosition);
 }
 
+function clearCloseTimer(): void {
+  if (closeTimer !== null) {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+}
+
+function scheduleClose(): void {
+  clearCloseTimer();
+  closeTimer = setTimeout(() => {
+    closeTimer = null;
+    if (isPointerOverTrigger || isPointerOverTooltip) return;
+    closeTooltip();
+  }, TOOLTIP_CLOSE_DELAY);
+}
+
 function openTooltip(): void {
+  clearCloseTimer();
   if (isOpen.value) return;
   isOpen.value = true;
   addGlobalListeners();
@@ -70,12 +92,36 @@ function openTooltip(): void {
 }
 
 function closeTooltip(): void {
+  clearCloseTimer();
   if (!isOpen.value) return;
   isOpen.value = false;
   removeGlobalListeners();
 }
 
-onBeforeUnmount(removeGlobalListeners);
+function handleTriggerEnter(): void {
+  isPointerOverTrigger = true;
+  openTooltip();
+}
+
+function handleTriggerLeave(): void {
+  isPointerOverTrigger = false;
+  scheduleClose();
+}
+
+function handleTooltipEnter(): void {
+  isPointerOverTooltip = true;
+  clearCloseTimer();
+}
+
+function handleTooltipLeave(): void {
+  isPointerOverTooltip = false;
+  scheduleClose();
+}
+
+onBeforeUnmount(() => {
+  clearCloseTimer();
+  removeGlobalListeners();
+});
 </script>
 
 <template>
@@ -85,10 +131,10 @@ onBeforeUnmount(removeGlobalListeners);
     :class="`is-${status}`"
     tabindex="0"
     :aria-label="statusLabel"
-    @mouseenter="openTooltip"
-    @mouseleave="closeTooltip"
+    @mouseenter="handleTriggerEnter"
+    @mouseleave="handleTriggerLeave"
     @focus="openTooltip"
-    @blur="closeTooltip"
+    @blur="scheduleClose"
   >
     <CheckCircle2 v-if="status === 'match'" :size="13" />
     <AlertTriangle v-else-if="status === 'mismatch'" :size="13" />
@@ -102,6 +148,8 @@ onBeforeUnmount(removeGlobalListeners);
           class="route-tooltip"
           :style="tooltipStyle"
           role="tooltip"
+          @mouseenter="handleTooltipEnter"
+          @mouseleave="handleTooltipLeave"
         >
           <div class="route-tooltip-title" :class="`is-${status}`">
             {{ statusLabel }}
@@ -164,7 +212,8 @@ onBeforeUnmount(removeGlobalListeners);
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.62), 0 0 20px rgba(99, 102, 241, 0.12);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  pointer-events: none;
+  pointer-events: auto;
+  user-select: text;
 
   .route-tooltip-title {
     font-size: 0.73rem;
