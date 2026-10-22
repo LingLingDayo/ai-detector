@@ -12,7 +12,7 @@ import { loadActiveUnifiedBank, getPersistedUpdateStatus, setPersistedUpdateStat
 
 const unifiedBank = rawUnifiedBank as unknown as UnifiedBank;
 
-const PROBE_INTRO_DESC = "通过 3 道随机题目探测模型输出特征，并与统一指纹库比对进行模型归因";
+const PROBE_INTRO_DESC = "通过 3 道随机题目分析模型回答特征，并与已收录模型的指纹比对，判断最可能的真实模型";
 
 type ResolvedProbeOptions = { baseUrl: string; apiKey: string; model: string; apiFormat?: string; reasoningEffort?: string; isStream: boolean; timeoutSeconds: number };
 
