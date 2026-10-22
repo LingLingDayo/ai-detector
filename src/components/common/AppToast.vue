@@ -15,6 +15,8 @@ const toastIcon = computed(() => {
 const ariaRole = computed(() =>
   toastState.type === "error" ? "alert" : "status"
 );
+
+const hasMessage = computed(() => Boolean(toastState.message));
 </script>
 
 <template>
@@ -23,7 +25,7 @@ const ariaRole = computed(() =>
       <div
         v-if="toastState.isOpen"
         class="app-toast"
-        :class="`is-${toastState.type}`"
+        :class="[`is-${toastState.type}`, { 'is-multiline': hasMessage }]"
         :role="ariaRole"
         :aria-live="toastState.type === 'error' ? 'assertive' : 'polite'"
       >
@@ -56,7 +58,7 @@ const ariaRole = computed(() =>
   left: 50%;
   z-index: 10100;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 9px;
   width: fit-content;
   min-width: 240px;
@@ -69,6 +71,10 @@ const ariaRole = computed(() =>
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.62), 0 0 20px rgba(99, 102, 241, 0.12);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+
+  &.is-multiline {
+    align-items: flex-start;
+  }
 
   &.is-success {
     border-color: rgba(16, 185, 129, 0.36);
@@ -118,6 +124,9 @@ const ariaRole = computed(() =>
 .toast-content {
   flex: 1;
   min-width: 0;
+}
+
+.app-toast.is-multiline .toast-content {
   padding-top: 1px;
 }
 
