@@ -40,6 +40,9 @@ const emit = defineEmits<{
 const displayContent = computed(() => props.content || props.svg || "");
 const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG"));
 const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
+const isAwaitingFirstText = computed(
+  () => props.isRunning && props.isGenerating && props.streamedCharCount === 0
+);
 const streamTail = computed(() => {
   const compact = props.streamedTextTail.replace(/\s+/g, " ").trim();
   return compact.length > 48 ? `…${compact.slice(-48)}` : compact;
@@ -55,7 +58,7 @@ function toggleBgTheme(): void {
     <div class="status-left">
       <span v-if="isRunning" class="state-pill running">
         <span class="state-spinner"></span>
-        {{ isGenerating ? "正在生成图形..." : "等待模型响应..." }}
+        {{ isGenerating ? (isAwaitingFirstText ? "正在思考中..." : "正在生成图形...") : "等待模型响应..." }}
       </span>
       <span v-else-if="errorMessage" class="state-pill error">
         <span class="dot error"></span>
@@ -80,7 +83,7 @@ function toggleBgTheme(): void {
 
     <!-- 流式输出实时进度 -->
     <div
-      v-if="isRunning && isGenerating"
+      v-if="isRunning && isGenerating && streamedCharCount > 0"
       class="stream-progress"
       :title="`已实时接收 ${streamedCharCount} 个字符`"
     >
