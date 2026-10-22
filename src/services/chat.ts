@@ -330,9 +330,6 @@ async function sendChatViaTauri(
     if (result.responseModel) {
       options.onResponseModel?.(result.responseModel);
     }
-    if (result.text) {
-      options.onStreamProgress?.(result.text);
-    }
     return {
       ...result,
       usage: result.usage ?? {},
