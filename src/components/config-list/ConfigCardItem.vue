@@ -33,9 +33,9 @@ let isDragHappening = false;
 
 const cardTooltip = computed(() => {
   if (props.isActive) {
-    return "当前正在使用此配置 · 双击快速切换并关闭 · 拖动可调整顺序";
+    return "当前正在使用此配置 · 拖动可调整顺序";
   }
-  return "点击可切换此配置 · 双击快速切换并关闭 · 拖动可调整顺序";
+  return "点击可切换此配置 · 双击快速切换 · 拖动可调整顺序";
 });
 
 function handleDragStart(event: DragEvent) {
