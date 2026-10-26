@@ -148,6 +148,14 @@ export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
   // ==================== Moonshot Kimi ====================
   {
     vendor: "Moonshot Kimi",
+    model: "Kimi K3.1 Pro",
+    supportedEfforts: ["low", "high", "max"],
+    defaultEffort: "max",
+    allowDisableReasoning: false,
+    patterns: ["kimi-k3.1-pro", "kimi-k3.1"],
+  },
+  {
+    vendor: "Moonshot Kimi",
     model: "Kimi K3",
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",

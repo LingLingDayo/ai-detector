@@ -10,8 +10,8 @@ import {
 } from "./modelReasoningRules";
 
 describe("modelReasoningRules", () => {
-  it("MODEL_REASONING_RULES 包含了全部 30 个模型规则", () => {
-    expect(MODEL_REASONING_RULES).toHaveLength(30);
+  it("MODEL_REASONING_RULES 包含了全部 31 个模型规则", () => {
+    expect(MODEL_REASONING_RULES).toHaveLength(31);
 
     const modelNames = MODEL_REASONING_RULES.map((r) => r.model);
     const expectedModels = [
@@ -25,6 +25,7 @@ describe("modelReasoningRules", () => {
       "GLM-5.3",
       "GLM-5.3 Flash",
       "GLM-5.3 FlashX",
+      "Kimi K3.1 Pro",
       "Kimi K3",
       "Kimi K2.8 Preview",
       "Qwen3.8 Max",
@@ -69,7 +70,22 @@ describe("modelReasoningRules", () => {
     expect(flashxRule?.supportedEfforts).toEqual(["low", "high", "max"]);
     expect(flashxRule?.defaultEffort).toBe("max");
 
-    // Kimi 当前主力效率模型
+    // Kimi 当前主力效率模型与最新 K3.1 Pro
+    const kimiK31ProRule = findModelReasoningRule("kimi-k3.1-pro");
+    expect(kimiK31ProRule?.model).toBe("Kimi K3.1 Pro");
+    expect(kimiK31ProRule?.supportedEfforts).toEqual(["low", "high", "max"]);
+    expect(kimiK31ProRule?.defaultEffort).toBe("max");
+    expect(kimiK31ProRule?.allowDisableReasoning).toBe(false);
+
+    const kimiK31AliasRule = findModelReasoningRule("kimi-k3.1");
+    expect(kimiK31AliasRule?.model).toBe("Kimi K3.1 Pro");
+
+    const slashKimiK31Rule = findModelReasoningRule("moonshot/kimi-k3.1-pro");
+    expect(slashKimiK31Rule?.model).toBe("Kimi K3.1 Pro");
+
+    const kimiK3Rule = findModelReasoningRule("kimi-k3");
+    expect(kimiK3Rule?.model).toBe("Kimi K3");
+
     const kimiPreviewRule = findModelReasoningRule("kimi-k2.8-preview");
     expect(kimiPreviewRule?.model).toBe("Kimi K2.8 Preview");
     expect(kimiPreviewRule?.defaultEffort).toBe("max");
@@ -190,7 +206,7 @@ describe("modelReasoningRules", () => {
     expect(findModelReasoningRule("gemini-3.8-pro")).toBeUndefined();
   });
 
-  it("表格全部 30 个模型的思考强度与默认值完全对齐需求表", () => {
+  it("表格全部 31 个模型的思考强度与默认值完全对齐需求表", () => {
     const tableData = [
       {
         vendor: "OpenAI GPT-5.6",
@@ -258,6 +274,13 @@ describe("modelReasoningRules", () => {
       {
         vendor: "Zhipu GLM-5.3",
         model: "GLM-5.3 FlashX",
+        supported: ["low", "high", "max"],
+        defaultEffort: "max",
+        allowDisable: false,
+      },
+      {
+        vendor: "Moonshot Kimi",
+        model: "Kimi K3.1 Pro",
         supported: ["low", "high", "max"],
         defaultEffort: "max",
         allowDisable: false,
@@ -464,6 +487,13 @@ describe("modelReasoningRules", () => {
 
     // GLM-5.3 FlashX 不支持 medium，应修正为默认 max
     expect(resolveValidReasoningEffort("glm-5.3-flashx", "medium")).toBe("max");
+
+    // Kimi K3.1 Pro 始终开启思考，不支持 none 与 medium，应修正为默认 max
+    expect(resolveValidReasoningEffort("kimi-k3.1-pro", "none")).toBe("max");
+    expect(resolveValidReasoningEffort("kimi-k3.1-pro", "medium")).toBe("max");
+    expect(resolveValidReasoningEffort("kimi-k3.1-pro", "low")).toBe("low");
+    expect(resolveValidReasoningEffort("kimi-k3.1-pro", "high")).toBe("high");
+    expect(resolveValidReasoningEffort("kimi-k3.1-pro", "max")).toBe("max");
 
     // Kimi K2.8 Preview 不支持 medium，应修正为默认 max
     expect(resolveValidReasoningEffort("kimi-k2.8-preview", "medium")).toBe("max");
