@@ -11,6 +11,9 @@ pub struct ProbeRequest {
     pub reasoning_effort: Option<String>,
     pub stream: Option<bool>,
     pub timeout_seconds: Option<u64>,
+    /// 用于让前端区分并发或已取消请求残留的流式事件；旧调用方可不传
+    #[serde(default)]
+    pub request_id: Option<String>,
 }
 
 pub fn default_api_format() -> String {
@@ -22,6 +25,19 @@ pub struct ProbeResponse {
     pub text: String,
     pub raw_status: u16,
     pub duration_ms: u64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProbeStreamStartPayload {
+    pub request_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProbeStreamProgressPayload {
+    pub request_id: Option<String>,
+    pub text: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

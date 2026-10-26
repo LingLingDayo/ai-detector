@@ -344,6 +344,22 @@ export function resolveApiEndpoint(baseUrl: string, apiFormat: string): string {
   return endpoint;
 }
 
+interface ProbeStreamStartPayload {
+  requestId?: string | null;
+}
+
+interface ProbeStreamProgressPayload {
+  requestId?: string | null;
+  text: string;
+}
+
+function createProbeRequestId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `probe_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export async function sendProbe({
   baseUrl,
   apiKey,
@@ -361,19 +377,26 @@ export async function sendProbe({
   const actualTimeout = timeoutSeconds ?? (isStream ? 90 : 240);
 
   if (tauriInvoke && isTauriApp()) {
+    // Tauri 命令无法被前端中止，已取消的请求仍会继续推送事件；事件是全局广播，
+    // 必须按 requestId 过滤，否则新请求的字符数会被旧请求的进度来回覆盖。
+    const requestId = createProbeRequestId();
     let unlistenStart: (() => void) | null = null;
     let unlistenProgress: (() => void) | null = null;
     if (isStream && (onStreamStart || onStreamProgress)) {
       try {
         const { listen } = await import("@tauri-apps/api/event");
         if (onStreamStart) {
-          unlistenStart = await listen("pelican-stream-start", () => {
-            onStreamStart();
+          unlistenStart = await listen<ProbeStreamStartPayload>("pelican-stream-start", (event) => {
+            if (event.payload?.requestId === requestId) {
+              onStreamStart();
+            }
           });
         }
         if (onStreamProgress) {
-          unlistenProgress = await listen<string>("pelican-stream-progress", (event) => {
-            onStreamProgress(event.payload);
+          unlistenProgress = await listen<ProbeStreamProgressPayload>("pelican-stream-progress", (event) => {
+            if (event.payload?.requestId === requestId) {
+              onStreamProgress(event.payload.text);
+            }
           });
         }
       } catch (err) {
@@ -392,6 +415,7 @@ export async function sendProbe({
           reasoning_effort: reasoningEffort,
           stream: isStream,
           timeout_seconds: actualTimeout,
+          request_id: requestId,
         },
       });
     } finally {

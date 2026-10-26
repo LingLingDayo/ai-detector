@@ -3,7 +3,9 @@ use std::time::{Duration, Instant};
 use tauri::Emitter;
 
 use crate::parser::{parse_non_streaming_json, parse_streaming_body, parse_streaming_progress};
-use crate::types::{ProbeRequest, ProbeResponse};
+use crate::types::{
+    ProbeRequest, ProbeResponse, ProbeStreamProgressPayload, ProbeStreamStartPayload,
+};
 use crate::utils::{
     compact_error, is_adaptive_thinking_required, is_mimo_thinking_switch_model, normalize_url,
 };
@@ -245,7 +247,12 @@ pub async fn send_probe_request(
             raw_bytes.extend_from_slice(&first_chunk);
 
             // 首包数据到达，通知前端模型真正开始流式输出
-            let _ = app.emit("pelican-stream-start", ());
+            let _ = app.emit(
+                "pelican-stream-start",
+                ProbeStreamStartPayload {
+                    request_id: req.request_id.clone(),
+                },
+            );
 
             // 将已解析的累计文本节流推送给前端，便于展示实时输出进度
             let mut last_progress_at = Instant::now();
@@ -255,7 +262,13 @@ pub async fn send_probe_request(
                 let preview = parse_streaming_progress(&body_text, &req.api_format);
                 if preview.len() > last_progress_len {
                     last_progress_len = preview.len();
-                    let _ = app.emit("pelican-stream-progress", preview);
+                    let _ = app.emit(
+                        "pelican-stream-progress",
+                        ProbeStreamProgressPayload {
+                            request_id: req.request_id.clone(),
+                            text: preview,
+                        },
+                    );
                 }
             };
             emit_progress(&raw_bytes);
