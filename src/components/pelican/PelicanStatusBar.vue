@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { Copy, Check, Download, Code, Sun, Moon } from "@lucide/vue";
 import type { PelicanContentType } from "../../stores/pelicanTest";
+import { DEFAULT_REQUEST_RETRY_COUNT } from "../../constants";
 
 const props = withDefaults(
   defineProps<{
@@ -15,6 +16,8 @@ const props = withDefaults(
     streamedTextTail?: string;
     modelName: string;
     durationMs: number;
+    thinkingMs?: number;
+    retryAttempt?: number;
     bgTheme?: "dark" | "light";
     showCode: boolean;
     svgCopied: boolean;
@@ -26,6 +29,8 @@ const props = withDefaults(
     contentType: "svg",
     streamedCharCount: 0,
     streamedTextTail: "",
+    thinkingMs: 0,
+    retryAttempt: 0,
     bgTheme: "dark",
   }
 );
@@ -40,6 +45,20 @@ const emit = defineEmits<{
 const displayContent = computed(() => props.content || props.svg || "");
 const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG"));
 const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
+const thinkingSeconds = computed(() => Math.floor(props.thinkingMs / 1000));
+// 重试请求发出后、模型尚未响应前才显示重试进度；模型一旦响应就回到正常的思考/生成文案
+const runningLabel = computed(() => {
+  if (props.isGenerating) {
+    return isAwaitingFirstText.value ? "正在思考中..." : "正在生成图形...";
+  }
+  return props.retryAttempt > 0
+    ? `正在重试中 ${props.retryAttempt}/${DEFAULT_REQUEST_RETRY_COUNT}`
+    : "等待模型响应...";
+});
+// 等待首包期间思考计时已在走但无法确认是模型在思考，此时隐藏避免误导
+const showThinking = computed(
+  () => props.thinkingMs > 0 && (!props.isRunning || props.isGenerating)
+);
 const isAwaitingFirstText = computed(
   () => props.isRunning && props.isGenerating && props.streamedCharCount === 0
 );
@@ -58,7 +77,7 @@ function toggleBgTheme(): void {
     <div class="status-left">
       <span v-if="isRunning" class="state-pill running">
         <span class="state-spinner"></span>
-        {{ isGenerating ? (isAwaitingFirstText ? "正在思考中..." : "正在生成图形...") : "等待模型响应..." }}
+        {{ runningLabel }}
       </span>
       <span v-else-if="errorMessage" class="state-pill error">
         <span class="dot error"></span>
@@ -78,6 +97,9 @@ function toggleBgTheme(): void {
       </span>
       <span v-if="durationMs > 0 || isRunning" class="meta-item">
         耗时: <strong>{{ durationSeconds }}s</strong>
+      </span>
+      <span v-if="showThinking" class="meta-item" title="从请求发出到模型输出首个正文字符的时间">
+        思考: <strong>{{ thinkingSeconds }}s</strong>
       </span>
     </div>
 

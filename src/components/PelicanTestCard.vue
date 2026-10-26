@@ -22,6 +22,8 @@ const props = withDefaults(
     streamedCharCount?: number;
     streamedTextTail?: string;
     durationMs: number;
+    thinkingMs?: number;
+    retryAttempt?: number;
     modelName: string;
     errorMessage: string | null;
     hasTested: boolean;
@@ -35,6 +37,8 @@ const props = withDefaults(
     contentType: "svg",
     streamedCharCount: 0,
     streamedTextTail: "",
+    thinkingMs: 0,
+    retryAttempt: 0,
     prompt: DEFAULT_PELICAN_PROMPT,
     customPrompt: "",
   }
@@ -168,6 +172,8 @@ function handleDownloadContent(): void {
       :streamed-text-tail="streamedTextTail"
       :model-name="modelName"
       :duration-ms="durationMs"
+      :thinking-ms="thinkingMs"
+      :retry-attempt="retryAttempt"
       :bg-theme="pelicanStore.bgTheme"
       :show-code="pelicanStore.showCode"
       :svg-copied="svgCopied"

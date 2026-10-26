@@ -201,6 +201,10 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
   const streamedCharCount = ref(0);
   const streamedTextTail = ref("");
   const durationMs = ref(0);
+  /** 单次请求从发出到首个正文字符的思考耗时；仅流式请求有意义 */
+  const thinkingMs = ref(0);
+  /** 当前为第几次重试（0 表示首次请求） */
+  const retryAttempt = ref(0);
   const testedModel = ref("");
   const errorMsg = ref<string | null>(null);
   const hasTested = ref(false);
@@ -284,6 +288,8 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     testedModel.value = item.modelName;
     rawResponseText.value = item.content;
     durationMs.value = item.durationMs || 0;
+    thinkingMs.value = 0;
+    retryAttempt.value = 0;
     if (item.prompt?.trim()) {
       setPelicanPrompt(item.prompt);
     }
@@ -295,6 +301,16 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
   let abortController: AbortController | null = null;
   let timerId: ReturnType<typeof setInterval> | null = null;
   let testStartTime = 0;
+  // 非 0 表示当前请求仍在等待首个正文字符，由计时器实时刷新 thinkingMs
+  let thinkingStartTime = 0;
+
+  // 请求结束时若模型已开始响应但从未吐出正文，思考耗时记到结束为止；
+  // 从未收到响应（含非流式请求）则没有可区分的思考阶段，归零隐藏。
+  function settleThinking(): void {
+    if (thinkingStartTime === 0) return;
+    thinkingMs.value = isPelicanGenerating.value ? Date.now() - thinkingStartTime : 0;
+    thinkingStartTime = 0;
+  }
 
   function stopTimer(): void {
     if (timerId !== null) {
@@ -309,6 +325,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     stopTimer();
     abortController?.abort();
     abortController = null;
+    settleThinking();
     if (testStartTime > 0) {
       durationMs.value = Date.now() - testStartTime;
     }
@@ -351,6 +368,9 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     stopTimer();
     testStartTime = Date.now();
     durationMs.value = 0;
+    thinkingMs.value = 0;
+    retryAttempt.value = 0;
+    thinkingStartTime = 0;
 
     isPelicanRunning.value = true;
     isPelicanGenerating.value = false;
@@ -366,7 +386,11 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     testedModel.value = modelName;
 
     timerId = setInterval(() => {
-      durationMs.value = Date.now() - testStartTime;
+      const now = Date.now();
+      durationMs.value = now - testStartTime;
+      if (thinkingStartTime > 0) {
+        thinkingMs.value = now - thinkingStartTime;
+      }
     }, 50);
 
     const promptToSend = pelicanPrompt.value.trim() || DEFAULT_PELICAN_PROMPT;
@@ -383,6 +407,10 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
         streamedCharCount.value = 0;
         streamedTextTail.value = "";
         isPelicanGenerating.value = false;
+        // 总计时沿用 testStartTime 持续累加，只有思考耗时按每次请求重新计量
+        retryAttempt.value = attempt - 1;
+        thinkingMs.value = 0;
+        thinkingStartTime = Date.now();
 
         try {
           const res = await sendProbe({
@@ -402,6 +430,10 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
             },
             onStreamProgress: (text) => {
               if (runId === currentRunId && !abortController?.signal.aborted) {
+                if (text.length > 0 && thinkingStartTime > 0) {
+                  thinkingMs.value = Date.now() - thinkingStartTime;
+                  thinkingStartTime = 0;
+                }
                 streamedCharCount.value = text.length;
                 streamedTextTail.value = text.slice(-STREAM_TEXT_TAIL_LENGTH);
               }
@@ -411,11 +443,13 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
           if (runId !== currentRunId || abortController?.signal.aborted) return;
 
           lastResponseText = res.text || "";
-          finalDurationMs = res.duration_ms || (Date.now() - testStartTime);
+          // 含此前失败的请求与重试间隔的端到端累计值；后端 duration_ms 仅覆盖本次请求，直接采用会让已显示的计时倒退
+          finalDurationMs = Math.max(Date.now() - testStartTime, res.duration_ms || 0);
 
           const { content, contentType, hasContent } = extractRenderableContent(res.text || "");
           if (hasContent) {
             stopTimer();
+            settleThinking();
             rawResponseText.value = lastResponseText;
             durationMs.value = finalDurationMs;
             pelicanContent.value = content;
@@ -463,7 +497,10 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
           }
         }
 
+        settleThinking();
         if (attempt < maxAttempts) {
+          // 重试间隔内不应继续显示上一次请求的思考/生成状态
+          isPelicanGenerating.value = false;
           await sleep(DEFAULT_REQUEST_RETRY_DELAY_MS, abortController?.signal);
           if (runId !== currentRunId || abortController?.signal.aborted) return;
         }
@@ -481,6 +518,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     } finally {
       if (runId === currentRunId) {
         stopTimer();
+        settleThinking();
         isPelicanRunning.value = false;
         isPelicanGenerating.value = false;
         abortController = null;
@@ -502,6 +540,9 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     streamedCharCount.value = 0;
     streamedTextTail.value = "";
     durationMs.value = 0;
+    thinkingMs.value = 0;
+    retryAttempt.value = 0;
+    thinkingStartTime = 0;
     testStartTime = 0;
     testedModel.value = "";
     errorMsg.value = null;
@@ -523,6 +564,8 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     streamedCharCount,
     streamedTextTail,
     durationMs,
+    thinkingMs,
+    retryAttempt,
     testedModel,
     errorMsg,
     hasTested,

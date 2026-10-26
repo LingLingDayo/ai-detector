@@ -123,3 +123,85 @@ describe("鹈鹕测试流式输出进度测试套件", () => {
     expect(store.isPelicanGenerating).toBe(false);
   });
 });
+
+describe("鹈鹕测试思考耗时与重试计时测试套件", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const config = {
+    baseUrl: "https://api.test.com",
+    apiKey: "sk-test",
+    apiFormat: "openai" as const,
+    modelName: "test-model",
+    reasoningEffort: "high" as const,
+    stream: true,
+  };
+
+  it("重试后总计时继续累加，思考耗时按重试请求重新计量", async () => {
+    vi.useFakeTimers();
+    storage.clear();
+    const store = newStore();
+    let call = 0;
+
+    vi.spyOn(api, "sendProbe").mockImplementation(async (options) => {
+      call += 1;
+      if (call === 1) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        throw new Error("上游接口返回错误 (HTTP 500)");
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      options.onStreamStart?.();
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      options.onStreamProgress?.("<svg>");
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return { text: "<svg></svg>", raw_status: 200, duration_ms: 4000 };
+    });
+
+    const run = store.startPelicanTest(config);
+
+    // 首次请求失败后进入重试间隔，此时尚未发出重试请求
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(store.retryAttempt).toBe(0);
+
+    // 重试请求发出后、模型尚未响应：显示重试进度，总计时没有清零
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(store.retryAttempt).toBe(1);
+    expect(store.isPelicanGenerating).toBe(false);
+    expect(store.durationMs).toBeGreaterThanOrEqual(7000);
+
+    // 模型响应后回到正常的思考状态
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(store.isPelicanGenerating).toBe(true);
+    expect(store.streamedCharCount).toBe(0);
+
+    // 首个正文字符到达，思考耗时定格为本次重试请求的耗时
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(store.thinkingMs).toBe(3000);
+
+    await vi.advanceTimersByTimeAsync(1000);
+    await run;
+
+    expect(store.thinkingMs).toBe(3000);
+    // 总耗时为端到端累计值，不会被最后一次请求的 duration_ms 覆盖而倒退
+    expect(store.durationMs).toBe(11000);
+    expect(store.isPelicanRunning).toBe(false);
+  });
+
+  it("非流式请求没有可区分的思考阶段，思考耗时保持为 0", async () => {
+    storage.clear();
+    const store = newStore();
+
+    vi.spyOn(api, "sendProbe").mockResolvedValue({
+      text: "<svg></svg>",
+      raw_status: 200,
+      duration_ms: 10,
+    });
+
+    await store.startPelicanTest({ ...config, stream: false });
+
+    expect(store.thinkingMs).toBe(0);
+    expect(store.retryAttempt).toBe(0);
+  });
+});
+
