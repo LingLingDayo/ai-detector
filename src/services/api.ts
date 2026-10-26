@@ -355,7 +355,7 @@ interface ProbeStreamProgressPayload {
 
 function createProbeRequestId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
+    return `probe_${crypto.randomUUID()}`;
   }
   return `probe_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -404,20 +404,41 @@ export async function sendProbe({
       }
     }
 
+    if (signal?.aborted) {
+      unlistenStart?.();
+      unlistenProgress?.();
+      throw new DOMException("The user aborted a request.", "AbortError");
+    }
+
+    const invokePromise = tauriInvoke<ProbeResponse>("send_probe_request", {
+      req: {
+        base_url: baseUrl,
+        api_key: apiKey,
+        model,
+        prompt,
+        api_format: apiFormat,
+        reasoning_effort: reasoningEffort,
+        stream: isStream,
+        timeout_seconds: actualTimeout,
+        request_id: requestId,
+      },
+    });
+
+    const abortPromise = new Promise<never>((_resolve, reject) => {
+      signal?.addEventListener(
+        "abort",
+        () => reject(new DOMException("The user aborted a request.", "AbortError")),
+        { once: true }
+      );
+    });
+
     try {
-      return await tauriInvoke<ProbeResponse>("send_probe_request", {
-        req: {
-          base_url: baseUrl,
-          api_key: apiKey,
-          model,
-          prompt,
-          api_format: apiFormat,
-          reasoning_effort: reasoningEffort,
-          stream: isStream,
-          timeout_seconds: actualTimeout,
-          request_id: requestId,
-        },
-      });
+      return await Promise.race([invokePromise, abortPromise]);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        await cancelProbeRequest(requestId);
+      }
+      throw err;
     } finally {
       unlistenStart?.();
       unlistenProgress?.();
@@ -655,4 +676,13 @@ export async function openExternalUrl(url: string): Promise<void> {
   // 纯 Web 环境或 Tauri 调用失败时的兜底方案
   window.open(trimmed, "_blank", "noopener,noreferrer");
 }
+
+/**
+ * 取消正在进行的探测/鹈鹕测试底层请求
+ */
+export async function cancelProbeRequest(requestId: string): Promise<void> {
+  if (!isTauriApp() || !tauriInvoke) return;
+  await tauriInvoke("cancel_probe_request", { requestId }).catch(() => undefined);
+}
+
 

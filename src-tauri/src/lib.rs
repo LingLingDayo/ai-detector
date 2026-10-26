@@ -12,6 +12,7 @@ pub fn run() {
         .plugin(tauri_plugin_log::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             send_probe_request,
+            cancel_probe_request,
             send_chat_request,
             cancel_chat_request,
             fetch_models_list,
