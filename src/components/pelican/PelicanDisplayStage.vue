@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { PelicanContentType } from "../../stores/pelicanTest";
+import { normalizeSvgForDisplay } from "./pelicanSvgNormalizer";
 
 const props = withDefaults(
   defineProps<{
@@ -22,6 +23,13 @@ const props = withDefaults(
 const displayContent = computed(() => props.content || props.svg || "");
 const bodyColor = computed(() => (props.bgTheme === "light" ? "#1e293b" : "#e2e8f0"));
 
+const processedSvgContent = computed(() => {
+  if (!displayContent.value || props.contentType !== "svg") {
+    return displayContent.value;
+  }
+  return normalizeSvgForDisplay(displayContent.value);
+});
+
 const wrappedHtml = computed(() => {
   if (!displayContent.value) return "";
   const raw = displayContent.value.trim();
@@ -30,21 +38,28 @@ const wrappedHtml = computed(() => {
   if (/<!DOCTYPE\s+html|<html[\s>]/i.test(raw)) {
     const styleInjection = `
 <style id="__pelican_injected_style">
-  html {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  html, body {
     background-color: transparent !important;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
   body {
-    background-color: transparent !important;
-    margin: 0;
-    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     color: ${bodyColor.value};
   }
   svg, canvas, img {
+    width: 100%;
+    height: 100%;
     max-width: 100%;
-    max-height: 90vh;
+    max-height: 100%;
     object-fit: contain;
   }
 </style>
@@ -65,24 +80,27 @@ const wrappedHtml = computed(() => {
     *, *::before, *::after {
       box-sizing: border-box;
     }
-    html {
+    html, body {
       background-color: transparent !important;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
     }
     body {
-      margin: 0;
       padding: 16px;
-      min-height: 100vh;
-      background-color: transparent !important;
       display: flex;
       justify-content: center;
       align-items: center;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       color: ${bodyColor.value};
-      overflow: auto;
     }
     svg, canvas, img {
+      width: 100%;
+      height: 100%;
       max-width: 100%;
-      max-height: 90vh;
+      max-height: 100%;
       object-fit: contain;
     }
   </style>
@@ -115,7 +133,7 @@ const wrappedHtml = computed(() => {
       <div
         v-if="contentType === 'svg'"
         class="svg-render-viewport"
-        v-html="displayContent"
+        v-html="processedSvgContent"
       ></div>
 
       <!-- HTML 渲染 -->
@@ -146,7 +164,8 @@ const wrappedHtml = computed(() => {
 
 <style lang="scss" scoped>
 .display-container {
-  min-height: 420px;
+  height: 440px;
+  box-sizing: border-box;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   overflow: hidden;
@@ -197,15 +216,15 @@ const wrappedHtml = computed(() => {
 .display-stage {
   width: 100%;
   height: 100%;
-  min-height: 340px;
-  max-height: 520px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
   position: relative;
   background: radial-gradient(circle at center, #161f30 0%, #0d121c 100%);
   transition: background 0.25s ease;
+  overflow: hidden;
 
   &.light-bg {
     background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
@@ -222,16 +241,31 @@ const wrappedHtml = computed(() => {
 
 .svg-render-viewport {
   width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 
   :deep(svg) {
+    width: 100%;
+    height: 100%;
     max-width: 100%;
-    max-height: 460px;
-    width: auto;
-    height: auto;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+    user-select: none;
+    transition: filter 0.25s ease;
+  }
+
+  :deep(img) {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
     display: block;
     margin: 0 auto;
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
@@ -242,7 +276,7 @@ const wrappedHtml = computed(() => {
 
 .html-render-viewport {
   width: 100%;
-  height: 460px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -263,10 +297,13 @@ const wrappedHtml = computed(() => {
 
 .fallback-text-box {
   width: 100%;
+  height: 100%;
+  box-sizing: border-box;
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  overflow: hidden;
 
   .fallback-tip {
     font-size: 0.74rem;
@@ -289,7 +326,8 @@ const wrappedHtml = computed(() => {
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-all;
-  max-height: 240px;
+  flex: 1;
+  max-height: 100%;
   overflow-y: auto;
   user-select: text;
 }
