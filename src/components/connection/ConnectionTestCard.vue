@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { useConfirm } from "../../composables/useConfirm";
 import { useConfigStore, useConnectionTestStore } from "../../stores";
 import type { ConnectionImageAttachment } from "../../types";
+import { cancelPageScroll, scrollToPageBottom } from "../../utils/scroll";
 import ConnectionChatHeader from "./ConnectionChatHeader.vue";
 import ConnectionComposer from "./ConnectionComposer.vue";
 import ConnectionMessageList from "./ConnectionMessageList.vue";
@@ -43,6 +44,7 @@ function handleSend(payload: {
   images: ConnectionImageAttachment[];
 }): void {
   messageListRef.value?.scrollToBottom(true);
+  scrollToPageBottom();
   void connectionStore.sendConnectionMessage(
     payload,
     configStore.connectionConfig,
@@ -52,6 +54,7 @@ function handleSend(payload: {
 
 function handleRetry(messageId: string): void {
   messageListRef.value?.scrollToBottom(true);
+  scrollToPageBottom();
   void connectionStore.retryConnectionReply(
     messageId,
     configStore.connectionConfig,
@@ -89,6 +92,10 @@ watch(
     }
   }
 );
+
+onUnmounted(() => {
+  cancelPageScroll();
+});
 </script>
 
 <template>
