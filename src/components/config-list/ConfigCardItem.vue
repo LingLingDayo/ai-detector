@@ -9,10 +9,12 @@ const props = withDefaults(
     isActive: boolean;
     isDragging?: boolean;
     isDragOver?: boolean;
+    dragOverPosition?: "before" | "after" | null;
   }>(),
   {
     isDragging: false,
     isDragOver: false,
+    dragOverPosition: null,
   }
 );
 
@@ -22,10 +24,10 @@ const emit = defineEmits<{
   (e: "openEdit", item: ConfigItem): void;
   (e: "delete", id: string): void;
   (e: "dragstart", event: DragEvent, id: string): void;
-  (e: "dragover", event: DragEvent, id: string): void;
-  (e: "dragenter", event: DragEvent, id: string): void;
+  (e: "dragover", event: DragEvent, id: string, position: "before" | "after"): void;
+  (e: "dragenter", event: DragEvent, id: string, position: "before" | "after"): void;
   (e: "dragleave", event: DragEvent, id: string): void;
-  (e: "drop", event: DragEvent, id: string): void;
+  (e: "drop", event: DragEvent, id: string, position: "before" | "after"): void;
   (e: "dragend"): void;
 }>();
 
@@ -38,6 +40,14 @@ const cardTooltip = computed(() => {
   return "点击可切换此配置 · 双击快速切换 · 拖动可调整顺序";
 });
 
+function calculatePosition(event: DragEvent): "before" | "after" {
+  const target = event.currentTarget as HTMLElement | null;
+  if (!target) return "before";
+  const rect = target.getBoundingClientRect();
+  const offsetY = event.clientY - rect.top;
+  return offsetY < rect.height / 2 ? "before" : "after";
+}
+
 function handleDragStart(event: DragEvent) {
   isDragHappening = true;
   emit("dragstart", event, props.item.id);
@@ -48,6 +58,27 @@ function handleDragEnd() {
   setTimeout(() => {
     isDragHappening = false;
   }, 100);
+}
+
+function handleDragOver(event: DragEvent) {
+  event.preventDefault();
+  if (isDragHappening || props.isDragging) return;
+  const position = calculatePosition(event);
+  emit("dragover", event, props.item.id, position);
+}
+
+function handleDragEnter(event: DragEvent) {
+  event.preventDefault();
+  if (isDragHappening || props.isDragging) return;
+  const position = calculatePosition(event);
+  emit("dragenter", event, props.item.id, position);
+}
+
+function handleDrop(event: DragEvent) {
+  event.preventDefault();
+  if (isDragHappening || props.isDragging) return;
+  const position = calculatePosition(event);
+  emit("drop", event, props.item.id, position);
 }
 
 function handleCardClick() {
@@ -74,17 +105,19 @@ function maskApiKey(key?: string): string {
     :class="{
       'is-active': isActive,
       'is-dragging': isDragging,
-      'is-drag-over': isDragOver
+      'is-drag-over': isDragOver && !dragOverPosition,
+      'is-insert-before': dragOverPosition === 'before',
+      'is-insert-after': dragOverPosition === 'after'
     }"
     :title="cardTooltip"
     draggable="true"
     @click="handleCardClick"
     @dblclick="handleCardDoubleClick"
     @dragstart="handleDragStart"
-    @dragover.prevent="emit('dragover', $event, item.id)"
-    @dragenter.prevent="emit('dragenter', $event, item.id)"
+    @dragover="handleDragOver"
+    @dragenter="handleDragEnter"
     @dragleave="emit('dragleave', $event, item.id)"
-    @drop.prevent="emit('drop', $event, item.id)"
+    @drop="handleDrop"
     @dragend="handleDragEnd"
   >
     <!-- 主信息与操作栏 -->
@@ -146,6 +179,7 @@ function maskApiKey(key?: string): string {
 
 <style lang="scss" scoped>
 .config-item-card {
+  position: relative;
   background: rgba(15, 21, 32, 0.6);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -209,6 +243,58 @@ function maskApiKey(key?: string): string {
     background: rgba(99, 102, 241, 0.18);
     box-shadow: 0 0 14px rgba(99, 102, 241, 0.3);
     transform: none;
+  }
+
+  &.is-insert-before,
+  &.is-insert-after {
+    &::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #818cf8 0%, #6366f1 50%, rgba(99, 102, 241, 0.4) 100%);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.95), 0 0 2px #ffffff;
+      border-radius: 9999px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: -4px;
+      width: 8px;
+      height: 8px;
+      background: #ffffff;
+      border: 2px solid var(--accent-primary, #6366f1);
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.95);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 11;
+    }
+  }
+
+  &.is-insert-before {
+    border-top-color: rgba(99, 102, 241, 0.65);
+
+    &::before {
+      top: -6px;
+    }
+    &::after {
+      top: -9px;
+    }
+  }
+
+  &.is-insert-after {
+    border-bottom-color: rgba(99, 102, 241, 0.65);
+
+    &::before {
+      bottom: -6px;
+    }
+    &::after {
+      bottom: -9px;
+    }
   }
 
   .card-main-row {

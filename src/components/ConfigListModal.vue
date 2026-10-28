@@ -25,12 +25,13 @@ const emit = defineEmits<{
   (e: "openEdit", item: ConfigItem): void;
   (e: "openSaveCurrent"): void;
   (e: "delete", id: string): void;
+  (e: "reorder", payload: { sourceId: string; targetId: string; position: "before" | "after" }): void;
   (e: "swap", payload: { sourceId: string; targetId: string }): void;
 }>();
 
 const searchQuery = ref("");
 const draggedId = ref<string | null>(null);
-const dragOverId = ref<string | null>(null);
+const dropTarget = ref<{ id: string; position: "before" | "after" } | null>(null);
 
 function handleDragStart(e: DragEvent, id: string): void {
   draggedId.value = id;
@@ -40,19 +41,24 @@ function handleDragStart(e: DragEvent, id: string): void {
   }
 }
 
-function handleDragOver(e: DragEvent, id: string): void {
+function handleDragOver(e: DragEvent, id: string, position: "before" | "after"): void {
   e.preventDefault();
-  if (!draggedId.value || draggedId.value === id) return;
+  if (!draggedId.value || draggedId.value === id) {
+    if (dropTarget.value?.id === id) {
+      dropTarget.value = null;
+    }
+    return;
+  }
   if (e.dataTransfer) {
     e.dataTransfer.dropEffect = "move";
   }
-  dragOverId.value = id;
+  dropTarget.value = { id, position };
 }
 
-function handleDragEnter(e: DragEvent, id: string): void {
+function handleDragEnter(e: DragEvent, id: string, position: "before" | "after"): void {
   e.preventDefault();
   if (!draggedId.value || draggedId.value === id) return;
-  dragOverId.value = id;
+  dropTarget.value = { id, position };
 }
 
 function handleDragLeave(e: DragEvent, id: string): void {
@@ -61,15 +67,17 @@ function handleDragLeave(e: DragEvent, id: string): void {
   if (currentTarget && relatedTarget && currentTarget.contains(relatedTarget)) {
     return;
   }
-  if (dragOverId.value === id) {
-    dragOverId.value = null;
+  if (dropTarget.value?.id === id) {
+    dropTarget.value = null;
   }
 }
 
-function handleDrop(e: DragEvent, targetId: string): void {
+function handleDrop(e: DragEvent, targetId: string, position: "before" | "after"): void {
   e.preventDefault();
   const sourceId = draggedId.value || e.dataTransfer?.getData("text/plain");
+  const targetPos = position || dropTarget.value?.position || "before";
   if (sourceId && sourceId !== targetId) {
+    emit("reorder", { sourceId, targetId, position: targetPos });
     emit("swap", { sourceId, targetId });
   }
   cleanupDrag();
@@ -77,7 +85,7 @@ function handleDrop(e: DragEvent, targetId: string): void {
 
 function cleanupDrag(): void {
   draggedId.value = null;
-  dragOverId.value = null;
+  dropTarget.value = null;
 }
 
 function handleQuickApply(item: ConfigItem): void {
@@ -132,7 +140,7 @@ const filteredConfigs = computed(() => {
               :item="item"
               :is-active="item.id === activeConfigId"
               :is-dragging="draggedId === item.id"
-              :is-drag-over="dragOverId === item.id && draggedId !== item.id"
+              :drag-over-position="dropTarget?.id === item.id ? dropTarget.position : null"
               @apply="emit('apply', $event)"
               @quick-apply="handleQuickApply"
               @open-edit="emit('openEdit', $event)"

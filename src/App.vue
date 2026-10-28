@@ -230,7 +230,7 @@ function handleOpenGithub(): void {
       @open-edit="configStore.openEditConfigModal"
       @open-save-current="configStore.openSaveCurrentModal"
       @delete="configStore.deleteConfigItem"
-      @swap="({ sourceId, targetId }) => configStore.swapConfigItems(sourceId, targetId)"
+      @reorder="({ sourceId, targetId, position }) => configStore.moveConfigItem(sourceId, targetId, position)"
     />
 
     <!-- 添加 / 编辑 / 保存当前配置弹窗 -->

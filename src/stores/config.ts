@@ -420,17 +420,30 @@ export const useConfigStore = defineStore("config", () => {
     return true;
   }
 
-  function swapConfigItems(sourceId: string, targetId: string): void {
+  function moveConfigItem(
+    sourceId: string,
+    targetId: string,
+    position: "before" | "after" = "before"
+  ): void {
+    if (!sourceId || !targetId || sourceId === targetId) return;
     const sourceIdx = configList.value.findIndex((c) => c.id === sourceId);
     const targetIdx = configList.value.findIndex((c) => c.id === targetId);
-    if (sourceIdx !== -1 && targetIdx !== -1 && sourceIdx !== targetIdx) {
-      const nextList = [...configList.value];
-      const temp = nextList[sourceIdx];
-      nextList[sourceIdx] = nextList[targetIdx];
-      nextList[targetIdx] = temp;
-      configList.value = nextList;
-      saveConfigListToStorage();
-    }
+    if (sourceIdx === -1 || targetIdx === -1) return;
+
+    const nextList = [...configList.value];
+    const [movedItem] = nextList.splice(sourceIdx, 1);
+    const newTargetIdx = nextList.findIndex((c) => c.id === targetId);
+    if (newTargetIdx === -1) return;
+
+    const insertIdx = position === "before" ? newTargetIdx : newTargetIdx + 1;
+    nextList.splice(insertIdx, 0, movedItem);
+
+    configList.value = nextList;
+    saveConfigListToStorage();
+  }
+
+  function swapConfigItems(sourceId: string, targetId: string): void {
+    moveConfigItem(sourceId, targetId, "before");
   }
 
   function loadConfig(): void {
@@ -752,6 +765,7 @@ export const useConfigStore = defineStore("config", () => {
     applyConfig,
     handleSaveConfigItem,
     deleteConfigItem,
+    moveConfigItem,
     swapConfigItems,
   };
 });

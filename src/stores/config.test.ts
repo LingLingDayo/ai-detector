@@ -440,3 +440,101 @@ describe("连接测试作为第三模式时的配置同步规则", () => {
     expect(configStore.connectionConfig.modelName).toBe("connection-running-model");
   });
 });
+
+describe("配置列表拖动插入排序 moveConfigItem 测试套件", () => {
+  function createMockConfig(id: string, name: string): ConfigItem {
+    return {
+      id,
+      name,
+      baseUrl: `https://api.${id}.com`,
+      apiKey: `key-${id}`,
+      apiFormat: "chat_completions",
+      modelName: "test-model",
+      reasoningEffort: "off",
+      stream: true,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+  }
+
+  it("支持向前拖动插入到目标项上方（before）与下方（after）", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+
+    store.configList = [
+      createMockConfig("c1", "配置1"),
+      createMockConfig("c2", "配置2"),
+      createMockConfig("c3", "配置3"),
+      createMockConfig("c4", "配置4"),
+    ];
+
+    // 将 c4 插入到 c2 之前 (before) -> [c1, c4, c2, c3]
+    store.moveConfigItem("c4", "c2", "before");
+    expect(store.configList.map((c) => c.id)).toEqual(["c1", "c4", "c2", "c3"]);
+
+    // 将 c3 插入到 c1 之后 (after) -> [c1, c3, c4, c2]
+    store.moveConfigItem("c3", "c1", "after");
+    expect(store.configList.map((c) => c.id)).toEqual(["c1", "c3", "c4", "c2"]);
+  });
+
+  it("支持向后拖动插入到目标项上方（before）与下方（after）", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+
+    store.configList = [
+      createMockConfig("c1", "配置1"),
+      createMockConfig("c2", "配置2"),
+      createMockConfig("c3", "配置3"),
+      createMockConfig("c4", "配置4"),
+    ];
+
+    // 将 c1 插入到 c3 之前 (before) -> [c2, c1, c3, c4]
+    store.moveConfigItem("c1", "c3", "before");
+    expect(store.configList.map((c) => c.id)).toEqual(["c2", "c1", "c3", "c4"]);
+
+    // 将 c2 插入到 c4 之后 (after) -> [c1, c3, c4, c2]
+    store.moveConfigItem("c2", "c4", "after");
+    expect(store.configList.map((c) => c.id)).toEqual(["c1", "c3", "c4", "c2"]);
+  });
+
+  it("拖动自身或传入无效 ID 时列表保持原样且不报错", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+
+    const initial = [
+      createMockConfig("c1", "配置1"),
+      createMockConfig("c2", "配置2"),
+    ];
+    store.configList = [...initial];
+
+    store.moveConfigItem("c1", "c1", "before");
+    expect(store.configList.map((c) => c.id)).toEqual(["c1", "c2"]);
+
+    store.moveConfigItem("non-exist", "c1", "before");
+    expect(store.configList.map((c) => c.id)).toEqual(["c1", "c2"]);
+
+    store.moveConfigItem("c1", "non-exist", "after");
+    expect(store.configList.map((c) => c.id)).toEqual(["c1", "c2"]);
+  });
+
+  it("拖动插入后自动同步并保存至 localStorage", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+
+    store.configList = [
+      createMockConfig("c1", "配置1"),
+      createMockConfig("c2", "配置2"),
+    ];
+
+    store.moveConfigItem("c2", "c1", "before");
+    const raw = storage.get(CONFIG_LIST_STORAGE_KEY);
+    expect(raw).toBeTruthy();
+    const parsed = JSON.parse(raw!);
+    expect(parsed.map((item: ConfigItem) => item.id)).toEqual(["c2", "c1"]);
+  });
+});
+
