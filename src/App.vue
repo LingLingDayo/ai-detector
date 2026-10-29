@@ -331,7 +331,7 @@ function handleOpenGithub(): void {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.72rem;
+    font-size: 12px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     color: var(--text-muted);
     opacity: 0.65;

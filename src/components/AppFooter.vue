@@ -13,7 +13,7 @@
 <style lang="scss" scoped>
 .app-footer {
   text-align: center;
-  font-size: 0.72rem;
+  font-size: 12px;
   color: var(--text-muted);
   padding: 8px 0 4px;
 }

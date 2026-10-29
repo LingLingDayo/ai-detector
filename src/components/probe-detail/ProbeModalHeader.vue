@@ -66,7 +66,7 @@ const emit = defineEmits<{
     flex-wrap: wrap;
 
     .probe-modal-title {
-      font-size: 0.92rem;
+      font-size: 15px;
       font-weight: 600;
       color: var(--text-primary);
       margin: 0;
@@ -92,7 +92,7 @@ const emit = defineEmits<{
         border: 1px solid transparent;
         background: transparent;
         color: var(--text-muted);
-        font-size: 0.72rem;
+        font-size: 12px;
         cursor: pointer;
         transition: all var(--transition-fast);
 

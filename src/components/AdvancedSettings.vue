@@ -120,7 +120,7 @@ function handleApiFormatChange(value: string): void {
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    font-size: 0.78rem;
+    font-size: 12px;
     cursor: pointer;
     transition: background-color var(--transition-fast), color var(--transition-fast);
 
@@ -147,11 +147,11 @@ function handleApiFormatChange(value: string): void {
 
       span {
         display: block;
-        line-height: 1rem;
+        line-height: 16px;
       }
 
       .settings-summary {
-        font-size: 0.72rem;
+        font-size: 12px;
         color: var(--text-muted);
       }
     }
@@ -191,7 +191,7 @@ function handleApiFormatChange(value: string): void {
         }
 
         .field-hint {
-          font-size: 0.7rem;
+          font-size: 11px;
           color: var(--text-muted);
         }
       }

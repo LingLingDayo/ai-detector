@@ -73,7 +73,7 @@ const emit = defineEmits<{
       width: 100%;
       height: 32px;
       padding: 0 28px;
-      font-size: 0.78rem;
+      font-size: 12px;
       background: var(--bg-input);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
@@ -125,7 +125,7 @@ const emit = defineEmits<{
     gap: 5px;
     height: 32px;
     padding: 0 10px;
-    font-size: 0.76rem;
+    font-size: 12px;
     font-weight: 500;
     line-height: 1;
     color: #93c5fd;

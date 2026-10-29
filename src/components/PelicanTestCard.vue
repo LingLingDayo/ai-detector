@@ -243,7 +243,7 @@ function handleDownloadContent(): void {
   gap: 8px;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
-  font-size: 0.76rem;
+  font-size: 12px;
 
   &.error {
     background: var(--danger-bg);

@@ -54,7 +54,7 @@ import logoUrl from "../assets/logo.png";
     }
 
     .brand-title {
-      font-size: 1.15rem;
+      font-size: 18px;
       font-weight: 700;
       letter-spacing: -0.02em;
       color: #fff;
@@ -69,7 +69,7 @@ import logoUrl from "../assets/logo.png";
     }
 
     .brand-subtitle {
-      font-size: 0.74rem;
+      font-size: 12px;
       color: var(--text-secondary);
       line-height: 1.2;
     }

@@ -82,7 +82,7 @@ defineExpose({
         </li>
         <li v-else class="dropdown-empty">
           <div style="font-weight: 500; margin-bottom: 4px; color: var(--text-secondary)">尚未拉取模型列表</div>
-          <div style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.4;">
+          <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">
             请先配置 Base URL 与 API Key 后点击右侧 ↻ 按钮在线拉取，亦可直接手动输入。
           </div>
         </li>
@@ -141,13 +141,13 @@ defineExpose({
 
     input {
       padding: 5px 8px;
-      font-size: 0.78rem;
+      font-size: 12px;
     }
   }
 
   .dropdown-status-bar {
     padding: 4px 10px;
-    font-size: 0.7rem;
+    font-size: 11px;
     color: var(--text-muted);
     background: rgba(18, 24, 36, 0.4);
     border-bottom: 1px solid rgba(35, 45, 63, 0.4);
@@ -180,7 +180,7 @@ defineExpose({
 
     .dropdown-item {
       padding: 6px 10px;
-      font-size: 0.8rem;
+      font-size: 13px;
       color: var(--text-secondary);
       cursor: pointer;
       display: flex;
@@ -200,7 +200,7 @@ defineExpose({
       }
 
       .selected-check {
-        font-size: 0.75rem;
+        font-size: 12px;
         color: var(--accent-primary);
         flex-shrink: 0;
         margin-left: 6px;
@@ -221,7 +221,7 @@ defineExpose({
     .dropdown-empty {
       padding: 12px;
       text-align: center;
-      font-size: 0.76rem;
+      font-size: 12px;
       color: var(--text-muted);
     }
   }

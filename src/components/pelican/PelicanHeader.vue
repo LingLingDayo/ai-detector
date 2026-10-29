@@ -66,7 +66,7 @@
     }
 
     h2 {
-      font-size: 0.98rem;
+      font-size: 16px;
       font-weight: 600;
       color: #fff;
     }
@@ -75,7 +75,7 @@
       display: inline-flex;
       align-items: center;
       padding: 2px 7px;
-      font-size: 0.7rem;
+      font-size: 11px;
       border-radius: 9999px;
       background: rgba(99, 102, 241, 0.12);
       border: 1px solid rgba(99, 102, 241, 0.25);
@@ -85,7 +85,7 @@
   }
 
   .subtitle {
-    font-size: 0.76rem;
+    font-size: 12px;
     color: var(--text-secondary);
     line-height: 1.4;
   }

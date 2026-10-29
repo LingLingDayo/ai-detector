@@ -354,7 +354,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
     }
 
     h3 {
-      font-size: 0.96rem;
+      font-size: 15px;
       font-weight: 600;
       color: #fff;
       margin: 0;
@@ -379,7 +379,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
       border: 1px solid rgba(239, 68, 68, 0.25);
       border-radius: var(--radius-sm);
       color: #fca5a5;
-      font-size: 0.74rem;
+      font-size: 12px;
       line-height: 26px;
       font-family: inherit;
       cursor: pointer;
@@ -446,7 +446,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
     gap: 6px;
     height: 24px;
     padding: 0 10px;
-    font-size: 0.74rem;
+    font-size: 12px;
     font-weight: 500;
     line-height: 1;
     font-family: inherit;

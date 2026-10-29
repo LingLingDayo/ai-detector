@@ -222,7 +222,7 @@ async function handleCopy(): Promise<void> {
 
   .user-text {
     color: #f1f5f9;
-    font-size: 0.8rem;
+    font-size: 13px;
     line-height: 1.62;
     white-space: pre-wrap;
     word-break: break-word;
@@ -271,7 +271,7 @@ async function handleCopy(): Promise<void> {
 
 .markdown-body {
   color: #dbe3ee;
-  font-size: 0.8rem;
+  font-size: 13px;
   // 整数行高避免流式换行时内容高度带小数，导致底部状态栏出现亚像素抖动
   line-height: 22px;
   word-break: break-word;
@@ -301,24 +301,24 @@ async function handleCopy(): Promise<void> {
   }
 
   :deep(h1) {
-    font-size: 1.08rem;
+    font-size: 17px;
     line-height: 24px;
   }
 
   :deep(h2) {
-    font-size: 1rem;
+    font-size: 16px;
     line-height: 22px;
   }
 
   :deep(h3) {
-    font-size: 0.92rem;
+    font-size: 15px;
     line-height: 20px;
   }
 
   :deep(h4),
   :deep(h5),
   :deep(h6) {
-    font-size: 0.84rem;
+    font-size: 13px;
     line-height: 18px;
   }
 
@@ -343,7 +343,7 @@ async function handleCopy(): Promise<void> {
 
   :deep(code) {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.73rem;
+    font-size: 12px;
     background: rgba(15, 23, 42, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 4px;
@@ -365,7 +365,7 @@ async function handleCopy(): Promise<void> {
       border: none;
       background: transparent;
       color: #cbd5e1;
-      font-size: 0.72rem;
+      font-size: 12px;
       line-height: 19px;
       white-space: pre;
     }
@@ -415,7 +415,7 @@ async function handleCopy(): Promise<void> {
   gap: 7px;
   padding: 3px 0 2px;
   color: #94a3b8;
-  font-size: 0.72rem;
+  font-size: 12px;
 
   &.has-content {
     margin-top: 3px;
@@ -424,7 +424,7 @@ async function handleCopy(): Promise<void> {
   .stream-char-count,
   .waiting-time {
     color: #64748b;
-    font-size: 0.66rem;
+    font-size: 11px;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
@@ -472,7 +472,7 @@ async function handleCopy(): Promise<void> {
   border: 1px solid rgba(239, 68, 68, 0.22);
   border-radius: 6px;
   color: #fca5a5;
-  font-size: 0.72rem;
+  font-size: 12px;
   line-height: 1.5;
   user-select: text;
 
@@ -513,7 +513,7 @@ async function handleCopy(): Promise<void> {
 
 .message-time {
   color: #64748b;
-  font-size: 0.66rem;
+  font-size: 11px;
   line-height: 22px;
   white-space: nowrap;
   opacity: 1;

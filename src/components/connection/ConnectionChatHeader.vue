@@ -194,7 +194,7 @@ const successTitle = computed(
   }
 
   h2 {
-    font-size: 0.94rem;
+    font-size: 15px;
     font-weight: 650;
     color: #fff;
     line-height: 1.3;
@@ -202,7 +202,7 @@ const successTitle = computed(
 
   p {
     margin-top: 2px;
-    font-size: 0.68rem;
+    font-size: 11px;
     color: #64748b;
     line-height: 1.4;
   }
@@ -215,7 +215,7 @@ const successTitle = computed(
   height: 18px;
   padding: 0 7px;
   border-radius: 9999px;
-  font-size: 0.62rem;
+  font-size: 10px;
   font-weight: 500;
   white-space: nowrap;
   background: rgba(99, 102, 241, 0.13);
@@ -244,7 +244,7 @@ const successTitle = computed(
   background: rgba(148, 163, 184, 0.07);
   border: 1px solid rgba(148, 163, 184, 0.16);
   color: #94a3b8;
-  font-size: 0.7rem;
+  font-size: 11px;
   line-height: 1;
   font-family: inherit;
   cursor: pointer;
@@ -294,13 +294,13 @@ const successTitle = computed(
   }
 
   .stat-label {
-    font-size: 0.64rem;
+    font-size: 10px;
     color: #64748b;
     white-space: nowrap;
   }
 
   strong {
-    font-size: 0.7rem;
+    font-size: 11px;
     font-weight: 650;
     color: #cbd5e1;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

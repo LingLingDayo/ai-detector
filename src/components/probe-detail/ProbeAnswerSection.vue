@@ -141,14 +141,14 @@ function handleCopyError(): void {
       flex-wrap: wrap;
 
       .section-label {
-        font-size: 0.78rem;
+        font-size: 12px;
         font-weight: 600;
         color: var(--text-primary);
         letter-spacing: 0.02em;
       }
 
       .section-hint {
-        font-size: 0.72rem;
+        font-size: 12px;
         color: var(--text-muted);
         background: rgba(255, 255, 255, 0.04);
         padding: 1px 7px;
@@ -189,7 +189,7 @@ function handleCopyError(): void {
       border: 1px solid var(--border-subtle);
       background: var(--bg-input);
       color: var(--text-secondary);
-      font-size: 0.72rem;
+      font-size: 12px;
       cursor: pointer;
       transition: all var(--transition-fast);
 
@@ -231,7 +231,7 @@ function handleCopyError(): void {
       margin: 0;
       padding: 12px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.8rem;
+      font-size: 13px;
       line-height: 1.55;
       color: var(--text-primary);
       max-height: 220px;
@@ -250,7 +250,7 @@ function handleCopyError(): void {
     border-radius: var(--radius-sm);
     border: 1px dashed var(--border-subtle);
     background: rgba(15, 20, 30, 0.4);
-    font-size: 0.78rem;
+    font-size: 12px;
 
     .placeholder-text {
       display: flex;
@@ -258,13 +258,13 @@ function handleCopyError(): void {
       gap: 3px;
 
       strong {
-        font-size: 0.8rem;
+        font-size: 13px;
       }
 
       p {
         margin: 0;
         color: var(--text-muted);
-        font-size: 0.74rem;
+        font-size: 12px;
       }
     }
 
@@ -328,7 +328,7 @@ function handleCopyError(): void {
         border: 1px solid rgba(239, 68, 68, 0.4);
         color: #fca5a5;
         border-radius: var(--radius-sm);
-        font-size: 0.74rem;
+        font-size: 12px;
         font-weight: 500;
         cursor: pointer;
         flex-shrink: 0;

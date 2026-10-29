@@ -476,14 +476,14 @@ function handleSubmit(applyImmediately: boolean = false): void {
     }
 
     h3 {
-      font-size: 0.98rem;
+      font-size: 16px;
       font-weight: 600;
       color: #fff;
       margin-bottom: 2px;
     }
 
     .header-subtitle {
-      font-size: 0.75rem;
+      font-size: 12px;
       color: var(--text-muted);
     }
   }
@@ -544,7 +544,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
     border: none;
     color: #818cf8;
     height: 32px;
-    font-size: 0.76rem;
+    font-size: 12px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -594,7 +594,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
     justify-content: space-between;
 
     .field-hint-tag {
-      font-size: 0.7rem;
+      font-size: 11px;
       color: var(--text-muted);
     }
   }

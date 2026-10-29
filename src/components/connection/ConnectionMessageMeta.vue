@@ -82,7 +82,7 @@ const hasCacheUsage = computed(
   gap: 5px 10px;
   min-height: 18px;
   color: #64748b;
-  font-size: 0.66rem;
+  font-size: 11px;
   line-height: 1.4;
 }
 

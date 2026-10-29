@@ -53,14 +53,14 @@ const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG")
   padding: 6px 10px;
   background: rgba(30, 41, 59, 0.5);
   border-bottom: 1px solid var(--border-subtle);
-  font-size: 0.72rem;
+  font-size: 12px;
   color: var(--text-secondary);
 
   .btn-copy-code {
     background: transparent;
     border: none;
     color: #818cf8;
-    font-size: 0.72rem;
+    font-size: 12px;
     cursor: pointer;
 
     &:hover {
@@ -77,7 +77,7 @@ const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG")
 
   code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.72rem;
+    font-size: 12px;
     color: #93c5fd;
     line-height: 1.4;
     white-space: pre-wrap;

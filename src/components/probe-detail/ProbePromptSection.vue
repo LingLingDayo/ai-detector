@@ -80,14 +80,14 @@ function handleCopy(): void {
       flex-wrap: wrap;
 
       .section-label {
-        font-size: 0.78rem;
+        font-size: 12px;
         font-weight: 600;
         color: var(--text-primary);
         letter-spacing: 0.02em;
       }
 
       .section-hint {
-        font-size: 0.72rem;
+        font-size: 12px;
         color: var(--text-muted);
         background: rgba(255, 255, 255, 0.04);
         padding: 1px 7px;
@@ -114,7 +114,7 @@ function handleCopy(): void {
       border: 1px solid var(--border-subtle);
       background: var(--bg-input);
       color: var(--text-secondary);
-      font-size: 0.72rem;
+      font-size: 12px;
       cursor: pointer;
       transition: all var(--transition-fast);
 
@@ -154,7 +154,7 @@ function handleCopy(): void {
     background: rgba(10, 14, 22, 0.65);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
-    font-size: 0.8rem;
+    font-size: 13px;
     line-height: 1.55;
     color: var(--text-secondary);
     max-height: 130px;

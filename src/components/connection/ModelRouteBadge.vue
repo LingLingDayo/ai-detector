@@ -216,7 +216,7 @@ onBeforeUnmount(() => {
   user-select: text;
 
   .route-tooltip-title {
-    font-size: 0.73rem;
+    font-size: 12px;
     font-weight: 700;
     margin-bottom: 7px;
 
@@ -238,7 +238,7 @@ onBeforeUnmount(() => {
     align-items: flex-start;
     gap: 8px;
     margin-top: 5px;
-    font-size: 0.68rem;
+    font-size: 11px;
 
     span {
       flex: 0 0 54px;
@@ -249,7 +249,7 @@ onBeforeUnmount(() => {
       flex: 1;
       color: #e2e8f0;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.68rem;
+      font-size: 11px;
       line-height: 1.4;
       word-break: break-all;
       background: rgba(255, 255, 255, 0.04);
@@ -264,7 +264,7 @@ onBeforeUnmount(() => {
     padding-top: 7px;
     border-top: 1px solid rgba(255, 255, 255, 0.07);
     color: #94a3b8;
-    font-size: 0.67rem;
+    font-size: 11px;
     line-height: 1.5;
   }
 }

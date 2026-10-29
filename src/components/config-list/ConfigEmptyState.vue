@@ -64,12 +64,12 @@ const emit = defineEmits<{
   }
 
   h4 {
-    font-size: 0.92rem;
+    font-size: 15px;
     color: var(--text-secondary);
   }
 
   p {
-    font-size: 0.76rem;
+    font-size: 12px;
     max-width: 320px;
     line-height: 1.5;
   }

@@ -123,7 +123,7 @@ function handleSelect(option: SegmentedOption): void {
     background: transparent;
     color: var(--text-secondary);
     font-family: inherit;
-    font-size: 0.78rem;
+    font-size: 12px;
     font-weight: 500;
     line-height: 1.25;
     white-space: nowrap;
@@ -182,7 +182,7 @@ function handleSelect(option: SegmentedOption): void {
   &.size-sm {
     .segment {
       gap: 4px;
-      font-size: 0.7rem;
+      font-size: 11px;
       line-height: 1;
     }
   }

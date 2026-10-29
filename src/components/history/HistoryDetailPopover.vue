@@ -204,7 +204,7 @@ function formatProb(prob: number | undefined): string {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
     .popover-title {
-      font-size: 0.76rem;
+      font-size: 12px;
       font-weight: 600;
       color: #e2e8f0;
       user-select: text;
@@ -223,7 +223,7 @@ function formatProb(prob: number | undefined): string {
     justify-content: space-between;
     align-items: flex-start;
     gap: 8px;
-    font-size: 0.72rem;
+    font-size: 12px;
 
     .item-label {
       color: var(--text-secondary);

@@ -103,7 +103,7 @@ const emit = defineEmits<{
   gap: 8px;
 
   h2 {
-    font-size: 0.94rem;
+    font-size: 15px;
     font-weight: 600;
     color: #fff;
   }
@@ -112,7 +112,7 @@ const emit = defineEmits<{
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.68rem;
+    font-size: 11px;
     padding: 1px 7px;
     border-radius: 9999px;
     background: rgba(99, 102, 241, 0.12);
@@ -147,7 +147,7 @@ const emit = defineEmits<{
     gap: 5px;
     height: 24px;
     padding: 0 8px;
-    font-size: 0.74rem;
+    font-size: 12px;
     font-weight: 500;
     line-height: 1;
     border-radius: var(--radius-sm);
@@ -206,7 +206,7 @@ const emit = defineEmits<{
       border-color: rgba(148, 163, 184, 0.2);
 
       .btn-count-dot {
-        font-size: 0.65rem;
+        font-size: 10px;
         padding: 0 4px;
         height: 14px;
         line-height: 14px;

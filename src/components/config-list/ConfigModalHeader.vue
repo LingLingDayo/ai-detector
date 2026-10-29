@@ -69,13 +69,13 @@ const emit = defineEmits<{
     }
 
     h3 {
-      font-size: 0.98rem;
+      font-size: 16px;
       font-weight: 600;
       color: #fff;
     }
 
     .header-subtitle {
-      font-size: 0.74rem;
+      font-size: 12px;
       color: var(--text-muted);
       margin-top: 1px;
     }
@@ -93,7 +93,7 @@ const emit = defineEmits<{
       gap: 4px;
       height: 32px;
       padding: 0 12px;
-      font-size: 0.78rem;
+      font-size: 12px;
       line-height: 1;
 
       svg {

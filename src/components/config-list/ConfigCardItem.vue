@@ -311,7 +311,7 @@ function maskApiKey(key?: string): string {
       flex: 1;
 
       .item-name {
-        font-size: 0.88rem;
+        font-size: 14px;
         font-weight: 600;
         color: #f1f5f9;
         white-space: nowrap;
@@ -324,7 +324,7 @@ function maskApiKey(key?: string): string {
         align-items: center;
         gap: 3px;
         padding: 1px 7px;
-        font-size: 0.68rem;
+        font-size: 11px;
         font-weight: 500;
         line-height: 1.3;
         border-radius: 9999px;
@@ -361,7 +361,7 @@ function maskApiKey(key?: string): string {
         gap: 4px;
         height: 24px;
         padding: 0 8px;
-        font-size: 0.72rem;
+        font-size: 12px;
         font-weight: 500;
         line-height: 1;
         border-radius: var(--radius-sm);
@@ -412,12 +412,12 @@ function maskApiKey(key?: string): string {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 0.72rem;
+    font-size: 12px;
     min-width: 0;
 
     .meta-separator {
       color: rgba(255, 255, 255, 0.2);
-      font-size: 0.65rem;
+      font-size: 10px;
       user-select: none;
       flex-shrink: 0;
     }
@@ -429,7 +429,7 @@ function maskApiKey(key?: string): string {
       min-width: 0;
 
       .meta-label {
-        font-size: 0.64rem;
+        font-size: 10px;
         font-weight: 700;
         color: #475569;
         letter-spacing: 0.5px;

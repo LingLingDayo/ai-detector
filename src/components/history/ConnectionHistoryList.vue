@@ -311,7 +311,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   flex-wrap: wrap;
   padding: 0 2px 10px;
   color: #64748b;
-  font-size: 0.67rem;
+  font-size: 11px;
 }
 
 .connection-history-list {
@@ -391,7 +391,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
 
   .session-title {
     color: #e2e8f0;
-    font-size: 0.78rem;
+    font-size: 12px;
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -409,7 +409,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.25);
   color: #6ee7b7;
-  font-size: 0.6rem;
+  font-size: 10px;
 
   .active-dot {
     width: 4px;
@@ -428,7 +428,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   background: rgba(245, 158, 11, 0.11);
   border: 1px solid rgba(245, 158, 11, 0.27);
   color: #fbbf24;
-  font-size: 0.6rem;
+  font-size: 10px;
 }
 
 .sub-line {
@@ -437,7 +437,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   gap: 5px;
   margin-top: 2px;
   color: #64748b;
-  font-size: 0.63rem;
+  font-size: 10px;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -460,7 +460,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     background: rgba(99, 102, 241, 0.1);
     border: 1px solid rgba(99, 102, 241, 0.2);
     color: #a5b4fc;
-    font-size: 0.6rem;
+    font-size: 10px;
   }
 }
 
@@ -475,7 +475,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     align-items: center;
     gap: 3px;
     color: #94a3b8;
-    font-size: 0.63rem;
+    font-size: 10px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     white-space: nowrap;
 
@@ -551,13 +551,13 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
 
     .column-title {
       color: #cbd5e1;
-      font-size: 0.68rem;
+      font-size: 11px;
       font-weight: 600;
     }
 
     .column-total {
       color: #64748b;
-      font-size: 0.62rem;
+      font-size: 10px;
     }
   }
 }
@@ -572,7 +572,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   .model-name {
     color: #94a3b8;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.63rem;
+    font-size: 10px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -601,7 +601,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
 
   .model-count {
     color: #94a3b8;
-    font-size: 0.62rem;
+    font-size: 10px;
     text-align: right;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
@@ -610,7 +610,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
 .column-empty {
   padding-top: 4px;
   color: #526175;
-  font-size: 0.63rem;
+  font-size: 10px;
 }
 
 .detail-metrics {
@@ -629,13 +629,13 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
 
     span {
       color: #526175;
-      font-size: 0.59rem;
+      font-size: 9px;
       white-space: nowrap;
     }
 
     strong {
       color: #cbd5e1;
-      font-size: 0.68rem;
+      font-size: 11px;
       font-weight: 600;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       white-space: nowrap;
@@ -661,7 +661,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     background: rgba(255, 255, 255, 0.035);
     border: 1px solid rgba(255, 255, 255, 0.06);
     color: #7b8ba3;
-    font-size: 0.6rem;
+    font-size: 10px;
 
     &.is-model {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -671,7 +671,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   .last-error {
     margin-top: 6px;
     color: #fca5a5;
-    font-size: 0.63rem;
+    font-size: 10px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

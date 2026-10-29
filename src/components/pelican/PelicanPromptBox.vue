@@ -388,7 +388,7 @@ watch(
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.72rem;
+    font-size: 12px;
     font-weight: 600;
     color: #94a3b8;
     letter-spacing: 0.5px;
@@ -417,7 +417,7 @@ watch(
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
-    font-size: 0.7rem;
+    font-size: 11px;
     line-height: 22px;
     cursor: pointer;
     transition: all var(--transition-fast);
@@ -528,7 +528,7 @@ watch(
   border: none;
   border-radius: var(--radius-xs, 4px);
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 11px;
   line-height: 1;
   cursor: pointer;
   text-align: left;
@@ -582,7 +582,7 @@ watch(
   code {
     display: block;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.78rem;
+    font-size: 12px;
     color: #38bdf8;
     line-height: 1.45;
     word-break: break-all;
@@ -605,7 +605,7 @@ watch(
   border-radius: var(--radius-xs, 4px);
   padding: 6px 8px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.78rem;
+  font-size: 12px;
   color: #e2e8f0;
   line-height: 1.45;
   resize: vertical;
@@ -624,7 +624,7 @@ watch(
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  font-size: 0.68rem;
+  font-size: 11px;
   color: #64748b;
   padding: 0 2px;
 

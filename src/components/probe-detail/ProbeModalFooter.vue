@@ -48,7 +48,7 @@ const emit = defineEmits<{
 
     .modal-footer-btn {
       padding: 5px 14px;
-      font-size: 0.76rem;
+      font-size: 12px;
     }
   }
 }

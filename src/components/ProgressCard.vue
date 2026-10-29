@@ -194,7 +194,7 @@ function openDetail(idx: number): void {
       }
 
       h2 {
-        font-size: 0.88rem;
+        font-size: 14px;
         font-weight: 600;
         color: #fff;
         line-height: 1.2;
@@ -224,7 +224,7 @@ function openDetail(idx: number): void {
       }
 
       .progress-status-desc {
-        font-size: 0.72rem;
+        font-size: 12px;
         color: var(--text-secondary);
         line-height: 1.2;
       }
@@ -242,7 +242,7 @@ function openDetail(idx: number): void {
         gap: 5px;
         height: 24px;
         padding: 0 9px;
-        font-size: 0.74rem;
+        font-size: 12px;
         font-weight: 500;
         color: #e0e7ff;
         background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(168, 85, 247, 0.18));
@@ -296,7 +296,7 @@ function openDetail(idx: number): void {
         align-items: flex-end;
 
         span {
-          font-size: 1.1rem;
+          font-size: 18px;
           font-weight: 700;
           background: var(--accent-gradient);
           background-clip: text;
@@ -306,7 +306,7 @@ function openDetail(idx: number): void {
         }
 
         small {
-          font-size: 0.68rem;
+          font-size: 11px;
           color: var(--text-muted);
         }
       }
@@ -358,7 +358,7 @@ function openDetail(idx: number): void {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.68rem;
+        font-size: 11px;
         font-weight: 700;
         line-height: 1;
         background: var(--bg-input);
@@ -379,7 +379,7 @@ function openDetail(idx: number): void {
           gap: 4px;
 
           strong {
-            font-size: 0.76rem;
+            font-size: 12px;
             color: var(--text-primary);
             line-height: 1.2;
             white-space: nowrap;
@@ -395,14 +395,14 @@ function openDetail(idx: number): void {
         }
 
         .step-state {
-          font-size: 0.66rem;
+          font-size: 11px;
           color: var(--text-muted);
           line-height: 1.2;
         }
       }
 
       .step-stat {
-        font-size: 0.68rem;
+        font-size: 11px;
         font-weight: 600;
         color: var(--text-muted);
         flex-shrink: 0;
@@ -514,7 +514,7 @@ function openDetail(idx: number): void {
     margin-top: 8px;
     padding: 6px 10px;
     border-radius: var(--radius-sm);
-    font-size: 0.76rem;
+    font-size: 12px;
     user-select: text;
     -webkit-user-select: text;
     cursor: text;

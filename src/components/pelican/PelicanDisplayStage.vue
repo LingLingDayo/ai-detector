@@ -201,13 +201,13 @@ const wrappedHtml = computed(() => {
   }
 
   .loading-title {
-    font-size: 0.84rem;
+    font-size: 13px;
     font-weight: 600;
     color: #e2e8f0;
   }
 
   .loading-desc {
-    font-size: 0.74rem;
+    font-size: 12px;
     color: var(--text-muted);
     margin-top: 3px;
   }
@@ -306,7 +306,7 @@ const wrappedHtml = computed(() => {
   overflow: hidden;
 
   .fallback-tip {
-    font-size: 0.74rem;
+    font-size: 12px;
     color: #fbbf24;
 
     code {
@@ -321,7 +321,7 @@ const wrappedHtml = computed(() => {
   border-radius: var(--radius-sm);
   padding: 10px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.74rem;
+  font-size: 12px;
   color: #cbd5e1;
   line-height: 1.45;
   white-space: pre-wrap;

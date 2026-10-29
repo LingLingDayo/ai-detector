@@ -207,7 +207,7 @@ function handleCopyResult(): void {
         gap: 4px;
         padding: 2px 7px;
         border-radius: 9999px;
-        font-size: 0.68rem;
+        font-size: 11px;
         font-weight: 500;
         background: rgba(99, 102, 241, 0.1);
         border: 1px solid rgba(99, 102, 241, 0.25);
@@ -288,27 +288,27 @@ function handleCopyResult(): void {
       }
 
       .hero-label {
-        font-size: 0.68rem;
+        font-size: 11px;
         color: var(--text-muted);
         margin-bottom: 2px;
         letter-spacing: 0.04em;
       }
 
       .hero-val {
-        font-size: 1.1rem;
+        font-size: 18px;
         font-weight: 700;
         color: #fff;
         line-height: 1.2;
       }
 
       .hero-sub {
-        font-size: 0.72rem;
+        font-size: 12px;
         color: var(--text-secondary);
         margin-top: 2px;
       }
 
       .hero-prob-text {
-        font-size: 0.78rem;
+        font-size: 12px;
         font-weight: 600;
         color: var(--success);
       }
@@ -327,7 +327,7 @@ function handleCopyResult(): void {
       justify-content: center;
       padding: 2px 8px;
       border-radius: 9999px;
-      font-size: 0.68rem;
+      font-size: 11px;
       line-height: 1;
       gap: 5px;
       transition: all var(--transition-fast);
@@ -370,7 +370,7 @@ function handleCopyResult(): void {
       width: 100%;
       border-collapse: collapse;
       text-align: left;
-      font-size: 0.8rem;
+      font-size: 13px;
 
       th {
         background: rgba(17, 23, 34, 0.95);
@@ -378,7 +378,7 @@ function handleCopyResult(): void {
         padding: 6px 10px;
         font-weight: 600;
         border-bottom: 1px solid var(--border-subtle);
-        font-size: 0.72rem;
+        font-size: 12px;
 
         &.th-candidate {
           cursor: help;
@@ -434,14 +434,14 @@ function handleCopyResult(): void {
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        font-size: 0.68rem;
+        font-size: 11px;
         font-weight: 700;
         background: rgba(30, 41, 59, 0.6);
         color: var(--text-muted);
       }
 
       .family-tag {
-        font-size: 0.68rem;
+        font-size: 11px;
         padding: 1px 5px;
         border-radius: var(--radius-sm);
         background: rgba(30, 41, 59, 0.5);
@@ -472,14 +472,14 @@ function handleCopyResult(): void {
           min-width: 42px;
           text-align: right;
           font-weight: 600;
-          font-size: 0.78rem;
+          font-size: 12px;
         }
       }
 
       .similarity-val {
         color: var(--text-secondary);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 0.76rem;
+        font-size: 12px;
       }
     }
   }

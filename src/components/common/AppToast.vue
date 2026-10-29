@@ -135,7 +135,7 @@ const hasMessage = computed(() => Boolean(toastState.message));
 
 .toast-title {
   color: #f1f5f9;
-  font-size: 0.78rem;
+  font-size: 12px;
   font-weight: 650;
   line-height: 1.35;
 }
@@ -143,7 +143,7 @@ const hasMessage = computed(() => Boolean(toastState.message));
 .toast-message {
   margin-top: 3px;
   color: #94a3b8;
-  font-size: 0.7rem;
+  font-size: 11px;
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;

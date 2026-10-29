@@ -82,14 +82,14 @@ defineProps<{
   }
 
   .empty-title {
-    font-size: 0.92rem;
+    font-size: 15px;
     font-weight: 600;
     color: #e2e8f0;
     margin: 0;
   }
 
   .empty-desc {
-    font-size: 0.78rem;
+    font-size: 12px;
     color: var(--text-secondary);
     max-width: 360px;
     line-height: 1.5;

@@ -185,7 +185,7 @@ defineExpose({ scrollToBottom });
   }
 
   h3 {
-    font-size: 0.94rem;
+    font-size: 15px;
     font-weight: 650;
     color: #f1f5f9;
     margin-bottom: 6px;
@@ -194,7 +194,7 @@ defineExpose({ scrollToBottom });
   > p {
     max-width: 430px;
     color: #7b8ba3;
-    font-size: 0.74rem;
+    font-size: 12px;
     line-height: 1.65;
   }
 
@@ -216,7 +216,7 @@ defineExpose({ scrollToBottom });
     border: 1px solid rgba(255, 255, 255, 0.075);
     border-radius: 9999px;
     color: #94a3b8;
-    font-size: 0.7rem;
+    font-size: 11px;
     line-height: 1;
     font-family: inherit;
     cursor: pointer;

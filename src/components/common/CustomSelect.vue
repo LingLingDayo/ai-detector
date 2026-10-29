@@ -268,7 +268,7 @@ onUnmounted(() => {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 0.82rem;
+  font-size: 13px;
   font-family: inherit;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -301,7 +301,7 @@ onUnmounted(() => {
   }
 
   .option-desc {
-    font-size: 0.76rem;
+    font-size: 12px;
     color: var(--text-secondary);
     font-weight: 400;
     opacity: 0.5;
@@ -312,7 +312,7 @@ onUnmounted(() => {
     align-items: center;
     padding: 0 6px;
     height: 16px;
-    font-size: 0.66rem;
+    font-size: 11px;
     font-weight: 500;
     border-radius: 4px;
     background: rgba(99, 102, 241, 0.15);
@@ -386,7 +386,7 @@ onUnmounted(() => {
   gap: 8px;
   padding: 6px 9px;
   border-radius: var(--radius-sm);
-  font-size: 0.8rem;
+  font-size: 13px;
   color: var(--text-secondary);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
@@ -422,7 +422,7 @@ onUnmounted(() => {
   }
 
   .option-text-desc {
-    font-size: 0.74rem;
+    font-size: 12px;
     color: var(--text-muted);
   }
 
@@ -431,7 +431,7 @@ onUnmounted(() => {
     align-items: center;
     padding: 0 5px;
     height: 15px;
-    font-size: 0.65rem;
+    font-size: 10px;
     font-weight: 500;
     border-radius: 3px;
     background: rgba(99, 102, 241, 0.12);

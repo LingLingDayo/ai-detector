@@ -361,7 +361,7 @@ defineExpose({ focus, fillText });
   background: transparent;
   color: #e2e8f0;
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: 13px;
   line-height: 1.62;
   overflow-y: auto;
 
@@ -467,7 +467,7 @@ defineExpose({ focus, fillText });
   border-radius: 11px;
   background: rgba(13, 20, 35, 0.93);
   color: #a5b4fc;
-  font-size: 0.74rem;
+  font-size: 12px;
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
   pointer-events: none;
@@ -477,14 +477,14 @@ defineExpose({ focus, fillText });
   margin-top: 5px;
   padding-left: 2px;
   color: #fca5a5;
-  font-size: 0.66rem;
+  font-size: 11px;
 }
 
 .composer-disabled-hint {
   margin-top: 5px;
   padding-left: 2px;
   color: #b45309;
-  font-size: 0.66rem;
+  font-size: 11px;
 }
 
 .drop-fade-enter-active,

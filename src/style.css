@@ -106,7 +106,7 @@ body {
 }
 
 .card-header h2 {
-  font-size: 0.94rem;
+  font-size: 15px;
   font-weight: 600;
   color: #fff;
 }
@@ -120,7 +120,7 @@ body {
   border-radius: 9999px;
   background: rgba(30, 41, 59, 0.6);
   border: 1px solid var(--border-subtle);
-  font-size: 0.72rem;
+  font-size: 12px;
   line-height: 1;
   color: var(--text-secondary);
 }
@@ -156,7 +156,7 @@ body {
 }
 
 label {
-  font-size: 0.76rem;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-secondary);
   cursor: default;
@@ -179,7 +179,7 @@ input[type="number"] {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 0.82rem;
+  font-size: 13px;
   font-family: inherit;
   outline: none;
   transition: all var(--transition-fast);
@@ -284,7 +284,7 @@ input::placeholder {
   height: 32px;
   padding: 0 16px;
   border-radius: var(--radius-sm);
-  font-size: 0.86rem;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1;
   cursor: pointer;

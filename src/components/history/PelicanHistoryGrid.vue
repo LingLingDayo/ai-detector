@@ -320,7 +320,7 @@ function buildSvgPreviewDocument(rawContent: string): string {
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: rgba(241, 245, 249, 0.88);
-  font-size: 0.68rem;
+  font-size: 11px;
   font-weight: 500;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   max-width: 65%;
@@ -451,7 +451,7 @@ function buildSvgPreviewDocument(rawContent: string): string {
   transition: opacity 0.2s ease, transform 0.2s ease;
 
   .time-label {
-    font-size: 0.68rem;
+    font-size: 11px;
     color: rgba(226, 232, 240, 0.75);
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   }

@@ -246,7 +246,7 @@ function getProbBadgeClass(prob: number | undefined): string {
     flex: 1;
 
     .call-name {
-      font-size: 0.74rem;
+      font-size: 12px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       color: #94a3b8;
       background: rgba(255, 255, 255, 0.05);
@@ -262,13 +262,13 @@ function getProbBadgeClass(prob: number | undefined): string {
 
     .row-arrow {
       color: #64748b;
-      font-size: 0.78rem;
+      font-size: 12px;
       user-select: none;
       flex-shrink: 0;
     }
 
     .pred-name {
-      font-size: 0.86rem;
+      font-size: 14px;
       font-weight: 600;
       color: #f8fafc;
       overflow: hidden;
@@ -277,7 +277,7 @@ function getProbBadgeClass(prob: number | undefined): string {
     }
 
     .family-tag {
-      font-size: 0.65rem;
+      font-size: 10px;
       color: #818cf8;
       background: rgba(99, 102, 241, 0.12);
       border: 1px solid rgba(99, 102, 241, 0.2);
@@ -296,7 +296,7 @@ function getProbBadgeClass(prob: number | undefined): string {
     flex-shrink: 0;
 
     .prob-tag {
-      font-size: 0.74rem;
+      font-size: 12px;
       font-weight: 700;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       padding: 2px 6px;
@@ -323,7 +323,7 @@ function getProbBadgeClass(prob: number | undefined): string {
     }
 
     .time-tag {
-      font-size: 0.68rem;
+      font-size: 11px;
       color: var(--text-muted);
       font-family: ui-monospace, SFMono-Regular, monospace;
     }

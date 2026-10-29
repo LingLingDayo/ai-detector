@@ -157,7 +157,7 @@ onUnmounted(() => {
   }
 
   h3 {
-    font-size: 0.96rem;
+    font-size: 15px;
     font-weight: 600;
     color: #fff;
   }
@@ -216,7 +216,7 @@ onUnmounted(() => {
     background: transparent;
     color: var(--text-secondary);
     font-family: inherit;
-    font-size: 0.8rem;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition-fast);

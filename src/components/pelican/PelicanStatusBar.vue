@@ -185,7 +185,7 @@ function toggleBgTheme(): void {
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  font-size: 0.74rem;
+  font-size: 12px;
 
   .state-pill {
     display: inline-flex;
@@ -195,7 +195,7 @@ function toggleBgTheme(): void {
     height: 20px;
     padding: 0 7px;
     border-radius: 9999px;
-    font-size: 0.72rem;
+    font-size: 12px;
     font-weight: 500;
     line-height: 1;
 
@@ -263,7 +263,7 @@ function toggleBgTheme(): void {
   min-width: 0;
   max-width: 38%;
   margin-left: auto;
-  font-size: 0.7rem;
+  font-size: 11px;
   color: var(--text-muted);
 
   .stream-pulse {
@@ -321,7 +321,7 @@ function toggleBgTheme(): void {
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
-    font-size: 0.7rem;
+    font-size: 11px;
     line-height: 1;
     font-family: inherit;
     cursor: pointer;
