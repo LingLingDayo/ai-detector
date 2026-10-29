@@ -418,7 +418,7 @@ watch(
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
     font-size: 0.7rem;
-    line-height: 1;
+    line-height: 22px;
     cursor: pointer;
     transition: all var(--transition-fast);
     font-family: inherit;
@@ -431,7 +431,6 @@ watch(
     span {
       display: inline-flex;
       align-items: center;
-      line-height: 1;
     }
 
     .preset-chevron {
