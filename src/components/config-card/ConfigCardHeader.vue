@@ -198,24 +198,12 @@ const emit = defineEmits<{
       color: #c7d2fe;
       background: rgba(99, 102, 241, 0.1);
       border-color: rgba(99, 102, 241, 0.25);
-
-      &:hover {
-        background: rgba(99, 102, 241, 0.2);
-        border-color: rgba(99, 102, 241, 0.5);
-        color: #e0e7ff;
-      }
     }
 
     &.btn-history {
       color: #cbd5e1;
       background: rgba(148, 163, 184, 0.08);
       border-color: rgba(148, 163, 184, 0.2);
-
-      &:hover {
-        background: rgba(99, 102, 241, 0.18);
-        border-color: rgba(99, 102, 241, 0.45);
-        color: #e0e7ff;
-      }
 
       .btn-count-dot {
         font-size: 0.65rem;
@@ -228,6 +216,16 @@ const emit = defineEmits<{
         display: inline-flex;
         align-items: center;
         justify-content: center;
+      }
+    }
+
+    &.btn-config-list,
+    &.btn-history,
+    &.btn-settings {
+      &:hover {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: rgba(99, 102, 241, 0.5);
+        color: #e0e7ff;
       }
     }
   }
