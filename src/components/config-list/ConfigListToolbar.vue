@@ -71,7 +71,8 @@ const emit = defineEmits<{
 
     .search-input {
       width: 100%;
-      padding: 5px 28px 5px 28px;
+      height: 32px;
+      padding: 0 28px;
       font-size: 0.78rem;
       background: var(--bg-input);
       border: 1px solid var(--border-subtle);
@@ -122,7 +123,7 @@ const emit = defineEmits<{
     align-items: center;
     justify-content: center;
     gap: 5px;
-    height: 26px;
+    height: 32px;
     padding: 0 10px;
     font-size: 0.76rem;
     font-weight: 500;

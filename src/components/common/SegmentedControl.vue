@@ -97,8 +97,9 @@ function handleSelect(option: SegmentedOption): void {
 <style lang="scss" scoped>
 .segmented-control {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
+  height: 32px;
   gap: 2px;
   padding: 2px;
   background: var(--bg-input);
@@ -116,7 +117,7 @@ function handleSelect(option: SegmentedOption): void {
     align-items: center;
     justify-content: center;
     gap: 5px;
-    padding: 3.5px 8px;
+    padding: 0 8px;
     border: 1px solid transparent;
     border-radius: calc(var(--radius-sm) - 2px);
     background: transparent;
@@ -179,11 +180,7 @@ function handleSelect(option: SegmentedOption): void {
   }
 
   &.size-sm {
-    padding: 1px;
-
     .segment {
-      height: 26px;
-      padding: 0 8px;
       gap: 4px;
       font-size: 0.7rem;
       line-height: 1;
@@ -194,10 +191,12 @@ function handleSelect(option: SegmentedOption): void {
     @media (max-width: 640px) {
       flex-direction: column;
       align-items: stretch;
+      height: auto;
 
       .segment {
         flex: 0 0 auto;
         width: 100%;
+        min-height: 26px;
       }
 
       .segment-divider {

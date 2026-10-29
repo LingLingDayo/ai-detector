@@ -91,8 +91,8 @@ const emit = defineEmits<{
       align-items: center;
       justify-content: center;
       gap: 4px;
-      height: 26px;
-      padding: 0 10px;
+      height: 32px;
+      padding: 0 12px;
       font-size: 0.78rem;
       line-height: 1;
 

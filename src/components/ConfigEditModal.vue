@@ -543,12 +543,13 @@ function handleSubmit(applyImmediately: boolean = false): void {
     background: transparent;
     border: none;
     color: #818cf8;
+    height: 32px;
     font-size: 0.76rem;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 2px 0;
+    padding: 0;
     line-height: 1;
     transition: color var(--transition-fast);
 

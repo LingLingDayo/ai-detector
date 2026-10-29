@@ -258,11 +258,12 @@ onUnmounted(() => {
 
 .custom-select-trigger {
   width: 100%;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 6px 10px;
+  padding: 0 10px;
   background: var(--bg-input);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -271,7 +272,6 @@ onUnmounted(() => {
   font-family: inherit;
   cursor: pointer;
   transition: all var(--transition-fast);
-  min-height: 31px;
 
   &:hover {
     border-color: rgba(99, 102, 241, 0.4);

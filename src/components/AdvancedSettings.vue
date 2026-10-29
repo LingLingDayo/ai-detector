@@ -112,7 +112,8 @@ function handleApiFormatChange(value: string): void {
 
   .accordion-trigger {
     width: 100%;
-    padding: 6px 10px;
+    height: 32px;
+    padding: 0 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
