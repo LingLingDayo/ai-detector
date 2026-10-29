@@ -70,6 +70,7 @@ const emit = defineEmits<{
   (e: "open-save-config"): void;
   (e: "open-config-list"): void;
   (e: "open-history"): void;
+  (e: "open-settings"): void;
 }>();
 
 const modelFieldsRef = ref<InstanceType<typeof ConfigModelFields> | null>(null);
@@ -256,6 +257,11 @@ function handleOpenHistory(): void {
   appStore.openHistoryModal();
 }
 
+function handleOpenSettings(): void {
+  emit("open-settings");
+  appStore.openSettingsModal();
+}
+
 const isJustUpdated = ref(false);
 let updatedTimer: number | null = null;
 
@@ -328,6 +334,7 @@ defineExpose({
       @save="handleSaveButtonClick"
       @open-config-list="handleOpenConfigList"
       @open-history="handleOpenHistory"
+      @open-settings="handleOpenSettings"
     />
 
     <form id="test-form" class="config-form" @submit.prevent="handleFormSubmit">

@@ -18,6 +18,7 @@ import ResultCard from "./components/ResultCard.vue";
 import PelicanTestCard from "./components/PelicanTestCard.vue";
 import ConnectionTestCard from "./components/connection/ConnectionTestCard.vue";
 import TestHistoryModal from "./components/history/TestHistoryModal.vue";
+import SettingsModal from "./components/settings/SettingsModal.vue";
 import { APP_VERSION, GITHUB_REPO_URL } from "./constants";
 import { openExternalUrl } from "./services/api";
 
@@ -261,6 +262,12 @@ function handleOpenGithub(): void {
       @apply-probe="(item) => { appStore.applyProbeHistory(item); scrollToElement('#result-section', 10); }"
       @delete-connection="connectionStore.deleteConnectionHistoryItem"
       @clear-connection="connectionStore.clearConnectionHistory"
+    />
+
+    <!-- 设置弹窗 -->
+    <SettingsModal
+      :is-open="appStore.isSettingsModalOpen"
+      @close="appStore.closeSettingsModal"
     />
 
     <!-- 全局公共顶部提示 -->

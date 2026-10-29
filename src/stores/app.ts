@@ -20,6 +20,7 @@ export const useAppStore = defineStore("app", () => {
   });
 
   const isHistoryModalOpen = ref(false);
+  const isSettingsModalOpen = ref(false);
   const isProbeCancelled = ref(false);
   const isPelicanCancelled = ref(false);
 
@@ -82,6 +83,14 @@ export const useAppStore = defineStore("app", () => {
 
   function closeHistoryModal(): void {
     isHistoryModalOpen.value = false;
+  }
+
+  function openSettingsModal(): void {
+    isSettingsModalOpen.value = true;
+  }
+
+  function closeSettingsModal(): void {
+    isSettingsModalOpen.value = false;
   }
 
   function handleStartTest(): void {
@@ -152,6 +161,7 @@ export const useAppStore = defineStore("app", () => {
   return {
     activeMode,
     isHistoryModalOpen,
+    isSettingsModalOpen,
     historyActiveTab,
     isProbeCancelled,
     isPelicanCancelled,
@@ -163,6 +173,8 @@ export const useAppStore = defineStore("app", () => {
     setHistoryActiveTab,
     openHistoryModal,
     closeHistoryModal,
+    openSettingsModal,
+    closeSettingsModal,
     handleStartTest,
     handleCancelTest,
     applyPelicanHistory,

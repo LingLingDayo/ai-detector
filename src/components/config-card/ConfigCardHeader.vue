@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, History, List, Save } from "@lucide/vue";
+import { Check, History, List, Save, Settings } from "@lucide/vue";
 
 defineProps<{
   activeConfigName?: string;
@@ -13,6 +13,7 @@ const emit = defineEmits<{
   (e: "save"): void;
   (e: "open-config-list"): void;
   (e: "open-history"): void;
+  (e: "open-settings"): void;
 }>();
 </script>
 
@@ -79,6 +80,17 @@ const emit = defineEmits<{
       >
         <History :size="13" />
         <span>历史</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn-header-action btn-settings"
+        id="btn-settings"
+        title="打开设置"
+        @click="emit('open-settings')"
+      >
+        <Settings :size="13" />
+        <span>设置</span>
       </button>
     </div>
   </div>
