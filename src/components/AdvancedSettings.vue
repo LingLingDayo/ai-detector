@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { Settings, ChevronDown } from "@lucide/vue";
+import { SegmentedControl, type SegmentedOption } from "./common";
 
 const props = withDefaults(
   defineProps<{
@@ -20,6 +22,35 @@ const emit = defineEmits<{
   (e: "update:apiFormat", value: string): void;
   (e: "update:stream", value: boolean): void;
 }>();
+
+const streamModeOptions: SegmentedOption[] = [
+  {
+    value: "stream",
+    label: "流式请求",
+    title: "流式请求（默认模式，首次响应限时 90 秒，完整生成后返回结果）",
+  },
+  {
+    value: "sync",
+    label: "同步请求",
+    title: "同步请求（全量响应，超时锁定 240 秒）",
+  },
+];
+
+const apiFormatOptions: SegmentedOption[] = [
+  { value: "responses", label: "/v1/responses 端点", title: "OpenAI Responses 格式" },
+  { value: "chat_completions", label: "/v1/chat/completions 端点", title: "OpenAI Chat Completions 格式" },
+  { value: "anthropic", label: "/v1/messages 端点", title: "Anthropic Messages 格式" },
+];
+
+const streamMode = computed(() => (props.stream !== false ? "stream" : "sync"));
+
+function handleStreamModeChange(value: string): void {
+  emit("update:stream", value === "stream");
+}
+
+function handleApiFormatChange(value: string): void {
+  emit("update:apiFormat", value);
+}
 </script>
 
 <template>
@@ -48,70 +79,24 @@ const emit = defineEmits<{
             <label title="配置请求方式：流式传输或全量同步传输">请求模式</label>
             <span class="field-hint">{{ stream !== false ? '首包超时 90s' : '全量超时 240s' }}</span>
           </div>
-          <div class="segmented-control stream-control">
-            <label class="segment" :class="{ 'is-disabled': disabled }" title="流式请求（默认模式，首次响应限时 90 秒，完整生成后返回结果）">
-              <input
-                type="radio"
-                name="request-stream"
-                :value="true"
-                :checked="stream !== false"
-                :disabled="disabled"
-                @change="emit('update:stream', true)"
-              />
-              <span class="segment-label">流式请求</span>
-            </label>
-            <label class="segment" :class="{ 'is-disabled': disabled }" title="同步请求（全量响应，超时锁定 240 秒）">
-              <input
-                type="radio"
-                name="request-stream"
-                :value="false"
-                :checked="stream === false"
-                :disabled="disabled"
-                @change="emit('update:stream', false)"
-              />
-              <span class="segment-label">同步请求</span>
-            </label>
-          </div>
+          <SegmentedControl
+            :model-value="streamMode"
+            :options="streamModeOptions"
+            :disabled="disabled"
+            @change="handleStreamModeChange"
+          />
         </div>
 
         <!-- 端点协议选择 -->
         <div class="advanced-row">
           <label title="选择调用的 API 规范与端点路径格式">请求接口</label>
-          <div class="segmented-control">
-            <label class="segment" :class="{ 'is-disabled': disabled }" title="OpenAI Responses 格式">
-              <input
-                type="radio"
-                name="endpoint-format"
-                value="responses"
-                :checked="apiFormat === 'responses'"
-                :disabled="disabled"
-                @change="emit('update:apiFormat', 'responses')"
-              />
-              <span class="segment-label">/v1/responses 端点</span>
-            </label>
-            <label class="segment" :class="{ 'is-disabled': disabled }" title="OpenAI Chat Completions 格式">
-              <input
-                type="radio"
-                name="endpoint-format"
-                value="chat_completions"
-                :checked="apiFormat === 'chat_completions'"
-                :disabled="disabled"
-                @change="emit('update:apiFormat', 'chat_completions')"
-              />
-              <span class="segment-label">/v1/chat/completions 端点</span>
-            </label>
-            <label class="segment" :class="{ 'is-disabled': disabled }" title="Anthropic Messages 格式">
-              <input
-                type="radio"
-                name="endpoint-format"
-                value="anthropic"
-                :checked="apiFormat === 'anthropic'"
-                :disabled="disabled"
-                @change="emit('update:apiFormat', 'anthropic')"
-              />
-              <span class="segment-label">/v1/messages 端点</span>
-            </label>
-          </div>
+          <SegmentedControl
+            :model-value="apiFormat"
+            :options="apiFormatOptions"
+            :disabled="disabled"
+            stack-on-mobile
+            @change="handleApiFormatChange"
+          />
         </div>
       </div>
     </div>
@@ -207,88 +192,6 @@ const emit = defineEmits<{
         .field-hint {
           font-size: 0.7rem;
           color: var(--text-muted);
-        }
-
-        .segmented-control {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 3px;
-          background: var(--bg-input);
-          padding: 2px;
-          border-radius: var(--radius-sm);
-          border: 1px solid var(--border-subtle);
-
-          &.stream-control {
-            grid-template-columns: repeat(2, 1fr);
-          }
-
-          @media (max-width: 640px) {
-            grid-template-columns: 1fr;
-
-            &.stream-control {
-              grid-template-columns: repeat(2, 1fr);
-            }
-          }
-
-          .segment {
-            cursor: pointer;
-            position: relative;
-
-            input {
-              position: absolute;
-              opacity: 0;
-              width: 0;
-              height: 0;
-              pointer-events: none;
-              outline: none;
-              border: none;
-              box-shadow: none;
-
-              &:checked + .segment-label {
-                background: rgba(99, 102, 241, 0.2);
-                color: #ffffff;
-                font-weight: 600;
-                border-color: rgba(99, 102, 241, 0.5);
-                box-shadow: 0 1px 6px rgba(99, 102, 241, 0.2);
-              }
-            }
-
-            .segment-label {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              padding: 3.5px 8px;
-              border-radius: calc(var(--radius-sm) - 2px);
-              border: 1px solid transparent;
-              font-size: 0.76rem;
-              font-weight: 500;
-              line-height: 1.25;
-              color: var(--text-secondary);
-              background: transparent;
-              transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
-              user-select: none;
-              box-sizing: border-box;
-
-              &:hover {
-                color: var(--text-primary);
-                background: rgba(255, 255, 255, 0.04);
-              }
-            }
-
-            &.is-disabled {
-              cursor: not-allowed;
-              opacity: 0.45;
-
-              .segment-label {
-                cursor: not-allowed;
-
-                &:hover {
-                  color: var(--text-secondary);
-                  background: transparent;
-                }
-              }
-            }
-          }
         }
       }
 

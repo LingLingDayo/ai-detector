@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { MessagesSquare, Zap } from "@lucide/vue";
+import { SegmentedControl, type SegmentedOption } from "../common";
 import type { ActiveTestMode, ConnectionTestMode } from "../../types";
 
 const props = defineProps<{
@@ -17,6 +18,21 @@ const emit = defineEmits<{
   (e: "update:connectionMode", mode: ConnectionTestMode): void;
   (e: "reset"): void;
 }>();
+
+const connectionModeOptions: SegmentedOption[] = [
+  {
+    value: "chat",
+    label: "对话模式",
+    icon: MessagesSquare,
+    title: "完整多轮对话，展示回复、图片与统计",
+  },
+  {
+    value: "quick",
+    label: "精简模式",
+    icon: Zap,
+    title: "清空上下文并发送 Hi，仅通过顶部提示反馈结果",
+  },
+];
 
 const startButtonLabel = computed(() => {
   if (props.activeMode === "connection") {
@@ -61,9 +77,8 @@ function handleStartButtonClick(event: MouseEvent): void {
   emit("cancel");
 }
 
-function handleConnectionModeChange(mode: ConnectionTestMode): void {
-  if (props.connectionRunning) return;
-  emit("update:connectionMode", mode);
+function handleConnectionModeChange(mode: string): void {
+  emit("update:connectionMode", mode as ConnectionTestMode);
 }
 </script>
 
@@ -85,37 +100,16 @@ function handleConnectionModeChange(mode: ConnectionTestMode): void {
       <span class="btn-text">{{ startButtonLabel }}</span>
     </button>
 
-    <div
+    <SegmentedControl
       v-if="activeMode === 'connection'"
-      class="connection-mode-switch"
-      role="group"
+      :model-value="connectionMode"
+      :options="connectionModeOptions"
+      :disabled="connectionRunning"
+      size="sm"
+      inline
       aria-label="连接测试模式"
-    >
-      <button
-        type="button"
-        class="mode-switch-item"
-        :class="{ active: connectionMode === 'chat' }"
-        :aria-pressed="connectionMode === 'chat'"
-        :disabled="connectionRunning"
-        title="完整多轮对话，展示回复、图片与统计"
-        @click="handleConnectionModeChange('chat')"
-      >
-        <MessagesSquare :size="12" />
-        <span>对话模式</span>
-      </button>
-      <button
-        type="button"
-        class="mode-switch-item"
-        :class="{ active: connectionMode === 'quick' }"
-        :aria-pressed="connectionMode === 'quick'"
-        :disabled="connectionRunning"
-        title="清空上下文并发送 Hi，仅通过顶部提示反馈结果"
-        @click="handleConnectionModeChange('quick')"
-      >
-        <Zap :size="12" />
-        <span>精简模式</span>
-      </button>
-    </div>
+      @change="handleConnectionModeChange"
+    />
 
     <button
       type="button"
@@ -151,58 +145,6 @@ function handleConnectionModeChange(mode: ConnectionTestMode): void {
     &:active:not(:disabled) {
       transform: translateY(0);
     }
-  }
-}
-
-.connection-mode-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  height: 30px;
-  flex-shrink: 0;
-  padding: 1px;
-  border-radius: var(--radius-sm);
-  background: rgba(15, 23, 42, 0.55);
-  border: 1px solid var(--border-subtle);
-}
-
-.mode-switch-item {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: 26px;
-  padding: 0 8px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-muted);
-  font-family: inherit;
-  font-size: 0.7rem;
-  font-weight: 500;
-  line-height: 1;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-
-  svg {
-    flex-shrink: 0;
-  }
-
-  &:hover:not(:disabled) {
-    color: var(--text-secondary);
-    background: rgba(255, 255, 255, 0.045);
-  }
-
-  &.active {
-    color: #c7d2fe;
-    background: rgba(99, 102, 241, 0.16);
-    border-color: rgba(99, 102, 241, 0.3);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 }
 </style>
