@@ -27,6 +27,7 @@ const { copied: promptCopied, copy: copyPrompt } = useClipboard();
 const isEditingPrompt = ref(false);
 const editingPrompt = ref("");
 const promptTextareaRef = ref<HTMLTextAreaElement | null>(null);
+const promptActionsRef = ref<HTMLDivElement | null>(null);
 
 const presetWrapperRef = ref<HTMLDivElement | null>(null);
 const presetDropdownRef = ref<HTMLDivElement | null>(null);
@@ -155,6 +156,15 @@ function handleDocumentClick(e: MouseEvent): void {
   }
 }
 
+function handleDocumentPointerDown(e: PointerEvent): void {
+  if (!isEditingPrompt.value) return;
+  const target = e.target as Node | null;
+  if (!target) return;
+  if (promptTextareaRef.value?.contains(target)) return;
+  if (promptActionsRef.value?.contains(target)) return;
+  savePrompt();
+}
+
 function handleDocumentKeydown(e: KeyboardEvent): void {
   if (e.key === "Escape" && isPresetDropdownOpen.value) {
     closePresetDropdown();
@@ -163,6 +173,7 @@ function handleDocumentKeydown(e: KeyboardEvent): void {
 
 onMounted(() => {
   document.addEventListener("click", handleDocumentClick);
+  document.addEventListener("pointerdown", handleDocumentPointerDown, true);
   document.addEventListener("keydown", handleDocumentKeydown);
   window.addEventListener("resize", handleViewportChange);
   window.addEventListener("scroll", handleViewportChange, true);
@@ -170,6 +181,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener("click", handleDocumentClick);
+  document.removeEventListener("pointerdown", handleDocumentPointerDown, true);
   document.removeEventListener("keydown", handleDocumentKeydown);
   window.removeEventListener("resize", handleViewportChange);
   window.removeEventListener("scroll", handleViewportChange, true);
@@ -198,7 +210,7 @@ watch(
         <span>测试提示词</span>
       </span>
 
-      <div class="prompt-actions">
+      <div ref="promptActionsRef" class="prompt-actions">
         <template v-if="isEditingPrompt">
           <button
             v-if="editingPrompt !== DEFAULT_PELICAN_PROMPT"
