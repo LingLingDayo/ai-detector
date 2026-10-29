@@ -373,7 +373,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
       align-items: center;
       justify-content: center;
       gap: 5px;
-      height: 24px;
+      height: 26px;
       padding: 0 10px;
       background: rgba(239, 68, 68, 0.1);
       border: 1px solid rgba(239, 68, 68, 0.25);

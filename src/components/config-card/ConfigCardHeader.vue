@@ -56,7 +56,7 @@ const emit = defineEmits<{
           v-else
           :size="13"
         />
-        <span>{{ isJustUpdated ? "已更新" : (isConfigModified ? "更新配置" : "保存配置") }}</span>
+        <span>{{ isJustUpdated ? "已更新" : (isConfigModified ? "更新" : "保存") }}</span>
       </button>
 
       <button
@@ -67,7 +67,7 @@ const emit = defineEmits<{
         @click="emit('open-config-list')"
       >
         <List :size="13" />
-        <span>配置列表</span>
+        <span>配置</span>
       </button>
 
       <button
@@ -78,7 +78,7 @@ const emit = defineEmits<{
         @click="emit('open-history')"
       >
         <History :size="13" />
-        <span>历史记录</span>
+        <span>历史</span>
       </button>
     </div>
   </div>
