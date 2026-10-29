@@ -380,7 +380,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
       border-radius: var(--radius-sm);
       color: #fca5a5;
       font-size: 0.74rem;
-      line-height: 1;
+      line-height: 26px;
       font-family: inherit;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -393,7 +393,6 @@ async function handleDeleteConnection(id: string): Promise<void> {
       span {
         display: inline-flex;
         align-items: center;
-        line-height: 1;
       }
 
       &:hover {
