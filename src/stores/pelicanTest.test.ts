@@ -5,7 +5,12 @@ import {
   PELICAN_CUSTOM_PROMPT_STORAGE_KEY,
 } from "../constants";
 import { PELICAN_PRESETS } from "../data/pelicanPresets";
-import { DEFAULT_PELICAN_PROMPT, usePelicanTestStore } from "./pelicanTest";
+import {
+  DEFAULT_PELICAN_PROMPT,
+  usePelicanTestStore,
+  hasExtraneousText,
+  stripXmlProlog,
+} from "./pelicanTest";
 import * as api from "../services/api";
 
 const storage = new Map<string, string>();
@@ -202,6 +207,67 @@ describe("鹈鹕测试思考耗时与重试计时测试套件", () => {
 
     expect(store.thinkingMs).toBe(0);
     expect(store.retryAttempt).toBe(0);
+  });
+});
+
+describe("鹈鹕测试原始响应额外文本判断测试套件 (hasExtraneousText)", () => {
+  const sampleSvg = `<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">\n  <rect width="100" height="100" fill="red" />\n</svg>`;
+
+  it("当原始文本与 SVG 内容完全一致时，返回 false（不展示按钮）", () => {
+    expect(hasExtraneousText(sampleSvg, sampleSvg)).toBe(false);
+    expect(hasExtraneousText(`\n  ${sampleSvg}  \n`, sampleSvg)).toBe(false);
+  });
+
+  it("当仅使用了 ```svg ... ``` 包裹且无额外文本时，返回 false", () => {
+    const raw = "```svg\n" + sampleSvg + "\n```";
+    expect(hasExtraneousText(raw, sampleSvg)).toBe(false);
+  });
+
+  it("当仅使用了 ``` ... ``` 无语言标识包裹且无额外文本时，返回 false", () => {
+    const raw = "```\n" + sampleSvg + "\n```";
+    expect(hasExtraneousText(raw, sampleSvg)).toBe(false);
+  });
+
+  it("当仅使用了 ```xml 或 ~~~svg 包裹且无额外文本时，返回 false", () => {
+    const rawXml = "```xml\n" + sampleSvg + "\n```";
+    expect(hasExtraneousText(rawXml, sampleSvg)).toBe(false);
+
+    const rawTilde = "~~~svg\n" + sampleSvg + "\n~~~";
+    expect(hasExtraneousText(rawTilde, sampleSvg)).toBe(false);
+  });
+
+  it("当仅包含标准 XML 声明或 SVG DOCTYPE 时，返回 false", () => {
+    const rawWithXmlProlog = `<?xml version="1.0" encoding="UTF-8"?>\n${sampleSvg}`;
+    expect(hasExtraneousText(rawWithXmlProlog, sampleSvg)).toBe(false);
+
+    const rawWrappedXmlProlog = `\`\`\`xml\n<?xml version="1.0" encoding="UTF-8"?>\n${sampleSvg}\n\`\`\``;
+    expect(hasExtraneousText(rawWrappedXmlProlog, sampleSvg)).toBe(false);
+  });
+
+  it("当在代码块前方出现了说明或寒暄文本时，返回 true（展示按钮）", () => {
+    const raw = `好的，这是为您绘制的鹈鹕矢量图：\n\`\`\`svg\n${sampleSvg}\n\`\`\``;
+    expect(hasExtraneousText(raw, sampleSvg)).toBe(true);
+  });
+
+  it("当在代码块后方出现了总结或补充说明时，返回 true（展示按钮）", () => {
+    const raw = `\`\`\`svg\n${sampleSvg}\n\`\`\`\n希望你喜欢这幅画！`;
+    expect(hasExtraneousText(raw, sampleSvg)).toBe(true);
+  });
+
+  it("当在代码块内部出现了 SVG 之外的文本时，返回 true（展示按钮）", () => {
+    const raw = `\`\`\`svg\n这是说明文字：\n${sampleSvg}\n\`\`\``;
+    expect(hasExtraneousText(raw, sampleSvg)).toBe(true);
+  });
+
+  it("当未包含代码块但前后出现了说明文本时，返回 true（展示按钮）", () => {
+    const raw = `请查收：\n${sampleSvg}`;
+    expect(hasExtraneousText(raw, sampleSvg)).toBe(true);
+  });
+
+  it("空文本或未生成内容时返回 false", () => {
+    expect(hasExtraneousText("", sampleSvg)).toBe(false);
+    expect(hasExtraneousText(sampleSvg, "")).toBe(false);
+    expect(hasExtraneousText("", "")).toBe(false);
   });
 });
 

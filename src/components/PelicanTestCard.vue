@@ -3,7 +3,7 @@ import { ref, computed, watch, nextTick } from "vue";
 import { AlertCircle } from "@lucide/vue";
 import { useClipboard } from "../composables/useClipboard";
 import { useToast } from "../composables/useToast";
-import { DEFAULT_PELICAN_PROMPT, type PelicanContentType } from "../stores/pelicanTest";
+import { DEFAULT_PELICAN_PROMPT, type PelicanContentType, hasExtraneousText } from "../stores/pelicanTest";
 import PelicanHeader from "./pelican/PelicanHeader.vue";
 import PelicanPromptBox from "./pelican/PelicanPromptBox.vue";
 import PelicanStatusBar from "./pelican/PelicanStatusBar.vue";
@@ -115,6 +115,13 @@ function scrollToBottom(): void {
 
 const displayContent = computed(() => props.content || props.svg || "");
 
+const shouldShowRawResponse = computed(() => {
+  if (props.isRunning || !displayContent.value || !props.rawText) {
+    return false;
+  }
+  return hasExtraneousText(props.rawText, displayContent.value);
+});
+
 function handleCopyContent(): void {
   if (displayContent.value) {
     copySvg(displayContent.value);
@@ -215,7 +222,7 @@ function handleDownloadContent(): void {
 
     <!-- 可折叠的完整模型原始文本展示区 -->
     <PelicanRawResponse
-      v-if="displayContent && rawText && rawText !== displayContent && !isRunning"
+      v-if="shouldShowRawResponse"
       :raw-text="rawText"
     />
   </section>

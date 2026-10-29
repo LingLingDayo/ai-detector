@@ -127,6 +127,58 @@ export function extractSvgFromText(text: string): { svg: string; hasSvg: boolean
   };
 }
 
+/**
+ * 清除 XML 声明与 SVG DOCTYPE，方便比对核心图形代码
+ */
+export function stripXmlProlog(str: string): string {
+  if (!str) return "";
+  return str
+    .trim()
+    .replace(/^<\?xml[\s\S]*?\?>/i, "")
+    .replace(/^<!DOCTYPE\s+svg[\s\S]*?>/i, "")
+    .trim();
+}
+
+/**
+ * 判断模型返回的原始文本中，是否包含了核心 SVG/渲染代码（及代码块标记）之外的额外文本。
+ *
+ * 规则：
+ * 1. 若原始文本与提取出的 SVG 内容一致，视为无额外文本。
+ * 2. 若原始文本仅仅被单一 Markdown 代码块（如 ```、```svg、```xml 等）包裹，且代码块内无额外内容，视为无额外文本。
+ * 3. 只有当在 SVG 内容/代码块之外（或代码块内部 SVG 之外）出现了文本时，才返回 true。
+ */
+export function hasExtraneousText(rawText: string, content: string): boolean {
+  if (!rawText || !content) return false;
+  const trimmedRaw = rawText.trim();
+  const trimmedContent = content.trim();
+
+  if (!trimmedRaw || !trimmedContent) return false;
+
+  // 1. 原始文本与提取内容直接一致（或仅有 XML 声明差异）
+  if (
+    trimmedRaw === trimmedContent ||
+    stripXmlProlog(trimmedRaw) === stripXmlProlog(trimmedContent)
+  ) {
+    return false;
+  }
+
+  // 2. 检查是否仅仅是被单层 Markdown 代码块（``` 或 ~~~）包裹且代码块内无额外文本
+  const codeBlockMatch = trimmedRaw.match(
+    /^(?:`{3,}|~{3,})[a-zA-Z0-9_.-]*\s*([\s\S]*?)\s*(?:`{3,}|~{3,})$/
+  );
+  if (codeBlockMatch) {
+    const innerContent = codeBlockMatch[1].trim();
+    if (
+      innerContent === trimmedContent ||
+      stripXmlProlog(innerContent) === stripXmlProlog(trimmedContent)
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function loadInitialPelicanPrompt(): string {
   try {
     const saved = localStorage.getItem(PELICAN_PROMPT_STORAGE_KEY);
