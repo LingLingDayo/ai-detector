@@ -49,11 +49,11 @@ const thinkingSeconds = computed(() => Math.floor(props.thinkingMs / 1000));
 // 重试请求发出后、模型尚未响应前才显示重试进度；模型一旦响应就回到正常的思考/生成文案
 const runningLabel = computed(() => {
   if (props.isGenerating) {
-    return isAwaitingFirstText.value ? "正在思考中..." : "正在生成图形...";
+    return isAwaitingFirstText.value ? "正在思考..." : "正在生成...";
   }
   return props.retryAttempt > 0
     ? `正在重试中 ${props.retryAttempt}/${DEFAULT_REQUEST_RETRY_COUNT}`
-    : "等待模型响应...";
+    : "等待响应...";
 });
 // 等待首包期间思考计时已在走但无法确认是模型在思考，此时隐藏避免误导
 const showThinking = computed(

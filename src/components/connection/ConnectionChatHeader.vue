@@ -22,12 +22,14 @@ const props = withDefaults(
     stats: ConnectionSessionStats;
     isRunning?: boolean;
     isGenerating?: boolean;
+    streamedCharCount?: number;
     latestRequestedModel?: string;
     latestResponseModel?: string;
   }>(),
   {
     isRunning: false,
     isGenerating: false,
+    streamedCharCount: 0,
     latestRequestedModel: "",
     latestResponseModel: "",
   }
@@ -36,6 +38,11 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "clear"): void;
 }>();
+
+const liveStatusLabel = computed(() => {
+  if (!props.isGenerating) return "等待响应...";
+  return props.streamedCharCount > 0 ? "正在生成..." : "正在思考...";
+});
 
 const routeStatus = computed(() => {
   if (props.stats.responseModelStats.length === 0) {
@@ -82,7 +89,7 @@ const successTitle = computed(
           <h2>连接测试</h2>
           <span v-if="isRunning" class="live-badge">
             <span class="live-dot"></span>
-            {{ isGenerating ? "模型响应中" : "连接中" }}
+            {{ liveStatusLabel }}
           </span>
         </div>
         <p>多轮对话 · 图片输入 · 实时核对上游真实模型</p>

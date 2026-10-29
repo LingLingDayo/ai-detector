@@ -111,7 +111,7 @@ async function handleCopy(): Promise<void> {
             <span></span><span></span><span></span>
           </span>
           <span v-else class="stream-live-dot"></span>
-          <span>{{ message.content ? "生成中" : isGenerating ? "正在思考中..." : "正在等待模型响应" }}</span>
+          <span>{{ message.content ? "正在生成..." : isGenerating ? "正在思考..." : "等待响应..." }}</span>
           <span v-if="message.content" class="stream-char-count">
             {{ message.content.length }} 字符
           </span>

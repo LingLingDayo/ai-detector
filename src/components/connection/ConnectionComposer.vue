@@ -7,14 +7,12 @@ import { useImageAttachments } from "./useImageAttachments";
 const props = withDefaults(
   defineProps<{
     running?: boolean;
-    generating?: boolean;
     configReady?: boolean;
     disabledHint?: string;
     focusSignal?: number;
   }>(),
   {
     running: false,
-    generating: false,
     configReady: true,
     disabledHint: "",
     focusSignal: 0,
@@ -227,10 +225,6 @@ defineExpose({ focus, fillText });
         </div>
 
         <div class="toolbar-right">
-          <span v-if="running" class="generating-hint">
-            <span class="generating-dot"></span>
-            {{ generating ? "生成中" : "连接中" }}
-          </span>
           <button
             type="button"
             class="send-btn"
@@ -417,24 +411,6 @@ defineExpose({ focus, fillText });
   }
 }
 
-.generating-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.65rem;
-  color: #a5b4fc;
-  white-space: nowrap;
-
-  .generating-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #818cf8;
-    box-shadow: 0 0 8px rgba(129, 140, 248, 0.9);
-    animation: composer-pulse 1.15s infinite ease-in-out;
-  }
-}
-
 .send-btn {
   width: 30px;
   height: 30px;
@@ -524,18 +500,6 @@ defineExpose({ focus, fillText });
 @keyframes composer-spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@keyframes composer-pulse {
-  0%,
-  100% {
-    opacity: 0.45;
-    transform: scale(0.85);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2);
   }
 }
 </style>

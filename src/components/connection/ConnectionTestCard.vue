@@ -104,6 +104,7 @@ onUnmounted(() => {
       :stats="connectionStore.sessionStats"
       :is-running="connectionStore.isConnectionRunning"
       :is-generating="connectionStore.isConnectionGenerating"
+      :streamed-char-count="connectionStore.streamedCharCount"
       :latest-requested-model="connectionStore.latestRequestedModel"
       :latest-response-model="connectionStore.latestResponseModel"
       @clear="handleClearContext"
@@ -122,7 +123,6 @@ onUnmounted(() => {
     <ConnectionComposer
       ref="composerRef"
       :running="connectionStore.isConnectionRunning"
-      :generating="connectionStore.isConnectionGenerating"
       :config-ready="configReady"
       :disabled-hint="disabledHint"
       :focus-signal="connectionStore.composerFocusSignal"
