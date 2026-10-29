@@ -137,7 +137,6 @@ function handleSelect(option: SegmentedOption): void {
     .segment-label {
       display: inline-flex;
       align-items: center;
-      line-height: 1;
     }
 
     .segment-indicator {
@@ -179,12 +178,16 @@ function handleSelect(option: SegmentedOption): void {
     pointer-events: none;
   }
 
-  &.size-sm .segment {
-    height: 26px;
-    padding: 0 8px;
-    gap: 4px;
-    font-size: 0.7rem;
-    line-height: 1;
+  &.size-sm {
+    padding: 1px;
+
+    .segment {
+      height: 26px;
+      padding: 0 8px;
+      gap: 4px;
+      font-size: 0.7rem;
+      line-height: 1;
+    }
   }
 
   &.stack-on-mobile {
