@@ -64,7 +64,7 @@ function handleApiFormatChange(value: string): void {
       @click="emit('update:isOpen', !isOpen)"
     >
       <div class="trigger-content">
-        <Settings :size="15" class="gear-icon" />
+        <Settings :size="14" class="gear-icon" />
         <span>更多设置</span>
         <span class="settings-summary" id="settings-summary">{{ summary }}</span>
       </div>

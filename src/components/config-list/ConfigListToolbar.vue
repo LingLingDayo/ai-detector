@@ -41,7 +41,7 @@ const emit = defineEmits<{
       @click="emit('openSaveCurrent')"
       title="将主界面当前输入的参数保存为一条新配置"
     >
-      <Save :size="13" />
+      <Save :size="14" />
       保存为新配置
     </button>
   </div>
