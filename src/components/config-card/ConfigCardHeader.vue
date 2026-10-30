@@ -62,17 +62,6 @@ const emit = defineEmits<{
 
       <button
         type="button"
-        class="btn-header-action btn-config-list"
-        id="btn-config-list"
-        title="管理与切换已保存的配置预设列表"
-        @click="emit('open-config-list')"
-      >
-        <List :size="13" />
-        <span>配置</span>
-      </button>
-
-      <button
-        type="button"
         class="btn-header-action btn-history"
         id="btn-history"
         title="查看历史测试结果（模型测试、鹈鹕测试、连接测试）"
@@ -80,6 +69,17 @@ const emit = defineEmits<{
       >
         <History :size="13" />
         <span>历史</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn-header-action btn-config-list"
+        id="btn-config-list"
+        title="管理与切换已保存的配置预设列表"
+        @click="emit('open-config-list')"
+      >
+        <List :size="13" />
+        <span>配置</span>
       </button>
 
       <button
