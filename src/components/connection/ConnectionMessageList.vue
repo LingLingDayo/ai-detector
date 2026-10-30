@@ -142,10 +142,6 @@ defineExpose({ scrollToBottom });
   padding: 16px 15px 20px;
   border: 1px solid var(--overlay-soft);
   border-radius: 9px;
-  background:
-    radial-gradient(circle at 92% 0%, rgba(99, 102, 241, 0.07), transparent 36%),
-    var(--bg-canvas);
-  box-shadow: inset 0 1px 14px rgba(0, 0, 0, 0.18);
   user-select: auto;
 }
 
