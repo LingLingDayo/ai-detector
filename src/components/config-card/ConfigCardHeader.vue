@@ -105,7 +105,7 @@ const emit = defineEmits<{
   h2 {
     font-size: 15px;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-strong);
   }
 
   .active-config-tag {
@@ -117,7 +117,7 @@ const emit = defineEmits<{
     border-radius: 9999px;
     background: rgba(99, 102, 241, 0.12);
     border: 1px solid rgba(99, 102, 241, 0.3);
-    color: #a5b4fc;
+    color: var(--accent-text);
     font-weight: 500;
     max-width: 140px;
     overflow: hidden;
@@ -128,8 +128,8 @@ const emit = defineEmits<{
       width: 4px;
       height: 4px;
       border-radius: 50%;
-      background: #818cf8;
-      box-shadow: 0 0 4px #818cf8;
+      background: var(--accent-icon);
+      box-shadow: 0 0 4px var(--accent-icon);
       flex-shrink: 0;
     }
   }
@@ -154,7 +154,7 @@ const emit = defineEmits<{
     cursor: pointer;
     font-family: inherit;
     transition: all var(--transition-fast);
-    background: rgba(30, 41, 59, 0.5);
+    background: var(--bg-control);
     border: 1px solid var(--border-subtle);
     color: var(--text-secondary);
 
@@ -163,31 +163,25 @@ const emit = defineEmits<{
       flex-shrink: 0;
     }
 
-    span {
-      display: inline-flex;
-      align-items: center;
-      line-height: 1;
-    }
-
     &:hover {
-      background: rgba(30, 41, 59, 0.9);
+      background: var(--bg-control-hover);
       border-color: rgba(99, 102, 241, 0.4);
       color: var(--text-primary);
     }
 
     &.btn-save-config {
-      color: #93c5fd;
+      color: var(--info-text);
       background: rgba(59, 130, 246, 0.08);
       border-color: rgba(59, 130, 246, 0.22);
 
       &:hover:not(:disabled) {
         background: rgba(59, 130, 246, 0.18);
         border-color: rgba(59, 130, 246, 0.45);
-        color: #bfdbfe;
+        color: var(--info-text-soft);
       }
 
       &.btn-updated-success {
-        color: #34d399;
+        color: var(--success-text);
         background: rgba(16, 185, 129, 0.15);
         border-color: rgba(16, 185, 129, 0.35);
         cursor: default;
@@ -195,13 +189,13 @@ const emit = defineEmits<{
     }
 
     &.btn-config-list {
-      color: #c7d2fe;
+      color: var(--accent-text-soft);
       background: rgba(99, 102, 241, 0.1);
       border-color: rgba(99, 102, 241, 0.25);
     }
 
     &.btn-history {
-      color: #cbd5e1;
+      color: var(--text-soft);
       background: rgba(148, 163, 184, 0.08);
       border-color: rgba(148, 163, 184, 0.2);
 
@@ -212,7 +206,7 @@ const emit = defineEmits<{
         line-height: 14px;
         border-radius: 9999px;
         background: rgba(99, 102, 241, 0.35);
-        color: #c7d2fe;
+        color: var(--accent-text-soft);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -225,7 +219,7 @@ const emit = defineEmits<{
       &:hover {
         background: rgba(99, 102, 241, 0.2);
         border-color: rgba(99, 102, 241, 0.5);
-        color: #e0e7ff;
+        color: var(--accent-text-contrast);
       }
     }
   }

@@ -177,7 +177,7 @@ const wrappedHtml = computed(() => {
   transition: background 0.25s ease, border-color 0.25s ease;
 
   &.light-bg {
-    background: #f8fafc;
+    background: var(--text-strong);
     border-color: rgba(203, 213, 225, 0.4);
   }
 }
@@ -203,7 +203,7 @@ const wrappedHtml = computed(() => {
   .loading-title {
     font-size: 13px;
     font-weight: 600;
-    color: #e2e8f0;
+    color: var(--text-body);
   }
 
   .loading-desc {
@@ -227,7 +227,7 @@ const wrappedHtml = computed(() => {
   overflow: hidden;
 
   &.light-bg {
-    background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
+    background: radial-gradient(circle at center, #ffffff 0%, var(--text-strong) 100%);
 
     :deep(svg) {
       filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.12));
@@ -307,7 +307,7 @@ const wrappedHtml = computed(() => {
 
   .fallback-tip {
     font-size: 12px;
-    color: #fbbf24;
+    color: var(--warning-text);
 
     code {
       color: #fde68a;
@@ -316,13 +316,13 @@ const wrappedHtml = computed(() => {
 }
 
 .raw-response-pre {
-  background: rgba(15, 23, 42, 0.85);
+  background: var(--bg-elevated-strong);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 10px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
-  color: #cbd5e1;
+  color: var(--text-soft);
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-all;

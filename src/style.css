@@ -3,10 +3,30 @@
    ========================================================================== */
 
 :root {
+  color-scheme: dark;
+
   --bg-app: #0b0f17;
   --bg-card: rgba(18, 24, 35, 0.8);
   --bg-card-hover: rgba(24, 32, 47, 0.9);
   --bg-input: #111723;
+  --bg-elevated: rgba(15, 23, 42, 0.75);
+  --bg-elevated-strong: rgba(15, 23, 42, 0.85);
+  --bg-inset: rgba(10, 15, 25, 0.4);
+  --bg-inset-strong: rgba(10, 14, 22, 0.65);
+  --bg-control: rgba(30, 41, 59, 0.5);
+  --bg-control-strong: rgba(30, 41, 59, 0.6);
+  --bg-control-hover: rgba(30, 41, 59, 0.9);
+  --bg-input-disabled: rgba(15, 23, 42, 0.45);
+  --bg-row: rgba(255, 255, 255, 0.025);
+  --bg-solid: #101726;
+  --bg-solid-soft: #0f141d;
+  --bg-code: #080d17;
+  --bg-panel: rgba(17, 23, 34, 0.5);
+  --bg-panel-strong: rgba(12, 16, 24, 0.5);
+  --bg-header: rgba(18, 24, 38, 0.95);
+  --bg-canvas: rgba(7, 11, 19, 0.52);
+  --bg-field: rgba(9, 14, 24, 0.86);
+  --backdrop-color: rgba(4, 7, 13, 0.82);
   --border-subtle: #232d3f;
   --border-focus: #6366f1;
   --border-glow: rgba(99, 102, 241, 0.3);
@@ -14,18 +34,43 @@
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
+  --text-strong: #ffffff;
+  --text-body: #e2e8f0;
+  --text-soft: #cbd5e1;
+  --text-placeholder: #475569;
+
+  --overlay-weak: rgba(255, 255, 255, 0.04);
+  --overlay-soft: rgba(255, 255, 255, 0.06);
+  --overlay-medium: rgba(255, 255, 255, 0.08);
+  --overlay-strong: rgba(255, 255, 255, 0.12);
 
   --accent-primary: #6366f1;
   --accent-secondary: #3b82f6;
   --accent-gradient: linear-gradient(135deg, #6366f1 0%, #3b82f6 50%, #06b6d4 100%);
   --accent-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+  --accent-icon: #818cf8;
+  --accent-text: #a5b4fc;
+  --accent-text-soft: #c7d2fe;
+  --accent-text-contrast: #e0e7ff;
+  --info-text: #93c5fd;
+  --info-text-soft: #bfdbfe;
+  --accent-sky: #38bdf8;
 
   --success: #10b981;
   --success-bg: rgba(16, 185, 129, 0.12);
+  --success-text: #34d399;
   --warning: #f59e0b;
   --warning-bg: rgba(245, 158, 11, 0.12);
+  --warning-text: #fbbf24;
   --danger: #ef4444;
   --danger-bg: rgba(239, 68, 68, 0.12);
+  --danger-text: #fca5a5;
+
+  --scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.32);
+
+  --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.25);
+  --shadow-modal: 0 24px 50px rgba(0, 0, 0, 0.75), 0 0 28px rgba(99, 102, 241, 0.2);
 
   --radius-sm: 5px;
   --radius-md: 8px;
@@ -33,6 +78,67 @@
 
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-app: #f4f6fb;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-card-hover: rgba(255, 255, 255, 0.98);
+  --bg-input: #ffffff;
+  --bg-elevated: #f8fafc;
+  --bg-elevated-strong: #f1f5f9;
+  --bg-inset: #eef2f7;
+  --bg-inset-strong: #e8edf5;
+  --bg-control: #eef2f7;
+  --bg-control-strong: #e8edf5;
+  --bg-control-hover: #e2e8f0;
+  --bg-input-disabled: #eef2f7;
+  --bg-row: rgba(15, 23, 42, 0.02);
+  --bg-solid: #ffffff;
+  --bg-solid-soft: #f8fafc;
+  --bg-code: #f1f5f9;
+  --bg-panel: #eef2f7;
+  --bg-panel-strong: #f1f5f9;
+  --bg-header: #f8fafc;
+  --bg-canvas: #f1f5f9;
+  --bg-field: #ffffff;
+  --backdrop-color: rgba(15, 23, 42, 0.42);
+  --border-subtle: #dbe2ec;
+  --border-glow: rgba(99, 102, 241, 0.22);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-strong: #0f172a;
+  --text-body: #1e293b;
+  --text-soft: #334155;
+  --text-placeholder: #94a3b8;
+
+  --overlay-weak: rgba(15, 23, 42, 0.03);
+  --overlay-soft: rgba(15, 23, 42, 0.05);
+  --overlay-medium: rgba(15, 23, 42, 0.07);
+  --overlay-strong: rgba(15, 23, 42, 0.1);
+
+  --accent-glow: 0 0 20px rgba(99, 102, 241, 0.18);
+  --accent-icon: #4f46e5;
+  --accent-text: #4f46e5;
+  --accent-text-soft: #4338ca;
+  --accent-text-contrast: #312e81;
+  --info-text: #1d4ed8;
+  --info-text-soft: #1e40af;
+  --accent-sky: #0369a1;
+
+  --success-text: #047857;
+  --warning-text: #b45309;
+  --danger-text: #b91c1c;
+
+  --scrollbar-thumb: rgba(15, 23, 42, 0.2);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.35);
+
+  --shadow-card: 0 8px 24px -6px rgba(15, 23, 42, 0.1);
+  --shadow-modal: 0 24px 50px rgba(15, 23, 42, 0.2), 0 0 28px rgba(99, 102, 241, 0.1);
 }
 
 *, *::before, *::after {
@@ -57,17 +163,17 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.32);
+  background: var(--scrollbar-thumb-hover);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 body {
@@ -95,7 +201,7 @@ body {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 12px 15px;
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-card);
 }
 
 .card-header {
@@ -108,7 +214,7 @@ body {
 .card-header h2 {
   font-size: 15px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-strong);
 }
 
 .badge {
@@ -118,7 +224,7 @@ body {
   gap: 5px;
   padding: 3px 8px;
   border-radius: 9999px;
-  background: rgba(30, 41, 59, 0.6);
+  background: var(--bg-control-strong);
   border: 1px solid var(--border-subtle);
   font-size: 12px;
   line-height: 1;
@@ -205,15 +311,15 @@ input[type="text"]:disabled,
 input[type="url"]:disabled,
 input[type="password"]:disabled,
 input[type="number"]:disabled {
-  background: rgba(15, 23, 42, 0.45);
-  border-color: rgba(51, 65, 85, 0.4);
+  background: var(--bg-input-disabled);
+  border-color: var(--border-subtle);
   color: var(--text-muted);
   cursor: not-allowed;
   opacity: 0.65;
 }
 
 input::placeholder {
-  color: #475569;
+  color: var(--text-placeholder);
 }
 
 .btn-icon {
@@ -239,7 +345,7 @@ input::placeholder {
 }
 
 .btn-icon .icon-success {
-  color: #34d399;
+  color: var(--success-text);
 }
 
 .input-wrapper .btn-icon {
@@ -273,7 +379,7 @@ input::placeholder {
 .input-actions .btn-icon:hover:not(:disabled),
 .key-actions .btn-icon:hover:not(:disabled) {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--overlay-soft);
 }
 
 .btn {
@@ -297,11 +403,11 @@ input::placeholder {
     flex-shrink: 0;
   }
 
-  span {
+  /* span {
     display: inline-flex;
     align-items: center;
     line-height: 1;
-  }
+  } */
 }
 
 
@@ -341,13 +447,13 @@ input::placeholder {
 }
 
 .btn-secondary {
-  background: rgba(30, 41, 59, 0.6);
+  background: var(--bg-control-strong);
   color: var(--text-secondary);
   border: 1px solid var(--border-subtle);
 }
 
 .btn-secondary:hover {
-  background: rgba(30, 41, 59, 0.9);
+  background: var(--bg-control-hover);
   color: var(--text-primary);
   border-color: var(--text-secondary);
 }

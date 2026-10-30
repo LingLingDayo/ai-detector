@@ -150,7 +150,7 @@ function handleCopyError(): void {
       .section-hint {
         font-size: 12px;
         color: var(--text-muted);
-        background: rgba(255, 255, 255, 0.04);
+        background: var(--overlay-weak);
         padding: 1px 7px;
         border-radius: var(--radius-sm);
         border: 1px solid var(--border-subtle);
@@ -196,12 +196,6 @@ function handleCopyError(): void {
       svg {
         display: block;
         flex-shrink: 0;
-      }
-
-      span {
-        display: inline-flex;
-        align-items: center;
-        line-height: 1;
       }
 
       &:hover {
@@ -283,7 +277,7 @@ function handleCopyError(): void {
     }
 
     &.error {
-      color: #fca5a5;
+      color: var(--danger-text);
       border-color: rgba(239, 68, 68, 0.35);
       background: rgba(239, 68, 68, 0.06);
       user-select: text;
@@ -310,7 +304,7 @@ function handleCopyError(): void {
         }
 
         .error-msg {
-          color: #fca5a5;
+          color: var(--danger-text);
           word-break: break-word;
           user-select: text;
           -webkit-user-select: text;
@@ -326,7 +320,7 @@ function handleCopyError(): void {
         padding: 5px 12px;
         background: rgba(239, 68, 68, 0.15);
         border: 1px solid rgba(239, 68, 68, 0.4);
-        color: #fca5a5;
+        color: var(--danger-text);
         border-radius: var(--radius-sm);
         font-size: 12px;
         font-weight: 500;

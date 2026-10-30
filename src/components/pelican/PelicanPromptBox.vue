@@ -364,7 +364,7 @@ watch(
 
 <style lang="scss" scoped>
 .prompt-box {
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--bg-elevated);
   border: 1px solid rgba(51, 65, 85, 0.5);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
@@ -375,7 +375,7 @@ watch(
 
   &.is-editing {
     border-color: rgba(99, 102, 241, 0.45);
-    background: rgba(15, 23, 42, 0.75);
+    background: var(--bg-elevated);
   }
 }
 
@@ -390,7 +390,7 @@ watch(
     gap: 5px;
     font-size: 12px;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--text-secondary);
     letter-spacing: 0.5px;
   }
 
@@ -413,7 +413,7 @@ watch(
     gap: 4px;
     height: 22px;
     padding: 0 7px;
-    background: rgba(30, 41, 59, 0.5);
+    background: var(--bg-control);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
@@ -428,11 +428,6 @@ watch(
       flex-shrink: 0;
     }
 
-    span {
-      display: inline-flex;
-      align-items: center;
-    }
-
     .preset-chevron {
       color: var(--text-muted);
       transition: transform var(--transition-fast), color var(--transition-fast);
@@ -440,27 +435,27 @@ watch(
 
       &.is-open {
         transform: rotate(180deg);
-        color: #fff;
+        color: var(--text-strong);
       }
     }
 
     &:hover:not(:disabled) {
-      background: rgba(30, 41, 59, 0.9);
-      color: #fff;
+      background: var(--bg-control-hover);
+      color: var(--text-strong);
       border-color: rgba(99, 102, 241, 0.4);
 
       .preset-chevron {
-        color: #fff;
+        color: var(--text-strong);
       }
     }
 
     &.active {
       background: rgba(99, 102, 241, 0.25);
       border-color: #6366f1;
-      color: #fff;
+      color: var(--text-strong);
 
       .preset-chevron {
-        color: #fff;
+        color: var(--text-strong);
       }
     }
 
@@ -472,18 +467,18 @@ watch(
     &.save {
       background: rgba(99, 102, 241, 0.25);
       border-color: #6366f1;
-      color: #fff;
+      color: var(--text-strong);
 
       &:hover:not(:disabled) {
         background: rgba(99, 102, 241, 0.45);
-        color: #fff;
-        border-color: #818cf8;
+        color: var(--text-strong);
+        border-color: var(--accent-icon);
       }
     }
 
     &.reset {
       &:hover:not(:disabled) {
-        color: #fbbf24;
+        color: var(--warning-text);
         border-color: rgba(245, 158, 11, 0.4);
       }
     }
@@ -496,8 +491,8 @@ watch(
   right: 0;
   min-width: 120px;
   width: max-content;
-  background: #0f172a;
-  border: 1px solid rgba(51, 65, 85, 0.8);
+  background: var(--bg-elevated-strong);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm, 6px);
   box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(12px);
@@ -514,7 +509,7 @@ watch(
   height: 1px;
   flex-shrink: 0;
   margin: 3px 5px;
-  background: rgba(51, 65, 85, 0.8);
+  background: var(--border-subtle);
 }
 
 .preset-dropdown-item {
@@ -546,18 +541,18 @@ watch(
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--overlay-medium);
     color: var(--text-primary);
   }
 
   &.is-selected {
     background: rgba(99, 102, 241, 0.16);
-    color: #a5b4fc;
+    color: var(--accent-text);
     font-weight: 500;
 
     &:hover {
       background: rgba(99, 102, 241, 0.22);
-      color: #c7d2fe;
+      color: var(--accent-text-soft);
     }
   }
 }
@@ -583,7 +578,7 @@ watch(
     display: block;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 12px;
-    color: #38bdf8;
+    color: var(--accent-sky);
     line-height: 1.45;
     word-break: break-all;
     user-select: text;
@@ -600,13 +595,13 @@ watch(
 .prompt-textarea {
   width: 100%;
   box-sizing: border-box;
-  background: rgba(15, 23, 42, 0.9);
+  background: var(--bg-elevated-strong);
   border: 1px solid rgba(99, 102, 241, 0.4);
   border-radius: var(--radius-xs, 4px);
   padding: 6px 8px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
-  color: #e2e8f0;
+  color: var(--text-body);
   line-height: 1.45;
   resize: vertical;
   min-height: 56px;
@@ -625,11 +620,11 @@ watch(
   justify-content: flex-end;
   align-items: center;
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted);
   padding: 0 2px;
 
   .prompt-char-count {
-    color: #64748b;
+    color: var(--text-muted);
     font-feature-settings: "tnum";
   }
 }

@@ -6,6 +6,7 @@ import {
   usePelicanTestStore,
   useConnectionTestStore,
   useAppStore,
+  useSettingsStore,
 } from "./stores";
 import AppHeader from "./components/AppHeader.vue";
 import ConfigCard from "./components/ConfigCard.vue";
@@ -27,6 +28,7 @@ const probeStore = useProbeTestStore();
 const pelicanStore = usePelicanTestStore();
 const connectionStore = useConnectionTestStore();
 const appStore = useAppStore();
+useSettingsStore();
 
 onMounted(() => {
   configStore.loadConfig();
@@ -353,7 +355,7 @@ function handleOpenGithub(): void {
     &:hover {
       opacity: 1;
       color: var(--text-secondary);
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--overlay-soft);
 
       .version-icon {
         transform: scale(1.1);

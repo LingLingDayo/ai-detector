@@ -81,7 +81,7 @@ const hasCacheUsage = computed(
   flex-wrap: wrap;
   gap: 5px 10px;
   min-height: 18px;
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 11px;
   line-height: 1.4;
 }
@@ -93,7 +93,7 @@ const hasCacheUsage = computed(
   white-space: nowrap;
 
   &.is-stopped {
-    color: #fbbf24;
+    color: var(--warning-text);
   }
 }
 </style>

@@ -172,7 +172,7 @@ const filteredConfigs = computed(() => {
 .config-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(4, 7, 13, 0.82);
+  background: var(--backdrop-color);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;

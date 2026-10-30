@@ -89,7 +89,7 @@ function handleCopy(): void {
       .section-hint {
         font-size: 12px;
         color: var(--text-muted);
-        background: rgba(255, 255, 255, 0.04);
+        background: var(--overlay-weak);
         padding: 1px 7px;
         border-radius: var(--radius-sm);
         border: 1px solid var(--border-subtle);
@@ -123,12 +123,6 @@ function handleCopy(): void {
         flex-shrink: 0;
       }
 
-      span {
-        display: inline-flex;
-        align-items: center;
-        line-height: 1;
-      }
-
       &:hover:not(:disabled) {
         background: rgba(99, 102, 241, 0.12);
         border-color: var(--accent-primary);
@@ -151,7 +145,7 @@ function handleCopy(): void {
 
   .prompt-text-box {
     padding: 10px 12px;
-    background: rgba(10, 14, 22, 0.65);
+    background: var(--bg-inset-strong);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     font-size: 13px;

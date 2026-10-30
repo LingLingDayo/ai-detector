@@ -208,7 +208,7 @@ function toggleBgTheme(): void {
     &.success {
       background: rgba(16, 185, 129, 0.12);
       border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
+      color: var(--success-text);
     }
 
     &.error {
@@ -220,7 +220,7 @@ function toggleBgTheme(): void {
     &.warning {
       background: rgba(245, 158, 11, 0.12);
       border: 1px solid rgba(245, 158, 11, 0.3);
-      color: #fbbf24;
+      color: var(--warning-text);
     }
 
     .dot {
@@ -270,14 +270,14 @@ function toggleBgTheme(): void {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #818cf8;
+    background: var(--accent-icon);
     flex-shrink: 0;
     animation: stream-pulse 1.1s ease-in-out infinite;
   }
 
   .stream-count {
     flex-shrink: 0;
-    color: #a5b4fc;
+    color: var(--accent-text);
     font-variant-numeric: tabular-nums;
   }
 
@@ -317,7 +317,7 @@ function toggleBgTheme(): void {
     gap: 4px;
     height: 22px;
     padding: 0 7px;
-    background: rgba(30, 41, 59, 0.5);
+    background: var(--bg-control);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
@@ -332,22 +332,16 @@ function toggleBgTheme(): void {
       flex-shrink: 0;
     }
 
-    span {
-      display: inline-flex;
-      align-items: center;
-      line-height: 1;
-    }
-
     &:hover {
-      background: rgba(30, 41, 59, 0.9);
-      color: #fff;
+      background: var(--bg-control-hover);
+      color: var(--text-strong);
       border-color: rgba(99, 102, 241, 0.4);
     }
 
     &.active {
       background: rgba(99, 102, 241, 0.25);
       border-color: #6366f1;
-      color: #fff;
+      color: var(--text-strong);
     }
   }
 }

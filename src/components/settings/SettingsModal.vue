@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import type { Component } from "vue";
-import { Palette, Settings, SlidersHorizontal, X } from "@lucide/vue";
-
-type SettingsTab = "general" | "appearance";
+import { computed, ref, onMounted, onUnmounted } from "vue";
+import { Settings, X } from "@lucide/vue";
+import { settingsPages } from "../../settings";
+import { useSettingsStore } from "../../stores";
+import SettingsField from "./SettingsField.vue";
+import type { SettingsSection } from "../../settings/types";
 
 const props = defineProps<{
   isOpen: boolean;
@@ -13,12 +14,18 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const tabs: { id: SettingsTab; label: string; icon: Component }[] = [
-  { id: "general", label: "通用", icon: SlidersHorizontal },
-  { id: "appearance", label: "外观", icon: Palette },
-];
+const settingsStore = useSettingsStore();
 
-const activeTab = ref<SettingsTab>("general");
+const activeTab = ref(settingsPages[0]?.id ?? "");
+const activePage = computed(
+  () => settingsPages.find((page) => page.id === activeTab.value) ?? settingsPages[0]
+);
+
+function getVisibleFields(section: SettingsSection) {
+  return section.fields.filter((field) =>
+    field.visible ? field.visible(settingsStore.context) : true
+  );
+}
 
 function handleDocumentKeydown(e: KeyboardEvent): void {
   if (e.key === "Escape" && props.isOpen) {
@@ -74,24 +81,46 @@ onUnmounted(() => {
             aria-label="设置分类"
           >
             <button
-              v-for="tab in tabs"
-              :key="tab.id"
+              v-for="page in settingsPages"
+              :key="page.id"
               type="button"
               class="nav-item"
-              :class="{ active: activeTab === tab.id }"
+              :class="{ active: activeTab === page.id }"
               role="tab"
-              :aria-selected="activeTab === tab.id"
-              @click="activeTab = tab.id"
+              :aria-selected="activeTab === page.id"
+              @click="activeTab = page.id"
             >
-              <component :is="tab.icon" :size="14" />
-              <span>{{ tab.label }}</span>
+              <component :is="page.icon" :size="14" />
+              <span>{{ page.label }}</span>
             </button>
           </nav>
 
           <section
             class="settings-content"
             role="tabpanel"
-          ></section>
+          >
+            <div
+              v-for="section in activePage.sections"
+              :key="section.id"
+              class="settings-section"
+            >
+              <header
+                v-if="section.title || section.description"
+                class="section-head"
+              >
+                <h4 v-if="section.title">{{ section.title }}</h4>
+                <p v-if="section.description">{{ section.description }}</p>
+              </header>
+
+              <div class="settings-fields">
+                <SettingsField
+                  v-for="field in getVisibleFields(section)"
+                  :key="field.key"
+                  :field="field"
+                />
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -107,7 +136,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(4, 7, 13, 0.82);
+  background: var(--backdrop-color);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
@@ -122,7 +151,7 @@ onUnmounted(() => {
   background: var(--bg-card);
   border: 1px solid var(--border-glow);
   border-radius: var(--radius-lg);
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.75), 0 0 28px rgba(99, 102, 241, 0.18);
+  box-shadow: var(--shadow-modal);
   overflow: hidden;
   animation: modalScaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -135,7 +164,7 @@ onUnmounted(() => {
   flex-shrink: 0;
   padding: 12px 18px;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(15, 23, 42, 0.75);
+  background: var(--bg-elevated);
 
   .header-left {
     display: flex;
@@ -153,13 +182,13 @@ onUnmounted(() => {
     border-radius: var(--radius-sm);
     background: rgba(99, 102, 241, 0.15);
     border: 1px solid rgba(99, 102, 241, 0.3);
-    color: #818cf8;
+    color: var(--accent-icon);
   }
 
   h3 {
     font-size: 15px;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-strong);
   }
 
   .close-btn {
@@ -183,8 +212,8 @@ onUnmounted(() => {
     }
 
     &:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-strong);
+      background: var(--overlay-medium);
     }
   }
 }
@@ -203,7 +232,7 @@ onUnmounted(() => {
   flex-shrink: 0;
   padding: 10px 8px;
   border-right: 1px solid var(--border-subtle);
-  background: rgba(10, 15, 25, 0.4);
+  background: var(--bg-inset);
 
   .nav-item {
     display: flex;
@@ -226,17 +255,13 @@ onUnmounted(() => {
       flex-shrink: 0;
     }
 
-    span {
-      line-height: 1;
-    }
-
     &:hover:not(.active) {
       color: var(--text-primary);
       background: rgba(99, 102, 241, 0.08);
     }
 
     &.active {
-      color: #fff;
+      color: var(--text-strong);
       background: rgba(99, 102, 241, 0.18);
       border-color: rgba(99, 102, 241, 0.35);
     }
@@ -246,8 +271,36 @@ onUnmounted(() => {
 .settings-content {
   flex: 1;
   min-width: 0;
-  padding: 18px;
+  padding: 16px 18px;
   overflow-y: auto;
+}
+
+.settings-section + .settings-section {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.section-head {
+  margin-bottom: 10px;
+
+  h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  p {
+    margin-top: 3px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+}
+
+.settings-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 @media (max-width: 560px) {

@@ -87,7 +87,7 @@ const emit = defineEmits<{
       }
 
       &::placeholder {
-        color: #475569;
+        color: var(--text-placeholder);
       }
     }
 
@@ -113,7 +113,7 @@ const emit = defineEmits<{
       }
 
       &:hover {
-        color: #fff;
+        color: var(--text-strong);
       }
     }
   }
@@ -128,7 +128,7 @@ const emit = defineEmits<{
     font-size: 12px;
     font-weight: 500;
     line-height: 1;
-    color: #93c5fd;
+    color: var(--info-text);
     background: rgba(59, 130, 246, 0.12);
     border: 1px solid rgba(59, 130, 246, 0.28);
     border-radius: var(--radius-sm);
@@ -141,16 +141,10 @@ const emit = defineEmits<{
       flex-shrink: 0;
     }
 
-    span {
-      display: inline-flex;
-      align-items: center;
-      line-height: 1;
-    }
-
     &:hover {
       background: rgba(59, 130, 246, 0.22);
       border-color: rgba(59, 130, 246, 0.5);
-      color: #bfdbfe;
+      color: var(--info-text-soft);
     }
   }
 }

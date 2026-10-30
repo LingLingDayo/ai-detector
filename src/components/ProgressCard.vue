@@ -196,7 +196,7 @@ function openDetail(idx: number): void {
       h2 {
         font-size: 14px;
         font-weight: 600;
-        color: #fff;
+        color: var(--text-strong);
         line-height: 1.2;
       }
 
@@ -244,7 +244,7 @@ function openDetail(idx: number): void {
         padding: 0 9px;
         font-size: 12px;
         font-weight: 500;
-        color: #e0e7ff;
+        color: var(--accent-text-contrast);
         background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(168, 85, 247, 0.18));
         border: 1px solid rgba(129, 140, 248, 0.45);
         border-radius: var(--radius-sm, 6px);
@@ -258,12 +258,6 @@ function openDetail(idx: number): void {
         svg {
           display: block;
           flex-shrink: 0;
-        }
-
-        span {
-          display: inline-flex;
-          align-items: center;
-          line-height: 1;
         }
 
         &:hover:not(:disabled) {
@@ -346,7 +340,7 @@ function openDetail(idx: number): void {
       align-items: center;
       gap: 8px;
       padding: 6px 8px;
-      background: rgba(17, 23, 34, 0.5);
+      background: var(--bg-panel);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
       transition: all var(--transition-normal);
@@ -481,7 +475,7 @@ function openDetail(idx: number): void {
 
           &:hover:not(:disabled) {
             background: transparent;
-            color: #fca5a5;
+            color: var(--danger-text);
             transform: rotate(90deg);
           }
 
@@ -499,12 +493,12 @@ function openDetail(idx: number): void {
         .step-badge {
           background: rgba(245, 158, 11, 0.2);
           border-color: rgba(245, 158, 11, 0.4);
-          color: #fbbf24;
+          color: var(--warning-text);
         }
 
         .step-state,
         .step-stat {
-          color: #fbbf24;
+          color: var(--warning-text);
         }
       }
     }
@@ -525,7 +519,7 @@ function openDetail(idx: number): void {
     &.error {
       background: var(--danger-bg);
       border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #fca5a5;
+      color: var(--danger-text);
     }
 
     .status-alert-line {

@@ -5,6 +5,20 @@
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Detector - AI模型检测器</title>
+    <script>
+      // 首屏渲染前恢复主题，避免亮色主题启动时闪暗色
+      (function () {
+        try {
+          var raw = localStorage.getItem("modeltrace_settings");
+          var settings = raw ? JSON.parse(raw) : null;
+          if (settings && settings.theme === "light") {
+            document.documentElement.dataset.theme = "light";
+          }
+        } catch (e) {
+          /* 忽略无法读取的本地设置 */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

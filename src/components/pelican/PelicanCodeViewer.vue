@@ -38,7 +38,7 @@ const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG")
 
 <style lang="scss" scoped>
 .code-viewer-box {
-  background: rgba(15, 23, 42, 0.9);
+  background: var(--bg-elevated-strong);
   border: 1px solid rgba(51, 65, 85, 0.5);
   border-radius: var(--radius-sm);
   overflow: hidden;
@@ -51,7 +51,7 @@ const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG")
   justify-content: space-between;
   align-items: center;
   padding: 6px 10px;
-  background: rgba(30, 41, 59, 0.5);
+  background: var(--bg-control);
   border-bottom: 1px solid var(--border-subtle);
   font-size: 12px;
   color: var(--text-secondary);
@@ -59,7 +59,7 @@ const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG")
   .btn-copy-code {
     background: transparent;
     border: none;
-    color: #818cf8;
+    color: var(--accent-icon);
     font-size: 12px;
     cursor: pointer;
 
@@ -78,7 +78,7 @@ const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG")
   code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 12px;
-    color: #93c5fd;
+    color: var(--info-text);
     line-height: 1.4;
     white-space: pre-wrap;
     word-break: break-all;

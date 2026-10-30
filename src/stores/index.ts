@@ -3,6 +3,7 @@ export { useProbeTestStore } from "./probeTest";
 export { usePelicanTestStore } from "./pelicanTest";
 export { useConnectionTestStore } from "./connectionTest";
 export { useAppStore } from "./app";
+export { useSettingsStore } from "./settings";
 export { useModelsStore } from "./models";
 export { useConfirmStore } from "./confirm";
 export { useToastStore } from "./toast";

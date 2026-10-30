@@ -57,7 +57,7 @@ const emit = defineEmits<{
   justify-content: space-between;
   padding: 12px 18px;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(17, 23, 34, 0.85);
+  background: var(--bg-elevated-strong);
 
   .header-left {
     display: flex;
@@ -75,7 +75,7 @@ const emit = defineEmits<{
     .step-nav-tabs {
       display: flex;
       gap: 4px;
-      background: rgba(10, 14, 22, 0.6);
+      background: var(--bg-inset-strong);
       padding: 2px 3px;
       border-radius: var(--radius-sm);
       border: 1px solid var(--border-subtle);
@@ -116,14 +116,14 @@ const emit = defineEmits<{
 
         &:hover {
           color: var(--text-primary);
-          background: rgba(255, 255, 255, 0.05);
+          background: var(--overlay-soft);
         }
 
 
         &.active {
           background: var(--bg-card);
           border-color: var(--accent-primary);
-          color: #fff;
+          color: var(--text-strong);
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 
           .tab-dot {
@@ -166,7 +166,7 @@ const emit = defineEmits<{
 
     &:hover {
       color: var(--text-primary);
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--overlay-medium);
     }
   }
 }

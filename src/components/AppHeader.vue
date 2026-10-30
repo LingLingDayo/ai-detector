@@ -57,7 +57,7 @@ import logoUrl from "../assets/logo.png";
       font-size: 18px;
       font-weight: 700;
       letter-spacing: -0.02em;
-      color: #fff;
+      color: var(--text-strong);
       line-height: 1.2;
 
       span {

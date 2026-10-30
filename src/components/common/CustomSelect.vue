@@ -316,13 +316,13 @@ onUnmounted(() => {
     font-weight: 500;
     border-radius: 4px;
     background: rgba(99, 102, 241, 0.15);
-    color: #818cf8;
+    color: var(--accent-icon);
     border: 1px solid rgba(99, 102, 241, 0.25);
     margin-left: 2px;
   }
 
   .placeholder-text {
-    color: #475569;
+    color: var(--text-placeholder);
   }
 }
 
@@ -342,7 +342,7 @@ onUnmounted(() => {
   position: absolute;
   left: 0;
   right: 0;
-  background: #0f1624;
+  background: var(--bg-solid);
   border: 1px solid rgba(99, 102, 241, 0.35);
   border-radius: var(--radius-sm);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(99, 102, 241, 0.15);
@@ -398,11 +398,11 @@ onUnmounted(() => {
 
   &.is-selected {
     background: rgba(99, 102, 241, 0.2);
-    color: #a5b4fc;
+    color: var(--accent-text);
     font-weight: 500;
 
     .option-text-label {
-      color: #fff;
+      color: var(--text-strong);
     }
   }
 
@@ -435,12 +435,12 @@ onUnmounted(() => {
     font-weight: 500;
     border-radius: 3px;
     background: rgba(99, 102, 241, 0.12);
-    color: #818cf8;
+    color: var(--accent-icon);
     border: 1px solid rgba(99, 102, 241, 0.2);
   }
 
   .check-icon {
-    color: #818cf8;
+    color: var(--accent-icon);
     flex-shrink: 0;
   }
 }

@@ -82,7 +82,7 @@ const hasMessage = computed(() => Boolean(toastState.message));
     border-color: rgba(16, 185, 129, 0.36);
 
     .toast-icon {
-      color: #34d399;
+      color: var(--success-text);
       background: rgba(16, 185, 129, 0.12);
     }
   }
@@ -100,14 +100,14 @@ const hasMessage = computed(() => Boolean(toastState.message));
     border-color: rgba(245, 158, 11, 0.38);
 
     .toast-icon {
-      color: #fbbf24;
+      color: var(--warning-text);
       background: rgba(245, 158, 11, 0.12);
     }
   }
 
   &.is-info {
     .toast-icon {
-      color: #a5b4fc;
+      color: var(--accent-text);
       background: rgba(99, 102, 241, 0.12);
     }
   }
@@ -134,7 +134,7 @@ const hasMessage = computed(() => Boolean(toastState.message));
 }
 
 .toast-title {
-  color: #f1f5f9;
+  color: var(--text-strong);
   font-size: 12px;
   font-weight: 650;
   line-height: 1.35;
@@ -142,7 +142,7 @@ const hasMessage = computed(() => Boolean(toastState.message));
 
 .toast-message {
   margin-top: 3px;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 11px;
   line-height: 1.55;
   white-space: pre-wrap;
@@ -159,13 +159,13 @@ const hasMessage = computed(() => Boolean(toastState.message));
   background: transparent;
   border: 1px solid transparent;
   border-radius: 4px;
-  color: #64748b;
+  color: var(--text-muted);
   cursor: pointer;
   transition: all var(--transition-fast);
 
   &:hover {
-    color: #e2e8f0;
-    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-body);
+    background: var(--overlay-soft);
   }
 }
 

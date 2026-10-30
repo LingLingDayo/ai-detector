@@ -312,7 +312,7 @@ onUnmounted(() => {
 .confirm-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(4, 7, 13, 0.82);
+  background: var(--backdrop-color);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -326,8 +326,8 @@ onUnmounted(() => {
 /* 弹窗主体卡片 (项目纯正深色系 + 桌面紧凑经典排版) */
 .confirm-modal-dialog {
   position: relative;
-  background: #101726;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: var(--bg-solid);
+  border: 1px solid var(--overlay-medium);
   border-radius: 12px;
   width: 100%;
   max-width: 420px;
@@ -355,7 +355,7 @@ onUnmounted(() => {
   .dialog-title {
     font-size: 15px;
     font-weight: 600;
-    color: #f8fafc;
+    color: var(--text-strong);
     margin: 0;
     line-height: 1.4;
     letter-spacing: -0.01em;
@@ -367,9 +367,9 @@ onUnmounted(() => {
     border-radius: 4px;
     font-size: 12px;
     font-weight: 500;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #94a3b8;
+    background: var(--overlay-medium);
+    border: 1px solid var(--overlay-strong);
+    color: var(--text-secondary);
   }
 
   .btn-close {
@@ -377,7 +377,7 @@ onUnmounted(() => {
     border: none;
     padding: 4px;
     border-radius: 4px;
-    color: #64748b;
+    color: var(--text-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -385,8 +385,8 @@ onUnmounted(() => {
     transition: all 0.15s ease;
 
     &:hover {
-      color: #f8fafc;
-      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-strong);
+      background: var(--overlay-medium);
     }
   }
 }
@@ -419,7 +419,7 @@ onUnmounted(() => {
 
   .dialog-message {
     font-size: 13.5px;
-    color: #94a3b8;
+    color: var(--text-secondary);
     line-height: 1.55;
     word-break: break-word;
   }
@@ -459,18 +459,18 @@ onUnmounted(() => {
 
   /* 取消按钮（深色沉浸中性灰） */
   .btn-cancel {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #cbd5e1;
+    background: var(--overlay-soft);
+    border: 1px solid var(--overlay-strong);
+    color: var(--text-soft);
 
     &:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.12);
+      background: var(--overlay-strong);
       border-color: rgba(255, 255, 255, 0.22);
-      color: #ffffff;
+      color: var(--text-strong);
     }
 
     &:active:not(:disabled) {
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--overlay-medium);
     }
   }
 
@@ -544,12 +544,12 @@ onUnmounted(() => {
 
   .btn-ghost {
     background: transparent;
-    color: #94a3b8;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-secondary);
+    border: 1px solid var(--overlay-strong);
 
     &:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.06);
-      color: #ffffff;
+      background: var(--overlay-soft);
+      color: var(--text-strong);
     }
   }
 

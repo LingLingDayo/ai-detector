@@ -253,7 +253,7 @@ function maskApiKey(key?: string): string {
       left: 0;
       right: 0;
       height: 2px;
-      background: linear-gradient(90deg, #818cf8 0%, #6366f1 50%, rgba(99, 102, 241, 0.4) 100%);
+      background: linear-gradient(90deg, var(--accent-icon) 0%, #6366f1 50%, rgba(99, 102, 241, 0.4) 100%);
       box-shadow: 0 0 10px rgba(99, 102, 241, 0.95), 0 0 2px #ffffff;
       border-radius: 9999px;
       pointer-events: none;
@@ -313,7 +313,7 @@ function maskApiKey(key?: string): string {
       .item-name {
         font-size: 14px;
         font-weight: 600;
-        color: #f1f5f9;
+        color: var(--text-strong);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -340,7 +340,7 @@ function maskApiKey(key?: string): string {
       }
 
       .badge-hint {
-        color: #a5b4fc;
+        color: var(--accent-text);
         background: rgba(99, 102, 241, 0.14);
         border: 1px solid rgba(99, 102, 241, 0.35);
         opacity: 0;
@@ -375,19 +375,13 @@ function maskApiKey(key?: string): string {
           flex-shrink: 0;
         }
 
-        span {
-          display: inline-flex;
-          align-items: center;
-          line-height: 1;
-        }
-
         &.btn-edit {
-          background: rgba(255, 255, 255, 0.03);
+          background: var(--overlay-weak);
           color: var(--text-secondary);
           border-color: var(--border-subtle);
 
           &:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: var(--overlay-medium);
             color: var(--text-primary);
             border-color: rgba(255, 255, 255, 0.2);
           }
@@ -401,7 +395,7 @@ function maskApiKey(key?: string): string {
           &:hover {
             background: rgba(239, 68, 68, 0.12);
             border-color: rgba(239, 68, 68, 0.35);
-            color: #fca5a5;
+            color: var(--danger-text);
           }
         }
       }
@@ -431,7 +425,7 @@ function maskApiKey(key?: string): string {
       .meta-label {
         font-size: 10px;
         font-weight: 700;
-        color: #475569;
+        color: var(--text-placeholder);
         letter-spacing: 0.5px;
         flex-shrink: 0;
       }
@@ -447,7 +441,7 @@ function maskApiKey(key?: string): string {
         max-width: 320px;
 
         .meta-value {
-          color: #7dd3fc;
+          color: var(--info-text);
         }
       }
 
@@ -455,7 +449,7 @@ function maskApiKey(key?: string): string {
         flex-shrink: 0;
 
         .meta-value {
-          color: #94a3b8;
+          color: var(--text-secondary);
         }
       }
     }

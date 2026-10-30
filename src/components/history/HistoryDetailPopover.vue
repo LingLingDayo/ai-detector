@@ -141,7 +141,7 @@ function formatProb(prob: number | undefined): string {
   position: absolute;
   right: 0;
   width: 290px;
-  background: #0f172a;
+  background: var(--bg-elevated-strong);
   border: 1px solid rgba(99, 102, 241, 0.4);
   border-radius: var(--radius-sm);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 16px rgba(99, 102, 241, 0.25);
@@ -201,12 +201,12 @@ function formatProb(prob: number | undefined): string {
   .popover-header {
     padding-bottom: 8px;
     margin-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--overlay-medium);
 
     .popover-title {
       font-size: 12px;
       font-weight: 600;
-      color: #e2e8f0;
+      color: var(--text-body);
       user-select: text;
       cursor: text;
     }
@@ -233,14 +233,14 @@ function formatProb(prob: number | undefined): string {
     }
 
     .item-value {
-      color: #f1f5f9;
+      color: var(--text-strong);
       text-align: right;
       word-break: break-all;
       user-select: text;
       cursor: text;
 
       &.config-name-badge {
-        color: #a5b4fc;
+        color: var(--accent-text);
         font-weight: 600;
         background: rgba(99, 102, 241, 0.15);
         padding: 1px 6px;
@@ -250,7 +250,7 @@ function formatProb(prob: number | undefined): string {
       }
 
       &.model-highlight {
-        color: #38bdf8;
+        color: var(--accent-sky);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
           monospace;
         user-select: text;
@@ -258,7 +258,7 @@ function formatProb(prob: number | undefined): string {
       }
 
       &.winner-highlight {
-        color: #34d399;
+        color: var(--success-text);
         font-weight: 600;
         user-select: text;
         cursor: text;

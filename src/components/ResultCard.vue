@@ -211,7 +211,7 @@ function handleCopyResult(): void {
         font-weight: 500;
         background: rgba(99, 102, 241, 0.1);
         border: 1px solid rgba(99, 102, 241, 0.25);
-        color: #a5b4fc;
+        color: var(--accent-text);
         cursor: help;
         line-height: 1.2;
         transition: all 0.2s ease;
@@ -219,7 +219,7 @@ function handleCopyResult(): void {
         &:hover {
           background: rgba(99, 102, 241, 0.18);
           border-color: rgba(99, 102, 241, 0.4);
-          color: #c7d2fe;
+          color: var(--accent-text-soft);
         }
 
         .badge-icon {
@@ -233,9 +233,9 @@ function handleCopyResult(): void {
       width: 24px;
       height: 24px;
       border-radius: 4px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: #94a3b8;
+      background: var(--overlay-weak);
+      border: 1px solid var(--overlay-medium);
+      color: var(--text-secondary);
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -244,8 +244,8 @@ function handleCopyResult(): void {
       transition: all 0.18s ease;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #f1f5f9;
+        background: var(--overlay-strong);
+        color: var(--text-strong);
         border-color: rgba(255, 255, 255, 0.2);
         opacity: 1;
       }
@@ -253,7 +253,7 @@ function handleCopyResult(): void {
       &.copied {
         background: rgba(16, 185, 129, 0.15);
         border-color: rgba(16, 185, 129, 0.35);
-        color: #34d399;
+        color: var(--success-text);
         opacity: 1;
       }
     }
@@ -266,7 +266,7 @@ function handleCopyResult(): void {
     margin-bottom: 10px;
 
     .hero-item {
-      background: rgba(17, 23, 34, 0.7);
+      background: var(--bg-panel);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
       padding: 8px 12px;
@@ -297,7 +297,7 @@ function handleCopyResult(): void {
       .hero-val {
         font-size: 18px;
         font-weight: 700;
-        color: #fff;
+        color: var(--text-strong);
         line-height: 1.2;
       }
 
@@ -350,13 +350,13 @@ function handleCopyResult(): void {
       &.accepted {
         background: var(--success-bg);
         border: 1px solid rgba(16, 185, 129, 0.3);
-        color: #6ee7b7;
+        color: var(--success-text);
       }
 
       &.rejected {
         background: var(--danger-bg);
         border: 1px solid rgba(239, 68, 68, 0.3);
-        color: #fca5a5;
+        color: var(--danger-text);
       }
     }
   }
@@ -373,7 +373,7 @@ function handleCopyResult(): void {
       font-size: 13px;
 
       th {
-        background: rgba(17, 23, 34, 0.95);
+        background: var(--bg-elevated-strong);
         color: var(--text-secondary);
         padding: 6px 10px;
         font-weight: 600;
@@ -410,7 +410,7 @@ function handleCopyResult(): void {
 
       tbody tr {
         &:hover {
-          background: rgba(30, 41, 59, 0.35);
+          background: var(--bg-control);
         }
 
         &.winner-row {
@@ -436,7 +436,7 @@ function handleCopyResult(): void {
         border-radius: 50%;
         font-size: 11px;
         font-weight: 700;
-        background: rgba(30, 41, 59, 0.6);
+        background: var(--bg-control-strong);
         color: var(--text-muted);
       }
 
@@ -444,7 +444,7 @@ function handleCopyResult(): void {
         font-size: 11px;
         padding: 1px 5px;
         border-radius: var(--radius-sm);
-        background: rgba(30, 41, 59, 0.5);
+        background: var(--bg-control);
         border: 1px solid var(--border-subtle);
         color: var(--text-secondary);
       }

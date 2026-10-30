@@ -152,13 +152,13 @@ function handleSelect(option: SegmentedOption): void {
 
     &:hover:not(:disabled):not(.active) {
       color: var(--text-primary);
-      background: rgba(255, 255, 255, 0.04);
+      background: var(--overlay-weak);
     }
 
     &.active {
       background: rgba(99, 102, 241, 0.2);
       border-color: rgba(99, 102, 241, 0.5);
-      color: #ffffff;
+      color: var(--text-strong);
       font-weight: 600;
       box-shadow: 0 1px 6px rgba(99, 102, 241, 0.2);
     }

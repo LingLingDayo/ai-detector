@@ -203,8 +203,8 @@ function getProbBadgeClass(prob: number | undefined): string {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 12px;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--bg-elevated);
+  border: 1px solid var(--overlay-medium);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.18s ease;
@@ -213,7 +213,7 @@ function getProbBadgeClass(prob: number | undefined): string {
   &:focus-within,
   &:has(.info-tooltip-popover:hover) {
     z-index: 15;
-    background: rgba(30, 41, 59, 0.75);
+    background: var(--bg-control-strong);
     border-color: rgba(99, 102, 241, 0.35);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 
@@ -224,7 +224,7 @@ function getProbBadgeClass(prob: number | undefined): string {
 
   &.is-pinned-row {
     z-index: 80;
-    background: rgba(30, 41, 59, 0.85);
+    background: var(--bg-control-hover);
     border-color: rgba(99, 102, 241, 0.6);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
 
@@ -248,9 +248,9 @@ function getProbBadgeClass(prob: number | undefined): string {
     .call-name {
       font-size: 12px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      color: #94a3b8;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--text-secondary);
+      background: var(--overlay-soft);
+      border: 1px solid var(--overlay-soft);
       padding: 1px 6px;
       border-radius: 4px;
       max-width: 140px;
@@ -261,7 +261,7 @@ function getProbBadgeClass(prob: number | undefined): string {
     }
 
     .row-arrow {
-      color: #64748b;
+      color: var(--text-muted);
       font-size: 12px;
       user-select: none;
       flex-shrink: 0;
@@ -270,7 +270,7 @@ function getProbBadgeClass(prob: number | undefined): string {
     .pred-name {
       font-size: 14px;
       font-weight: 600;
-      color: #f8fafc;
+      color: var(--text-strong);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -278,7 +278,7 @@ function getProbBadgeClass(prob: number | undefined): string {
 
     .family-tag {
       font-size: 10px;
-      color: #818cf8;
+      color: var(--accent-icon);
       background: rgba(99, 102, 241, 0.12);
       border: 1px solid rgba(99, 102, 241, 0.2);
       padding: 1px 5px;
@@ -306,19 +306,19 @@ function getProbBadgeClass(prob: number | undefined): string {
       &.prob-high {
         background: rgba(16, 185, 129, 0.14);
         border-color: rgba(16, 185, 129, 0.3);
-        color: #34d399;
+        color: var(--success-text);
       }
 
       &.prob-mid {
         background: rgba(99, 102, 241, 0.14);
         border-color: rgba(99, 102, 241, 0.3);
-        color: #a5b4fc;
+        color: var(--accent-text);
       }
 
       &.prob-low {
         background: rgba(245, 158, 11, 0.14);
         border-color: rgba(245, 158, 11, 0.3);
-        color: #fbbf24;
+        color: var(--warning-text);
       }
     }
 
@@ -338,9 +338,9 @@ function getProbBadgeClass(prob: number | undefined): string {
         width: 24px;
         height: 24px;
         border-radius: 4px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        color: #94a3b8;
+        background: var(--overlay-weak);
+        border: 1px solid var(--overlay-medium);
+        color: var(--text-secondary);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -349,8 +349,8 @@ function getProbBadgeClass(prob: number | undefined): string {
         transition: all 0.18s ease;
 
         &:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #f1f5f9;
+          background: var(--overlay-strong);
+          color: var(--text-strong);
           border-color: rgba(255, 255, 255, 0.2);
           opacity: 1;
         }
@@ -358,13 +358,13 @@ function getProbBadgeClass(prob: number | undefined): string {
         &.delete-btn:hover {
           background: rgba(239, 68, 68, 0.2);
           border-color: rgba(239, 68, 68, 0.4);
-          color: #fca5a5;
+          color: var(--danger-text);
         }
 
         &.is-pinned {
           background: rgba(99, 102, 241, 0.3) !important;
           border-color: rgba(99, 102, 241, 0.65) !important;
-          color: #a5b4fc !important;
+          color: var(--accent-text) !important;
           opacity: 1 !important;
           box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
         }

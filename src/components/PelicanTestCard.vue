@@ -248,7 +248,7 @@ function handleDownloadContent(): void {
   &.error {
     background: var(--danger-bg);
     border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #fca5a5;
+    color: var(--danger-text);
     user-select: text;
     -webkit-user-select: text;
 

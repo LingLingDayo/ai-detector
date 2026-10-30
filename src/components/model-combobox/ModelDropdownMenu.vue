@@ -114,7 +114,7 @@ defineExpose({
   left: 0;
   right: 0;
   z-index: 1000;
-  background: #131924;
+  background: var(--bg-solid);
   border: 1px solid rgba(99, 102, 241, 0.4);
   border-radius: var(--radius-md);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(99, 102, 241, 0.2);
@@ -137,7 +137,7 @@ defineExpose({
   .dropdown-search-wrap {
     padding: 6px 8px;
     border-bottom: 1px solid var(--border-subtle);
-    background: #0f141d;
+    background: var(--bg-solid-soft);
 
     input {
       padding: 5px 8px;
@@ -209,7 +209,7 @@ defineExpose({
       &:hover,
       &.active {
         background: rgba(99, 102, 241, 0.15);
-        color: #fff;
+        color: var(--text-strong);
       }
 
       &.selected {

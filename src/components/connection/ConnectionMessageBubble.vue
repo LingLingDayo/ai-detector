@@ -221,7 +221,7 @@ async function handleCopy(): Promise<void> {
   box-shadow: 0 4px 16px rgba(30, 41, 59, 0.2);
 
   .user-text {
-    color: #f1f5f9;
+    color: var(--text-strong);
     font-size: 13px;
     line-height: 1.62;
     white-space: pre-wrap;
@@ -249,7 +249,7 @@ async function handleCopy(): Promise<void> {
     max-height: 180px;
     object-fit: cover;
     border-radius: 7px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--overlay-strong);
     display: block;
     cursor: zoom-in;
   }
@@ -291,7 +291,7 @@ async function handleCopy(): Promise<void> {
   :deep(h4),
   :deep(h5),
   :deep(h6) {
-    color: #f8fafc;
+    color: var(--text-strong);
     margin: 12px 0 6px;
     font-weight: 650;
 
@@ -344,18 +344,18 @@ async function handleCopy(): Promise<void> {
   :deep(code) {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 12px;
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: var(--bg-elevated-strong);
+    border: 1px solid var(--overlay-medium);
     border-radius: 4px;
     padding: 1px 5px;
-    color: #c7d2fe;
+    color: var(--accent-text-soft);
   }
 
   :deep(pre) {
     margin: 8px 0;
     padding: 10px 12px;
-    background: #080d17;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-code);
+    border: 1px solid var(--overlay-medium);
     border-radius: 7px;
     overflow-x: auto;
 
@@ -364,7 +364,7 @@ async function handleCopy(): Promise<void> {
       padding: 0;
       border: none;
       background: transparent;
-      color: #cbd5e1;
+      color: var(--text-soft);
       font-size: 12px;
       line-height: 19px;
       white-space: pre;
@@ -372,28 +372,28 @@ async function handleCopy(): Promise<void> {
   }
 
   :deep(a) {
-    color: #93c5fd;
+    color: var(--info-text);
     text-decoration: underline;
     text-underline-offset: 2px;
 
     &:hover {
-      color: #bfdbfe;
+      color: var(--info-text-soft);
     }
   }
 
   :deep(hr) {
     border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--overlay-medium);
     margin: 12px 0;
   }
 
   :deep(strong) {
-    color: #f1f5f9;
+    color: var(--text-strong);
     font-weight: 650;
   }
 
   :deep(del) {
-    color: #64748b;
+    color: var(--text-muted);
   }
 
   :deep(.stream-caret) {
@@ -403,7 +403,7 @@ async function handleCopy(): Promise<void> {
     margin-left: 2px;
     vertical-align: -1px;
     border-radius: 1px;
-    background: #818cf8;
+    background: var(--accent-icon);
     box-shadow: 0 0 7px rgba(129, 140, 248, 0.8);
     animation: caret-blink 0.9s step-end infinite;
   }
@@ -414,7 +414,7 @@ async function handleCopy(): Promise<void> {
   align-items: center;
   gap: 7px;
   padding: 3px 0 2px;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 12px;
 
   &.has-content {
@@ -423,7 +423,7 @@ async function handleCopy(): Promise<void> {
 
   .stream-char-count,
   .waiting-time {
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 11px;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -435,7 +435,7 @@ async function handleCopy(): Promise<void> {
   height: 5px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #818cf8;
+  background: var(--accent-icon);
   box-shadow: 0 0 7px rgba(129, 140, 248, 0.9);
   animation: stream-pulse 1.2s infinite ease-in-out;
 }
@@ -449,7 +449,7 @@ async function handleCopy(): Promise<void> {
     width: 4px;
     height: 4px;
     border-radius: 50%;
-    background: #818cf8;
+    background: var(--accent-icon);
     animation: typing-bounce 1.15s infinite ease-in-out;
 
     &:nth-child(2) {
@@ -471,7 +471,7 @@ async function handleCopy(): Promise<void> {
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.22);
   border-radius: 6px;
-  color: #fca5a5;
+  color: var(--danger-text);
   font-size: 12px;
   line-height: 1.5;
   user-select: text;
@@ -512,7 +512,7 @@ async function handleCopy(): Promise<void> {
 }
 
 .message-time {
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 11px;
   line-height: 22px;
   white-space: nowrap;
@@ -541,13 +541,13 @@ async function handleCopy(): Promise<void> {
   background: transparent;
   border: 1px solid transparent;
   border-radius: 4px;
-  color: #64748b;
+  color: var(--text-muted);
   cursor: pointer;
   transition: all var(--transition-fast);
 
   &:hover {
-    color: #cbd5e1;
-    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-soft);
+    background: var(--overlay-soft);
   }
 }
 

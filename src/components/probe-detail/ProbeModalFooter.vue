@@ -36,7 +36,7 @@ const emit = defineEmits<{
 .probe-modal-footer {
   padding: 10px 18px;
   border-top: 1px solid var(--border-subtle);
-  background: rgba(17, 23, 34, 0.75);
+  background: var(--bg-elevated);
   display: flex;
   justify-content: flex-end;
   align-items: center;

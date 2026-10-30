@@ -140,11 +140,11 @@ defineExpose({ scrollToBottom });
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px 15px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.055);
+  border: 1px solid var(--overlay-soft);
   border-radius: 9px;
   background:
     radial-gradient(circle at 92% 0%, rgba(99, 102, 241, 0.07), transparent 36%),
-    rgba(7, 11, 19, 0.52);
+    var(--bg-canvas);
   box-shadow: inset 0 1px 14px rgba(0, 0, 0, 0.18);
   user-select: auto;
 }
@@ -187,13 +187,13 @@ defineExpose({ scrollToBottom });
   h3 {
     font-size: 15px;
     font-weight: 650;
-    color: #f1f5f9;
+    color: var(--text-strong);
     margin-bottom: 6px;
   }
 
   > p {
     max-width: 430px;
-    color: #7b8ba3;
+    color: var(--text-muted);
     font-size: 12px;
     line-height: 1.65;
   }
@@ -212,29 +212,23 @@ defineExpose({ scrollToBottom });
     align-items: center;
     gap: 6px;
     padding: 6px 10px;
-    background: rgba(30, 41, 59, 0.48);
-    border: 1px solid rgba(255, 255, 255, 0.075);
+    background: var(--bg-control);
+    border: 1px solid var(--overlay-medium);
     border-radius: 9999px;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-size: 11px;
     line-height: 1;
     font-family: inherit;
     cursor: pointer;
     transition: all var(--transition-fast);
 
-    span {
-      display: inline-flex;
-      align-items: center;
-      line-height: 1;
-    }
-
     svg {
-      color: #818cf8;
+      color: var(--accent-icon);
       flex-shrink: 0;
     }
 
     &:hover {
-      color: #e2e8f0;
+      color: var(--text-body);
       background: rgba(99, 102, 241, 0.14);
       border-color: rgba(99, 102, 241, 0.32);
       transform: translateY(-1px);

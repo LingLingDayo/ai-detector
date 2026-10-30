@@ -182,15 +182,15 @@ onBeforeUnmount(() => {
   transition: filter var(--transition-fast);
 
   &.is-match {
-    color: #34d399;
+    color: var(--success-text);
   }
 
   &.is-mismatch {
-    color: #fbbf24;
+    color: var(--warning-text);
   }
 
   &.is-unknown {
-    color: #94a3b8;
+    color: var(--text-secondary);
   }
 
   &:hover,
@@ -221,15 +221,15 @@ onBeforeUnmount(() => {
     margin-bottom: 7px;
 
     &.is-match {
-      color: #34d399;
+      color: var(--success-text);
     }
 
     &.is-mismatch {
-      color: #fbbf24;
+      color: var(--warning-text);
     }
 
     &.is-unknown {
-      color: #cbd5e1;
+      color: var(--text-soft);
     }
   }
 
@@ -242,18 +242,18 @@ onBeforeUnmount(() => {
 
     span {
       flex: 0 0 54px;
-      color: #64748b;
+      color: var(--text-muted);
     }
 
     code {
       flex: 1;
-      color: #e2e8f0;
+      color: var(--text-body);
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 11px;
       line-height: 1.4;
       word-break: break-all;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: var(--overlay-weak);
+      border: 1px solid var(--overlay-soft);
       border-radius: 4px;
       padding: 1px 5px;
     }
@@ -262,8 +262,8 @@ onBeforeUnmount(() => {
   .route-tooltip-desc {
     margin-top: 8px;
     padding-top: 7px;
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
-    color: #94a3b8;
+    border-top: 1px solid var(--overlay-medium);
+    color: var(--text-secondary);
     font-size: 11px;
     line-height: 1.5;
   }

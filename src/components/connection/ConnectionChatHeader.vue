@@ -180,7 +180,7 @@ const successTitle = computed(
   justify-content: center;
   background: rgba(99, 102, 241, 0.12);
   border: 1px solid rgba(99, 102, 241, 0.28);
-  color: #a5b4fc;
+  color: var(--accent-text);
   box-shadow: 0 0 16px rgba(99, 102, 241, 0.12);
 }
 
@@ -196,14 +196,14 @@ const successTitle = computed(
   h2 {
     font-size: 15px;
     font-weight: 650;
-    color: #fff;
+    color: var(--text-strong);
     line-height: 1.3;
   }
 
   p {
     margin-top: 2px;
     font-size: 11px;
-    color: #64748b;
+    color: var(--text-muted);
     line-height: 1.4;
   }
 }
@@ -220,14 +220,14 @@ const successTitle = computed(
   white-space: nowrap;
   background: rgba(99, 102, 241, 0.13);
   border: 1px solid rgba(99, 102, 241, 0.32);
-  color: #a5b4fc;
+  color: var(--accent-text);
 }
 
 .live-dot {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #818cf8;
+  background: var(--accent-icon);
   box-shadow: 0 0 7px rgba(129, 140, 248, 0.95);
   animation: header-pulse 1.2s infinite ease-in-out;
 }
@@ -243,7 +243,7 @@ const successTitle = computed(
   border-radius: var(--radius-sm);
   background: rgba(148, 163, 184, 0.07);
   border: 1px solid rgba(148, 163, 184, 0.16);
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 11px;
   line-height: 1;
   font-family: inherit;
@@ -255,7 +255,7 @@ const successTitle = computed(
   }
 
   &:hover {
-    color: #fca5a5;
+    color: var(--danger-text);
     background: rgba(239, 68, 68, 0.1);
     border-color: rgba(239, 68, 68, 0.28);
   }
@@ -268,8 +268,8 @@ const successTitle = computed(
   gap: 6px;
   padding: 6px 8px;
   margin-top: -1px;
-  background: rgba(10, 15, 25, 0.48);
-  border: 1px solid rgba(255, 255, 255, 0.055);
+  background: var(--bg-inset);
+  border: 1px solid var(--overlay-soft);
   border-radius: 7px;
 }
 
@@ -282,7 +282,7 @@ const successTitle = computed(
   min-width: 0;
 
   & + .stat-item {
-    border-left: 1px solid rgba(255, 255, 255, 0.055);
+    border-left: 1px solid var(--overlay-soft);
     border-radius: 0;
     padding-left: 11px;
   }
@@ -290,29 +290,29 @@ const successTitle = computed(
   .stat-icon {
     display: inline-flex;
     align-self: center;
-    color: #64748b;
+    color: var(--text-muted);
   }
 
   .stat-label {
     font-size: 10px;
-    color: #64748b;
+    color: var(--text-muted);
     white-space: nowrap;
   }
 
   strong {
     font-size: 11px;
     font-weight: 650;
-    color: #cbd5e1;
+    color: var(--text-soft);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     white-space: nowrap;
   }
 
   &.is-success strong {
-    color: #34d399;
+    color: var(--success-text);
   }
 
   &.is-warning strong {
-    color: #fbbf24;
+    color: var(--warning-text);
   }
 
   &.is-danger strong {
@@ -320,7 +320,7 @@ const successTitle = computed(
   }
 
   &.is-waiting strong {
-    color: #94a3b8;
+    color: var(--text-secondary);
   }
 }
 

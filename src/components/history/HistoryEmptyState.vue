@@ -62,7 +62,7 @@ defineProps<{
     border-radius: 50%;
     background: rgba(99, 102, 241, 0.08);
     border: 1px dashed rgba(99, 102, 241, 0.25);
-    color: #818cf8;
+    color: var(--accent-icon);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -71,20 +71,20 @@ defineProps<{
     &.probe-icon-wrap {
       background: rgba(56, 189, 248, 0.08);
       border-color: rgba(56, 189, 248, 0.25);
-      color: #38bdf8;
+      color: var(--accent-sky);
     }
 
     &.connection-icon-wrap {
       background: rgba(16, 185, 129, 0.08);
       border-color: rgba(16, 185, 129, 0.25);
-      color: #34d399;
+      color: var(--success-text);
     }
   }
 
   .empty-title {
     font-size: 15px;
     font-weight: 600;
-    color: #e2e8f0;
+    color: var(--text-body);
     margin: 0;
   }
 

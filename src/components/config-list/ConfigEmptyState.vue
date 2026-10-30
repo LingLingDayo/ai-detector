@@ -59,7 +59,7 @@ const emit = defineEmits<{
   gap: 8px;
 
   .empty-icon {
-    color: #475569;
+    color: var(--text-placeholder);
     margin-bottom: 4px;
   }
 

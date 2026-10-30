@@ -48,7 +48,7 @@ const emit = defineEmits<{
   justify-content: space-between;
   padding: 12px 18px;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(18, 24, 38, 0.95);
+  background: var(--bg-header);
 
   .header-left {
     display: flex;
@@ -61,7 +61,7 @@ const emit = defineEmits<{
       border-radius: var(--radius-sm);
       background: rgba(99, 102, 241, 0.15);
       border: 1px solid rgba(99, 102, 241, 0.3);
-      color: #818cf8;
+      color: var(--accent-icon);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -71,7 +71,7 @@ const emit = defineEmits<{
     h3 {
       font-size: 16px;
       font-weight: 600;
-      color: #fff;
+      color: var(--text-strong);
     }
 
     .header-subtitle {
@@ -100,12 +100,6 @@ const emit = defineEmits<{
         display: block;
         flex-shrink: 0;
       }
-
-      span {
-        display: inline-flex;
-        align-items: center;
-        line-height: 1;
-      }
     }
 
     .btn-close {
@@ -128,8 +122,8 @@ const emit = defineEmits<{
       }
 
       &:hover {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-strong);
+        background: var(--overlay-medium);
       }
     }
   }

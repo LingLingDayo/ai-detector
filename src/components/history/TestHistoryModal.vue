@@ -297,7 +297,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
 .history-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(4, 7, 13, 0.84);
+  background: var(--backdrop-color);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   display: flex;
@@ -331,7 +331,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
   justify-content: space-between;
   padding: 12px 20px;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(15, 23, 42, 0.75);
+  background: var(--bg-elevated);
   gap: 16px;
 
   .header-left {
@@ -346,7 +346,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
       border-radius: var(--radius-sm);
       background: rgba(99, 102, 241, 0.15);
       border: 1px solid rgba(99, 102, 241, 0.3);
-      color: #818cf8;
+      color: var(--accent-icon);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -356,7 +356,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
     h3 {
       font-size: 15px;
       font-weight: 600;
-      color: #fff;
+      color: var(--text-strong);
       margin: 0;
       white-space: nowrap;
     }
@@ -378,7 +378,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
       background: rgba(239, 68, 68, 0.1);
       border: 1px solid rgba(239, 68, 68, 0.25);
       border-radius: var(--radius-sm);
-      color: #fca5a5;
+      color: var(--danger-text);
       font-size: 12px;
       line-height: 26px;
       font-family: inherit;
@@ -388,11 +388,6 @@ async function handleDeleteConnection(id: string): Promise<void> {
       svg {
         display: block;
         flex-shrink: 0;
-      }
-
-      span {
-        display: inline-flex;
-        align-items: center;
       }
 
       &:hover {
@@ -422,8 +417,8 @@ async function handleDeleteConnection(id: string): Promise<void> {
       }
 
       &:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: #fff;
+        background: var(--overlay-medium);
+        color: var(--text-strong);
       }
     }
   }
@@ -434,10 +429,10 @@ async function handleDeleteConnection(id: string): Promise<void> {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(15, 23, 42, 0.85);
+  background: var(--bg-elevated-strong);
   padding: 3px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--overlay-medium);
 
   .tab-btn {
     display: inline-flex;
@@ -463,19 +458,13 @@ async function handleDeleteConnection(id: string): Promise<void> {
       flex-shrink: 0;
     }
 
-    span {
-      display: inline-flex;
-      align-items: center;
-      line-height: 1;
-    }
-
     &:hover {
-      color: #e2e8f0;
-      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-body);
+      background: var(--overlay-soft);
     }
 
     &.active {
-      color: #fff;
+      color: var(--text-strong);
       background: rgba(99, 102, 241, 0.3);
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
     }

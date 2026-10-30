@@ -107,7 +107,7 @@ function handleApiFormatChange(value: string): void {
 .accordion-item {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  background: rgba(17, 23, 34, 0.5);
+  background: var(--bg-panel);
   overflow: hidden;
 
   .accordion-trigger {
@@ -125,7 +125,7 @@ function handleApiFormatChange(value: string): void {
     transition: background-color var(--transition-fast), color var(--transition-fast);
 
     &:hover {
-      background: rgba(30, 41, 59, 0.3);
+      background: var(--bg-control);
       color: var(--text-primary);
     }
 
@@ -172,7 +172,7 @@ function handleApiFormatChange(value: string): void {
   .accordion-panel {
     padding: 10px 12px;
     border-top: 1px solid var(--border-subtle);
-    background: rgba(12, 16, 24, 0.5);
+    background: var(--bg-panel-strong);
 
     .advanced-grid {
       display: flex;

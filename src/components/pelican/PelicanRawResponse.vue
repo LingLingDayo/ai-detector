@@ -67,13 +67,13 @@ const showRawText = ref(false);
 }
 
 .raw-response-pre {
-  background: rgba(15, 23, 42, 0.85);
+  background: var(--bg-elevated-strong);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 10px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
-  color: #cbd5e1;
+  color: var(--text-soft);
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-all;

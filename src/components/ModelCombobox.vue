@@ -249,7 +249,7 @@ defineExpose({
 
         &:hover:not(:disabled) {
           color: var(--text-primary);
-          background: rgba(255, 255, 255, 0.08);
+          background: var(--overlay-medium);
         }
       }
 

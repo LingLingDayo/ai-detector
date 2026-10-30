@@ -310,7 +310,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   gap: 12px;
   flex-wrap: wrap;
   padding: 0 2px 10px;
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 11px;
 }
 
@@ -321,9 +321,9 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
 }
 
 .history-card {
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--overlay-medium);
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--bg-elevated);
   overflow: hidden;
   transition: border-color 0.18s ease;
 
@@ -375,7 +375,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   justify-content: center;
   background: rgba(99, 102, 241, 0.1);
   border: 1px solid rgba(99, 102, 241, 0.22);
-  color: #a5b4fc;
+  color: var(--accent-text);
 }
 
 .row-main {
@@ -390,7 +390,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   min-width: 0;
 
   .session-title {
-    color: #e2e8f0;
+    color: var(--text-body);
     font-size: 12px;
     font-weight: 600;
     overflow: hidden;
@@ -408,14 +408,14 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   border-radius: 9999px;
   background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.25);
-  color: #6ee7b7;
+  color: var(--success-text);
   font-size: 10px;
 
   .active-dot {
     width: 4px;
     height: 4px;
     border-radius: 50%;
-    background: #34d399;
+    background: var(--success-text);
     box-shadow: 0 0 5px rgba(52, 211, 153, 0.9);
     animation: active-session-pulse 1.4s infinite ease-in-out;
   }
@@ -427,7 +427,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   border-radius: 9999px;
   background: rgba(245, 158, 11, 0.11);
   border: 1px solid rgba(245, 158, 11, 0.27);
-  color: #fbbf24;
+  color: var(--warning-text);
   font-size: 10px;
 }
 
@@ -436,7 +436,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   align-items: center;
   gap: 5px;
   margin-top: 2px;
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 10px;
   min-width: 0;
   white-space: nowrap;
@@ -459,7 +459,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     border-radius: 3px;
     background: rgba(99, 102, 241, 0.1);
     border: 1px solid rgba(99, 102, 241, 0.2);
-    color: #a5b4fc;
+    color: var(--accent-text);
     font-size: 10px;
   }
 }
@@ -474,13 +474,13 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-size: 10px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     white-space: nowrap;
 
     svg {
-      color: #64748b;
+      color: var(--text-muted);
     }
   }
 }
@@ -500,25 +500,25 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     background: transparent;
     border: 1px solid transparent;
     border-radius: 4px;
-    color: #64748b;
+    color: var(--text-muted);
     cursor: pointer;
     opacity: 0;
     transition: all var(--transition-fast);
 
     &:hover {
-      color: #fca5a5;
+      color: var(--danger-text);
       background: rgba(239, 68, 68, 0.14);
       border-color: rgba(239, 68, 68, 0.28);
     }
   }
 
   .expand-chevron {
-    color: #64748b;
+    color: var(--text-muted);
     transition: transform 0.18s ease, color 0.18s ease;
 
     &.rotated {
       transform: rotate(180deg);
-      color: #a5b4fc;
+      color: var(--accent-text);
     }
   }
 }
@@ -529,7 +529,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
 }
 
 .detail-panel {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--overlay-soft);
   padding: 11px 12px 10px;
   background: rgba(7, 11, 19, 0.35);
 }
@@ -550,13 +550,13 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     margin-bottom: 7px;
 
     .column-title {
-      color: #cbd5e1;
+      color: var(--text-soft);
       font-size: 11px;
       font-weight: 600;
     }
 
     .column-total {
-      color: #64748b;
+      color: var(--text-muted);
       font-size: 10px;
     }
   }
@@ -570,7 +570,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   margin-top: 5px;
 
   .model-name {
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 10px;
     overflow: hidden;
@@ -581,7 +581,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   .bar-track {
     height: 5px;
     border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.055);
+    background: var(--overlay-soft);
     overflow: hidden;
   }
 
@@ -591,7 +591,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     border-radius: inherit;
 
     &.is-request {
-      background: linear-gradient(90deg, #6366f1, #818cf8);
+      background: linear-gradient(90deg, #6366f1, var(--accent-icon));
     }
 
     &.is-response {
@@ -600,7 +600,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   }
 
   .model-count {
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-size: 10px;
     text-align: right;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -609,7 +609,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
 
 .column-empty {
   padding-top: 4px;
-  color: #526175;
+  color: var(--text-placeholder);
   font-size: 10px;
 }
 
@@ -619,7 +619,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   gap: 6px;
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.055);
+  border-top: 1px solid var(--overlay-soft);
 
   .metric-cell {
     display: flex;
@@ -628,13 +628,13 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     min-width: 0;
 
     span {
-      color: #526175;
+      color: var(--text-placeholder);
       font-size: 9px;
       white-space: nowrap;
     }
 
     strong {
-      color: #cbd5e1;
+      color: var(--text-soft);
       font-size: 11px;
       font-weight: 600;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -658,9 +658,9 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     gap: 4px;
     padding: 1px 6px;
     border-radius: 3px;
-    background: rgba(255, 255, 255, 0.035);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    color: #7b8ba3;
+    background: var(--overlay-weak);
+    border: 1px solid var(--overlay-soft);
+    color: var(--text-muted);
     font-size: 10px;
 
     &.is-model {
@@ -670,7 +670,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
 
   .last-error {
     margin-top: 6px;
-    color: #fca5a5;
+    color: var(--danger-text);
     font-size: 10px;
     overflow: hidden;
     text-overflow: ellipsis;
