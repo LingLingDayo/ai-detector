@@ -117,8 +117,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 720px;
-  height: min(72vh, 480px);
+  max-width: 660px;
+  max-height: 88vh;
   background: var(--bg-card);
   border: 1px solid var(--border-glow);
   border-radius: var(--radius-lg);
@@ -192,7 +192,7 @@ onUnmounted(() => {
 .settings-body {
   display: flex;
   flex: 1;
-  min-height: 0;
+  min-height: 280px;
 }
 
 .settings-nav {
@@ -251,10 +251,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 560px) {
-  .settings-dialog {
-    height: min(78vh, 520px);
-  }
-
   .settings-nav {
     width: 132px;
 
