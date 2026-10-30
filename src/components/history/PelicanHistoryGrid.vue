@@ -287,13 +287,11 @@ function buildSvgPreviewDocument(rawContent: string): string {
   &:has(.info-tooltip-popover:hover) {
     z-index: 15;
     border-color: rgba(99, 102, 241, 0.45);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
   }
 
   &.is-pinned-card {
     z-index: 80;
     border-color: rgba(99, 102, 241, 0.65);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
 
     .info-icon-wrapper {
       opacity: 1;
