@@ -35,7 +35,7 @@ import {
 import { computeProgress, computeRunningStatusDesc } from "../utils/probeEvaluation";
 
 const CANDY_INTRO_DESC =
-  "连续 3 道动态糖果组合逻辑推理题，答对 ≥ 2 题即判定通过，点击卡片可查看题目与正确答案";
+  "连续 3 道动态糖果组合逻辑推理题，答对 ≥ 2 题即判定通过";
 
 type ResolvedCandyOptions = {
   baseUrl: string;
@@ -205,7 +205,7 @@ export const useCandyTestStore = defineStore("candyTest", () => {
     progressPercent.value = 0;
     completedCount.value = 0;
     statusTitle.value = "糖果测试题目";
-    statusDesc.value = "已重新生成 3 道动态糖果推理题，可点击卡片查看题目与正确答案";
+    statusDesc.value = "已重新生成 3 道动态糖果推理题";
     statusAlert.value = null;
     analysisResult.value = null;
 
@@ -627,3 +627,4 @@ export const useCandyTestStore = defineStore("candyTest", () => {
     applyHistoryItem,
   };
 });
+
