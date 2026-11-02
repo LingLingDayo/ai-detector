@@ -274,8 +274,8 @@ function buildSvgPreviewDocument(rawContent: string): string {
 .pelican-card-item {
   position: relative;
   z-index: 1;
-  background: #090e1a;
-  border: 1px solid var(--overlay-medium);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   aspect-ratio: 4 / 3;
   overflow: visible; /* 保证 hover 浮层正常弹出不被裁切 */
@@ -399,9 +399,9 @@ function buildSvgPreviewDocument(rawContent: string): string {
   inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: var(--radius-md);
+  border-radius: calc(var(--radius-md) - 1px);
   overflow: hidden;
-  background: radial-gradient(circle at center, #162035 0%, #090e1a 100%);
+  background: var(--bg-pelican-stage);
   display: flex;
   align-items: center;
   justify-content: center;
