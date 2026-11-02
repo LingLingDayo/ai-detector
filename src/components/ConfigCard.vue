@@ -12,6 +12,7 @@ import {
   useAppStore,
   useProbeTestStore,
   usePelicanTestStore,
+  useCandyTestStore,
   useConnectionTestStore,
 } from "../stores";
 import { useClipboard } from "../composables/useClipboard";
@@ -23,6 +24,7 @@ const configStore = useConfigStore();
 const appStore = useAppStore();
 const probeStore = useProbeTestStore();
 const pelicanStore = usePelicanTestStore();
+const candyStore = useCandyTestStore();
 const connectionStore = useConnectionTestStore();
 const { showToast } = useToast();
 
@@ -32,6 +34,7 @@ const props = withDefaults(
     activeConfigName?: string;
     isRunning?: boolean;
     isPelicanRunning?: boolean;
+    isCandyRunning?: boolean;
     isConnectionRunning?: boolean;
     activeMode?: ActiveTestMode;
     hasResult?: boolean;
@@ -47,6 +50,7 @@ const props = withDefaults(
     activeConfigName: undefined,
     isRunning: undefined,
     isPelicanRunning: undefined,
+    isCandyRunning: undefined,
     isConnectionRunning: undefined,
     activeMode: undefined,
     hasResult: undefined,
@@ -80,6 +84,7 @@ const activeConfig = computed(() => props.config ?? configStore.config);
 const activeConfigNameDisplay = computed(() => props.activeConfigName ?? configStore.activeConfigName);
 const currentProbeRunning = computed(() => props.isRunning ?? probeStore.isRunning);
 const currentPelicanRunning = computed(() => props.isPelicanRunning ?? pelicanStore.isPelicanRunning);
+const currentCandyRunning = computed(() => props.isCandyRunning ?? candyStore.isRunning);
 const currentConnectionRunning = computed(
   () => props.isConnectionRunning ?? connectionStore.isConnectionRunning
 );
@@ -95,6 +100,7 @@ const currentConnectionMode = computed(() => connectionStore.connectionMode);
 const isCurrentRunning = computed(() => {
   if (currentActiveMode.value === "probe") return currentProbeRunning.value;
   if (currentActiveMode.value === "pelican") return Boolean(currentPelicanRunning.value);
+  if (currentActiveMode.value === "candy") return Boolean(currentCandyRunning.value);
   return Boolean(currentConnectionRunning.value);
 });
 
@@ -376,18 +382,26 @@ defineExpose({
         :active-mode="currentActiveMode"
         :probe-running="Boolean(currentProbeRunning)"
         :pelican-running="Boolean(currentPelicanRunning)"
+        :candy-running="Boolean(currentCandyRunning)"
         :connection-running="Boolean(currentConnectionRunning)"
         @change="handleUpdateMode"
       />
 
-      <!-- 操作按钮：三种测试模式彼此独立并发，当前模式不受另一模式阻塞 -->
+      <!-- 操作按钮：四种测试模式彼此独立并发，当前模式不受另一模式阻塞 -->
       <ConfigFormActions
         :active-mode="currentActiveMode"
         :connection-mode="currentConnectionMode"
         :connection-running="Boolean(currentConnectionRunning)"
         :show-cancel-state="showCancelState"
         :has-result="currentHasResult"
-        :reset-disabled="Boolean(currentProbeRunning || currentPelicanRunning || currentConnectionRunning)"
+        :reset-disabled="
+          Boolean(
+            currentProbeRunning ||
+              currentPelicanRunning ||
+              currentCandyRunning ||
+              currentConnectionRunning
+          )
+        "
         @cancel="handleCancelTest"
         @update:connection-mode="handleConnectionModeChange"
         @reset="handleReset"

@@ -2,10 +2,16 @@
 import { X } from "@lucide/vue";
 import type { ProbeStepItem } from "../../types";
 
-defineProps<{
-  steps: ProbeStepItem[];
-  activeIndex: number;
-}>();
+withDefaults(
+  defineProps<{
+    steps: ProbeStepItem[];
+    activeIndex: number;
+    title?: string;
+  }>(),
+  {
+    title: "探针题目与模型回答详情",
+  }
+);
 
 const emit = defineEmits<{
   (e: "selectStep", index: number): void;
@@ -17,7 +23,7 @@ const emit = defineEmits<{
   <div class="probe-modal-header">
     <div class="header-left">
       <h3 :id="`modal-title-${activeIndex}`" class="probe-modal-title">
-        探针题目与模型回答详情
+        {{ title }}
       </h3>
       <div class="step-nav-tabs">
         <button

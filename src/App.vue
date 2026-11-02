@@ -4,6 +4,7 @@ import {
   useConfigStore,
   useProbeTestStore,
   usePelicanTestStore,
+  useCandyTestStore,
   useConnectionTestStore,
   useAppStore,
   useSettingsStore,
@@ -16,6 +17,7 @@ import AppToast from "./components/common/AppToast.vue";
 import ConfirmModal from "./components/common/ConfirmModal.vue";
 import ProgressCard from "./components/ProgressCard.vue";
 import ResultCard from "./components/ResultCard.vue";
+import CandyResultCard from "./components/CandyResultCard.vue";
 import PelicanTestCard from "./components/PelicanTestCard.vue";
 import ConnectionTestCard from "./components/connection/ConnectionTestCard.vue";
 import TestHistoryModal from "./components/history/TestHistoryModal.vue";
@@ -26,6 +28,7 @@ import { openExternalUrl } from "./services/api";
 const configStore = useConfigStore();
 const probeStore = useProbeTestStore();
 const pelicanStore = usePelicanTestStore();
+const candyStore = useCandyTestStore();
 const connectionStore = useConnectionTestStore();
 const appStore = useAppStore();
 useSettingsStore();
@@ -33,6 +36,7 @@ useSettingsStore();
 onMounted(() => {
   configStore.loadConfig();
   probeStore.initStartupFingerprintCheck();
+  void candyStore.initCandyChallenges();
 });
 
 let scrollRafId: number | null = null;
@@ -135,6 +139,22 @@ watch(
   }
 );
 
+// 糖果测试结束自动滚动到 candy-result-section（使其顶部距离页面顶部 10px）
+watch(
+  () => candyStore.isRunning,
+  (running, wasRunning) => {
+    if (wasRunning && !running) {
+      if (appStore.isCandyCancelled) {
+        appStore.isCandyCancelled = false;
+        return;
+      }
+      if (candyStore.hasResult && appStore.activeMode === "candy") {
+        scrollToElement("#candy-result-section", 10);
+      }
+    }
+  }
+);
+
 onUnmounted(() => {
   cancelScroll();
 });
@@ -207,6 +227,38 @@ function handleOpenGithub(): void {
         />
       </div>
 
+      <!-- 糖果测试模式卡片（复用题目进度卡片与详情弹窗组件） -->
+      <div v-show="appStore.activeMode === 'candy'" class="mode-view-group">
+        <ProgressCard
+          :visible="true"
+          :title="candyStore.statusTitle"
+          :desc="candyStore.statusDesc"
+          :percent="candyStore.progressPercent"
+          :completed-count="candyStore.completedCount"
+          :total-count="candyStore.totalCount"
+          :steps="candyStore.steps"
+          :status-alert="candyStore.statusAlert"
+          :is-running="candyStore.isRunning"
+          :has-started="candyStore.hasStarted"
+          :detail-modal-open="candyStore.isDetailModalOpen"
+          :detail-modal-index="candyStore.selectedDetailIndex"
+          modal-title="糖果题目与模型回答详情"
+          refresh-button-title="重新随机生成 3 道糖果逻辑推理题"
+          @refresh-questions="candyStore.refreshQuestions"
+          @refresh-single-question="candyStore.refreshSingleQuestion"
+          @retry-single-question="candyStore.retrySingleQuestion"
+          @open-detail="candyStore.openDetailModal"
+          @close-detail="candyStore.closeDetailModal"
+        />
+
+        <!-- 糖果测试诊断报告卡片 -->
+        <CandyResultCard
+          :analysis="candyStore.analysisResult"
+          :history-item="candyStore.currentCandyHistoryItem"
+          :model-name="candyStore.testedModel || configStore.candyConfig.modelName"
+        />
+      </div>
+
       <!-- 连接测试模式卡片（仅对话模式展示，精简模式通过顶部提示反馈结果） -->
       <div
         v-show="appStore.activeMode === 'connection' && connectionStore.connectionMode === 'chat'"
@@ -226,6 +278,7 @@ function handleOpenGithub(): void {
       @apply="(item) => {
         if (!probeStore.isRunning) probeStore.resetTest();
         if (!pelicanStore.isPelicanRunning) pelicanStore.resetPelicanTest();
+        if (!candyStore.isRunning) candyStore.resetTest();
         if (!connectionStore.isConnectionRunning) connectionStore.clearConnectionContext();
         configStore.applyConfig(item);
       }"
@@ -245,16 +298,18 @@ function handleOpenGithub(): void {
       @save="configStore.handleSaveConfigItem"
     />
 
-    <!-- 统一测试历史记录弹窗（包含鹈鹕测试与模型测试 Tab 架构） -->
+    <!-- 统一测试历史记录弹窗（包含模型测试、鹈鹕测试、糖果测试与连接测试 Tab 架构） -->
     <TestHistoryModal
       :is-open="appStore.isHistoryModalOpen"
       :initial-tab="appStore.historyActiveTab"
       :pelican-list="pelicanStore.pelicanHistoryList"
       :probe-list="probeStore.probeHistoryList"
+      :candy-list="candyStore.candyHistoryList"
       :connection-list="connectionStore.connectionHistoryList"
       :connection-active-id="connectionStore.activeSessionHistoryId"
       :probe-running="probeStore.isRunning"
       :pelican-running="pelicanStore.isPelicanRunning"
+      :candy-running="candyStore.isRunning"
       @close="appStore.closeHistoryModal"
       @delete-pelican="pelicanStore.deletePelicanHistoryItem"
       @clear-pelican="pelicanStore.clearPelicanHistory"
@@ -262,6 +317,9 @@ function handleOpenGithub(): void {
       @delete-probe="probeStore.deleteProbeHistoryItem"
       @clear-probe="probeStore.clearProbeHistory"
       @apply-probe="(item) => { appStore.applyProbeHistory(item); scrollToElement('#result-section', 10); }"
+      @delete-candy="candyStore.deleteCandyHistoryItem"
+      @clear-candy="candyStore.clearCandyHistory"
+      @apply-candy="(item) => { appStore.applyCandyHistory(item); scrollToElement('#candy-result-section', 10); }"
       @delete-connection="connectionStore.deleteConnectionHistoryItem"
       @clear-connection="connectionStore.clearConnectionHistory"
     />

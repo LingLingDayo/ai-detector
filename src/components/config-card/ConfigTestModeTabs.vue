@@ -7,6 +7,7 @@ const props = defineProps<{
   activeMode: ActiveTestMode;
   probeRunning: boolean;
   pelicanRunning: boolean;
+  candyRunning?: boolean;
   connectionRunning: boolean;
 }>();
 
@@ -28,6 +29,13 @@ const modeOptions = computed<SegmentedOption[]>(() => [
     title: "生成自行车鹈鹕 SVG 矢量图，直观测试模型是否降智",
     indicator: props.pelicanRunning,
     indicatorTitle: "鹈鹕测试进行中",
+  },
+  {
+    value: "candy",
+    label: "糖果测试",
+    title: "连续 3 道动态糖果组合逻辑推理题（答对 ≥ 2 题通过），检测模型长思维链与降智情况",
+    indicator: Boolean(props.candyRunning),
+    indicatorTitle: "糖果测试进行中",
   },
   {
     value: "connection",

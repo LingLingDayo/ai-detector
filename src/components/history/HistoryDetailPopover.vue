@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import type { PelicanHistoryItem, ProbeHistoryItem } from "../../types";
+import type {
+  CandyHistoryItem,
+  PelicanHistoryItem,
+  ProbeHistoryItem,
+} from "../../types";
 import {
   formatReasoningEffort,
   formatHistoryTime,
 } from "../../utils/pelicanFormatters";
+import { formatDurationMs } from "../../utils/connectionMetrics";
 
 const props = withDefaults(
   defineProps<{
-    item: PelicanHistoryItem | ProbeHistoryItem;
+    item: PelicanHistoryItem | ProbeHistoryItem | CandyHistoryItem;
     isPinned?: boolean;
     placement?: "top" | "bottom";
   }>(),
@@ -18,9 +23,15 @@ const props = withDefaults(
 );
 
 function isProbeItem(
-  target: PelicanHistoryItem | ProbeHistoryItem
+  target: PelicanHistoryItem | ProbeHistoryItem | CandyHistoryItem
 ): target is ProbeHistoryItem {
   return "predictionName" in target;
+}
+
+function isCandyItem(
+  target: PelicanHistoryItem | ProbeHistoryItem | CandyHistoryItem
+): target is CandyHistoryItem {
+  return "diagnostics" in target && "passed" in target;
 }
 
 function formatProb(prob: number | undefined): string {
@@ -99,10 +110,28 @@ function formatProb(prob: number | undefined): string {
         <span class="item-value">{{ item.familyPredictionName }}</span>
       </div>
 
+      <!-- 糖果测试特有字段 -->
+      <div v-if="isCandyItem(item)" class="popover-item">
+        <span class="item-label">测试结论</span>
+        <span
+          class="item-value"
+          :class="item.passed ? 'winner-highlight' : ''"
+        >
+          {{ item.passed ? "测试通过" : "未通过" }} ({{ item.correctCount }}/{{ item.totalCount }})
+        </span>
+      </div>
+
+      <div v-if="isCandyItem(item)" class="popover-item">
+        <span class="item-label">平均耗时</span>
+        <span class="item-value font-mono">
+          {{ formatDurationMs(item.avgDurationMs) }}
+        </span>
+      </div>
+
       <!-- 测试时间 / 生成时间 -->
       <div v-if="item.createdAt" class="popover-item">
         <span class="item-label">{{
-          isProbeItem(item) ? "测试时间" : "生成时间"
+          isProbeItem(item) || isCandyItem(item) ? "测试时间" : "生成时间"
         }}</span>
         <span class="item-value text-muted">{{
           formatHistoryTime(item.createdAt)

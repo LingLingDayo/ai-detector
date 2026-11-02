@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Globe, Image, MessagesSquare } from "@lucide/vue";
+import { Candy, Globe, Image, MessagesSquare } from "@lucide/vue";
 
 defineProps<{
-  type: "probe" | "pelican" | "connection";
+  type: "probe" | "pelican" | "candy" | "connection";
 }>();
 </script>
 
@@ -12,10 +12,12 @@ defineProps<{
       class="empty-icon-wrap"
       :class="{
         'probe-icon-wrap': type === 'probe',
+        'candy-icon-wrap': type === 'candy',
         'connection-icon-wrap': type === 'connection',
       }"
     >
       <Globe v-if="type === 'probe'" :size="40" :stroke-width="1.6" />
+      <Candy v-else-if="type === 'candy'" :size="40" :stroke-width="1.6" />
       <MessagesSquare
         v-else-if="type === 'connection'"
         :size="40"
@@ -30,6 +32,8 @@ defineProps<{
           ? "暂无模型测试历史记录"
           : type === "pelican"
           ? "暂无鹈鹕测试历史记录"
+          : type === "candy"
+          ? "暂无糖果测试历史记录"
           : "暂无连接测试历史记录"
       }}
     </p>
@@ -39,6 +43,8 @@ defineProps<{
           ? "在“模型测试”模式中，完成探测并生成模型归因诊断后，记录将自动保存在这里。"
           : type === "pelican"
           ? "在“鹈鹕测试”模式中，AI 模型成功生成的图片将会自动保存在这里。"
+          : type === "candy"
+          ? "在“糖果测试”模式中，完成 3 题组合逻辑推理测试后，测试结论与题目详情将自动保存在这里。"
           : "在“连接测试”模式中发送消息后，本次会话的模型路由、输出速度与缓存率汇总将实时更新并保存在这里。"
       }}
     </p>

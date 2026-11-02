@@ -39,20 +39,53 @@ function handleCopyError(): void {
     <div class="section-header">
       <div class="section-title-wrap">
         <span class="section-label">模型实际回答 (Model Output)</span>
-        <span
-          v-if="step.parsedNumbers && step.parsedNumbers.length > 0"
-          class="section-hint success-hint"
-        >
-          已提取有效整数：{{ step.parsedNumbers.length }} 个
-        </span>
-        <span
-          v-else-if="step.state === 'working'"
-          class="section-hint working-hint"
-        >
-          正在生成中...
-        </span>
+        <template v-if="step.expectedAnswer !== undefined">
+          <span
+            v-if="step.state === 'working'"
+            class="section-hint working-hint"
+          >
+            正在生成中...
+          </span>
+          <span
+            v-else-if="step.isCorrect === true"
+            class="section-hint success-hint"
+          >
+            模型答案：{{ step.modelAnswer }} · 回答正确
+          </span>
+          <span
+            v-else-if="step.answer || step.state === 'error'"
+            class="section-hint error-hint"
+          >
+            模型答案：{{ step.modelAnswer ?? "未识别" }} · {{ step.answer ? "回答错误" : "请求失败" }}
+          </span>
+        </template>
+        <template v-else>
+          <span
+            v-if="step.parsedNumbers && step.parsedNumbers.length > 0"
+            class="section-hint success-hint"
+          >
+            已提取有效整数：{{ step.parsedNumbers.length }} 个
+          </span>
+          <span
+            v-else-if="step.state === 'working'"
+            class="section-hint working-hint"
+          >
+            正在生成中...
+          </span>
+        </template>
       </div>
       <div class="header-actions">
+        <button
+          v-if="step.expectedAnswer !== undefined && step.state === 'error' && step.answer"
+          type="button"
+          class="btn-copy"
+          :disabled="isRunning"
+          title="重试当前题目"
+          @click="emit('retry')"
+        >
+          <RefreshCw :size="13" />
+          <span>重试</span>
+        </button>
         <button
           v-if="step.answer"
           type="button"
@@ -165,6 +198,12 @@ function handleCopyError(): void {
           color: var(--accent-primary);
           background: rgba(99, 102, 241, 0.08);
           border-color: rgba(99, 102, 241, 0.25);
+        }
+
+        &.error-hint {
+          color: var(--danger-text);
+          background: rgba(239, 68, 68, 0.1);
+          border-color: rgba(239, 68, 68, 0.3);
         }
       }
     }

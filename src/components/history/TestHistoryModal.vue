@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type {
+  CandyHistoryItem,
   ConnectionHistoryItem,
   HistoryTab,
   PelicanHistoryItem,
   ProbeHistoryItem,
 } from "../../types";
-import { History, MessagesSquare, Radar, Trash2, X } from "@lucide/vue";
+import { Candy, History, MessagesSquare, Radar, Trash2, X } from "@lucide/vue";
 import { useConfirm } from "../../composables/useConfirm";
 import ProbeHistoryList from "./ProbeHistoryList.vue";
 import PelicanHistoryGrid from "./PelicanHistoryGrid.vue";
+import CandyHistoryList from "./CandyHistoryList.vue";
 import ConnectionHistoryList from "./ConnectionHistoryList.vue";
 
 const props = withDefaults(
@@ -18,20 +20,24 @@ const props = withDefaults(
     initialTab?: HistoryTab;
     pelicanList: PelicanHistoryItem[];
     probeList?: ProbeHistoryItem[];
+    candyList?: CandyHistoryItem[];
     connectionList?: ConnectionHistoryItem[];
     connectionActiveId?: string | null;
     probeRunning?: boolean;
     pelicanRunning?: boolean;
+    candyRunning?: boolean;
   }>(),
   {
     isOpen: false,
     initialTab: "probe",
     pelicanList: () => [],
     probeList: () => [],
+    candyList: () => [],
     connectionList: () => [],
     connectionActiveId: null,
     probeRunning: false,
     pelicanRunning: false,
+    candyRunning: false,
   }
 );
 
@@ -43,6 +49,9 @@ const emit = defineEmits<{
   (e: "delete-probe", id: string): void;
   (e: "clear-probe"): void;
   (e: "apply-probe", item: ProbeHistoryItem): void;
+  (e: "delete-candy", id: string): void;
+  (e: "clear-candy"): void;
+  (e: "apply-candy", item: CandyHistoryItem): void;
   (e: "delete-connection", id: string): void;
   (e: "clear-connection"): void;
 }>();
@@ -60,6 +69,7 @@ const activeTab = computed<HistoryTab>({
 
 const pelicanTotalCount = computed(() => props.pelicanList.length);
 const probeTotalCount = computed(() => (props.probeList || []).length);
+const candyTotalCount = computed(() => (props.candyList || []).length);
 const connectionTotalCount = computed(
   () => (props.connectionList || []).length
 );
@@ -67,12 +77,14 @@ const connectionTotalCount = computed(
 const activeTotalCount = computed(() => {
   if (activeTab.value === "probe") return probeTotalCount.value;
   if (activeTab.value === "pelican") return pelicanTotalCount.value;
+  if (activeTab.value === "candy") return candyTotalCount.value;
   return connectionTotalCount.value;
 });
 
 const clearButtonTitle = computed(() => {
   if (activeTab.value === "probe") return "清空模型测试历史";
   if (activeTab.value === "pelican") return "清空鹈鹕测试历史";
+  if (activeTab.value === "candy") return "清空糖果测试历史";
   return "清空连接测试历史";
 });
 
@@ -83,12 +95,16 @@ async function handleClearHistory(): Promise<void> {
       ? "确认清空模型测试历史？"
       : tab === "pelican"
       ? "确认清空鹈鹕测试历史？"
+      : tab === "candy"
+      ? "确认清空糖果测试历史？"
       : "确认清空连接测试历史？";
   const message =
     tab === "probe"
       ? "清空后将永久删除所有模型探测历史记录，数据无法恢复。"
       : tab === "pelican"
       ? "清空后将永久删除所有鹈鹕测试生成的图片历史，数据无法恢复。"
+      : tab === "candy"
+      ? "清空后将永久删除所有糖果测试的历史记录，数据无法恢复。"
       : "清空后将永久删除所有连接测试的会话汇总记录，数据无法恢复。";
 
   const confirmed = await confirm({
@@ -106,6 +122,8 @@ async function handleClearHistory(): Promise<void> {
     emit("clear-probe");
   } else if (tab === "pelican") {
     emit("clear-pelican");
+  } else if (tab === "candy") {
+    emit("clear-candy");
   } else {
     emit("clear-connection");
   }
@@ -138,6 +156,21 @@ async function handleDeletePelican(id: string): Promise<void> {
   });
   if (confirmed) {
     emit("delete-pelican", id);
+  }
+}
+
+async function handleDeleteCandy(id: string): Promise<void> {
+  const item = props.candyList?.find((entry) => entry.id === id);
+  const confirmed = await confirm({
+    type: "danger",
+    styleVariant: "spotlight",
+    title: "确认删除此条糖果测试记录？",
+    message: `模型 ${item?.modelName || "—"} 的糖果测试记录删除后将无法恢复。`,
+    confirmText: "确认删除",
+    cancelText: "取消",
+  });
+  if (confirmed) {
+    emit("delete-candy", id);
   }
 }
 
@@ -224,6 +257,18 @@ async function handleDeleteConnection(id: string): Promise<void> {
                 type="button"
                 role="tab"
                 class="tab-btn"
+                :class="{ active: activeTab === 'candy' }"
+                :aria-selected="activeTab === 'candy'"
+                @click="activeTab = 'candy'"
+              >
+                <Candy :size="13" />
+                <span>糖果测试</span>
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                class="tab-btn"
                 :class="{ active: activeTab === 'connection' }"
                 :aria-selected="activeTab === 'connection'"
                 @click="activeTab = 'connection'"
@@ -279,7 +324,16 @@ async function handleDeleteConnection(id: string): Promise<void> {
             @delete="handleDeletePelican"
           />
 
-          <!-- 3. 连接测试历史视图 -->
+          <!-- 3. 糖果测试历史视图 -->
+          <CandyHistoryList
+            v-else-if="activeTab === 'candy'"
+            :candy-list="candyList"
+            :apply-disabled="candyRunning"
+            @apply="emit('apply-candy', $event)"
+            @delete="handleDeleteCandy"
+          />
+
+          <!-- 4. 连接测试历史视图 -->
           <ConnectionHistoryList
             v-else-if="activeTab === 'connection'"
             :connection-list="connectionList"

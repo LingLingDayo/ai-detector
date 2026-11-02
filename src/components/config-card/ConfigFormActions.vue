@@ -62,13 +62,21 @@ const startButtonTitle = computed(() => {
     return "点击取消当前正在进行的测试";
   }
   if (props.hasResult) {
-    return props.activeMode === "probe"
-      ? "重新执行 3 轮探测并计算模型归因"
-      : "重新发起鹈鹕测试，让 AI 重新绘制 SVG";
+    if (props.activeMode === "probe") {
+      return "重新执行 3 轮探测并计算模型归因";
+    }
+    if (props.activeMode === "candy") {
+      return "重新执行 3 题糖果逻辑推理测试";
+    }
+    return "重新发起鹈鹕测试，让 AI 重新绘制 SVG";
   }
-  return props.activeMode === "probe"
-    ? "执行 3 轮探测，并在统一库中比对归因"
-    : "发起鹈鹕测试，让 AI 绘制骑自行车 SVG";
+  if (props.activeMode === "probe") {
+    return "执行 3 轮探测，并在统一库中比对归因";
+  }
+  if (props.activeMode === "candy") {
+    return "执行 3 题糖果组合逻辑推理测试（答对 ≥ 2 题通过）";
+  }
+  return "发起鹈鹕测试，让 AI 绘制骑自行车 SVG";
 });
 
 function handleStartButtonClick(event: MouseEvent): void {

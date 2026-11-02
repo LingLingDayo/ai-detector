@@ -18,6 +18,10 @@ const props = withDefaults(
     hasStarted?: boolean;
     hasFingerprintUpdate?: boolean;
     isUpdatingFingerprint?: boolean;
+    detailModalOpen?: boolean;
+    detailModalIndex?: number;
+    modalTitle?: string;
+    refreshButtonTitle?: string;
   }>(),
   {
     visible: true,
@@ -25,6 +29,10 @@ const props = withDefaults(
     hasStarted: false,
     hasFingerprintUpdate: false,
     isUpdatingFingerprint: false,
+    detailModalOpen: undefined,
+    detailModalIndex: undefined,
+    modalTitle: undefined,
+    refreshButtonTitle: "重新随机抽取一组题目 (3 道不同测试题目)",
   }
 );
 
@@ -33,6 +41,8 @@ const emit = defineEmits<{
   (e: "refreshSingleQuestion", index: number): void;
   (e: "retrySingleQuestion", index: number): void;
   (e: "updateFingerprint"): void;
+  (e: "openDetail", index: number): void;
+  (e: "closeDetail"): void;
 }>();
 
 const alertLines = computed<string[]>(() => {
@@ -46,8 +56,28 @@ const alertLines = computed<string[]>(() => {
 import { useProbeTestStore } from "../stores";
 const probeStore = useProbeTestStore();
 
+const resolvedModalOpen = computed(() =>
+  props.detailModalOpen !== undefined ? props.detailModalOpen : probeStore.isDetailModalOpen
+);
+
+const resolvedModalIndex = computed(() =>
+  props.detailModalIndex !== undefined ? props.detailModalIndex : probeStore.selectedDetailIndex
+);
+
 function openDetail(idx: number): void {
-  probeStore.openDetailModal(idx);
+  if (props.detailModalOpen !== undefined) {
+    emit("openDetail", idx);
+  } else {
+    probeStore.openDetailModal(idx);
+  }
+}
+
+function closeDetail(): void {
+  if (props.detailModalOpen !== undefined) {
+    emit("closeDetail");
+  } else {
+    probeStore.closeDetailModal();
+  }
 }
 </script>
 
@@ -61,7 +91,7 @@ function openDetail(idx: number): void {
             type="button"
             class="btn-refresh-icon"
             :disabled="isRunning"
-            title="重新随机抽取一组题目 (3 道不同测试题目)"
+            :title="refreshButtonTitle"
             @click="emit('refreshQuestions')"
           >
             <RefreshCw :size="13" />
@@ -156,13 +186,14 @@ function openDetail(idx: number): void {
 
     <!-- 题目内容与模型回答弹窗 -->
     <ProbeDetailModal
-      :is-open="probeStore.isDetailModalOpen"
+      :is-open="resolvedModalOpen"
       :steps="steps"
-      :initial-index="probeStore.selectedDetailIndex"
+      :initial-index="resolvedModalIndex"
       :is-running="isRunning"
+      :title="modalTitle"
       @refresh-single-question="(idx) => emit('refreshSingleQuestion', idx)"
       @retry-single-question="(idx) => emit('retrySingleQuestion', idx)"
-      @close="probeStore.closeDetailModal"
+      @close="closeDetail"
     />
   </section>
 </template>

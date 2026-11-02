@@ -11,6 +11,7 @@ const props = defineProps<{
   steps: ProbeStepItem[];
   initialIndex: number;
   isRunning?: boolean;
+  title?: string;
 }>();
 
 const emit = defineEmits<{
@@ -65,6 +66,7 @@ function selectStep(idx: number): void {
         <ProbeModalHeader
           :steps="steps"
           :active-index="activeIndex"
+          :title="title"
           @select-step="selectStep"
           @close="emit('close')"
         />
@@ -74,6 +76,9 @@ function selectStep(idx: number): void {
           <ProbePromptSection
             :prompt="currentStep.prompt"
             :expected-count="currentStep.expectedCount"
+            :expected-answer="currentStep.expectedAnswer"
+            :optimal-circle="currentStep.optimalCircle"
+            :optimal-star="currentStep.optimalStar"
             :is-running="isRunning"
             @refresh-single="emit('refreshSingleQuestion', activeIndex)"
           />

@@ -5,6 +5,9 @@ import { useClipboard } from "../../composables/useClipboard";
 const props = defineProps<{
   prompt?: string;
   expectedCount?: number;
+  expectedAnswer?: number;
+  optimalCircle?: number;
+  optimalStar?: number;
   isRunning?: boolean;
 }>();
 
@@ -26,7 +29,13 @@ function handleCopy(): void {
     <div class="section-header">
       <div class="section-title-wrap">
         <span class="section-label">当前实际抽到的题目 (Prompt)</span>
-        <span v-if="expectedCount" class="section-hint">
+        <span v-if="expectedAnswer !== undefined" class="section-hint answer-hint">
+          正确答案：<strong>{{ expectedAnswer }}</strong>
+          <template v-if="optimalCircle && optimalStar">
+            （圆形 {{ optimalCircle }} 颗 + 五角星 {{ optimalStar }} 颗）
+          </template>
+        </span>
+        <span v-else-if="expectedCount" class="section-hint">
           抽取目标：{{ expectedCount }} 个无语义整数 (1~355)
         </span>
       </div>
@@ -93,6 +102,17 @@ function handleCopy(): void {
         padding: 1px 7px;
         border-radius: var(--radius-sm);
         border: 1px solid var(--border-subtle);
+
+        &.answer-hint {
+          color: var(--accent-text);
+          background: rgba(99, 102, 241, 0.1);
+          border-color: rgba(99, 102, 241, 0.3);
+
+          strong {
+            font-weight: 700;
+            color: var(--text-strong);
+          }
+        }
       }
     }
 
@@ -151,8 +171,9 @@ function handleCopy(): void {
     font-size: 13px;
     line-height: 1.55;
     color: var(--text-secondary);
-    max-height: 130px;
+    max-height: 165px;
     overflow-y: auto;
+    white-space: pre-wrap;
     user-select: text;
     word-break: break-word;
   }
