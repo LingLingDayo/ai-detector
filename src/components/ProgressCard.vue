@@ -408,7 +408,6 @@ function openDetail(idx: number): void {
         transition: all var(--transition-fast);
 
         &:hover {
-          transform: translateY(-1.5px);
           border-color: var(--accent-primary);
           box-shadow: var(--shadow-hover);
         }
