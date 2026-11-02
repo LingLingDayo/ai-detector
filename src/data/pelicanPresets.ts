@@ -25,4 +25,9 @@ export const PELICAN_PRESETS: PelicanPreset[] = [
     name: "动态 SVG (中文)",
     prompt: "生成一只骑自行车的鹈鹕的动态 SVG。仅回复 SVG 代码。",
   },
+  {
+    id: "zh-crane-cart",
+    name: "丹顶鹤 SVG",
+    prompt: "生成一只推着小推车丹顶鹤的动态 SVG。仅回复 SVG 代码。",
+  },
 ];
