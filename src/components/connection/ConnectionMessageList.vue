@@ -140,7 +140,7 @@ defineExpose({ scrollToBottom });
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px 15px 20px;
-  border: 1px solid var(--overlay-soft);
+  border: 1px solid var(--border-subtle);
   border-radius: 9px;
   user-select: auto;
 }
@@ -209,7 +209,7 @@ defineExpose({ scrollToBottom });
     gap: 6px;
     padding: 6px 10px;
     background: var(--bg-control);
-    border: 1px solid var(--overlay-medium);
+    border: 1px solid var(--border-subtle);
     border-radius: 9999px;
     color: var(--text-secondary);
     font-size: 11px;
@@ -224,9 +224,9 @@ defineExpose({ scrollToBottom });
     }
 
     &:hover {
-      color: var(--text-body);
-      background: rgba(99, 102, 241, 0.14);
-      border-color: rgba(99, 102, 241, 0.32);
+      color: var(--accent-text);
+      background: rgba(99, 102, 241, 0.12);
+      border-color: rgba(99, 102, 241, 0.35);
       transform: translateY(-1px);
     }
   }

@@ -310,7 +310,7 @@ function openDetail(idx: number): void {
   .progress-bar-track {
     width: 100%;
     height: 5px;
-    background: var(--bg-input);
+    background: var(--bg-inset-strong);
     border-radius: 9999px;
     overflow: hidden;
     margin-bottom: 8px;
@@ -410,7 +410,7 @@ function openDetail(idx: number): void {
         &:hover {
           transform: translateY(-1.5px);
           border-color: var(--accent-primary);
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+          box-shadow: var(--shadow-hover);
         }
       }
 

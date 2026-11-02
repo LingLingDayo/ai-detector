@@ -246,7 +246,7 @@ function handleCopyResult(): void {
       &:hover {
         background: var(--overlay-strong);
         color: var(--text-strong);
-        border-color: rgba(255, 255, 255, 0.2);
+        border-color: var(--border-subtle);
         opacity: 1;
       }
 
@@ -403,7 +403,7 @@ function handleCopyResult(): void {
 
       td {
         padding: 6px 10px;
-        border-bottom: 1px solid rgba(35, 45, 63, 0.4);
+        border-bottom: 1px solid var(--border-subtle);
         color: var(--text-primary);
         vertical-align: middle;
       }
@@ -457,7 +457,7 @@ function handleCopyResult(): void {
         .prob-bar-track {
           flex: 1;
           height: 5px;
-          background: var(--bg-input);
+          background: var(--bg-inset-strong);
           border-radius: 9999px;
           overflow: hidden;
 

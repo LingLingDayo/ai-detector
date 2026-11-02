@@ -272,14 +272,14 @@ defineExpose({ focus, fillText });
 
 .composer-shell {
   position: relative;
-  border: 1px solid var(--overlay-medium);
+  border: 1px solid var(--border-subtle);
   border-radius: 11px;
   background: var(--bg-field);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 
   &:focus-within {
     border-color: rgba(99, 102, 241, 0.5);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1), 0 8px 24px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 0 0 2px var(--border-glow), var(--shadow-hover);
   }
 
   &.is-running {
@@ -322,7 +322,7 @@ defineExpose({ focus, fillText });
     border: none;
     border-radius: 50%;
     background: rgba(2, 6, 14, 0.74);
-    color: var(--text-soft);
+    color: #e2e8f0;
     cursor: pointer;
     transition: all var(--transition-fast);
 
@@ -366,7 +366,7 @@ defineExpose({ focus, fillText });
   overflow-y: auto;
 
   &::placeholder {
-    color: #4f5e74;
+    color: var(--text-placeholder);
   }
 }
 
@@ -419,9 +419,9 @@ defineExpose({ focus, fillText });
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  border: 1px solid var(--overlay-medium);
-  background: rgba(51, 65, 85, 0.42);
-  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-control-strong);
+  color: var(--text-placeholder);
   cursor: not-allowed;
   transition: all var(--transition-fast);
 
@@ -444,8 +444,8 @@ defineExpose({ focus, fillText });
     cursor: pointer;
 
     &:hover {
-      background: rgba(239, 68, 68, 0.26);
-      color: #fee2e2;
+      background: rgba(239, 68, 68, 0.24);
+      color: var(--danger-text);
     }
   }
 }
@@ -483,7 +483,7 @@ defineExpose({ focus, fillText });
 .composer-disabled-hint {
   margin-top: 5px;
   padding-left: 2px;
-  color: #b45309;
+  color: var(--warning-text);
   font-size: 11px;
 }
 

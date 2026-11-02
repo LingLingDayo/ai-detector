@@ -39,7 +39,7 @@ const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG")
 <style lang="scss" scoped>
 .code-viewer-box {
   background: var(--bg-elevated-strong);
-  border: 1px solid rgba(51, 65, 85, 0.5);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   overflow: hidden;
   display: flex;

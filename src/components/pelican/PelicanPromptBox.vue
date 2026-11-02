@@ -365,7 +365,7 @@ watch(
 <style lang="scss" scoped>
 .prompt-box {
   background: var(--bg-elevated);
-  border: 1px solid rgba(51, 65, 85, 0.5);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
   display: flex;
@@ -413,7 +413,7 @@ watch(
     gap: 4px;
     height: 22px;
     padding: 0 7px;
-    background: var(--bg-control);
+    background: var(--bg-surface-control);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
@@ -450,12 +450,12 @@ watch(
     }
 
     &.active {
-      background: rgba(99, 102, 241, 0.25);
-      border-color: #6366f1;
-      color: var(--text-strong);
+      background: rgba(99, 102, 241, 0.16);
+      border-color: var(--accent-primary);
+      color: var(--accent-text);
 
       .preset-chevron {
-        color: var(--text-strong);
+        color: var(--accent-text);
       }
     }
 
@@ -465,13 +465,13 @@ watch(
     }
 
     &.save {
-      background: rgba(99, 102, 241, 0.25);
-      border-color: #6366f1;
-      color: var(--text-strong);
+      background: rgba(99, 102, 241, 0.16);
+      border-color: var(--accent-primary);
+      color: var(--accent-text);
 
       &:hover:not(:disabled) {
-        background: rgba(99, 102, 241, 0.45);
-        color: var(--text-strong);
+        background: rgba(99, 102, 241, 0.28);
+        color: var(--accent-text-contrast);
         border-color: var(--accent-icon);
       }
     }
@@ -491,10 +491,10 @@ watch(
   right: 0;
   min-width: 120px;
   width: max-content;
-  background: var(--bg-elevated-strong);
+  background: var(--bg-popover);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm, 6px);
-  box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: var(--shadow-popover);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   z-index: 1000;

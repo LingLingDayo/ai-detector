@@ -206,10 +206,10 @@ onBeforeUnmount(() => {
   z-index: 10020;
   width: 270px;
   padding: 10px 12px;
-  background: rgba(9, 14, 26, 0.97);
+  background: var(--bg-popover);
   border: 1px solid rgba(99, 102, 241, 0.32);
   border-radius: 8px;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.62), 0 0 20px rgba(99, 102, 241, 0.12);
+  box-shadow: var(--shadow-popover);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   pointer-events: auto;

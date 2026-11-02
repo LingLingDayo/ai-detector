@@ -189,15 +189,15 @@ const emit = defineEmits<{
     }
 
     &.btn-config-list {
-      color: var(--accent-text-soft);
+      color: var(--accent-text);
       background: rgba(99, 102, 241, 0.1);
       border-color: rgba(99, 102, 241, 0.25);
     }
 
     &.btn-history {
-      color: var(--text-soft);
-      background: rgba(148, 163, 184, 0.08);
-      border-color: rgba(148, 163, 184, 0.2);
+      color: var(--text-secondary);
+      background: var(--bg-control);
+      border-color: var(--border-subtle);
 
       .btn-count-dot {
         font-size: 10px;
@@ -205,8 +205,8 @@ const emit = defineEmits<{
         height: 14px;
         line-height: 14px;
         border-radius: 9999px;
-        background: rgba(99, 102, 241, 0.35);
-        color: var(--accent-text-soft);
+        background: rgba(99, 102, 241, 0.2);
+        color: var(--accent-text);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -217,8 +217,8 @@ const emit = defineEmits<{
     &.btn-history,
     &.btn-settings {
       &:hover {
-        background: rgba(99, 102, 241, 0.2);
-        border-color: rgba(99, 102, 241, 0.5);
+        background: rgba(99, 102, 241, 0.16);
+        border-color: rgba(99, 102, 241, 0.42);
         color: var(--accent-text-contrast);
       }
     }

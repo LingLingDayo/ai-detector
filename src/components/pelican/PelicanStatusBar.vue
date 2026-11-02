@@ -175,7 +175,7 @@ function toggleBgTheme(): void {
   flex-wrap: wrap;
   gap: 8px;
   padding: 6px 10px;
-  background: rgba(17, 24, 39, 0.6);
+  background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
 }
@@ -202,7 +202,7 @@ function toggleBgTheme(): void {
     &.running {
       background: rgba(59, 130, 246, 0.12);
       border: 1px solid rgba(59, 130, 246, 0.3);
-      color: #60a5fa;
+      color: var(--info-text);
     }
 
     &.success {
@@ -214,7 +214,7 @@ function toggleBgTheme(): void {
     &.error {
       background: rgba(239, 68, 68, 0.12);
       border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #f87171;
+      color: var(--danger-text);
     }
 
     &.warning {
@@ -317,7 +317,7 @@ function toggleBgTheme(): void {
     gap: 4px;
     height: 22px;
     padding: 0 7px;
-    background: var(--bg-control);
+    background: var(--bg-surface-control);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
@@ -339,9 +339,9 @@ function toggleBgTheme(): void {
     }
 
     &.active {
-      background: rgba(99, 102, 241, 0.25);
-      border-color: #6366f1;
-      color: var(--text-strong);
+      background: rgba(99, 102, 241, 0.16);
+      border-color: var(--accent-primary);
+      color: var(--accent-text);
     }
   }
 }

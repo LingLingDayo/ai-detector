@@ -218,7 +218,7 @@ async function handleCopy(): Promise<void> {
   background: rgba(99, 102, 241, 0.1);
   border: 1px solid rgba(129, 140, 248, 0.25);
   border-radius: 13px 13px 4px 13px;
-  box-shadow: 0 4px 16px rgba(30, 41, 59, 0.2);
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.08);
 
   .user-text {
     color: var(--text-strong);
@@ -270,7 +270,7 @@ async function handleCopy(): Promise<void> {
 }
 
 .markdown-body {
-  color: #dbe3ee;
+  color: var(--text-body);
   font-size: 13px;
   // 整数行高避免流式换行时内容高度带小数，导致底部状态栏出现亚像素抖动
   line-height: 22px;
@@ -338,7 +338,7 @@ async function handleCopy(): Promise<void> {
     border-left: 2px solid rgba(99, 102, 241, 0.55);
     background: rgba(99, 102, 241, 0.07);
     border-radius: 0 5px 5px 0;
-    color: #aebbd0;
+    color: var(--text-secondary);
   }
 
   :deep(code) {

@@ -316,7 +316,7 @@ const successTitle = computed(
   }
 
   &.is-danger strong {
-    color: #f87171;
+    color: var(--danger-text);
   }
 
   &.is-waiting strong {

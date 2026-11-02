@@ -177,8 +177,26 @@ const wrappedHtml = computed(() => {
   transition: background 0.25s ease, border-color 0.25s ease;
 
   &.light-bg {
-    background: var(--text-strong);
-    border-color: rgba(203, 213, 225, 0.4);
+    background: #f8fafc;
+    border-color: var(--border-subtle);
+
+    .loading-state {
+      .loading-title {
+        color: #1e293b;
+      }
+
+      .loading-desc {
+        color: #64748b;
+      }
+    }
+
+    .fallback-text-box .fallback-tip {
+      color: #b45309;
+
+      code {
+        color: #92400e;
+      }
+    }
   }
 }
 
@@ -203,12 +221,12 @@ const wrappedHtml = computed(() => {
   .loading-title {
     font-size: 13px;
     font-weight: 600;
-    color: var(--text-body);
+    color: #e2e8f0;
   }
 
   .loading-desc {
     font-size: 12px;
-    color: var(--text-muted);
+    color: #94a3b8;
     margin-top: 3px;
   }
 }
@@ -227,7 +245,7 @@ const wrappedHtml = computed(() => {
   overflow: hidden;
 
   &.light-bg {
-    background: radial-gradient(circle at center, #ffffff 0%, var(--text-strong) 100%);
+    background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
 
     :deep(svg) {
       filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.12));
@@ -307,7 +325,7 @@ const wrappedHtml = computed(() => {
 
   .fallback-tip {
     font-size: 12px;
-    color: var(--warning-text);
+    color: #fbbf24;
 
     code {
       color: #fde68a;
