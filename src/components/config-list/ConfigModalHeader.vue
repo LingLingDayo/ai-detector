@@ -13,10 +13,7 @@ const emit = defineEmits<{
       <div class="title-icon">
         <List :size="18" />
       </div>
-      <div>
-        <h3>配置列表</h3>
-        <p class="header-subtitle">管理、切换及编辑您的所有 API 接口与密钥配置</p>
-      </div>
+      <h3>配置列表</h3>
     </div>
 
     <div class="header-actions">
@@ -56,8 +53,8 @@ const emit = defineEmits<{
     gap: 12px;
 
     .title-icon {
-      width: 34px;
-      height: 34px;
+      width: 30px;
+      height: 30px;
       border-radius: var(--radius-sm);
       background: rgba(99, 102, 241, 0.15);
       border: 1px solid rgba(99, 102, 241, 0.3);
@@ -69,15 +66,9 @@ const emit = defineEmits<{
     }
 
     h3 {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       color: var(--text-strong);
-    }
-
-    .header-subtitle {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 1px;
     }
   }
 
