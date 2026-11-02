@@ -58,7 +58,9 @@ export const useSettingsStore = defineStore("settings", () => {
   }
 
   function applyTheme(): void {
-    document.documentElement.dataset.theme = theme.value;
+    if (typeof document !== "undefined" && document.documentElement) {
+      document.documentElement.dataset.theme = theme.value;
+    }
   }
 
   const context: SettingsContext = { values, setValue };

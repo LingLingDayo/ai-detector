@@ -1,5 +1,6 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
+import { nextTick } from "vue";
 import {
   PELICAN_PROMPT_STORAGE_KEY,
   PELICAN_CUSTOM_PROMPT_STORAGE_KEY,
@@ -11,6 +12,7 @@ import {
   hasExtraneousText,
   stripXmlProlog,
 } from "./pelicanTest";
+import { useSettingsStore } from "./settings";
 import * as api from "../services/api";
 
 const storage = new Map<string, string>();
@@ -270,4 +272,70 @@ describe("鹈鹕测试原始响应额外文本判断测试套件 (hasExtraneousT
     expect(hasExtraneousText("", "")).toBe(false);
   });
 });
+
+describe("鹈鹕测试背景亮暗色跟随主题与自定义覆盖测试套件", () => {
+  it("默认初始化跟随全局主题风格", () => {
+    storage.clear();
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const settingsStore = useSettingsStore();
+    settingsStore.setValue("theme", "light");
+
+    const pelicanStore = usePelicanTestStore();
+    expect(pelicanStore.bgTheme).toBe("light");
+  });
+
+  it("当全局主题风格切换时，bgTheme 自动随之切换为对应风格", async () => {
+    storage.clear();
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const settingsStore = useSettingsStore();
+    const pelicanStore = usePelicanTestStore();
+
+    expect(pelicanStore.bgTheme).toBe("dark");
+
+    settingsStore.setValue("theme", "light");
+    await nextTick();
+    expect(pelicanStore.bgTheme).toBe("light");
+
+    settingsStore.setValue("theme", "dark");
+    await nextTick();
+    expect(pelicanStore.bgTheme).toBe("dark");
+  });
+
+  it("当前主题下用户手动修改后优先使用用户的设置，但全局主题切换时依然自动变化", async () => {
+    storage.clear();
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const settingsStore = useSettingsStore();
+    const pelicanStore = usePelicanTestStore();
+
+    // 1. 全局为 dark，初始为 dark
+    expect(pelicanStore.bgTheme).toBe("dark");
+
+    // 2. 用户在 dark 下手动修改为 light
+    pelicanStore.setBgTheme("light");
+    expect(pelicanStore.bgTheme).toBe("light");
+
+    // 3. 用户切换全局主题风格为 light -> 触发自动切换到 light（虽然之前也是 light）
+    settingsStore.setValue("theme", "light");
+    await nextTick();
+    expect(pelicanStore.bgTheme).toBe("light");
+
+    // 4. 用户在 light 下手动修改为 dark
+    pelicanStore.setBgTheme("dark");
+    expect(pelicanStore.bgTheme).toBe("dark");
+
+    // 5. 再次切换全局主题风格为 dark -> 触发自动变化，切换为 dark
+    settingsStore.setValue("theme", "dark");
+    await nextTick();
+    expect(pelicanStore.bgTheme).toBe("dark");
+
+    // 6. 再次切换全局主题风格为 light -> 触发自动变化，切换为 light
+    settingsStore.setValue("theme", "light");
+    await nextTick();
+    expect(pelicanStore.bgTheme).toBe("light");
+  });
+});
+
 

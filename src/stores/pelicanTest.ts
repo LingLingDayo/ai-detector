@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, onScopeDispose } from "vue";
+import { ref, watch, onScopeDispose } from "vue";
 import { sendProbe } from "../services/api";
 import type { ClientConfig, PelicanHistoryItem } from "../types";
 import {
@@ -13,6 +13,7 @@ import { PELICAN_PRESETS } from "../data/pelicanPresets";
 import { sleep } from "../utils/timer";
 import { isTimeoutError } from "../utils/retry";
 import { maskApiKey } from "../utils/pelicanFormatters";
+import { useSettingsStore } from "./settings";
 
 export const DEFAULT_PELICAN_PROMPT =
   "Generate an SVG of a pelican riding a bicycle. Reply with the SVG code only.";
@@ -24,6 +25,36 @@ export interface RenderableContent {
   content: string;
   contentType: PelicanContentType;
   hasContent: boolean;
+}
+
+export const PELICAN_BG_THEME_STORAGE_KEY = "pelican_bg_theme";
+export const PELICAN_BG_THEME_PREFERENCE_KEY = "pelican_bg_theme_preference";
+
+interface PelicanBgThemePreference {
+  forTheme: "dark" | "light";
+  bgTheme: "dark" | "light";
+}
+
+function loadInitialPelicanBgTheme(globalTheme: "dark" | "light"): "dark" | "light" {
+  if (typeof localStorage === "undefined") {
+    return globalTheme;
+  }
+  try {
+    const raw = localStorage.getItem(PELICAN_BG_THEME_PREFERENCE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as PelicanBgThemePreference;
+      if (
+        parsed &&
+        parsed.forTheme === globalTheme &&
+        (parsed.bgTheme === "dark" || parsed.bgTheme === "light")
+      ) {
+        return parsed.bgTheme;
+      }
+    }
+  } catch {
+    // 忽略异常
+  }
+  return globalTheme;
 }
 
 export function isPureSvg(str: string): boolean {
@@ -265,15 +296,38 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
   const pelicanCustomPrompt = ref(loadInitialPelicanCustomPrompt(pelicanPrompt.value));
   const pelicanHistoryList = ref<PelicanHistoryItem[]>(loadInitialPelicanHistory());
 
+  const settingsStore = useSettingsStore();
+
   const bgTheme = ref<"dark" | "light">(
-    (typeof localStorage !== "undefined" && (localStorage.getItem("pelican_bg_theme") as "dark" | "light")) || "dark"
+    loadInitialPelicanBgTheme(settingsStore.theme)
   );
   const showCode = ref(false);
+
+  // 监听全局主题风格切换：切换主题风格时，自动同步切换到对应风格
+  watch(
+    () => settingsStore.theme,
+    (newTheme) => {
+      bgTheme.value = newTheme;
+      try {
+        localStorage.setItem(
+          PELICAN_BG_THEME_PREFERENCE_KEY,
+          JSON.stringify({ forTheme: newTheme, bgTheme: newTheme })
+        );
+        localStorage.setItem(PELICAN_BG_THEME_STORAGE_KEY, newTheme);
+      } catch {
+        // ignore
+      }
+    }
+  );
 
   function setBgTheme(theme: "dark" | "light"): void {
     bgTheme.value = theme;
     try {
-      localStorage.setItem("pelican_bg_theme", theme);
+      localStorage.setItem(
+        PELICAN_BG_THEME_PREFERENCE_KEY,
+        JSON.stringify({ forTheme: settingsStore.theme, bgTheme: theme })
+      );
+      localStorage.setItem(PELICAN_BG_THEME_STORAGE_KEY, theme);
     } catch {
       // ignore
     }
