@@ -327,14 +327,14 @@ onUnmounted(() => {
 .confirm-modal-dialog {
   position: relative;
   background: var(--bg-solid);
-  border: 1px solid var(--overlay-medium);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   width: 100%;
   max-width: 420px;
   display: flex;
   flex-direction: column;
   padding: 18px 20px 16px;
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-modal);
   animation: modalScaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
 }
@@ -457,15 +457,15 @@ onUnmounted(() => {
     }
   }
 
-  /* 取消按钮（深色沉浸中性灰） */
+  /* 取消按钮（中性灰） */
   .btn-cancel {
-    background: var(--overlay-soft);
-    border: 1px solid var(--overlay-strong);
-    color: var(--text-soft);
+    background: var(--bg-control);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
 
     &:hover:not(:disabled) {
-      background: var(--overlay-strong);
-      border-color: rgba(255, 255, 255, 0.22);
+      background: var(--bg-control-hover);
+      border-color: var(--text-muted);
       color: var(--text-strong);
     }
 

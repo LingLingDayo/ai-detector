@@ -102,7 +102,7 @@ function handleSelect(option: SegmentedOption): void {
   height: 32px;
   gap: 2px;
   padding: 2px;
-  background: var(--bg-input);
+  background: var(--bg-segmented);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
 
@@ -156,11 +156,11 @@ function handleSelect(option: SegmentedOption): void {
     }
 
     &.active {
-      background: rgba(99, 102, 241, 0.2);
-      border-color: rgba(99, 102, 241, 0.5);
-      color: var(--text-strong);
+      background: var(--bg-segment-active);
+      border-color: var(--border-segment-active);
+      color: var(--text-segment-active);
       font-weight: 600;
-      box-shadow: 0 1px 6px rgba(99, 102, 241, 0.2);
+      box-shadow: var(--shadow-segment-active);
     }
 
     &:disabled {

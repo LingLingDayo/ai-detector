@@ -114,10 +114,10 @@ defineExpose({
   left: 0;
   right: 0;
   z-index: 1000;
-  background: var(--bg-solid);
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: var(--bg-popover);
+  border: 1px solid rgba(99, 102, 241, 0.35);
   border-radius: var(--radius-md);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(99, 102, 241, 0.2);
+  box-shadow: var(--shadow-popover);
   max-height: 280px;
   display: flex;
   flex-direction: column;
@@ -149,8 +149,8 @@ defineExpose({
     padding: 4px 10px;
     font-size: 11px;
     color: var(--text-muted);
-    background: rgba(18, 24, 36, 0.4);
-    border-bottom: 1px solid rgba(35, 45, 63, 0.4);
+    background: var(--bg-inset);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .dropdown-list {

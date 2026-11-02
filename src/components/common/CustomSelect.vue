@@ -275,14 +275,14 @@ onUnmounted(() => {
 
   &:hover {
     border-color: rgba(99, 102, 241, 0.4);
-    background: rgba(17, 23, 35, 0.95);
+    background: var(--bg-input);
   }
 
   .is-open &,
   .custom-select-wrapper:focus & {
     border-color: var(--accent-primary);
     box-shadow: 0 0 0 2px var(--border-glow);
-    background: rgba(17, 23, 35, 1);
+    background: var(--bg-input);
   }
 }
 
@@ -302,9 +302,8 @@ onUnmounted(() => {
 
   .option-desc {
     font-size: 12px;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     font-weight: 400;
-    opacity: 0.5;
   }
 
   .option-badge {
@@ -342,10 +341,10 @@ onUnmounted(() => {
   position: absolute;
   left: 0;
   right: 0;
-  background: var(--bg-solid);
+  background: var(--bg-popover);
   border: 1px solid rgba(99, 102, 241, 0.35);
   border-radius: var(--radius-sm);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(99, 102, 241, 0.15);
+  box-shadow: var(--shadow-popover);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   z-index: 1050;
@@ -374,7 +373,7 @@ onUnmounted(() => {
     width: 4px;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.16);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
   }
 }
@@ -392,17 +391,17 @@ onUnmounted(() => {
   transition: background var(--transition-fast), color var(--transition-fast);
 
   &.is-highlighted {
-    background: rgba(99, 102, 241, 0.12);
+    background: rgba(99, 102, 241, 0.1);
     color: var(--text-primary);
   }
 
   &.is-selected {
-    background: rgba(99, 102, 241, 0.2);
+    background: rgba(99, 102, 241, 0.16);
     color: var(--accent-text);
     font-weight: 500;
 
     .option-text-label {
-      color: var(--text-strong);
+      color: var(--accent-text);
     }
   }
 

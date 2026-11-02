@@ -67,10 +67,10 @@ const hasMessage = computed(() => Boolean(toastState.message));
   max-width: min(92vw, 560px);
   padding: 10px 11px 10px 12px;
   transform: translateX(-50%);
-  background: rgba(9, 14, 26, 0.97);
+  background: var(--bg-popover);
   border: 1px solid rgba(99, 102, 241, 0.32);
   border-radius: 10px;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.62), 0 0 20px rgba(99, 102, 241, 0.12);
+  box-shadow: var(--shadow-popover);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 
@@ -91,7 +91,7 @@ const hasMessage = computed(() => Boolean(toastState.message));
     border-color: rgba(239, 68, 68, 0.38);
 
     .toast-icon {
-      color: #f87171;
+      color: var(--danger-text);
       background: rgba(239, 68, 68, 0.12);
     }
   }
