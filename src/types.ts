@@ -1,4 +1,4 @@
-export type ActiveTestMode = "probe" | "pelican" | "connection";
+export type ActiveTestMode = "probe" | "pelican" | "candy" | "connection";
 export type HistoryTab = ActiveTestMode;
 export type ConnectionTestMode = "chat" | "quick";
 
@@ -63,6 +63,77 @@ export interface ProbeStepItem {
   expectedCount?: number;
   parsedNumbers?: number[];
   error?: string;
+  expectedAnswer?: number;
+  modelAnswer?: number | null;
+  isCorrect?: boolean;
+  optimalCircle?: number;
+  optimalStar?: number;
+  durationMs?: number;
+}
+
+export interface CandyChallenge {
+  id: string;
+  circleApple: number;
+  circlePeach: number;
+  circleWatermelon: number;
+  starApple: number;
+  starPeach: number;
+  starWatermelon: number;
+  expectedAnswer: number;
+  optimalCircle: number;
+  optimalStar: number;
+  prompt: string;
+}
+
+export interface CandyEvaluationResult {
+  extractedAnswer: number | null;
+  isCorrect: boolean;
+}
+
+export interface CandyStepDiagnostic {
+  index: number;
+  prompt: string;
+  circleApple: number;
+  circlePeach: number;
+  circleWatermelon: number;
+  starApple: number;
+  starPeach: number;
+  starWatermelon: number;
+  expectedAnswer: number;
+  optimalCircle: number;
+  optimalStar: number;
+  modelAnswer: number | null;
+  isCorrect: boolean;
+  answer?: string;
+  error?: string;
+  durationMs?: number;
+}
+
+export interface CandyAnalysisResult {
+  passed: boolean;
+  correctCount: number;
+  totalCount: number;
+  accuracy: number;
+  avgDurationMs: number;
+  totalDurationMs: number;
+  diagnostics: CandyStepDiagnostic[];
+}
+
+export interface CandyHistoryItem {
+  id: string;
+  createdAt: number;
+  configName?: string;
+  baseUrl: string;
+  apiKey: string; // 存储时已脱敏
+  modelName: string;
+  reasoningEffort: string;
+  passed: boolean;
+  correctCount: number;
+  totalCount: number;
+  accuracy: number;
+  avgDurationMs: number;
+  totalDurationMs: number;
+  diagnostics: CandyStepDiagnostic[];
 }
 
 export interface StatusAlertInfo {

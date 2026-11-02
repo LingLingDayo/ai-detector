@@ -16,6 +16,7 @@ import {
 
 import { useProbeTestStore } from "./probeTest";
 import { usePelicanTestStore } from "./pelicanTest";
+import { useCandyTestStore } from "./candyTest";
 import { useConnectionTestStore } from "./connectionTest";
 
 export { isSameConfigIdentity, isConfigEqual };
@@ -23,7 +24,7 @@ export { isSameConfigIdentity, isConfigEqual };
 export const useConfigStore = defineStore("config", () => {
   const { confirm } = useConfirm();
 
-  // 当前测试模式：probe（模型测试）、pelican（鹈鹕测试）或 connection（连接测试）
+  // 当前测试模式：probe（模型测试）、pelican（鹈鹕测试）、candy（糖果测试）或 connection（连接测试）
   const activeMode = ref<ActiveTestMode>("probe");
 
   function isTestRunning(mode: ActiveTestMode): boolean {
@@ -33,6 +34,9 @@ export const useConfigStore = defineStore("config", () => {
       }
       if (mode === "pelican") {
         return Boolean(usePelicanTestStore().isPelicanRunning);
+      }
+      if (mode === "candy") {
+        return Boolean(useCandyTestStore().isRunning);
       }
       return Boolean(useConnectionTestStore().isConnectionRunning);
     } catch {
@@ -83,6 +87,15 @@ export const useConfigStore = defineStore("config", () => {
     stream: true,
   });
 
+  const candyConfig = reactive<ClientConfig>({
+    baseUrl: "",
+    apiKey: "",
+    apiFormat: "chat_completions",
+    modelName: "",
+    reasoningEffort: "high",
+    stream: true,
+  });
+
   const connectionConfig = reactive<ClientConfig>({
     baseUrl: "",
     apiKey: "",
@@ -94,6 +107,7 @@ export const useConfigStore = defineStore("config", () => {
 
   function getModeConfig(mode: ActiveTestMode): ClientConfig {
     if (mode === "pelican") return pelicanConfig;
+    if (mode === "candy") return candyConfig;
     if (mode === "connection") return connectionConfig;
     return probeConfig;
   }
@@ -101,6 +115,7 @@ export const useConfigStore = defineStore("config", () => {
   const modeConfigEntries: Array<[ActiveTestMode, ClientConfig]> = [
     ["probe", probeConfig],
     ["pelican", pelicanConfig],
+    ["candy", candyConfig],
     ["connection", connectionConfig],
   ];
 
@@ -557,6 +572,7 @@ export const useConfigStore = defineStore("config", () => {
 
       applyInitial(probeConfig);
       applyInitial(pelicanConfig);
+      applyInitial(candyConfig);
       applyInitial(connectionConfig);
     } catch (err) {
       console.warn("加载本地配置失败:", err);
@@ -597,6 +613,7 @@ export const useConfigStore = defineStore("config", () => {
 
     resetOne(probeConfig);
     resetOne(pelicanConfig);
+    resetOne(candyConfig);
     resetOne(connectionConfig);
 
     activeConfigId.value = null;
@@ -626,6 +643,16 @@ export const useConfigStore = defineStore("config", () => {
       const validEffort = resolveValidReasoningEffort(newModel, pelicanConfig.reasoningEffort);
       if (validEffort !== pelicanConfig.reasoningEffort) {
         pelicanConfig.reasoningEffort = validEffort;
+      }
+    }
+  );
+
+  watch(
+    () => candyConfig.modelName,
+    (newModel) => {
+      const validEffort = resolveValidReasoningEffort(newModel, candyConfig.reasoningEffort);
+      if (validEffort !== candyConfig.reasoningEffort) {
+        candyConfig.reasoningEffort = validEffort;
       }
     }
   );
@@ -713,6 +740,8 @@ export const useConfigStore = defineStore("config", () => {
       () => probeConfig.apiKey,
       () => pelicanConfig.baseUrl,
       () => pelicanConfig.apiKey,
+      () => candyConfig.baseUrl,
+      () => candyConfig.apiKey,
       () => connectionConfig.baseUrl,
       () => connectionConfig.apiKey,
     ],
@@ -722,7 +751,7 @@ export const useConfigStore = defineStore("config", () => {
   );
 
   // 监听表单输入变化并自动持久化当前输入
-  watch([probeConfig, pelicanConfig, connectionConfig], () => {
+  watch([probeConfig, pelicanConfig, candyConfig, connectionConfig], () => {
     saveConfig();
   });
 
@@ -732,6 +761,7 @@ export const useConfigStore = defineStore("config", () => {
     config,
     probeConfig,
     pelicanConfig,
+    candyConfig,
     connectionConfig,
     configList,
     activeConfigId,
