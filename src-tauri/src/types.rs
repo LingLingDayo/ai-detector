@@ -129,3 +129,26 @@ pub struct ChatStreamProgressPayload {
     pub text: String,
     pub response_model: Option<String>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CandyChallenge {
+    pub id: String,
+    pub circle_apple: u32,
+    pub circle_peach: u32,
+    pub circle_watermelon: u32,
+    pub star_apple: u32,
+    pub star_peach: u32,
+    pub star_watermelon: u32,
+    pub expected_answer: u32,
+    pub optimal_circle: u32,
+    pub optimal_star: u32,
+    pub prompt: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CandyEvaluationResult {
+    pub extracted_answer: Option<u32>,
+    pub is_correct: bool,
+}

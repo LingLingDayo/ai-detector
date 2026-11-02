@@ -16,7 +16,10 @@ pub fn run() {
             send_chat_request,
             cancel_chat_request,
             fetch_models_list,
-            open_external_url
+            open_external_url,
+            generate_candy_challenges,
+            generate_single_candy_challenge,
+            evaluate_candy_answer
         ])
         .run(tauri::generate_context!())
         .expect("运行 Tauri 桌面应用时发生异常");
