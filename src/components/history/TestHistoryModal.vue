@@ -319,7 +319,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
   max-height: 780px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 28px 56px rgba(0, 0, 0, 0.82), 0 0 32px rgba(99, 102, 241, 0.18);
+  box-shadow: var(--shadow-modal);
   animation: modalScaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
@@ -391,9 +391,9 @@ async function handleDeleteConnection(id: string): Promise<void> {
       }
 
       &:hover {
-        background: rgba(239, 68, 68, 0.2);
-        border-color: rgba(239, 68, 68, 0.45);
-        color: #fee2e2;
+        background: rgba(239, 68, 68, 0.18);
+        border-color: rgba(239, 68, 68, 0.42);
+        color: var(--danger-text);
       }
     }
 
@@ -428,11 +428,11 @@ async function handleDeleteConnection(id: string): Promise<void> {
 .history-tabs-nav {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background: var(--bg-elevated-strong);
+  gap: 3px;
+  background: var(--bg-segmented);
   padding: 3px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--overlay-medium);
+  border: 1px solid var(--border-subtle);
 
   .tab-btn {
     display: inline-flex;
@@ -447,7 +447,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
     font-family: inherit;
     color: var(--text-secondary);
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.18s ease;
@@ -458,15 +458,17 @@ async function handleDeleteConnection(id: string): Promise<void> {
       flex-shrink: 0;
     }
 
-    &:hover {
+    &:hover:not(.active) {
       color: var(--text-body);
-      background: var(--overlay-soft);
+      background: var(--overlay-weak);
     }
 
     &.active {
-      color: var(--text-strong);
-      background: rgba(99, 102, 241, 0.3);
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+      color: var(--text-segment-active);
+      background: var(--bg-segment-active);
+      border-color: var(--border-segment-active);
+      font-weight: 600;
+      box-shadow: var(--shadow-segment-active);
     }
   }
 }

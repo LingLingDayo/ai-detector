@@ -313,11 +313,11 @@ function buildSvgPreviewDocument(rawContent: string): string {
   align-items: center;
   padding: 0 9px;
   border-radius: 9999px;
-  background: var(--bg-elevated);
+  background: rgba(15, 23, 42, 0.78);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--overlay-strong);
-  color: rgba(241, 245, 249, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(241, 245, 249, 0.92);
   font-size: 11px;
   font-weight: 500;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
@@ -343,15 +343,15 @@ function buildSvgPreviewDocument(rawContent: string): string {
   transition: opacity 0.2s ease, transform 0.2s ease;
 
   .info-action-btn {
-    opacity: 0.5;
+    opacity: 0.75;
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    background: rgba(17, 24, 39, 0.85);
+    background: rgba(15, 23, 42, 0.82);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: var(--text-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #cbd5e1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -362,16 +362,16 @@ function buildSvgPreviewDocument(rawContent: string): string {
     &:hover,
     &:focus {
       opacity: 1;
-      color: var(--accent-icon);
-      border-color: rgba(99, 102, 241, 0.5);
-      background: var(--bg-control-hover);
+      color: #a5b4fc;
+      border-color: rgba(129, 140, 248, 0.55);
+      background: rgba(30, 41, 59, 0.92);
       transform: scale(1.08);
     }
 
     &.is-pinned {
-      background: rgba(99, 102, 241, 0.3) !important;
-      border-color: rgba(99, 102, 241, 0.65) !important;
-      color: var(--accent-text) !important;
+      background: rgba(99, 102, 241, 0.38) !important;
+      border-color: rgba(129, 140, 248, 0.75) !important;
+      color: #ffffff !important;
       opacity: 1 !important;
       box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
     }
@@ -463,11 +463,11 @@ function buildSvgPreviewDocument(rawContent: string): string {
       width: 24px;
       height: 24px;
       border-radius: var(--radius-sm);
-      background: var(--bg-elevated);
+      background: rgba(15, 23, 42, 0.78);
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
-      border: 1px solid var(--overlay-strong);
-      color: var(--text-soft);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #cbd5e1;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -475,15 +475,15 @@ function buildSvgPreviewDocument(rawContent: string): string {
       transition: all 0.18s ease;
 
       &:hover {
-        background: rgba(99, 102, 241, 0.25);
-        border-color: rgba(99, 102, 241, 0.5);
-        color: var(--text-strong);
+        background: rgba(99, 102, 241, 0.35);
+        border-color: rgba(129, 140, 248, 0.6);
+        color: #ffffff;
       }
 
       &.delete-tool-btn:hover {
-        background: rgba(239, 68, 68, 0.25);
-        border-color: rgba(239, 68, 68, 0.5);
-        color: var(--danger-text);
+        background: rgba(239, 68, 68, 0.32);
+        border-color: rgba(248, 113, 113, 0.6);
+        color: #fecaca;
       }
     }
   }

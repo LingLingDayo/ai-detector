@@ -204,7 +204,7 @@ function getProbBadgeClass(prob: number | undefined): string {
   gap: 12px;
   padding: 8px 12px;
   background: var(--bg-elevated);
-  border: 1px solid var(--overlay-medium);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.18s ease;
@@ -213,9 +213,9 @@ function getProbBadgeClass(prob: number | undefined): string {
   &:focus-within,
   &:has(.info-tooltip-popover:hover) {
     z-index: 15;
-    background: var(--bg-control-strong);
+    background: var(--bg-control);
     border-color: rgba(99, 102, 241, 0.35);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--shadow-hover);
 
     .probe-row-meta .row-action-btn {
       opacity: 0.95;
@@ -224,9 +224,9 @@ function getProbBadgeClass(prob: number | undefined): string {
 
   &.is-pinned-row {
     z-index: 80;
-    background: var(--bg-control-hover);
+    background: var(--bg-control-strong);
     border-color: rgba(99, 102, 241, 0.6);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-hover);
 
     .probe-row-meta .row-action-btn {
       opacity: 0.95;
@@ -351,7 +351,7 @@ function getProbBadgeClass(prob: number | undefined): string {
         &:hover {
           background: var(--overlay-strong);
           color: var(--text-strong);
-          border-color: rgba(255, 255, 255, 0.2);
+          border-color: var(--border-subtle);
           opacity: 1;
         }
 

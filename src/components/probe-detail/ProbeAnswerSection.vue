@@ -218,7 +218,7 @@ function handleCopyError(): void {
   .answer-text-box {
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
-    background: rgba(7, 10, 17, 0.85);
+    background: var(--bg-code);
     overflow: hidden;
 
     .answer-pre {
@@ -243,7 +243,7 @@ function handleCopyError(): void {
     padding: 14px 16px;
     border-radius: var(--radius-sm);
     border: 1px dashed var(--border-subtle);
-    background: rgba(15, 20, 30, 0.4);
+    background: var(--bg-inset);
     font-size: 12px;
 
     .placeholder-text {
@@ -329,9 +329,9 @@ function handleCopyError(): void {
         transition: all var(--transition-fast);
 
         &:hover:not(:disabled) {
-          background: rgba(239, 68, 68, 0.28);
-          border-color: rgba(239, 68, 68, 0.65);
-          color: #fff;
+          background: rgba(239, 68, 68, 0.24);
+          border-color: rgba(239, 68, 68, 0.55);
+          color: var(--danger-text);
           transform: translateY(-1px);
         }
 

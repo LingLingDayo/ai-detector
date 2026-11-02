@@ -262,9 +262,11 @@ onUnmounted(() => {
     }
 
     &.active {
-      color: var(--text-strong);
-      background: rgba(99, 102, 241, 0.18);
-      border-color: rgba(99, 102, 241, 0.35);
+      color: var(--text-segment-active);
+      background: var(--bg-segment-active);
+      border-color: var(--border-segment-active);
+      box-shadow: var(--shadow-segment-active);
+      font-weight: 600;
     }
   }
 }

@@ -321,21 +321,21 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
 }
 
 .history-card {
-  border: 1px solid var(--overlay-medium);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   background: var(--bg-elevated);
   overflow: hidden;
-  transition: border-color 0.18s ease;
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
 
   &:hover {
     border-color: rgba(99, 102, 241, 0.28);
-    background: rgba(24, 33, 50, 0.7);
+    background: var(--bg-control);
   }
 
   &.is-expanded {
     border-color: rgba(99, 102, 241, 0.42);
-    background: rgba(18, 26, 42, 0.82);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+    background: var(--bg-elevated);
+    box-shadow: var(--shadow-hover);
   }
 
   &.is-active-session {
@@ -443,7 +443,7 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   overflow: hidden;
 
   .sep {
-    color: #3f4d61;
+    color: var(--text-placeholder);
   }
 
   .base-url {
@@ -529,9 +529,9 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
 }
 
 .detail-panel {
-  border-top: 1px solid var(--overlay-soft);
+  border-top: 1px solid var(--border-subtle);
   padding: 11px 12px 10px;
-  background: rgba(7, 11, 19, 0.35);
+  background: var(--bg-inset);
 }
 
 .model-columns {

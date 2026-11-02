@@ -192,7 +192,7 @@ const filteredConfigs = computed(() => {
   max-height: 88vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.75), 0 0 28px rgba(99, 102, 241, 0.2);
+  box-shadow: var(--shadow-modal);
   animation: modalScaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }

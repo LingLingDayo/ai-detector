@@ -180,7 +180,7 @@ function maskApiKey(key?: string): string {
 <style lang="scss" scoped>
 .config-item-card {
   position: relative;
-  background: rgba(15, 21, 32, 0.6);
+  background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
@@ -193,8 +193,8 @@ function maskApiKey(key?: string): string {
 
   &:hover {
     border-color: rgba(99, 102, 241, 0.45);
-    background: rgba(22, 31, 48, 0.85);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), 0 0 10px rgba(99, 102, 241, 0.1);
+    background: var(--bg-card-hover);
+    box-shadow: var(--shadow-hover), 0 0 10px rgba(99, 102, 241, 0.08);
     transform: translateY(-1px);
 
     .card-main-row .card-title-group .badge-hint {
@@ -376,21 +376,21 @@ function maskApiKey(key?: string): string {
         }
 
         &.btn-edit {
-          background: var(--overlay-weak);
+          background: var(--bg-surface-control);
           color: var(--text-secondary);
           border-color: var(--border-subtle);
 
           &:hover {
-            background: var(--overlay-medium);
+            background: var(--bg-control-hover);
             color: var(--text-primary);
-            border-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(99, 102, 241, 0.35);
           }
         }
 
         &.btn-delete {
           background: transparent;
-          color: #f87171;
-          border-color: rgba(239, 68, 68, 0.18);
+          color: var(--danger-text);
+          border-color: rgba(239, 68, 68, 0.2);
 
           &:hover {
             background: rgba(239, 68, 68, 0.12);
@@ -410,7 +410,7 @@ function maskApiKey(key?: string): string {
     min-width: 0;
 
     .meta-separator {
-      color: rgba(255, 255, 255, 0.2);
+      color: var(--text-placeholder);
       font-size: 10px;
       user-select: none;
       flex-shrink: 0;

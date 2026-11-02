@@ -141,10 +141,10 @@ function formatProb(prob: number | undefined): string {
   position: absolute;
   right: 0;
   width: 290px;
-  background: var(--bg-elevated-strong);
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: var(--bg-popover);
+  border: 1px solid rgba(99, 102, 241, 0.38);
   border-radius: var(--radius-sm);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 16px rgba(99, 102, 241, 0.25);
+  box-shadow: var(--shadow-popover);
   padding: 12px;
   z-index: 100;
   user-select: text;

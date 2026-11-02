@@ -121,10 +121,10 @@ const emit = defineEmits<{
 
 
         &.active {
-          background: var(--bg-card);
-          border-color: var(--accent-primary);
-          color: var(--text-strong);
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+          background: var(--bg-segment-active);
+          border-color: var(--border-segment-active);
+          color: var(--text-segment-active);
+          box-shadow: var(--shadow-segment-active);
 
           .tab-dot {
             background: var(--accent-primary);
