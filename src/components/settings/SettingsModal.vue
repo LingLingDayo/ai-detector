@@ -147,6 +147,7 @@ onUnmounted(() => {
   flex-direction: column;
   width: 100%;
   max-width: 660px;
+  min-height: min(480px, 88vh);
   max-height: 88vh;
   background: var(--bg-card);
   border: 1px solid var(--border-glow);
@@ -221,7 +222,7 @@ onUnmounted(() => {
 .settings-body {
   display: flex;
   flex: 1;
-  min-height: 280px;
+  min-height: 0;
 }
 
 .settings-nav {
