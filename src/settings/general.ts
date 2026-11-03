@@ -70,9 +70,9 @@ export const generalPage: SettingsPage = {
           description: "每类测试独立计算，超出后自动移除最旧记录",
           defaultValue: "100",
           options: [
-            { value: "50", label: "50 条" },
-            { value: "100", label: "100 条" },
-            { value: "200", label: "200 条" },
+            { value: "50", label: "50" },
+            { value: "100", label: "100" },
+            { value: "200", label: "200" },
             { value: "0", label: "不限" },
           ],
           disabled: (ctx) => ctx.values.historyEnabled === false,
