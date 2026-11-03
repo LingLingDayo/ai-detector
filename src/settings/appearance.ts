@@ -18,8 +18,8 @@ export const appearancePage: SettingsPage = {
           description: "适用于整个应用界面",
           defaultValue: "dark",
           options: [
-            { value: "dark", label: "暗色", icon: Moon, title: "使用暗色界面" },
-            { value: "light", label: "亮色", icon: Sun, title: "使用亮色界面" },
+            { value: "dark", label: "暗色", icon: Moon },
+            { value: "light", label: "亮色", icon: Sun },
           ],
         },
       ],

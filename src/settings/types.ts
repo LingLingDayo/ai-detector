@@ -1,5 +1,5 @@
 import type { Component } from "vue";
-import type { SegmentedOption } from "../components/common";
+import type { SegmentedOption, SelectOption } from "../components/common";
 
 export type SettingsValue = string | number | boolean;
 
@@ -27,7 +27,34 @@ export interface SegmentedSettingsField extends SettingsFieldBase {
   defaultValue: string;
 }
 
-export type SettingsField = SegmentedSettingsField;
+export interface ToggleSettingsField extends SettingsFieldBase {
+  type: "toggle";
+  defaultValue: boolean;
+}
+
+export interface NumberSettingsField extends SettingsFieldBase {
+  type: "number";
+  defaultValue: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  /** 展示在输入框右侧的单位文案，如“秒” */
+  unit?: string;
+  placeholder?: string;
+}
+
+export interface SelectSettingsField extends SettingsFieldBase {
+  type: "select";
+  options: SelectOption[];
+  defaultValue: string;
+  placeholder?: string;
+}
+
+export type SettingsField =
+  | SegmentedSettingsField
+  | ToggleSettingsField
+  | NumberSettingsField
+  | SelectSettingsField;
 
 export interface SettingsSection {
   id: string;
