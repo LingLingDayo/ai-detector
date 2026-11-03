@@ -18,14 +18,16 @@ import { useProbeTestStore } from "./probeTest";
 import { usePelicanTestStore } from "./pelicanTest";
 import { useCandyTestStore } from "./candyTest";
 import { useConnectionTestStore } from "./connectionTest";
+import { useSettingsStore } from "./settings";
 
 export { isSameConfigIdentity, isConfigEqual };
 
 export const useConfigStore = defineStore("config", () => {
   const { confirm } = useConfirm();
+  const settingsStore = useSettingsStore();
 
   // 当前测试模式：probe（模型测试）、pelican（鹈鹕测试）、candy（糖果测试）或 connection（连接测试）
-  const activeMode = ref<ActiveTestMode>("probe");
+  const activeMode = ref<ActiveTestMode>(settingsStore.defaultTestMode);
 
   function isTestRunning(mode: ActiveTestMode): boolean {
     try {

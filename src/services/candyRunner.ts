@@ -27,6 +27,8 @@ export interface ExecuteSingleCandyOptions {
   reasoningEffort?: string;
   stream: boolean;
   timeoutSeconds: number;
+  /** 请求失败后的静默重试次数，缺省使用全局默认值 */
+  retryCount?: number;
   signal?: AbortSignal;
   onStreamProgress?: (text: string) => void;
   isCancelled?: () => boolean;
@@ -45,6 +47,7 @@ export async function executeSingleCandy(
     reasoningEffort,
     stream,
     timeoutSeconds,
+    retryCount,
     signal,
     onStreamProgress,
     isCancelled,
@@ -58,7 +61,7 @@ export async function executeSingleCandy(
   let lastErrMsg = "";
 
   // 仅针对接口请求异常或空响应进行重试；若模型返回了非空文本但算错答案，直接记录其真实错误答案，不重复刷题
-  const maxAttempts = 1 + DEFAULT_REQUEST_RETRY_COUNT;
+  const maxAttempts = 1 + Math.max(0, retryCount ?? DEFAULT_REQUEST_RETRY_COUNT);
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     if (signal?.aborted || isCancelled?.()) {
       return null;

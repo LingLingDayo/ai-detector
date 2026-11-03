@@ -1,8 +1,6 @@
 import type { ProbeHistoryItem } from "../types";
 import { PROBE_HISTORY_STORAGE_KEY } from "../constants";
 
-export const MAX_PROBE_HISTORY_COUNT = 60;
-
 export function loadInitialProbeHistory(): ProbeHistoryItem[] {
   try {
     const raw = localStorage.getItem(PROBE_HISTORY_STORAGE_KEY);

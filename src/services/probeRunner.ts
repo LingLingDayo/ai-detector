@@ -26,6 +26,8 @@ export interface ExecuteSingleProbeOptions {
   reasoningEffort?: string;
   stream: boolean;
   timeoutSeconds: number;
+  /** 请求失败后的静默重试次数，缺省使用全局默认值 */
+  retryCount?: number;
   signal?: AbortSignal;
   /**
    * 检查请求是否已被废弃或取消（如切换了 sessionId 或分配了新的 ticket）
@@ -46,6 +48,7 @@ export async function executeSingleProbe(
     reasoningEffort,
     stream,
     timeoutSeconds,
+    retryCount,
     signal,
     isCancelled,
   } = params;
@@ -56,8 +59,8 @@ export async function executeSingleProbe(
   let lastParsedNumbers: number[] = [];
   let lastErrMsg = "";
 
-  // 最多尝试: 1 次初次执行 + 失败后最多静默重试 3 次，每次间隔 5 秒
-  const maxAttempts = 1 + DEFAULT_REQUEST_RETRY_COUNT;
+  // 最多尝试: 1 次初次执行 + 失败后按设置静默重试，每次间隔 5 秒
+  const maxAttempts = 1 + Math.max(0, retryCount ?? DEFAULT_REQUEST_RETRY_COUNT);
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     if (signal?.aborted || isCancelled?.()) {
       return null;

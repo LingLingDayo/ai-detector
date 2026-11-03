@@ -239,7 +239,6 @@ function loadInitialPelicanCustomPrompt(currentPrompt: string): string {
   return isPresetPrompt(currentPrompt) ? "" : currentPrompt;
 }
 
-const MAX_PELICAN_HISTORY_COUNT = 60;
 const STREAM_TEXT_TAIL_LENGTH = 160;
 
 function loadInitialPelicanHistory(): PelicanHistoryItem[] {
@@ -343,9 +342,8 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
       id: generateHistoryId(),
       createdAt: Date.now(),
     };
-    const updated = [newItem, ...pelicanHistoryList.value].slice(0, MAX_PELICAN_HISTORY_COUNT);
-    pelicanHistoryList.value = updated;
-    persistPelicanHistory(updated);
+    const updated = useSettingsStore().appendHistoryEntry(pelicanHistoryList.value, newItem, persistPelicanHistory);
+    if (updated) pelicanHistoryList.value = updated;
   }
 
   function deletePelicanHistoryItem(id: string): void {
@@ -454,7 +452,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     const apiFormat = config.apiFormat || "openai";
     const reasoningEffort = config.reasoningEffort || "high";
     const isStream = config.stream !== false;
-    const timeoutSeconds = isStream ? 90 : 240;
+    const timeoutSeconds = useSettingsStore().resolveRequestTimeout(isStream, 90, 240);
 
     if (!baseUrl || !apiKey) {
       errorMsg.value = "请先填写 Base URL 和 API Key";

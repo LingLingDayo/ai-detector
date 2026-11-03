@@ -15,11 +15,11 @@ import type {
   StatusAlertInfo,
 } from "../types";
 import { useConfigStore } from "./config";
+import { useSettingsStore } from "./settings";
 import {
   clearCandyHistoryStorage,
   createCandyHistoryRecord,
   loadInitialCandyHistory,
-  MAX_CANDY_HISTORY_COUNT,
   persistCandyHistory,
 } from "../utils/candyHistory";
 import { executeSingleCandy } from "../services/candyRunner";
@@ -78,9 +78,8 @@ export const useCandyTestStore = defineStore("candyTest", () => {
     item: Omit<CandyHistoryItem, "id" | "createdAt">
   ): CandyHistoryItem {
     const newItem = createCandyHistoryRecord(item);
-    const updated = [newItem, ...candyHistoryList.value].slice(0, MAX_CANDY_HISTORY_COUNT);
-    candyHistoryList.value = updated;
-    persistCandyHistory(updated);
+    const updated = useSettingsStore().appendHistoryEntry(candyHistoryList.value, newItem, persistCandyHistory);
+    if (updated) candyHistoryList.value = updated;
     currentCandyHistoryItem.value = newItem;
     return newItem;
   }
@@ -374,7 +373,7 @@ export const useCandyTestStore = defineStore("candyTest", () => {
       lastUsedConfig?.reasoningEffort;
     const isStream =
       (config?.stream ?? candyConfig.stream ?? lastUsedConfig?.stream) !== false;
-    const timeoutSeconds = isStream ? 120 : 240;
+    const timeoutSeconds = useSettingsStore().resolveRequestTimeout(isStream, 120, 240);
 
     if (!baseUrl || !apiKey) {
       alert("请填写 Base URL 和 API Key！");
@@ -428,6 +427,7 @@ export const useCandyTestStore = defineStore("candyTest", () => {
         reasoningEffort: options.reasoningEffort,
         stream: options.isStream,
         timeoutSeconds: options.timeoutSeconds,
+        retryCount: useSettingsStore().requestRetryCount,
         signal: stepCtrl.signal,
         onStreamProgress: (partialText) => {
           if (sessionId !== currentSessionId || stepTickets.get(index) !== ticket) return;

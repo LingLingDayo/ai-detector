@@ -5,7 +5,8 @@ import type { UnifiedBank, GlobalAnalysisResult } from "../utils/fingerprint";
 import rawUnifiedBank from "../data/unified_bank.json";
 import type { ClientConfig, ProbeStepItem, StatusAlertInfo, ProbeHistoryItem } from "../types";
 import { useConfigStore } from "./config";
-import { loadInitialProbeHistory, persistProbeHistory, createProbeHistoryRecord, clearProbeHistoryStorage, MAX_PROBE_HISTORY_COUNT } from "../utils/probeHistory";
+import { useSettingsStore } from "./settings";
+import { loadInitialProbeHistory, persistProbeHistory, createProbeHistoryRecord, clearProbeHistoryStorage } from "../utils/probeHistory";
 import { executeSingleProbe } from "../services/probeRunner";
 import { createInitialSteps, formatProbeStepResult, createFailedStep, createCancelledSteps, computeProgress, computeRunningStatusDesc, collectStepErrors, performFinalEvaluation } from "../utils/probeEvaluation";
 import { loadActiveUnifiedBank, getPersistedUpdateStatus, setPersistedUpdateStatus, checkFingerprintUpdate, executeFingerprintUpdate } from "../services/fingerprintSync";
@@ -50,9 +51,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
 
   function addProbeHistoryItem(item: Omit<ProbeHistoryItem, "id" | "createdAt">): ProbeHistoryItem {
     const newItem = createProbeHistoryRecord(item);
-    const updated = [newItem, ...probeHistoryList.value].slice(0, MAX_PROBE_HISTORY_COUNT);
-    probeHistoryList.value = updated;
-    persistProbeHistory(updated);
+    probeHistoryList.value = useSettingsStore().appendHistoryEntry(probeHistoryList.value, newItem, persistProbeHistory) ?? probeHistoryList.value;
     currentProbeHistoryItem.value = newItem;
     return newItem;
   }
@@ -228,7 +227,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     const apiFormat = config?.apiFormat ?? probeConfig.apiFormat ?? lastUsedConfig?.apiFormat;
     const reasoningEffort = config?.reasoningEffort ?? probeConfig.reasoningEffort ?? lastUsedConfig?.reasoningEffort;
     const isStream = (config?.stream ?? probeConfig.stream ?? lastUsedConfig?.stream) !== false;
-    const timeoutSeconds = isStream ? 90 : 240;
+    const timeoutSeconds = useSettingsStore().resolveRequestTimeout(isStream, 90, 240);
 
     if (!baseUrl || !apiKey) {
       alert("请填写 Base URL 和 API Key！");
@@ -274,6 +273,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
         reasoningEffort: options.reasoningEffort,
         stream: options.isStream,
         timeoutSeconds: options.timeoutSeconds,
+        retryCount: useSettingsStore().requestRetryCount,
         signal: stepCtrl.signal,
         isCancelled: () => sessionId !== currentSessionId || stepTickets.get(index) !== ticket,
       });

@@ -1,8 +1,6 @@
 import type { CandyHistoryItem } from "../types";
 import { CANDY_HISTORY_STORAGE_KEY } from "../constants";
 
-export const MAX_CANDY_HISTORY_COUNT = 60;
-
 export function loadInitialCandyHistory(): CandyHistoryItem[] {
   try {
     const raw = localStorage.getItem(CANDY_HISTORY_STORAGE_KEY);
