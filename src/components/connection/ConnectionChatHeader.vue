@@ -4,9 +4,9 @@ import {
   Activity,
   CheckCircle2,
   Database,
-  Eraser,
   Gauge,
   MessagesSquare,
+  RotateCcw,
   ShieldCheck,
 } from "@lucide/vue";
 import type { ConnectionSessionStats } from "../../types";
@@ -100,11 +100,11 @@ const successTitle = computed(
       v-if="stats.requestCount > 0"
       type="button"
       class="clear-context-btn"
-      title="清空当前会话上下文（已保存的历史汇总不会删除）"
+      title="重置当前对话（已保存的历史汇总不会删除）"
       @click="emit('clear')"
     >
-      <Eraser :size="13" />
-      <span>清空上下文</span>
+      <RotateCcw :size="13" />
+      <span>重置对话</span>
     </button>
   </header>
 

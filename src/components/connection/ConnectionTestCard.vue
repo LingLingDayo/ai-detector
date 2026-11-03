@@ -66,10 +66,10 @@ async function handleClearContext(): Promise<void> {
   const confirmed = await confirm({
     type: "warning",
     styleVariant: "spotlight",
-    title: "确认清空当前上下文？",
+    title: "确认重置对话？",
     message:
-      "清空后当前会话的所有消息将被移除，下一次发送会开启新的历史记录。已保存的历史汇总统计不会删除。",
-    confirmText: "清空上下文",
+      "重置后将清空当前对话的消息，下一次发送会开启新的历史记录。已保存的历史汇总统计不会删除。",
+    confirmText: "重置对话",
     cancelText: "取消",
   });
   if (!confirmed) return;
