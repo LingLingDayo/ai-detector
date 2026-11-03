@@ -92,7 +92,7 @@ const successTitle = computed(
             {{ liveStatusLabel }}
           </span>
         </div>
-        <p>多轮对话 · 图片输入 · 实时核对上游真实模型</p>
+        <p>通过多轮对话测试接口，实时查看上游真实模型与 Token 用量</p>
       </div>
     </div>
 

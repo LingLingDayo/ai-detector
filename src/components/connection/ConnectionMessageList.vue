@@ -96,9 +96,6 @@ defineExpose({ scrollToBottom });
         <img :src="logoUrl" alt="" />
       </div>
       <h3>开始一次连接测试</h3>
-      <p>
-        自由对话并实时核对上游真实模型。可发送图片，每次请求都会携带当前上下文的全部消息。
-      </p>
       <div class="suggestion-list">
         <button
           v-for="suggestion in suggestions"
@@ -184,14 +181,7 @@ defineExpose({ scrollToBottom });
     font-size: 15px;
     font-weight: 650;
     color: var(--text-strong);
-    margin-bottom: 6px;
-  }
-
-  > p {
-    max-width: 430px;
-    color: var(--text-muted);
-    font-size: 12px;
-    line-height: 1.65;
+    margin-bottom: 2px;
   }
 
   .suggestion-list {

@@ -40,7 +40,7 @@ const modeOptions = computed<SegmentedOption[]>(() => [
   {
     value: "connection",
     label: "连接测试",
-    title: "多轮自由对话，支持图片输入，并实时核对上游实际响应模型",
+    title: "通过多轮对话测试接口，实时查看上游真实模型与 Token 用量",
     indicator: props.connectionRunning,
     indicatorTitle: "连接测试进行中",
   },
