@@ -33,12 +33,12 @@ const suggestions = [
     text: "Hi",
   },
   {
-    icon: Sparkles,
-    text: "用三句话介绍你自己",
-  },
-  {
     icon: Wand2,
     text: "9.11 和 9.9 哪个大？为什么？",
+  },
+  {
+    icon: Sparkles,
+    text: "用三句话介绍你自己",
   },
   {
     icon: ImagePlus,
@@ -137,19 +137,28 @@ defineExpose({ scrollToBottom });
 
 <style lang="scss" scoped>
 .chat-scroll {
+  position: relative;
   height: clamp(320px, 46vh, 500px);
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px 15px 20px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 9px;
+  background: var(--bg-chat-stage);
+  border: 1px solid var(--border-chat-stage);
+  border-radius: 10px;
+  box-shadow: var(--shadow-chat-stage);
   user-select: auto;
 }
 
 .message-list {
   display: flex;
   flex-direction: column;
-  gap: 19px;
+  gap: 14px;
+
+  :deep(.message-row.is-assistant + .message-row.is-user) {
+    margin-top: 4px;
+    padding-top: 16px;
+    border-top: 1px solid var(--overlay-soft);
+  }
 }
 
 .chat-empty {
@@ -201,10 +210,11 @@ defineExpose({ scrollToBottom });
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 10px;
-    background: var(--bg-control);
+    padding: 6px 11px;
+    background: var(--bg-surface-control);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
     color: var(--text-secondary);
     font-size: 11px;
     line-height: 1;
