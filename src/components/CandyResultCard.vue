@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { Copy, Check, Info } from "@lucide/vue";
 import type { CandyAnalysisResult, CandyHistoryItem } from "../types";
 import { useClipboard } from "../composables/useClipboard";
@@ -15,6 +16,20 @@ const props = defineProps<{
 }>();
 
 const { copied, copy } = useClipboard();
+
+const displayModelName = computed(() => {
+  return (
+    props.historyItem?.modelName?.trim() ||
+    props.modelName?.trim() ||
+    candyStore.testedModel?.trim() ||
+    ""
+  );
+});
+
+const displayVerdict = computed(() => {
+  const baseVerdict = props.analysis?.passed ? "测试通过" : "测试未通过";
+  return displayModelName.value ? `${displayModelName.value} ${baseVerdict}` : baseVerdict;
+});
 
 function percentFormat(val: number): string {
   return `${(val * 100).toFixed(1)}%`;
@@ -36,13 +51,13 @@ function getVerdictSubtext(analysis: CandyAnalysisResult): string {
 function handleCopyResult(): void {
   if (!props.analysis) return;
   const item = props.historyItem;
-  const modelName = item?.modelName || props.modelName || "未知模型";
+  const modelName = displayModelName.value || "未知模型";
   const verdict = props.analysis.passed ? "测试通过" : "测试未通过";
   const acc = percentFormat(props.analysis.accuracy);
   const details = props.analysis.diagnostics
     .map(
       (d) =>
-        `第${d.index + 1}题: 正确答案 ${d.expectedAnswer} / 模型回答 ${d.modelAnswer ?? "未识别"} (${d.isCorrect ? "正确" : "错误"})`
+        `第${d.index + 1}题: 答案 ${d.expectedAnswer} / 回答 ${d.modelAnswer ?? "未识别"} (${d.isCorrect ? "正确" : "错误"})`
     )
     .join("\n");
   const timeStr = formatHistoryTime(item?.createdAt || Date.now());
@@ -92,7 +107,7 @@ function handleCopyResult(): void {
       >
         <span class="hero-label">智力测试结论</span>
         <strong class="hero-val">
-          {{ analysis.passed ? "测试通过" : "测试未通过" }}
+          {{ displayVerdict }}
         </strong>
         <div class="hero-prob-bar">
           <span class="hero-prob-text">
@@ -132,8 +147,7 @@ function handleCopyResult(): void {
         title="点击查看该题完整题目、正确答案与模型推理过程"
         @click="candyStore.openDetailModal(d.index)"
       >
-        测试 {{ d.index + 1 }}: 正确答案 {{ d.expectedAnswer }} / 模型答
-        {{ d.modelAnswer ?? "未识别" }} · {{ d.isCorrect ? "正确" : "错误" }}
+        测试 {{ d.index + 1 }}: 答案 {{ d.expectedAnswer }} / 回答 {{ d.modelAnswer ?? "未识别" }} · {{ d.isCorrect ? "正确" : "错误" }}
       </span>
     </div>
 
@@ -142,12 +156,12 @@ function handleCopyResult(): void {
       <table class="results-table">
         <thead>
           <tr>
-            <th style="width: 72px">题号</th>
-            <th>糖果数量分布 (圆形 / 五角星)</th>
-            <th style="width: 155px">正确答案 (最优解)</th>
-            <th style="width: 95px">模型答案</th>
-            <th style="width: 90px">响应耗时</th>
-            <th style="width: 95px">判定结果</th>
+            <th style="width: 84px">题号</th>
+            <th style="min-width: 210px">糖果数量分布 (圆形 / 五角星)</th>
+            <th style="width: 125px">正确答案 (最优解)</th>
+            <th style="width: 72px; text-align: center">模型答案</th>
+            <th style="width: 78px; text-align: center">响应耗时</th>
+            <th style="width: 88px; text-align: center">判定结果</th>
           </tr>
         </thead>
         <tbody>
@@ -160,8 +174,10 @@ function handleCopyResult(): void {
             @click="candyStore.openDetailModal(d.index)"
           >
             <td>
-              <span class="rank-pill">{{ d.index + 1 }}</span>
-              <span style="margin-left: 6px; font-weight: 600">测试 {{ d.index + 1 }}</span>
+              <div class="test-index-cell">
+                <span class="rank-pill">{{ d.index + 1 }}</span>
+                <span class="test-index-label">测试 {{ d.index + 1 }}</span>
+              </div>
             </td>
             <td>
               <span class="dist-tag">
@@ -169,13 +185,13 @@ function handleCopyResult(): void {
                 星(苹{{ d.starApple }}·桃{{ d.starPeach }}·瓜{{ d.starWatermelon }})
               </span>
             </td>
-            <td>
+            <td style="white-space: nowrap">
               <strong class="expected-val">{{ d.expectedAnswer }}</strong>
               <span class="optimal-sub">
                 (圆{{ d.optimalCircle }}+星{{ d.optimalStar }})
               </span>
             </td>
-            <td>
+            <td style="text-align: center">
               <strong
                 class="model-ans-val"
                 :class="d.isCorrect ? 'ans-correct' : 'ans-wrong'"
@@ -183,10 +199,10 @@ function handleCopyResult(): void {
                 {{ d.modelAnswer ?? "未识别" }}
               </strong>
             </td>
-            <td>
+            <td style="text-align: center">
               <span class="similarity-val">{{ formatDurationMs(d.durationMs) }}</span>
             </td>
-            <td>
+            <td style="text-align: center">
               <span
                 class="verdict-badge"
                 :class="d.isCorrect ? 'verdict-pass' : 'verdict-fail'"
@@ -323,10 +339,11 @@ function handleCopyResult(): void {
       }
 
       .hero-val {
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 700;
         color: var(--text-strong);
-        line-height: 1.2;
+        line-height: 1.25;
+        word-break: break-word;
       }
 
       .hero-sub {
@@ -401,6 +418,7 @@ function handleCopyResult(): void {
         font-weight: 600;
         border-bottom: 1px solid var(--border-subtle);
         font-size: 12px;
+        white-space: nowrap;
       }
 
       td {
@@ -429,6 +447,18 @@ function handleCopyResult(): void {
         }
       }
 
+      .test-index-cell {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+
+        .test-index-label {
+          font-weight: 600;
+          font-size: 13px;
+        }
+      }
+
       .rank-pill {
         display: inline-flex;
         width: 18px;
@@ -440,12 +470,14 @@ function handleCopyResult(): void {
         font-weight: 700;
         background: var(--bg-control-strong);
         color: var(--text-muted);
+        flex-shrink: 0;
       }
 
       .dist-tag {
         font-size: 12px;
         color: var(--text-secondary);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        white-space: nowrap;
       }
 
       .expected-val {
@@ -488,6 +520,7 @@ function handleCopyResult(): void {
         border-radius: 4px;
         font-size: 11px;
         font-weight: 600;
+        white-space: nowrap;
 
         &.verdict-pass {
           background: rgba(16, 185, 129, 0.14);

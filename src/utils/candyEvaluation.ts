@@ -211,7 +211,9 @@ export function performCandyFinalEvaluation(
   const avgDurationMs =
     validDurations.length > 0 ? Math.round(totalDurationMs / validDurations.length) : 0;
 
-  const statusTitle = passed ? "糖果测试通过" : "糖果测试未通过";
+  const statusTitle = model?.trim()
+    ? (passed ? `${model.trim()} 测试通过` : `${model.trim()} 测试未通过`)
+    : (passed ? "糖果测试通过" : "糖果测试未通过");
   const statusDesc = passed
     ? `连续 ${totalCount} 题中答对 ${correctCount} 题（需 ≥ ${CANDY_PASS_THRESHOLD} 题），模型长逻辑链推理表现正常`
     : `连续 ${totalCount} 题中仅答对 ${correctCount} 题（需 ≥ ${CANDY_PASS_THRESHOLD} 题），模型可能遭遇降智或思考链截断`;

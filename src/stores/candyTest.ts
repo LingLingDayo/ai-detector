@@ -156,7 +156,9 @@ export const useCandyTestStore = defineStore("candyTest", () => {
     hasStarted.value = true;
     progressPercent.value = 100;
     completedCount.value = item.totalCount || totalCount;
-    statusTitle.value = item.passed ? "糖果测试通过" : "糖果测试未通过";
+    statusTitle.value = item.modelName?.trim()
+      ? (item.passed ? `${item.modelName.trim()} 测试通过` : `${item.modelName.trim()} 测试未通过`)
+      : (item.passed ? "糖果测试通过" : "糖果测试未通过");
     statusDesc.value = item.passed
       ? `连续 ${item.totalCount} 题中答对 ${item.correctCount} 题（需 ≥ 2 题），模型长逻辑链推理表现正常`
       : `连续 ${item.totalCount} 题中仅答对 ${item.correctCount} 题（需 ≥ 2 题），模型可能遭遇降智或思考链截断`;
