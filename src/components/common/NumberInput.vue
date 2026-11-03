@@ -27,10 +27,12 @@ const emit = defineEmits<{
 }>();
 
 const text = ref(String(props.modelValue));
+const isTyping = ref(false);
 
 watch(
   () => props.modelValue,
   (value) => {
+    if (isTyping.value) return;
     if (Number(text.value) !== value) {
       text.value = String(value);
     }
@@ -50,7 +52,11 @@ function commit(value: number): void {
     emit("update:modelValue", next);
     emit("change", next);
   }
-  text.value = String(next);
+  if (!isTyping.value) text.value = String(next);
+}
+
+function handleFocus(): void {
+  isTyping.value = true;
 }
 
 function handleInput(event: Event): void {
@@ -62,6 +68,7 @@ function handleInput(event: Event): void {
 }
 
 function handleBlur(): void {
+  isTyping.value = false;
   const parsed = Number(text.value);
   commit(text.value.trim() === "" || !Number.isFinite(parsed) ? props.modelValue : parsed);
 }
@@ -89,6 +96,7 @@ function handleStep(direction: 1 | -1): void {
       :step="step"
       :placeholder="placeholder"
       :disabled="disabled"
+      @focus="handleFocus"
       @input="handleInput"
       @blur="handleBlur"
       @keydown.up.prevent="handleStep(1)"
