@@ -12,7 +12,14 @@ import type {
 } from "../types";
 import { useConnectionTestStore } from "./connectionTest";
 
+const SETTINGS_STORAGE_KEY = "modeltrace_settings";
 const storage = new Map<string, string>();
+
+function readSettings(): Record<string, unknown> {
+  const raw = storage.get(SETTINGS_STORAGE_KEY);
+  return raw ? JSON.parse(raw) : {};
+}
+
 vi.stubGlobal("localStorage", {
   getItem: (key: string) => storage.get(key) ?? null,
   setItem: (key: string, value: string) => {
@@ -408,26 +415,33 @@ describe("连接测试会话状态", () => {
     });
   });
 
-  it("连接测试模式会持久化并在新建 store 后恢复", () => {
+  it("连接测试模式会持久化到设置中心并在新建 store 后恢复", () => {
     storage.clear();
     let store = newStore();
     expect(store.connectionMode).toBe("chat");
 
     store.setConnectionMode("quick");
     expect(store.connectionMode).toBe("quick");
-    expect(storage.get(CONNECTION_MODE_STORAGE_KEY)).toBe("quick");
+    expect(readSettings().defaultConnectionMode).toBe("quick");
 
     setActivePinia(createPinia());
     store = useConnectionTestStore();
     expect(store.connectionMode).toBe("quick");
 
     store.setConnectionMode("chat");
-    expect(storage.get(CONNECTION_MODE_STORAGE_KEY)).toBe("chat");
+    expect(readSettings().defaultConnectionMode).toBe("chat");
+  });
 
-    storage.set(CONNECTION_MODE_STORAGE_KEY, "unknown");
+  it("旧版独立存储的连接模式会迁移到设置中心", () => {
+    storage.clear();
+    storage.set(CONNECTION_MODE_STORAGE_KEY, "quick");
+    const store = newStore();
+    expect(store.connectionMode).toBe("quick");
+
+    store.setConnectionMode("chat");
+    storage.set(CONNECTION_MODE_STORAGE_KEY, "quick");
     setActivePinia(createPinia());
-    store = useConnectionTestStore();
-    expect(store.connectionMode).toBe("chat");
+    expect(useConnectionTestStore().connectionMode).toBe("chat");
   });
 
   it("停止生成时保留已接收内容且不标记为错误", async () => {

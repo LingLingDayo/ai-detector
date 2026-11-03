@@ -9,15 +9,12 @@ import type {
   ConnectionImageAttachment,
   ConnectionTestMode,
 } from "../types";
-import {
-  CONNECTION_HISTORY_STORAGE_KEY,
-  CONNECTION_MODE_STORAGE_KEY,
-} from "../constants";
+import { CONNECTION_HISTORY_STORAGE_KEY } from "../constants";
 import { aggregateConnectionMessages } from "../utils/connectionMetrics";
 import { maskApiKey } from "../utils/pelicanFormatters";
 import { getModelRoutingStatus } from "../utils/modelRouting";
+import { useSettingsStore } from "./settings";
 
-const MAX_CONNECTION_HISTORY_COUNT = 40;
 const STREAM_TEXT_TAIL_LENGTH = 120;
 const MAX_HISTORY_TITLE_LENGTH = 48;
 const MAX_IMAGES_PER_MESSAGE = 4;
@@ -68,24 +65,6 @@ function persistConnectionHistory(list: ConnectionHistoryItem[]): void {
   }
 }
 
-function loadConnectionMode(): ConnectionTestMode {
-  try {
-    return localStorage.getItem(CONNECTION_MODE_STORAGE_KEY) === "quick"
-      ? "quick"
-      : "chat";
-  } catch {
-    return "chat";
-  }
-}
-
-function persistConnectionMode(mode: ConnectionTestMode): void {
-  try {
-    localStorage.setItem(CONNECTION_MODE_STORAGE_KEY, mode);
-  } catch (err) {
-    console.error("保存连接测试模式失败:", err);
-  }
-}
-
 function buildHistoryTitle(message?: ConnectionChatMessage): string {
   const text = (message?.content || "").replace(/\s+/g, " ").trim();
   if (text) {
@@ -113,6 +92,7 @@ function buildQuickHistoryTitle(lastAssistant?: ConnectionChatMessage): string {
 }
 
 export const useConnectionTestStore = defineStore("connectionTest", () => {
+  const settingsStore = useSettingsStore();
   const messages = ref<ConnectionChatMessage[]>([]);
   const isConnectionRunning = ref(false);
   const isConnectionGenerating = ref(false);
@@ -126,7 +106,10 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
   const activeSessionHistoryId = ref<string | null>(null);
   const sessionMeta = ref<ConnectionSessionMeta | null>(null);
   const composerFocusSignal = ref(0);
-  const connectionMode = ref<ConnectionTestMode>(loadConnectionMode());
+  const connectionMode = computed<ConnectionTestMode>({
+    get: () => settingsStore.defaultConnectionMode,
+    set: (mode) => settingsStore.setValue("defaultConnectionMode", mode),
+  });
 
   const sessionStats = computed(() => aggregateConnectionMessages(messages.value));
   const hasMessages = computed(() => messages.value.length > 0);
@@ -163,7 +146,6 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
   function setConnectionMode(mode: ConnectionTestMode): void {
     if (connectionMode.value === mode) return;
     connectionMode.value = mode;
-    persistConnectionMode(mode);
   }
 
   function buildSessionHistoryItem(): ConnectionHistoryItem {
@@ -224,13 +206,14 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
 
   function syncSessionHistory(): void {
     if (!activeSessionHistoryId.value || messages.value.length === 0) return;
+    if (!settingsStore.historyEnabled) return;
     const item = buildSessionHistoryItem();
     const remaining = connectionHistoryList.value.filter(
       (history) => history.id !== item.id
     );
-    const updated = [item, ...remaining]
-      .sort((a, b) => b.updatedAt - a.updatedAt)
-      .slice(0, MAX_CONNECTION_HISTORY_COUNT);
+    const updated = settingsStore.trimHistoryList(
+      [item, ...remaining].sort((a, b) => b.updatedAt - a.updatedAt)
+    );
     connectionHistoryList.value = updated;
     persistConnectionHistory(updated);
   }
@@ -353,7 +336,7 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
         apiFormat,
         reasoningEffort,
         stream: isStream,
-        timeoutSeconds: isStream ? 90 : 240,
+        timeoutSeconds: useSettingsStore().resolveRequestTimeout(isStream, 90, 240),
         signal: abortController.signal,
         onStreamStart: () => {
           if (runId === currentRunId) {
