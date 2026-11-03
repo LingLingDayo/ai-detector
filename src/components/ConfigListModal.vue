@@ -5,6 +5,8 @@ import ConfigModalHeader from "./config-list/ConfigModalHeader.vue";
 import ConfigListToolbar from "./config-list/ConfigListToolbar.vue";
 import ConfigCardItem from "./config-list/ConfigCardItem.vue";
 import ConfigEmptyState from "./config-list/ConfigEmptyState.vue";
+import { useToast } from "../composables/useToast";
+import { useAppStore } from "../stores/app";
 
 const props = withDefaults(
   defineProps<{
@@ -12,9 +14,11 @@ const props = withDefaults(
     configs: ConfigItem[];
     activeConfigId: string | null;
     canSaveCurrent?: boolean;
+    isCurrentRunning?: boolean;
   }>(),
   {
     canSaveCurrent: false,
+    isCurrentRunning: undefined,
   }
 );
 
@@ -28,6 +32,22 @@ const emit = defineEmits<{
   (e: "reorder", payload: { sourceId: string; targetId: string; position: "before" | "after" }): void;
   (e: "swap", payload: { sourceId: string; targetId: string }): void;
 }>();
+
+const { showToast } = useToast();
+const appStore = useAppStore();
+
+const isTestRunning = computed(() => {
+  return props.isCurrentRunning !== undefined ? props.isCurrentRunning : appStore.isCurrentRunning;
+});
+
+function showSwitchBlockedTip(): void {
+  showToast({
+    type: "warning",
+    title: "当前测试正在进行中，无法切换配置",
+    message: "请等待当前测试完成或停止后再切换配置。",
+    duration: 3000,
+  });
+}
 
 const searchQuery = ref("");
 const draggedId = ref<string | null>(null);
@@ -88,8 +108,21 @@ function cleanupDrag(): void {
   dropTarget.value = null;
 }
 
+function handleApplyItem(item: ConfigItem): void {
+  if (item.id === props.activeConfigId) return;
+  if (isTestRunning.value) {
+    showSwitchBlockedTip();
+    return;
+  }
+  emit("apply", item);
+}
+
 function handleQuickApply(item: ConfigItem): void {
   if (item.id !== props.activeConfigId) {
+    if (isTestRunning.value) {
+      showSwitchBlockedTip();
+      return;
+    }
     emit("apply", item);
   }
   emit("close");
@@ -139,10 +172,12 @@ const filteredConfigs = computed(() => {
               :key="item.id"
               :item="item"
               :is-active="item.id === activeConfigId"
+              :is-switch-disabled="isTestRunning"
               :is-dragging="draggedId === item.id"
               :drag-over-position="dropTarget?.id === item.id ? dropTarget.position : null"
-              @apply="emit('apply', $event)"
+              @apply="handleApplyItem"
               @quick-apply="handleQuickApply"
+              @switch-blocked="showSwitchBlockedTip"
               @open-edit="emit('openEdit', $event)"
               @delete="emit('delete', $event)"
               @dragstart="handleDragStart"

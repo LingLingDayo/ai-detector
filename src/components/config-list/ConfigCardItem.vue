@@ -7,11 +7,13 @@ const props = withDefaults(
   defineProps<{
     item: ConfigItem;
     isActive: boolean;
+    isSwitchDisabled?: boolean;
     isDragging?: boolean;
     isDragOver?: boolean;
     dragOverPosition?: "before" | "after" | null;
   }>(),
   {
+    isSwitchDisabled: false,
     isDragging: false,
     isDragOver: false,
     dragOverPosition: null,
@@ -21,6 +23,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "apply", item: ConfigItem): void;
   (e: "quickApply", item: ConfigItem): void;
+  (e: "switchBlocked", item: ConfigItem): void;
   (e: "openEdit", item: ConfigItem): void;
   (e: "delete", id: string): void;
   (e: "dragstart", event: DragEvent, id: string): void;
@@ -36,6 +39,9 @@ let isDragHappening = false;
 const cardTooltip = computed(() => {
   if (props.isActive) {
     return "当前正在使用此配置 · 拖动可调整顺序";
+  }
+  if (props.isSwitchDisabled) {
+    return "当前选中的测试正在进行中，无法切换配置 · 拖动可调整顺序";
   }
   return "点击可切换此配置 · 双击快速切换 · 拖动可调整顺序";
 });
@@ -84,11 +90,19 @@ function handleDrop(event: DragEvent) {
 function handleCardClick() {
   if (isDragHappening || props.isDragging) return;
   if (props.isActive) return;
+  if (props.isSwitchDisabled) {
+    emit("switchBlocked", props.item);
+    return;
+  }
   emit("apply", props.item);
 }
 
 function handleCardDoubleClick() {
   if (isDragHappening || props.isDragging) return;
+  if (props.isSwitchDisabled && !props.isActive) {
+    emit("switchBlocked", props.item);
+    return;
+  }
   emit("quickApply", props.item);
 }
 
@@ -104,6 +118,7 @@ function maskApiKey(key?: string): string {
     class="config-item-card"
     :class="{
       'is-active': isActive,
+      'is-switch-disabled': isSwitchDisabled && !isActive,
       'is-dragging': isDragging,
       'is-drag-over': isDragOver && !dragOverPosition,
       'is-insert-before': dragOverPosition === 'before',
@@ -128,6 +143,10 @@ function maskApiKey(key?: string): string {
         <span v-if="isActive" class="status-badge badge-active">
           <Check :size="11" :stroke-width="2.5" />
           <span>已应用</span>
+        </span>
+        <!-- 未激活且当前选中的测试进行中时的悬浮提示 -->
+        <span v-else-if="isSwitchDisabled" class="status-badge badge-disabled">
+          <span>测试中不可切换</span>
         </span>
         <!-- 未激活时的悬浮切换提示 -->
         <span v-else class="status-badge badge-hint">
@@ -209,9 +228,30 @@ function maskApiKey(key?: string): string {
 
   /* 鼠标悬浮在编辑/删除按钮上时，柔和淡化切换提示，聚焦当前按钮操作 */
   &:has(.card-actions:hover) {
-    .card-main-row .card-title-group .badge-hint {
+    .card-main-row .card-title-group .badge-hint,
+    .card-main-row .card-title-group .badge-disabled {
       opacity: 0.2;
       transform: translateX(-2px);
+    }
+  }
+
+  &.is-switch-disabled {
+    cursor: not-allowed;
+
+    &:hover {
+      border-color: rgba(245, 158, 11, 0.45);
+      background: rgba(245, 158, 11, 0.04);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.08);
+      transform: none;
+
+      .card-main-row .card-title-group .badge-disabled {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    &:active {
+      transform: none;
     }
   }
 
@@ -343,6 +383,14 @@ function maskApiKey(key?: string): string {
         color: var(--accent-text);
         background: rgba(99, 102, 241, 0.14);
         border: 1px solid rgba(99, 102, 241, 0.35);
+        opacity: 0;
+        transform: translateX(-4px);
+      }
+
+      .badge-disabled {
+        color: var(--warning, #f59e0b);
+        background: rgba(245, 158, 11, 0.14);
+        border: 1px solid rgba(245, 158, 11, 0.35);
         opacity: 0;
         transform: translateX(-4px);
       }

@@ -24,6 +24,7 @@ import TestHistoryModal from "./components/history/TestHistoryModal.vue";
 import SettingsModal from "./components/settings/SettingsModal.vue";
 import { APP_VERSION, GITHUB_REPO_URL } from "./constants";
 import { openExternalUrl } from "./services/api";
+import { useToast } from "./composables/useToast";
 
 const configStore = useConfigStore();
 const probeStore = useProbeTestStore();
@@ -31,6 +32,7 @@ const pelicanStore = usePelicanTestStore();
 const candyStore = useCandyTestStore();
 const connectionStore = useConnectionTestStore();
 const appStore = useAppStore();
+const { showToast } = useToast();
 useSettingsStore();
 
 onMounted(() => {
@@ -274,8 +276,18 @@ function handleOpenGithub(): void {
       :configs="configStore.configList"
       :active-config-id="configStore.activeConfigId"
       :can-save-current="configStore.canSaveCurrent"
+      :is-current-running="appStore.isCurrentRunning"
       @close="configStore.closeConfigListModal"
       @apply="(item) => {
+        if (appStore.isCurrentRunning) {
+          showToast({
+            type: 'warning',
+            title: '当前测试正在进行中，无法切换配置',
+            message: '请等待当前测试完成或停止后再切换配置。',
+            duration: 3000,
+          });
+          return;
+        }
         if (!probeStore.isRunning) probeStore.resetTest();
         if (!pelicanStore.isPelicanRunning) pelicanStore.resetPelicanTest();
         if (!candyStore.isRunning) candyStore.resetTest();
