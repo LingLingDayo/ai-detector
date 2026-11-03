@@ -33,10 +33,66 @@ const connectionStore = useConnectionTestStore();
 const appStore = useAppStore();
 useSettingsStore();
 
+const SELECTION_INTERACTIVE_SELECTOR =
+  "button, a, input, textarea, select, [role='button'], [contenteditable='true']";
+
+let hadSelectionOnMouseDown = false;
+let mouseDownX = 0;
+let mouseDownY = 0;
+
+function handleGlobalMouseDown(event: MouseEvent): void {
+  if (event.button !== 0) {
+    hadSelectionOnMouseDown = false;
+    return;
+  }
+
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) {
+    hadSelectionOnMouseDown = false;
+    return;
+  }
+
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target || target.closest(SELECTION_INTERACTIVE_SELECTOR)) {
+    hadSelectionOnMouseDown = false;
+    return;
+  }
+
+  // 全局 body 设为 user-select: none 时，点击不可选区域浏览器不会自动折叠选区，需主动清除
+  if (window.getComputedStyle(target).userSelect === "none") {
+    selection.removeAllRanges();
+    hadSelectionOnMouseDown = false;
+    return;
+  }
+
+  hadSelectionOnMouseDown = true;
+  mouseDownX = event.clientX;
+  mouseDownY = event.clientY;
+}
+
+function handleGlobalMouseUp(event: MouseEvent): void {
+  if (!hadSelectionOnMouseDown || event.button !== 0 || event.detail > 1) {
+    hadSelectionOnMouseDown = false;
+    return;
+  }
+
+  const movedDistance = Math.hypot(
+    event.clientX - mouseDownX,
+    event.clientY - mouseDownY
+  );
+  hadSelectionOnMouseDown = false;
+
+  if (movedDistance < 4) {
+    window.getSelection()?.removeAllRanges();
+  }
+}
+
 onMounted(() => {
   configStore.loadConfig();
   probeStore.initStartupFingerprintCheck();
   void candyStore.initCandyChallenges();
+  document.addEventListener("mousedown", handleGlobalMouseDown, true);
+  document.addEventListener("mouseup", handleGlobalMouseUp, true);
 });
 
 let scrollRafId: number | null = null;
@@ -157,6 +213,8 @@ watch(
 
 onUnmounted(() => {
   cancelScroll();
+  document.removeEventListener("mousedown", handleGlobalMouseDown, true);
+  document.removeEventListener("mouseup", handleGlobalMouseUp, true);
 });
 
 function handleOpenGithub(): void {
