@@ -146,7 +146,7 @@ defineExpose({ scrollToBottom });
   border: 1px solid var(--border-chat-stage);
   border-radius: 10px;
   box-shadow: var(--shadow-chat-stage);
-  user-select: auto;
+  user-select: text;
 }
 
 .message-list {
@@ -169,6 +169,7 @@ defineExpose({ scrollToBottom });
   justify-content: center;
   text-align: center;
   padding: 18px 16px;
+  user-select: none;
 
   .empty-orb {
     width: 54px;
