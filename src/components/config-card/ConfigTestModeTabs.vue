@@ -33,7 +33,7 @@ const modeOptions = computed<SegmentedOption[]>(() => [
   {
     value: "candy",
     label: "糖果测试",
-    title: "连续 3 道动态糖果组合逻辑推理题（答对 ≥ 2 题通过），检测模型长思维链与降智情况",
+    title: "通过 3 道动态糖果组合逻辑推理题（答对 ≥ 2 题通过），检验模型长逻辑链推理能力与是否存在降智",
     indicator: Boolean(props.candyRunning),
     indicatorTitle: "糖果测试进行中",
   },

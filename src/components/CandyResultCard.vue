@@ -75,7 +75,7 @@ function handleCopyResult(): void {
   >
     <div class="card-header">
       <div class="header-title-group">
-        <h2 title="连续 3 道动态糖果组合逻辑题，答对至少 2 题即判定模型通过智力测试">
+        <h2 title="通过 3 道动态糖果组合逻辑题，检验模型长逻辑链推理能力并判断是否存在降智">
           糖果测试诊断报告
         </h2>
         <span
