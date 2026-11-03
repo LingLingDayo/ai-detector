@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { ImagePlus, Sparkles, Wand2 } from "@lucide/vue";
+import { ImagePlus, Sparkles, Wand2, Zap } from "@lucide/vue";
 import logoUrl from "../../assets/logo.png";
 import type { ConnectionChatMessage } from "../../types";
 import ConnectionMessageBubble from "./ConnectionMessageBubble.vue";
@@ -28,6 +28,10 @@ const scrollRef = ref<HTMLElement | null>(null);
 const stickToBottom = ref(true);
 
 const suggestions = [
+  {
+    icon: Zap,
+    text: "Hi",
+  },
   {
     icon: Sparkles,
     text: "用三句话介绍你自己",
