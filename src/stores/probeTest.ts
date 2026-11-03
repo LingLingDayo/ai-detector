@@ -227,7 +227,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     const apiFormat = config?.apiFormat ?? probeConfig.apiFormat ?? lastUsedConfig?.apiFormat;
     const reasoningEffort = config?.reasoningEffort ?? probeConfig.reasoningEffort ?? lastUsedConfig?.reasoningEffort;
     const isStream = (config?.stream ?? probeConfig.stream ?? lastUsedConfig?.stream) !== false;
-    const timeoutSeconds = useSettingsStore().resolveRequestTimeout(isStream, 90, 240);
+    const timeoutSeconds = useSettingsStore().resolveRequestTimeout(isStream);
 
     if (!baseUrl || !apiKey) {
       alert("请填写 Base URL 和 API Key！");

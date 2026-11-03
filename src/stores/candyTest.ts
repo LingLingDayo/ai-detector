@@ -373,7 +373,7 @@ export const useCandyTestStore = defineStore("candyTest", () => {
       lastUsedConfig?.reasoningEffort;
     const isStream =
       (config?.stream ?? candyConfig.stream ?? lastUsedConfig?.stream) !== false;
-    const timeoutSeconds = useSettingsStore().resolveRequestTimeout(isStream, 120, 240);
+    const timeoutSeconds = useSettingsStore().resolveRequestTimeout(isStream);
 
     if (!baseUrl || !apiKey) {
       alert("请填写 Base URL 和 API Key！");

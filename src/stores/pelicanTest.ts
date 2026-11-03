@@ -452,7 +452,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     const apiFormat = config.apiFormat || "openai";
     const reasoningEffort = config.reasoningEffort || "high";
     const isStream = config.stream !== false;
-    const timeoutSeconds = useSettingsStore().resolveRequestTimeout(isStream, 90, 240);
+    const timeoutSeconds = useSettingsStore().resolveRequestTimeout(isStream);
 
     if (!baseUrl || !apiKey) {
       errorMsg.value = "请先填写 Base URL 和 API Key";

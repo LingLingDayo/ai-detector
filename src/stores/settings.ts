@@ -34,6 +34,10 @@ function toNumber(value: SettingsValue | undefined, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function clampTimeout(value: SettingsValue | undefined, fallback: number, max: number): number {
+  return Math.min(max, Math.max(10, Math.round(toNumber(value, fallback))));
+}
+
 export const useSettingsStore = defineStore("settings", () => {
   const defaults = collectDefaultValues();
   const stored = loadStoredValues();
@@ -64,9 +68,14 @@ export const useSettingsStore = defineStore("settings", () => {
     return mode === "pelican" || mode === "candy" || mode === "connection" ? mode : "probe";
   });
 
-  /** 全局请求超时（秒），0 表示沿用各测试内置的流式/非流式默认值 */
-  const requestTimeoutSeconds = computed<number>(() =>
-    Math.max(0, toNumber(values.requestTimeoutSeconds, 0))
+  /** 流式请求等待上游响应的超时（秒） */
+  const streamTimeoutSeconds = computed<number>(() =>
+    clampTimeout(values.streamTimeoutSeconds, 120, 600)
+  );
+
+  /** 非流式请求等待完整响应的超时（秒） */
+  const syncTimeoutSeconds = computed<number>(() =>
+    clampTimeout(values.syncTimeoutSeconds, 240, 900)
   );
 
   const requestRetryCount = computed<number>(() =>
@@ -84,9 +93,8 @@ export const useSettingsStore = defineStore("settings", () => {
     values.defaultConnectionMode === "quick" ? "quick" : "chat"
   );
 
-  function resolveRequestTimeout(isStream: boolean, streamDefault: number, syncDefault: number): number {
-    if (requestTimeoutSeconds.value > 0) return requestTimeoutSeconds.value;
-    return isStream ? streamDefault : syncDefault;
+  function resolveRequestTimeout(isStream: boolean): number {
+    return isStream ? streamTimeoutSeconds.value : syncTimeoutSeconds.value;
   }
 
   /** 按历史上限裁剪列表，上限为 0 时不裁剪 */
@@ -134,7 +142,8 @@ export const useSettingsStore = defineStore("settings", () => {
     theme,
     context,
     defaultTestMode,
-    requestTimeoutSeconds,
+    streamTimeoutSeconds,
+    syncTimeoutSeconds,
     requestRetryCount,
     historyEnabled,
     historyMaxCount,

@@ -336,7 +336,7 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
         apiFormat,
         reasoningEffort,
         stream: isStream,
-        timeoutSeconds: useSettingsStore().resolveRequestTimeout(isStream, 90, 240),
+        timeoutSeconds: useSettingsStore().resolveRequestTimeout(isStream),
         signal: abortController.signal,
         onStreamStart: () => {
           if (runId === currentRunId) {

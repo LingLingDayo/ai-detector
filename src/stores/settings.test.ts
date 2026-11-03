@@ -31,7 +31,8 @@ describe("settings store 通用设置", () => {
     storage.clear();
     const store = newStore();
     expect(store.defaultTestMode).toBe("probe");
-    expect(store.requestTimeoutSeconds).toBe(0);
+    expect(store.streamTimeoutSeconds).toBe(120);
+    expect(store.syncTimeoutSeconds).toBe(240);
     expect(store.requestRetryCount).toBe(3);
     expect(store.historyEnabled).toBe(true);
     expect(store.historyMaxCount).toBe(100);
@@ -58,16 +59,21 @@ describe("settings store 通用设置", () => {
     expect(useSettingsStore().defaultConnectionMode).toBe("chat");
   });
 
-  it("请求超时为 0 时沿用流式/非流式默认值，大于 0 时统一覆盖", () => {
+  it("流式与非流式超时各自独立生效并夹在合法区间", () => {
     storage.clear();
     const store = newStore();
-    expect(store.resolveRequestTimeout(true, 90, 240)).toBe(90);
-    expect(store.resolveRequestTimeout(false, 90, 240)).toBe(240);
-    expect(store.resolveRequestTimeout(true, 120, 240)).toBe(120);
+    expect(store.resolveRequestTimeout(true)).toBe(120);
+    expect(store.resolveRequestTimeout(false)).toBe(240);
 
-    store.setValue("requestTimeoutSeconds", 45);
-    expect(store.resolveRequestTimeout(true, 90, 240)).toBe(45);
-    expect(store.resolveRequestTimeout(false, 120, 240)).toBe(45);
+    store.setValue("streamTimeoutSeconds", 30);
+    store.setValue("syncTimeoutSeconds", 60);
+    expect(store.resolveRequestTimeout(true)).toBe(30);
+    expect(store.resolveRequestTimeout(false)).toBe(60);
+
+    store.setValue("streamTimeoutSeconds", 5);
+    expect(store.streamTimeoutSeconds).toBe(10);
+    store.setValue("syncTimeoutSeconds", 5000);
+    expect(store.syncTimeoutSeconds).toBe(900);
   });
 
   it("历史开关关闭时 appendHistoryEntry 不落盘", () => {
