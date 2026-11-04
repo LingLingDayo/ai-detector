@@ -313,16 +313,17 @@ function buildSvgPreviewDocument(rawContent: string): string {
   align-items: center;
   padding: 0 9px;
   border-radius: 9999px;
-  background: rgba(15, 23, 42, 0.78);
+  background: var(--pelican-tag-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(241, 245, 249, 0.92);
+  border: 1px solid var(--pelican-tag-border);
+  color: var(--pelican-tag-color);
   font-size: 11px;
   font-weight: 500;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--pelican-tag-shadow);
   max-width: 65%;
   pointer-events: none; /* 穿透不遮挡图片点击 */
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 
   .model-tag-text {
     overflow: hidden;
@@ -343,37 +344,37 @@ function buildSvgPreviewDocument(rawContent: string): string {
   transition: opacity 0.2s ease, transform 0.2s ease;
 
   .info-action-btn {
-    opacity: 0.75;
+    opacity: 0.8;
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    background: rgba(15, 23, 42, 0.82);
+    background: var(--pelican-floating-btn-bg);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    color: #cbd5e1;
+    border: 1px solid var(--pelican-floating-btn-border);
+    color: var(--pelican-floating-btn-color);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--pelican-floating-btn-shadow);
     transition: all 0.2s ease;
 
     &:hover,
     &:focus {
       opacity: 1;
-      color: #a5b4fc;
-      border-color: rgba(129, 140, 248, 0.55);
-      background: rgba(30, 41, 59, 0.92);
+      color: var(--pelican-floating-btn-hover-color);
+      border-color: var(--pelican-floating-btn-hover-border);
+      background: var(--pelican-floating-btn-hover-bg);
       transform: scale(1.08);
     }
 
     &.is-pinned {
-      background: rgba(99, 102, 241, 0.38) !important;
-      border-color: rgba(129, 140, 248, 0.75) !important;
-      color: #ffffff !important;
+      background: var(--pelican-floating-pinned-bg) !important;
+      border-color: var(--pelican-floating-pinned-border) !important;
+      color: var(--pelican-floating-pinned-color) !important;
       opacity: 1 !important;
-      box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.35);
     }
   }
 
@@ -435,23 +436,22 @@ function buildSvgPreviewDocument(rawContent: string): string {
   align-items: center;
   justify-content: space-between;
   padding: 18px 12px 10px;
-  background: linear-gradient(
-    to top,
-    rgba(9, 14, 26, 0.94) 0%,
-    rgba(9, 14, 26, 0.62) 65%,
-    transparent 100%
-  );
-  border-bottom-left-radius: var(--radius-md);
-  border-bottom-right-radius: var(--radius-md);
+  background: var(--pelican-footer-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom-left-radius: calc(var(--radius-md) - 1px);
+  border-bottom-right-radius: calc(var(--radius-md) - 1px);
   opacity: 0;
   pointer-events: none;
   transform: translateY(4px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
 
   .time-label {
     font-size: 11px;
-    color: rgba(226, 232, 240, 0.75);
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: var(--pelican-footer-text);
+    text-shadow: var(--pelican-footer-text-shadow);
+    font-weight: 500;
   }
 
   .footer-btns {
@@ -463,11 +463,12 @@ function buildSvgPreviewDocument(rawContent: string): string {
       width: 24px;
       height: 24px;
       border-radius: var(--radius-sm);
-      background: rgba(15, 23, 42, 0.78);
+      background: var(--pelican-floating-btn-bg);
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      color: #cbd5e1;
+      border: 1px solid var(--pelican-floating-btn-border);
+      color: var(--pelican-floating-btn-color);
+      box-shadow: var(--pelican-floating-btn-shadow);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -475,15 +476,17 @@ function buildSvgPreviewDocument(rawContent: string): string {
       transition: all 0.18s ease;
 
       &:hover {
-        background: rgba(99, 102, 241, 0.35);
-        border-color: rgba(129, 140, 248, 0.6);
-        color: #ffffff;
+        background: var(--pelican-floating-btn-hover-bg);
+        border-color: var(--pelican-floating-btn-hover-border);
+        color: var(--pelican-floating-btn-hover-color);
+        transform: translateY(-1px);
       }
 
       &.delete-tool-btn:hover {
-        background: rgba(239, 68, 68, 0.32);
-        border-color: rgba(248, 113, 113, 0.6);
-        color: #fecaca;
+        background: var(--pelican-floating-btn-delete-bg);
+        border-color: var(--pelican-floating-btn-delete-border);
+        color: var(--pelican-floating-btn-delete-color);
+        transform: translateY(-1px);
       }
     }
   }
