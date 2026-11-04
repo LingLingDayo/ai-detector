@@ -147,8 +147,8 @@ onUnmounted(() => {
   flex-direction: column;
   width: 100%;
   max-width: 660px;
-  min-height: min(480px, 88vh);
-  max-height: 88vh;
+  height: min(88vh, 680px);
+  max-height: 680px;
   background: var(--bg-card);
   border: 1px solid var(--border-glow);
   border-radius: var(--radius-lg);

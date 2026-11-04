@@ -369,7 +369,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 860px;
-  height: min(85vh, 780px);
+  height: min(88vh, 780px);
   max-height: 780px;
   display: flex;
   flex-direction: column;

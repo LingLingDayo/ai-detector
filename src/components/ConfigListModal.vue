@@ -224,7 +224,8 @@ const filteredConfigs = computed(() => {
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 660px;
-  max-height: 88vh;
+  height: min(88vh, 680px);
+  max-height: 680px;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-modal);

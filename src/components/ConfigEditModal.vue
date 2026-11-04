@@ -440,7 +440,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 540px;
-  max-height: 90vh;
+  max-height: 88vh;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-modal);
