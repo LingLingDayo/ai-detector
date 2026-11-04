@@ -206,6 +206,17 @@ function closeDetail(): void {
   animation: fadeIn var(--transition-normal);
   padding: 10px 14px;
 
+  &:hover {
+    .btn-refresh-icon {
+      opacity: 1;
+      pointer-events: auto;
+
+      &:disabled {
+        opacity: 0.35;
+      }
+    }
+  }
+
   .progress-header {
     height: 36px;
     display: flex;
@@ -241,11 +252,18 @@ function closeDetail(): void {
         cursor: pointer;
         padding: 2px;
         border-radius: var(--radius-sm);
-        transition: color var(--transition-fast), transform var(--transition-fast);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 
         &:hover:not(:disabled) {
           color: var(--text-primary);
           transform: rotate(45deg);
+        }
+
+        &:focus-visible {
+          opacity: 1;
+          pointer-events: auto;
         }
 
         &:disabled {
