@@ -228,6 +228,7 @@ function closeDetail(): void {
       display: flex;
       flex-direction: column;
       gap: 2px;
+      line-height: 1.5;
 
       .title-row {
         display: flex;
@@ -239,7 +240,6 @@ function closeDetail(): void {
         font-size: 14px;
         font-weight: 600;
         color: var(--text-strong);
-        line-height: 1.2;
       }
 
       .btn-refresh-icon {
@@ -275,7 +275,6 @@ function closeDetail(): void {
       .progress-status-desc {
         font-size: 12px;
         color: var(--text-secondary);
-        line-height: 1.2;
       }
     }
 
