@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { ImagePlus, Sparkles, Wand2, Zap } from "@lucide/vue";
+import { ImagePlus, Sparkles, Zap } from "@lucide/vue";
 import logoUrl from "../../assets/logo.png";
 import type { ConnectionChatMessage } from "../../types";
 import ConnectionMessageBubble from "./ConnectionMessageBubble.vue";
@@ -31,10 +31,6 @@ const suggestions = [
   {
     icon: Zap,
     text: "Hi",
-  },
-  {
-    icon: Wand2,
-    text: "9.11 和 9.9 哪个大？为什么？",
   },
   {
     icon: Sparkles,
