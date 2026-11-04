@@ -322,13 +322,10 @@ function handleCopyResult(): void {
     margin-bottom: 10px;
 
     .diag-pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2px 8px;
+      padding: 0 8px;
       border-radius: 9999px;
       font-size: 11px;
-      line-height: 1;
+      line-height: 18px;
       gap: 5px;
       transition: all var(--transition-fast);
 
