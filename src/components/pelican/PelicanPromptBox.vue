@@ -73,6 +73,14 @@ function savePrompt(): void {
   isEditingPrompt.value = false;
 }
 
+function handleTextareaKeydown(e: KeyboardEvent): void {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    e.stopPropagation();
+    savePrompt();
+  }
+}
+
 function handleResetToDefault(): void {
   editingPrompt.value = DEFAULT_PELICAN_PROMPT;
 }
@@ -168,6 +176,11 @@ function handleDocumentPointerDown(e: PointerEvent): void {
 function handleDocumentKeydown(e: KeyboardEvent): void {
   if (e.key === "Escape" && isPresetDropdownOpen.value) {
     closePresetDropdown();
+    return;
+  }
+  if (isEditingPrompt.value && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    savePrompt();
   }
 }
 
@@ -233,7 +246,7 @@ watch(
           <button
             type="button"
             class="btn-prompt-action save"
-            title="保存提示词"
+            title="保存提示词 (Ctrl+Enter)"
             @click="savePrompt"
           >
             <Check :size="12" :stroke-width="2.5" />
@@ -354,8 +367,10 @@ watch(
         class="prompt-textarea"
         rows="3"
         placeholder="输入自定义测试提示词..."
+        @keydown="handleTextareaKeydown"
       />
       <div class="prompt-edit-footer">
+        <span class="prompt-hint">按 Ctrl+Enter 保存</span>
         <span class="prompt-char-count">{{ editingPrompt.length }} 字符</span>
       </div>
     </div>
@@ -617,11 +632,16 @@ watch(
 
 .prompt-edit-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   font-size: 11px;
   color: var(--text-muted);
   padding: 0 2px;
+
+  .prompt-hint {
+    color: var(--text-muted);
+    opacity: 0.8;
+  }
 
   .prompt-char-count {
     color: var(--text-muted);
