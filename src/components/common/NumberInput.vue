@@ -136,13 +136,24 @@ function handleStep(direction: 1 | -1): void {
 .number-field {
   flex: 1;
   min-width: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
+  height: 100%;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
   color: var(--text-primary);
   font-family: inherit;
   font-size: 13px;
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
+
+  &:focus,
+  &:focus-visible {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
 
   &::placeholder {
     color: var(--text-placeholder);
