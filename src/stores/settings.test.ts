@@ -31,7 +31,7 @@ describe("settings store 通用设置", () => {
     storage.clear();
     const store = newStore();
     expect(store.defaultTestMode).toBe("probe");
-    expect(store.streamTimeoutSeconds).toBe(120);
+    expect(store.streamTimeoutSeconds).toBe(90);
     expect(store.syncTimeoutSeconds).toBe(240);
     expect(store.requestRetryCount).toBe(3);
     expect(store.historyEnabled).toBe(true);
@@ -62,7 +62,7 @@ describe("settings store 通用设置", () => {
   it("流式与非流式超时各自独立生效并夹在合法区间", () => {
     storage.clear();
     const store = newStore();
-    expect(store.resolveRequestTimeout(true)).toBe(120);
+    expect(store.resolveRequestTimeout(true)).toBe(90);
     expect(store.resolveRequestTimeout(false)).toBe(240);
 
     store.setValue("streamTimeoutSeconds", 30);

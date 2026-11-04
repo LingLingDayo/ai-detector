@@ -70,7 +70,7 @@ export const useSettingsStore = defineStore("settings", () => {
 
   /** 流式请求等待上游响应的超时（秒） */
   const streamTimeoutSeconds = computed<number>(() =>
-    clampTimeout(values.streamTimeoutSeconds, 120, 600)
+    clampTimeout(values.streamTimeoutSeconds, 90, 600)
   );
 
   /** 非流式请求等待完整响应的超时（秒） */

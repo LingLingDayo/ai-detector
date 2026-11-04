@@ -29,7 +29,7 @@ export const generalPage: SettingsPage = {
           type: "number",
           label: "流式请求超时",
           description: "流式请求等待上游首包响应的最长时间",
-          defaultValue: 120,
+          defaultValue: 90,
           min: 10,
           max: 600,
           step: 10,
