@@ -336,6 +336,24 @@ describe("鹈鹕测试背景亮暗色跟随主题与自定义覆盖测试套件"
     await nextTick();
     expect(pelicanStore.bgTheme).toBe("light");
   });
+
+  it("新增的暗色皮肤归入深色画布，切回亮色仍正常联动", async () => {
+    storage.clear();
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const settingsStore = useSettingsStore();
+    const pelicanStore = usePelicanTestStore();
+
+    expect(pelicanStore.bgTheme).toBe("dark");
+
+    settingsStore.setValue("theme", "midnight");
+    await nextTick();
+    expect(pelicanStore.bgTheme).toBe("dark");
+
+    settingsStore.setValue("theme", "light");
+    await nextTick();
+    expect(pelicanStore.bgTheme).toBe("light");
+  });
 });
 
 

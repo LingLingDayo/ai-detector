@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { CONNECTION_MODE_STORAGE_KEY } from "../constants";
+import { appearancePage } from "../settings/appearance";
 import { useSettingsStore } from "./settings";
 
 const SETTINGS_STORAGE_KEY = "modeltrace_settings";
@@ -111,5 +112,52 @@ describe("settings store 通用设置", () => {
     const restored = useSettingsStore();
     expect(restored.requestRetryCount).toBe(1);
     expect(restored.historyMaxCount).toBe(50);
+  });
+});
+
+describe("settings store 界面风格", () => {
+  it("外观设置提供默认、亮色、暗色三种风格", () => {
+    const field = appearancePage.sections
+      .flatMap((section) => section.fields)
+      .find((item) => item.key === "theme");
+    expect(field?.type).toBe("segmented");
+    expect(field?.defaultValue).toBe("default");
+    if (field?.type === "segmented") {
+      expect(field.options.map((option) => option.value)).toEqual([
+        "default",
+        "light",
+        "midnight",
+      ]);
+    }
+  });
+
+  it("默认风格为 default，非法值回退且三态可切换", () => {
+    storage.clear();
+    const store = newStore();
+    expect(store.theme).toBe("default");
+
+    store.setValue("theme", "midnight");
+    expect(store.theme).toBe("midnight");
+    store.setValue("theme", "light");
+    expect(store.theme).toBe("light");
+    store.setValue("theme", "unknown");
+    expect(store.theme).toBe("default");
+  });
+
+  it("旧版 dark 偏好迁移为 default 并写回本地存储", () => {
+    storage.clear();
+    storage.set(SETTINGS_STORAGE_KEY, JSON.stringify({ theme: "dark" }));
+    const store = newStore();
+    expect(store.theme).toBe("default");
+    expect(store.getValue("theme")).toBe("default");
+    expect(JSON.parse(storage.get(SETTINGS_STORAGE_KEY) ?? "{}").theme).toBe("default");
+  });
+
+  it("midnight 与 light 偏好在重新创建 store 后保持不变", () => {
+    storage.clear();
+    const store = newStore();
+    store.setValue("theme", "midnight");
+    setActivePinia(createPinia());
+    expect(useSettingsStore().theme).toBe("midnight");
   });
 });
