@@ -390,7 +390,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
   function applyHistoryItem(item: PelicanHistoryItem): void {
     pelicanContent.value = item.content;
     pelicanSvg.value = item.content;
-    pelicanContentType.value = item.contentType;
+    pelicanContentType.value = item.contentType || (isHtmlDocumentOrSnippet(item.content) ? "html" : "svg");
     testedModel.value = item.modelName;
     rawResponseText.value = item.content;
     durationMs.value = item.durationMs || 0;

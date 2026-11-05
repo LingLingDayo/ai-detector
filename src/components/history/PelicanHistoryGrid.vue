@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 import type { PelicanHistoryItem } from "../../types";
 import { formatHistoryTime } from "../../utils/pelicanFormatters";
 import { Info, Copy, Download, X } from "@lucide/vue";
@@ -8,6 +8,10 @@ import { useToast } from "../../composables/useToast";
 import { usePopoverPin } from "./usePopoverPin";
 import HistoryEmptyState from "./HistoryEmptyState.vue";
 import HistoryDetailPopover from "./HistoryDetailPopover.vue";
+import {
+  resolvePelicanContentType,
+  buildPelicanPreviewDocument,
+} from "../pelican/pelicanPreview";
 
 const props = defineProps<{
   pelicanList: PelicanHistoryItem[];
@@ -23,6 +27,58 @@ const { copy: copyText } = useClipboard();
 const { showToast } = useToast();
 const { pinnedId, togglePin } = usePopoverPin();
 const popoverPlacementMap = ref<Record<string, "top" | "bottom">>({});
+
+const gridContainerRef = ref<HTMLElement | null>(null);
+const stageWidth = ref(360);
+
+const stagePreviewScale = computed(() => {
+  // 基准画布视口为 800px × 600px (4:3)，根据卡片实际像素宽度等比缩放
+  const scale = stageWidth.value / 800;
+  return Number.isFinite(scale) && scale > 0 ? scale : 0.45;
+});
+
+const containerStyle = computed(() => ({
+  "--stage-preview-scale": String(stagePreviewScale.value),
+}));
+
+function updateStageWidth(): void {
+  if (!gridContainerRef.value) return;
+  const firstStage = gridContainerRef.value.querySelector<HTMLElement>(".image-stage");
+  if (firstStage) {
+    const rect = firstStage.getBoundingClientRect();
+    if (rect.width > 0) {
+      stageWidth.value = rect.width;
+      return;
+    }
+  }
+  const containerW = gridContainerRef.value.getBoundingClientRect().width;
+  if (containerW > 0) {
+    stageWidth.value = containerW > 640 ? (containerW - 16) / 2 : containerW;
+  }
+}
+
+let resizeObserver: ResizeObserver | null = null;
+
+onMounted(() => {
+  nextTick(() => {
+    updateStageWidth();
+  });
+  if (typeof ResizeObserver !== "undefined") {
+    resizeObserver = new ResizeObserver(() => {
+      updateStageWidth();
+    });
+    if (gridContainerRef.value) {
+      resizeObserver.observe(gridContainerRef.value);
+    }
+  }
+});
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+});
 
 function updatePlacement(id: string, targetEl: HTMLElement): void {
   const rect = targetEl.getBoundingClientRect();
@@ -60,7 +116,8 @@ function handleTogglePin(id: string, e: Event): void {
 }
 
 function handleDownloadPelican(item: PelicanHistoryItem): void {
-  const isHtml = item.contentType === "html";
+  const isHtml =
+    resolvePelicanContentType(item.contentType, item.content) === "html";
   const mimeType = isHtml
     ? "text/html;charset=utf-8"
     : "image/svg+xml;charset=utf-8";
@@ -100,62 +157,14 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
         }
   );
 }
-
-function getPureSvgContent(rawContent: string): string {
-  if (!rawContent) return "";
-  const trimmed = rawContent.trim();
-  const svgMatch = trimmed.match(/<svg[\s\S]*?<\/svg>/i);
-  let svg = svgMatch ? svgMatch[0] : trimmed;
-
-  // 保证 SVG 在充满裁剪时不拉伸变形：强制 preserveAspectRatio="xMidYMid slice"
-  svg = svg.replace(/<svg\b([^>]*)>/i, (_match, attrs) => {
-    let newAttrs = attrs;
-    if (!/preserveAspectRatio=/i.test(newAttrs)) {
-      newAttrs += ' preserveAspectRatio="xMidYMid slice"';
-    } else {
-      newAttrs = newAttrs.replace(
-        /preserveAspectRatio=["'][^"']*["']/i,
-        'preserveAspectRatio="xMidYMid slice"'
-      );
-    }
-    return `<svg ${newAttrs}>`;
-  });
-  return svg;
-}
-
-function buildSvgPreviewDocument(rawContent: string): string {
-  const svg = getPureSvgContent(rawContent);
-  return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <style>
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: transparent;
-    }
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    svg {
-      width: 100% !important;
-      height: 100% !important;
-      display: block;
-    }
-  </style>
-</head>
-<body>${svg}</body>
-</html>`;
-}
 </script>
 
 <template>
-  <div class="pelican-history-container">
+  <div
+    ref="gridContainerRef"
+    class="pelican-history-container"
+    :style="containerStyle"
+  >
     <!-- 空状态 -->
     <HistoryEmptyState v-if="pelicanList.length === 0" type="pelican" />
 
@@ -167,17 +176,25 @@ function buildSvgPreviewDocument(rawContent: string): string {
         class="pelican-card-item"
         :class="{ 'is-pinned-card': pinnedId === item.id }"
       >
-        <!-- 1. 图片展示区域（纯原生矢量 SVG 渲染，占满卡片，自动裁剪且不拉伸变形） -->
+        <!-- 1. 图片展示区域（纯原生矢量 SVG 等比居中展示，HTML 按 800x600 等比缩放微缩展示） -->
         <div
           class="image-stage"
-          :class="{ 'is-apply-disabled': applyDisabled }"
+          :class="{
+            'is-apply-disabled': applyDisabled,
+            'is-html-stage': resolvePelicanContentType(item.contentType, item.content) === 'html',
+          }"
           @click="handleApply(item)"
           title="点击将此图片载入主界面查看"
         >
           <!-- 允许动态脚本运行；不授予同源权限，避免脚本访问主界面 -->
           <iframe
-            class="svg-frame"
-            :srcdoc="buildSvgPreviewDocument(item.content)"
+            class="preview-frame"
+            :class="{
+              'is-svg-frame': resolvePelicanContentType(item.contentType, item.content) === 'svg',
+              'is-html-frame': resolvePelicanContentType(item.contentType, item.content) === 'html',
+              'svg-frame': true,
+            }"
+            :srcdoc="buildPelicanPreviewDocument(item)"
             sandbox="allow-scripts"
             scrolling="no"
             loading="lazy"
@@ -413,15 +430,30 @@ function buildSvgPreviewDocument(rawContent: string): string {
     cursor: not-allowed;
   }
 
+  .preview-frame,
   .svg-frame {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
     border: 0;
     display: block;
     background: transparent;
     pointer-events: none;
+
+    &.is-svg-frame,
+    &:not(.is-html-frame) {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    &.is-html-frame {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 800px;
+      height: 600px;
+      transform-origin: 0 0;
+      transform: scale(var(--stage-preview-scale, 0.45));
+    }
   }
 }
 
