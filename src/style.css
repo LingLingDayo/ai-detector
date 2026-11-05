@@ -83,6 +83,9 @@
   --accent-primary: #6366f1;
   --accent-secondary: #3b82f6;
   --accent-gradient: linear-gradient(135deg, #6366f1 0%, #3b82f6 50%, #06b6d4 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #7274f4 0%, #4f8ff8 100%);
+  --accent-primary-hover: #4f46e5;
+  --accent-primary-active: #4338ca;
   --accent-glow: 0 0 20px rgba(99, 102, 241, 0.3);
   --accent-icon: #818cf8;
   --accent-text: #a5b4fc;
@@ -91,9 +94,23 @@
   --info-text: #93c5fd;
   --info-text-soft: #bfdbfe;
   --accent-sky: #38bdf8;
+  /** 供组件内 rgba(var(--accent-rgb), alpha) 使用，切换主题时统一改写品牌色 */
+  --accent-rgb: 99, 102, 241;
+  --accent-icon-rgb: 129, 140, 248;
+  --info-rgb: 59, 130, 246;
+  --info-soft-rgb: 96, 165, 250;
+  --accent-sky-rgb: 56, 189, 248;
+  --pelican-canvas-bg: #0d121c;
+  --pelican-canvas-radial: radial-gradient(circle at center, #161f30 0%, #0d121c 100%);
+  --accent-btn-shadow: 0 3px 12px rgba(99, 102, 241, 0.3);
+  --accent-btn-shadow-hover: 0 5px 16px rgba(99, 102, 241, 0.45);
+  --selection-bg: rgba(99, 102, 241, 0.45);
+  --body-glow-a: rgba(99, 102, 241, 0.08);
+  --body-glow-b: rgba(6, 182, 212, 0.06);
 
   --success: #10b981;
   --success-bg: rgba(16, 185, 129, 0.12);
+  --success-border: rgba(16, 185, 129, 0.3);
   --success-text: #34d399;
   --warning: #f59e0b;
   --warning-bg: rgba(245, 158, 11, 0.12);
@@ -217,6 +234,136 @@
   --shadow-modal: 0 20px 44px -8px rgba(15, 23, 42, 0.18), 0 4px 14px -2px rgba(15, 23, 42, 0.06);
 }
 
+/* 暗色：中性灰阶皮肤，层次取自 #141414 → #1F1F1F → #2C2C2C → #313131 */
+:root[data-theme="midnight"] {
+  color-scheme: dark;
+
+  --bg-app: #141414;
+  --bg-card: #1f1f1f;
+  --bg-card-hover: #2c2c2c;
+  --bg-input: #242424;
+  --bg-elevated: #1f1f1f;
+  --bg-elevated-strong: #262626;
+  --bg-inset: #191919;
+  --bg-inset-strong: #171717;
+  --bg-control: #2c2c2c;
+  --bg-control-strong: #313131;
+  --bg-control-hover: #3a3a3a;
+  --bg-input-disabled: #1b1b1b;
+  --bg-row: rgba(255, 255, 255, 0.03);
+  --bg-solid: #1f1f1f;
+  --bg-solid-soft: #1a1a1a;
+  --bg-code: #101010;
+  --bg-panel: rgba(31, 31, 31, 0.6);
+  --bg-panel-strong: rgba(20, 20, 20, 0.6);
+  --bg-header: rgba(31, 31, 31, 0.96);
+  --bg-canvas: rgba(10, 10, 10, 0.55);
+  --bg-field: #1c1c1c;
+  --bg-segmented: #242424;
+  --bg-segment-active: #3a3a3a;
+  --border-segment-active: #4a4a4a;
+  --text-segment-active: #f5f5f5;
+  --shadow-segment-active: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --bg-surface-control: #2c2c2c;
+  --bg-popover: #232323;
+  --bg-pelican-stage: radial-gradient(circle at center, #262626 0%, #141414 100%);
+  --pelican-footer-bg: linear-gradient(
+    to top,
+    rgba(20, 20, 20, 0.94) 0%,
+    rgba(20, 20, 20, 0.62) 65%,
+    transparent 100%
+  );
+  --pelican-footer-text: rgba(237, 237, 237, 0.78);
+  --pelican-footer-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  --pelican-floating-btn-bg: rgba(44, 44, 44, 0.85);
+  --pelican-floating-btn-border: rgba(255, 255, 255, 0.14);
+  --pelican-floating-btn-color: #d4d4d4;
+  --pelican-floating-btn-hover-bg: #3a3a3a;
+  --pelican-floating-btn-hover-border: rgba(255, 255, 255, 0.32);
+  --pelican-floating-btn-hover-color: #ffffff;
+  --pelican-floating-btn-delete-bg: rgba(229, 72, 77, 0.26);
+  --pelican-floating-btn-delete-border: rgba(229, 72, 77, 0.55);
+  --pelican-floating-btn-delete-color: #fca5a5;
+  --pelican-floating-btn-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  --pelican-floating-pinned-bg: #3a3a3a;
+  --pelican-floating-pinned-border: rgba(255, 255, 255, 0.4);
+  --pelican-floating-pinned-color: #ffffff;
+  --pelican-tag-bg: rgba(31, 31, 31, 0.85);
+  --pelican-tag-border: rgba(255, 255, 255, 0.12);
+  --pelican-tag-color: rgba(245, 245, 245, 0.92);
+  --pelican-tag-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  --bg-chat-stage: #191919;
+  --border-chat-stage: #2e2e2e;
+  --shadow-chat-stage: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  --backdrop-color: rgba(0, 0, 0, 0.72);
+  --border-subtle: #333333;
+  --border-focus: #a3a3a3;
+  --border-glow: rgba(255, 255, 255, 0.12);
+
+  --text-primary: #ededed;
+  --text-secondary: #a3a3a3;
+  --text-muted: #8f8f8f;
+  --text-strong: #ffffff;
+  --text-body: #e0e0e0;
+  --text-soft: #c9c9c9;
+  --text-placeholder: #6b6b6b;
+
+  --overlay-weak: rgba(255, 255, 255, 0.04);
+  --overlay-soft: rgba(255, 255, 255, 0.06);
+  --overlay-medium: rgba(255, 255, 255, 0.09);
+  --overlay-strong: rgba(255, 255, 255, 0.13);
+
+  --accent-primary: #737373;
+  --accent-secondary: #9a9a9a;
+  --accent-gradient: linear-gradient(135deg, #8a8a8a 0%, #5f5f5f 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #9a9a9a 0%, #7a7a7a 100%);
+  --accent-primary-hover: #8a8a8a;
+  --accent-primary-active: #6b6b6b;
+  --accent-glow: 0 0 20px rgba(255, 255, 255, 0.08);
+  --accent-icon: #d4d4d4;
+  --accent-text: #e5e5e5;
+  --accent-text-soft: #f0f0f0;
+  --accent-text-contrast: #ffffff;
+  --info-text: #b8b8b8;
+  --info-text-soft: #d0d0d0;
+  --accent-sky: #c0c0c0;
+  --accent-rgb: 190, 190, 190;
+  --accent-icon-rgb: 200, 200, 200;
+  --info-rgb: 170, 170, 170;
+  --info-soft-rgb: 190, 190, 190;
+  --accent-sky-rgb: 176, 176, 176;
+  --pelican-canvas-bg: #141414;
+  --pelican-canvas-radial: radial-gradient(circle at center, #242424 0%, #141414 100%);
+  --accent-btn-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+  --accent-btn-shadow-hover: 0 5px 16px rgba(0, 0, 0, 0.55);
+  --selection-bg: rgba(255, 255, 255, 0.2);
+  --body-glow-a: transparent;
+  --body-glow-b: transparent;
+
+  --success: #3ecf8e;
+  --success-bg: rgba(62, 207, 142, 0.12);
+  --success-border: rgba(62, 207, 142, 0.3);
+  --success-text: #5fd6a0;
+  --warning: #e5a54b;
+  --warning-bg: rgba(229, 165, 75, 0.12);
+  --warning-text: #f0b96b;
+  --danger: #e5484d;
+  --danger-bg: rgba(229, 72, 77, 0.12);
+  --danger-text: #f38185;
+
+  --scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+
+  --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --shadow-popover: 0 14px 36px rgba(0, 0, 0, 0.7);
+  --shadow-modal: 0 24px 50px rgba(0, 0, 0, 0.8);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -224,7 +371,7 @@
 }
 
 ::selection {
-  background: rgba(99, 102, 241, 0.45);
+  background: var(--selection-bg);
   color: #ffffff;
 }
 
@@ -255,9 +402,9 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: var(--bg-app);
-  background-image: 
-    radial-gradient(circle at 10% 5%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 90% 90%, rgba(6, 182, 212, 0.06) 0%, transparent 40%);
+  background-image:
+    radial-gradient(circle at 10% 5%, var(--body-glow-a) 0%, transparent 40%),
+    radial-gradient(circle at 90% 90%, var(--body-glow-b) 0%, transparent 40%);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.4;
@@ -318,7 +465,7 @@ body {
 
 .badge-success {
   background: var(--success-bg);
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: var(--success-border);
   color: var(--success);
 }
 
@@ -505,12 +652,12 @@ input::placeholder {
   background: var(--accent-gradient);
   color: #fff;
   flex: 1;
-  box-shadow: 0 3px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: var(--accent-btn-shadow);
 }
 
 .btn-primary:hover:not(:disabled) {
   opacity: 0.94;
-  box-shadow: 0 5px 16px rgba(99, 102, 241, 0.45);
+  box-shadow: var(--accent-btn-shadow-hover);
   transform: translateY(-1px);
 }
 
