@@ -66,8 +66,8 @@ defineProps<{
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    background: rgba(99, 102, 241, 0.08);
-    border: 1px dashed rgba(99, 102, 241, 0.25);
+    background: rgba(var(--accent-rgb), 0.08);
+    border: 1px dashed rgba(var(--accent-rgb), 0.25);
     color: var(--accent-icon);
     display: flex;
     align-items: center;
@@ -75,8 +75,8 @@ defineProps<{
     margin-bottom: 6px;
 
     &.probe-icon-wrap {
-      background: rgba(56, 189, 248, 0.08);
-      border-color: rgba(56, 189, 248, 0.25);
+      background: rgba(var(--accent-sky-rgb), 0.08);
+      border-color: rgba(var(--accent-sky-rgb), 0.25);
       color: var(--accent-sky);
     }
 

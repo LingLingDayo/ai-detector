@@ -278,12 +278,12 @@ defineExpose({ focus, fillText });
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 
   &:focus-within {
-    border-color: rgba(99, 102, 241, 0.5);
+    border-color: rgba(var(--accent-rgb), 0.5);
     box-shadow: 0 0 0 2px var(--border-glow), var(--shadow-hover);
   }
 
   &.is-running {
-    border-color: rgba(99, 102, 241, 0.32);
+    border-color: rgba(var(--accent-rgb), 0.32);
   }
 }
 
@@ -337,12 +337,12 @@ defineExpose({ focus, fillText });
   width: 54px;
   height: 54px;
   border-radius: 7px;
-  border: 1px dashed rgba(99, 102, 241, 0.35);
+  border: 1px dashed rgba(var(--accent-rgb), 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--accent-icon);
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(var(--accent-rgb), 0.05);
 
   .spin {
     animation: composer-spin 0.9s linear infinite;
@@ -401,8 +401,8 @@ defineExpose({ focus, fillText });
 
   &:hover:not(:disabled) {
     color: var(--accent-text-soft);
-    background: rgba(99, 102, 241, 0.12);
-    border-color: rgba(99, 102, 241, 0.22);
+    background: rgba(var(--accent-rgb), 0.12);
+    border-color: rgba(var(--accent-rgb), 0.22);
   }
 
   &:disabled {
@@ -426,14 +426,14 @@ defineExpose({ focus, fillText });
   transition: all var(--transition-fast);
 
   &.is-ready {
-    background: linear-gradient(135deg, #6366f1, #3b82f6);
-    border-color: rgba(129, 140, 248, 0.55);
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border-color: rgba(var(--accent-icon-rgb), 0.55);
     color: #fff;
     cursor: pointer;
-    box-shadow: 0 3px 12px rgba(99, 102, 241, 0.38);
+    box-shadow: 0 3px 12px rgba(var(--accent-rgb), 0.38);
 
     &:hover {
-      background: linear-gradient(135deg, #7274f4, #4f8ff8);
+      background: var(--accent-gradient-hover);
     }
   }
 
@@ -463,7 +463,7 @@ defineExpose({ focus, fillText });
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border: 1px dashed rgba(129, 140, 248, 0.65);
+  border: 1px dashed rgba(var(--accent-icon-rgb), 0.65);
   border-radius: 11px;
   background: var(--bg-solid);
   color: var(--accent-text);

@@ -68,7 +68,7 @@ const hasMessage = computed(() => Boolean(toastState.message));
   padding: 10px 11px 10px 12px;
   transform: translateX(-50%);
   background: var(--bg-popover);
-  border: 1px solid rgba(99, 102, 241, 0.32);
+  border: 1px solid rgba(var(--accent-rgb), 0.32);
   border-radius: 10px;
   box-shadow: var(--shadow-popover);
   backdrop-filter: blur(12px);
@@ -108,7 +108,7 @@ const hasMessage = computed(() => Boolean(toastState.message));
   &.is-info {
     .toast-icon {
       color: var(--accent-text);
-      background: rgba(99, 102, 241, 0.12);
+      background: rgba(var(--accent-rgb), 0.12);
     }
   }
 }

@@ -173,7 +173,7 @@ const wrappedHtml = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0d121c;
+  background: var(--pelican-canvas-bg);
   transition: background 0.25s ease, border-color 0.25s ease;
 
   &.light-bg {
@@ -212,8 +212,8 @@ const wrappedHtml = computed(() => {
   .radar-spinner {
     width: 36px;
     height: 36px;
-    border: 3px solid rgba(99, 102, 241, 0.2);
-    border-top-color: #6366f1;
+    border: 3px solid rgba(var(--accent-rgb), 0.2);
+    border-top-color: var(--accent-primary);
     border-radius: 50%;
     animation: spin 0.9s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
   }
@@ -240,7 +240,7 @@ const wrappedHtml = computed(() => {
   justify-content: center;
   padding: 16px;
   position: relative;
-  background: radial-gradient(circle at center, #161f30 0%, #0d121c 100%);
+  background: var(--pelican-canvas-radial);
   transition: background 0.25s ease;
   overflow: hidden;
 

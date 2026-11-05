@@ -200,8 +200,8 @@ function toggleBgTheme(): void {
     line-height: 1;
 
     &.running {
-      background: rgba(59, 130, 246, 0.12);
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      background: rgba(var(--info-rgb), 0.12);
+      border: 1px solid rgba(var(--info-rgb), 0.3);
       color: var(--info-text);
     }
 
@@ -237,8 +237,8 @@ function toggleBgTheme(): void {
     .state-spinner {
       width: 9px;
       height: 9px;
-      border: 1.5px solid rgba(96, 165, 250, 0.3);
-      border-top-color: #60a5fa;
+      border: 1.5px solid rgba(var(--info-soft-rgb), 0.3);
+      border-top-color: var(--info-text);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
       flex-shrink: 0;
@@ -335,11 +335,11 @@ function toggleBgTheme(): void {
     &:hover {
       background: var(--bg-control-hover);
       color: var(--text-strong);
-      border-color: rgba(99, 102, 241, 0.4);
+      border-color: rgba(var(--accent-rgb), 0.4);
     }
 
     &.active {
-      background: rgba(99, 102, 241, 0.16);
+      background: rgba(var(--accent-rgb), 0.16);
       border-color: var(--accent-primary);
       color: var(--accent-text);
     }

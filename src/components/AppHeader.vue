@@ -43,7 +43,7 @@ import logoUrl from "../assets/logo.png";
         width: 100%;
         height: 100%;
         object-fit: contain;
-        filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.4));
+        filter: drop-shadow(0 0 4px rgba(var(--accent-rgb), 0.4));
         transition: transform var(--transition-normal), filter var(--transition-normal);
       }
 

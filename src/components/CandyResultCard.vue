@@ -242,8 +242,8 @@ function handleCopyResult(): void {
         border-radius: 9999px;
         font-size: 11px;
         font-weight: 500;
-        background: rgba(99, 102, 241, 0.1);
-        border: 1px solid rgba(99, 102, 241, 0.25);
+        background: rgba(var(--accent-rgb), 0.1);
+        border: 1px solid rgba(var(--accent-rgb), 0.25);
         color: var(--accent-text);
         cursor: help;
         line-height: 1.2;
@@ -299,7 +299,7 @@ function handleCopyResult(): void {
         background: linear-gradient(
           135deg,
           rgba(16, 185, 129, 0.15) 0%,
-          rgba(99, 102, 241, 0.08) 100%
+          rgba(var(--accent-rgb), 0.08) 100%
         );
         border-color: rgba(16, 185, 129, 0.4);
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);

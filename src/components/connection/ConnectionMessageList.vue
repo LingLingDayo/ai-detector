@@ -174,16 +174,16 @@ defineExpose({ scrollToBottom });
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(6, 182, 212, 0.1));
-    border: 1px solid rgba(99, 102, 241, 0.28);
-    box-shadow: 0 0 28px rgba(99, 102, 241, 0.16);
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.16), rgba(6, 182, 212, 0.1));
+    border: 1px solid rgba(var(--accent-rgb), 0.28);
+    box-shadow: 0 0 28px rgba(var(--accent-rgb), 0.16);
     margin-bottom: 13px;
 
     img {
       width: 34px;
       height: 34px;
       object-fit: contain;
-      filter: drop-shadow(0 0 9px rgba(99, 102, 241, 0.4));
+      filter: drop-shadow(0 0 9px rgba(var(--accent-rgb), 0.4));
     }
   }
 
@@ -226,8 +226,8 @@ defineExpose({ scrollToBottom });
 
     &:hover {
       color: var(--accent-text);
-      background: rgba(99, 102, 241, 0.12);
-      border-color: rgba(99, 102, 241, 0.35);
+      background: rgba(var(--accent-rgb), 0.12);
+      border-color: rgba(var(--accent-rgb), 0.35);
       transform: translateY(-1px);
     }
   }

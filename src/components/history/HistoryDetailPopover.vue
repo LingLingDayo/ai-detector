@@ -171,7 +171,7 @@ function formatProb(prob: number | undefined): string {
   right: 0;
   width: 290px;
   background: var(--bg-popover);
-  border: 1px solid rgba(99, 102, 241, 0.38);
+  border: 1px solid rgba(var(--accent-rgb), 0.38);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-popover);
   padding: 12px;
@@ -223,7 +223,7 @@ function formatProb(prob: number | undefined): string {
 
   &::selection,
   *::selection {
-    background: rgba(99, 102, 241, 0.45);
+    background: rgba(var(--accent-rgb), 0.45);
     color: #ffffff;
   }
 
@@ -271,7 +271,7 @@ function formatProb(prob: number | undefined): string {
       &.config-name-badge {
         color: var(--accent-text);
         font-weight: 600;
-        background: rgba(99, 102, 241, 0.15);
+        background: rgba(var(--accent-rgb), 0.15);
         padding: 1px 6px;
         border-radius: 4px;
         user-select: text;

@@ -264,7 +264,7 @@ onUnmounted(() => {
               <Info
                 v-else
                 :size="22"
-                stroke="#38bdf8"
+                stroke="var(--accent-sky)"
                 :stroke-width="2.2"
               />
             </slot>
@@ -527,18 +527,18 @@ onUnmounted(() => {
 
   /* 主要操作按钮（靛青蓝） */
   .btn-primary {
-    background: #6366f1;
-    border: 1px solid #6366f1;
+    background: var(--accent-primary);
+    border: 1px solid var(--accent-primary);
     color: #ffffff;
 
     &:hover:not(:disabled) {
-      background: #4f46e5;
-      border-color: #4f46e5;
+      background: var(--accent-primary-hover);
+      border-color: var(--accent-primary-hover);
     }
 
     &:active:not(:disabled) {
-      background: #4338ca;
-      border-color: #4338ca;
+      background: var(--accent-primary-active);
+      border-color: var(--accent-primary-active);
     }
   }
 

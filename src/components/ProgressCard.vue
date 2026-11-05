@@ -202,7 +202,7 @@ function closeDetail(): void {
 .progress-card {
   position: relative;
   z-index: 20;
-  border-color: rgba(99, 102, 241, 0.3);
+  border-color: rgba(var(--accent-rgb), 0.3);
   animation: fadeIn var(--transition-normal);
   padding: 10px 14px;
 
@@ -293,11 +293,11 @@ function closeDetail(): void {
         font-size: 12px;
         font-weight: 500;
         color: var(--accent-text-contrast);
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(168, 85, 247, 0.18));
-        border: 1px solid rgba(129, 140, 248, 0.45);
+        background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.22), rgba(168, 85, 247, 0.18));
+        border: 1px solid rgba(var(--accent-icon-rgb), 0.45);
         border-radius: var(--radius-sm, 6px);
         cursor: pointer;
-        box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+        box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.2);
         transition: all var(--transition-fast, 0.15s ease);
         user-select: none;
         line-height: 1;
@@ -309,10 +309,10 @@ function closeDetail(): void {
         }
 
         &:hover:not(:disabled) {
-          background: linear-gradient(135deg, rgba(99, 102, 241, 0.42), rgba(168, 85, 247, 0.32));
+          background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.42), rgba(168, 85, 247, 0.32));
           border-color: rgba(165, 180, 252, 0.85);
           color: #ffffff;
-          box-shadow: 0 0 14px rgba(99, 102, 241, 0.45);
+          box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.45);
           transform: translateY(-1px);
         }
 
@@ -374,7 +374,7 @@ function closeDetail(): void {
       background: var(--accent-gradient);
       border-radius: 9999px;
       transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.5);
     }
   }
 
@@ -463,13 +463,13 @@ function closeDetail(): void {
 
       &.working {
         border-color: var(--accent-primary);
-        background: rgba(99, 102, 241, 0.08);
+        background: rgba(var(--accent-rgb), 0.08);
 
         .step-badge {
           background: var(--accent-primary);
           border-color: transparent;
           color: #fff;
-          box-shadow: 0 0 6px rgba(99, 102, 241, 0.5);
+          box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.5);
         }
 
         .step-state {

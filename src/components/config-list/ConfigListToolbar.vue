@@ -129,8 +129,8 @@ const emit = defineEmits<{
     font-weight: 500;
     line-height: 1;
     color: var(--info-text);
-    background: rgba(59, 130, 246, 0.12);
-    border: 1px solid rgba(59, 130, 246, 0.28);
+    background: rgba(var(--info-rgb), 0.12);
+    border: 1px solid rgba(var(--info-rgb), 0.28);
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all var(--transition-fast);
@@ -142,8 +142,8 @@ const emit = defineEmits<{
     }
 
     &:hover {
-      background: rgba(59, 130, 246, 0.22);
-      border-color: rgba(59, 130, 246, 0.5);
+      background: rgba(var(--info-rgb), 0.22);
+      border-color: rgba(var(--info-rgb), 0.5);
       color: var(--info-text-soft);
     }
   }

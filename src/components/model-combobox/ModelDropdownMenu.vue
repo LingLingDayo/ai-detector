@@ -115,7 +115,7 @@ defineExpose({
   right: 0;
   z-index: 1000;
   background: var(--bg-popover);
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-popover);
   max-height: 280px;
@@ -159,7 +159,7 @@ defineExpose({
     max-height: 190px;
     padding: 3px 0;
     scrollbar-width: thin;
-    scrollbar-color: rgba(99, 102, 241, 0.28) transparent;
+    scrollbar-color: rgba(var(--accent-rgb), 0.28) transparent;
 
     &::-webkit-scrollbar {
       width: 4px;
@@ -170,11 +170,11 @@ defineExpose({
     }
 
     &::-webkit-scrollbar-thumb {
-      background: rgba(99, 102, 241, 0.28);
+      background: rgba(var(--accent-rgb), 0.28);
       border-radius: 10px;
 
       &:hover {
-        background: rgba(99, 102, 241, 0.55);
+        background: rgba(var(--accent-rgb), 0.55);
       }
     }
 
@@ -208,7 +208,7 @@ defineExpose({
 
       &:hover,
       &.active {
-        background: rgba(99, 102, 241, 0.15);
+        background: rgba(var(--accent-rgb), 0.15);
         color: var(--text-strong);
       }
 

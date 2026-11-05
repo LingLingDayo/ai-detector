@@ -196,8 +196,8 @@ function handleCopyError(): void {
 
         &.working-hint {
           color: var(--accent-primary);
-          background: rgba(99, 102, 241, 0.08);
-          border-color: rgba(99, 102, 241, 0.25);
+          background: rgba(var(--accent-rgb), 0.08);
+          border-color: rgba(var(--accent-rgb), 0.25);
         }
 
         &.error-hint {
@@ -238,7 +238,7 @@ function handleCopyError(): void {
       }
 
       &:hover {
-        background: rgba(99, 102, 241, 0.12);
+        background: rgba(var(--accent-rgb), 0.12);
         border-color: var(--accent-primary);
         color: var(--text-primary);
       }
@@ -303,8 +303,8 @@ function handleCopyError(): void {
 
     &.working {
       color: var(--accent-primary);
-      border-color: rgba(99, 102, 241, 0.35);
-      background: rgba(99, 102, 241, 0.05);
+      border-color: rgba(var(--accent-rgb), 0.35);
+      background: rgba(var(--accent-rgb), 0.05);
 
       p {
         color: var(--text-secondary);
@@ -384,7 +384,7 @@ function handleCopyError(): void {
     .status-spinner {
       width: 16px;
       height: 16px;
-      border: 2px solid rgba(99, 102, 241, 0.3);
+      border: 2px solid rgba(var(--accent-rgb), 0.3);
       border-top-color: var(--accent-primary);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;

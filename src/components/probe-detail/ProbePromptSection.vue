@@ -105,8 +105,8 @@ function handleCopy(): void {
 
         &.answer-hint {
           color: var(--accent-text);
-          background: rgba(99, 102, 241, 0.1);
-          border-color: rgba(99, 102, 241, 0.3);
+          background: rgba(var(--accent-rgb), 0.1);
+          border-color: rgba(var(--accent-rgb), 0.3);
 
           strong {
             font-weight: 700;
@@ -144,7 +144,7 @@ function handleCopy(): void {
       }
 
       &:hover:not(:disabled) {
-        background: rgba(99, 102, 241, 0.12);
+        background: rgba(var(--accent-rgb), 0.12);
         border-color: var(--accent-primary);
         color: var(--text-primary);
       }

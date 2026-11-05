@@ -389,7 +389,7 @@ watch(
   transition: border-color var(--transition-fast), background-color var(--transition-fast);
 
   &.is-editing {
-    border-color: rgba(99, 102, 241, 0.45);
+    border-color: rgba(var(--accent-rgb), 0.45);
     background: var(--bg-elevated);
   }
 }
@@ -457,7 +457,7 @@ watch(
     &:hover:not(:disabled) {
       background: var(--bg-control-hover);
       color: var(--text-strong);
-      border-color: rgba(99, 102, 241, 0.4);
+      border-color: rgba(var(--accent-rgb), 0.4);
 
       .preset-chevron {
         color: var(--text-strong);
@@ -465,7 +465,7 @@ watch(
     }
 
     &.active {
-      background: rgba(99, 102, 241, 0.16);
+      background: rgba(var(--accent-rgb), 0.16);
       border-color: var(--accent-primary);
       color: var(--accent-text);
 
@@ -480,12 +480,12 @@ watch(
     }
 
     &.save {
-      background: rgba(99, 102, 241, 0.16);
+      background: rgba(var(--accent-rgb), 0.16);
       border-color: var(--accent-primary);
       color: var(--accent-text);
 
       &:hover:not(:disabled) {
-        background: rgba(99, 102, 241, 0.28);
+        background: rgba(var(--accent-rgb), 0.28);
         color: var(--accent-text-contrast);
         border-color: var(--accent-icon);
       }
@@ -561,12 +561,12 @@ watch(
   }
 
   &.is-selected {
-    background: rgba(99, 102, 241, 0.16);
+    background: rgba(var(--accent-rgb), 0.16);
     color: var(--accent-text);
     font-weight: 500;
 
     &:hover {
-      background: rgba(99, 102, 241, 0.22);
+      background: rgba(var(--accent-rgb), 0.22);
       color: var(--accent-text-soft);
     }
   }
@@ -611,7 +611,7 @@ watch(
   width: 100%;
   box-sizing: border-box;
   background: var(--bg-elevated-strong);
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
   border-radius: var(--radius-xs, 4px);
   padding: 6px 8px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -625,8 +625,8 @@ watch(
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 
   &:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
   }
 }
 

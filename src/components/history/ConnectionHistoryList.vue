@@ -328,12 +328,12 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
 
   &:hover {
-    border-color: rgba(99, 102, 241, 0.28);
+    border-color: rgba(var(--accent-rgb), 0.28);
     background: var(--bg-control);
   }
 
   &.is-expanded {
-    border-color: rgba(99, 102, 241, 0.42);
+    border-color: rgba(var(--accent-rgb), 0.42);
     background: var(--bg-elevated);
     box-shadow: var(--shadow-hover);
   }
@@ -373,8 +373,8 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.22);
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
   color: var(--accent-text);
 }
 
@@ -457,8 +457,8 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     flex-shrink: 0;
     padding: 0 5px;
     border-radius: 3px;
-    background: rgba(99, 102, 241, 0.1);
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    background: rgba(var(--accent-rgb), 0.1);
+    border: 1px solid rgba(var(--accent-rgb), 0.2);
     color: var(--accent-text);
     font-size: 10px;
   }
@@ -591,11 +591,11 @@ function getSuccessTitle(item: ConnectionHistoryItem): string {
     border-radius: inherit;
 
     &.is-request {
-      background: linear-gradient(90deg, #6366f1, var(--accent-icon));
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-icon));
     }
 
     &.is-response {
-      background: linear-gradient(90deg, #0891b2, #22d3ee);
+      background: linear-gradient(90deg, var(--accent-secondary), var(--accent-sky));
     }
   }
 

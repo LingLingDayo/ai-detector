@@ -181,8 +181,8 @@ onUnmounted(() => {
     justify-content: center;
     flex-shrink: 0;
     border-radius: var(--radius-sm);
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: rgba(var(--accent-rgb), 0.15);
+    border: 1px solid rgba(var(--accent-rgb), 0.3);
     color: var(--accent-icon);
   }
 
@@ -258,7 +258,7 @@ onUnmounted(() => {
 
     &:hover:not(.active) {
       color: var(--text-primary);
-      background: rgba(99, 102, 241, 0.08);
+      background: rgba(var(--accent-rgb), 0.08);
     }
 
     &.active {

@@ -185,16 +185,16 @@ async function handleCopy(): Promise<void> {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.24);
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.12);
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.24);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.12);
   user-select: none;
 
   img {
     width: 20px;
     height: 20px;
     object-fit: contain;
-    filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.35));
+    filter: drop-shadow(0 0 5px rgba(var(--accent-rgb), 0.35));
   }
 }
 
@@ -215,10 +215,10 @@ async function handleCopy(): Promise<void> {
   flex-direction: column;
   gap: 7px;
   padding: 9px 13px;
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(129, 140, 248, 0.25);
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-icon-rgb), 0.25);
   border-radius: 13px 13px 4px 13px;
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.08);
+  box-shadow: 0 2px 10px rgba(var(--accent-rgb), 0.08);
 
   .user-text {
     color: var(--text-strong);
@@ -335,8 +335,8 @@ async function handleCopy(): Promise<void> {
   :deep(blockquote) {
     margin: 8px 0;
     padding: 6px 11px;
-    border-left: 2px solid rgba(99, 102, 241, 0.55);
-    background: rgba(99, 102, 241, 0.07);
+    border-left: 2px solid rgba(var(--accent-rgb), 0.55);
+    background: rgba(var(--accent-rgb), 0.07);
     border-radius: 0 5px 5px 0;
     color: var(--text-secondary);
   }
@@ -404,7 +404,7 @@ async function handleCopy(): Promise<void> {
     vertical-align: -1px;
     border-radius: 1px;
     background: var(--accent-icon);
-    box-shadow: 0 0 7px rgba(129, 140, 248, 0.8);
+    box-shadow: 0 0 7px rgba(var(--accent-icon-rgb), 0.8);
     animation: caret-blink 0.9s step-end infinite;
   }
 }
@@ -436,7 +436,7 @@ async function handleCopy(): Promise<void> {
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--accent-icon);
-  box-shadow: 0 0 7px rgba(129, 140, 248, 0.9);
+  box-shadow: 0 0 7px rgba(var(--accent-icon-rgb), 0.9);
   animation: stream-pulse 1.2s infinite ease-in-out;
 }
 

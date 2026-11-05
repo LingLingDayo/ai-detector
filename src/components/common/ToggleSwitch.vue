@@ -62,8 +62,8 @@ function handleToggle(): void {
   }
 
   &.is-on {
-    background: rgba(99, 102, 241, 0.35);
-    border-color: rgba(99, 102, 241, 0.55);
+    background: rgba(var(--accent-rgb), 0.35);
+    border-color: rgba(var(--accent-rgb), 0.55);
 
     .toggle-thumb {
       transform: translateX(16px);
@@ -72,7 +72,7 @@ function handleToggle(): void {
   }
 
   &:hover:not(:disabled) {
-    border-color: rgba(99, 102, 241, 0.5);
+    border-color: rgba(var(--accent-rgb), 0.5);
   }
 
   &:disabled {

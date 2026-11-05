@@ -115,8 +115,8 @@ const emit = defineEmits<{
     font-size: 11px;
     padding: 1px 7px;
     border-radius: 9999px;
-    background: rgba(99, 102, 241, 0.12);
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: rgba(var(--accent-rgb), 0.12);
+    border: 1px solid rgba(var(--accent-rgb), 0.3);
     color: var(--accent-text);
     font-weight: 500;
     max-width: 140px;
@@ -165,18 +165,18 @@ const emit = defineEmits<{
 
     &:hover {
       background: var(--bg-control-hover);
-      border-color: rgba(99, 102, 241, 0.4);
+      border-color: rgba(var(--accent-rgb), 0.4);
       color: var(--text-primary);
     }
 
     &.btn-save-config {
       color: var(--info-text);
-      background: rgba(59, 130, 246, 0.08);
-      border-color: rgba(59, 130, 246, 0.22);
+      background: rgba(var(--info-rgb), 0.08);
+      border-color: rgba(var(--info-rgb), 0.22);
 
       &:hover:not(:disabled) {
-        background: rgba(59, 130, 246, 0.18);
-        border-color: rgba(59, 130, 246, 0.45);
+        background: rgba(var(--info-rgb), 0.18);
+        border-color: rgba(var(--info-rgb), 0.45);
         color: var(--info-text-soft);
       }
 
@@ -190,8 +190,8 @@ const emit = defineEmits<{
 
     &.btn-config-list {
       color: var(--accent-text);
-      background: rgba(99, 102, 241, 0.1);
-      border-color: rgba(99, 102, 241, 0.25);
+      background: rgba(var(--accent-rgb), 0.1);
+      border-color: rgba(var(--accent-rgb), 0.25);
     }
 
     &.btn-history {
@@ -205,7 +205,7 @@ const emit = defineEmits<{
         height: 14px;
         line-height: 14px;
         border-radius: 9999px;
-        background: rgba(99, 102, 241, 0.2);
+        background: rgba(var(--accent-rgb), 0.2);
         color: var(--accent-text);
         display: inline-flex;
         align-items: center;
@@ -217,8 +217,8 @@ const emit = defineEmits<{
     &.btn-history,
     &.btn-settings {
       &:hover {
-        background: rgba(99, 102, 241, 0.16);
-        border-color: rgba(99, 102, 241, 0.42);
+        background: rgba(var(--accent-rgb), 0.16);
+        border-color: rgba(var(--accent-rgb), 0.42);
         color: var(--accent-text-contrast);
       }
     }

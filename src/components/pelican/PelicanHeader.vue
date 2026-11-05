@@ -60,8 +60,8 @@
       width: 28px;
       height: 28px;
       border-radius: var(--radius-sm);
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.3);
+      background: rgba(var(--accent-rgb), 0.15);
+      border: 1px solid rgba(var(--accent-rgb), 0.3);
       color: var(--accent-icon);
     }
 
@@ -77,8 +77,8 @@
       padding: 2px 7px;
       font-size: 11px;
       border-radius: 9999px;
-      background: rgba(99, 102, 241, 0.12);
-      border: 1px solid rgba(99, 102, 241, 0.25);
+      background: rgba(var(--accent-rgb), 0.12);
+      border: 1px solid rgba(var(--accent-rgb), 0.25);
       color: var(--accent-text);
       line-height: 1.2;
     }

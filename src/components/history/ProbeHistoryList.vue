@@ -214,7 +214,7 @@ function getProbBadgeClass(prob: number | undefined): string {
   &:has(.info-tooltip-popover:hover) {
     z-index: 15;
     background: var(--bg-control);
-    border-color: rgba(99, 102, 241, 0.35);
+    border-color: rgba(var(--accent-rgb), 0.35);
     box-shadow: var(--shadow-hover);
 
     .probe-row-meta .row-action-btn {
@@ -225,7 +225,7 @@ function getProbBadgeClass(prob: number | undefined): string {
   &.is-pinned-row {
     z-index: 80;
     background: var(--bg-control-strong);
-    border-color: rgba(99, 102, 241, 0.6);
+    border-color: rgba(var(--accent-rgb), 0.6);
     box-shadow: var(--shadow-hover);
 
     .probe-row-meta .row-action-btn {
@@ -279,8 +279,8 @@ function getProbBadgeClass(prob: number | undefined): string {
     .family-tag {
       font-size: 10px;
       color: var(--accent-icon);
-      background: rgba(99, 102, 241, 0.12);
-      border: 1px solid rgba(99, 102, 241, 0.2);
+      background: rgba(var(--accent-rgb), 0.12);
+      border: 1px solid rgba(var(--accent-rgb), 0.2);
       padding: 1px 5px;
       border-radius: 3px;
       white-space: nowrap;
@@ -310,8 +310,8 @@ function getProbBadgeClass(prob: number | undefined): string {
       }
 
       &.prob-mid {
-        background: rgba(99, 102, 241, 0.14);
-        border-color: rgba(99, 102, 241, 0.3);
+        background: rgba(var(--accent-rgb), 0.14);
+        border-color: rgba(var(--accent-rgb), 0.3);
         color: var(--accent-text);
       }
 
@@ -362,11 +362,11 @@ function getProbBadgeClass(prob: number | undefined): string {
         }
 
         &.is-pinned {
-          background: rgba(99, 102, 241, 0.3) !important;
-          border-color: rgba(99, 102, 241, 0.65) !important;
+          background: rgba(var(--accent-rgb), 0.3) !important;
+          border-color: rgba(var(--accent-rgb), 0.65) !important;
           color: var(--accent-text) !important;
           opacity: 1 !important;
-          box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+          box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.4);
         }
       }
 

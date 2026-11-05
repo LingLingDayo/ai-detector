@@ -178,10 +178,10 @@ const successTitle = computed(
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.28);
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
   color: var(--accent-text);
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.12);
 }
 
 .header-copy {
@@ -218,8 +218,8 @@ const successTitle = computed(
   font-size: 10px;
   font-weight: 500;
   white-space: nowrap;
-  background: rgba(99, 102, 241, 0.13);
-  border: 1px solid rgba(99, 102, 241, 0.32);
+  background: rgba(var(--accent-rgb), 0.13);
+  border: 1px solid rgba(var(--accent-rgb), 0.32);
   color: var(--accent-text);
 }
 
@@ -228,7 +228,7 @@ const successTitle = computed(
   height: 5px;
   border-radius: 50%;
   background: var(--accent-icon);
-  box-shadow: 0 0 7px rgba(129, 140, 248, 0.95);
+  box-shadow: 0 0 7px rgba(var(--accent-icon-rgb), 0.95);
   animation: header-pulse 1.2s infinite ease-in-out;
 }
 

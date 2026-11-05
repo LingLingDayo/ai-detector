@@ -211,9 +211,9 @@ function maskApiKey(key?: string): string {
   transition: all var(--transition-fast);
 
   &:hover {
-    border-color: rgba(99, 102, 241, 0.45);
+    border-color: rgba(var(--accent-rgb), 0.45);
     background: var(--bg-card-hover);
-    box-shadow: var(--shadow-hover), 0 0 10px rgba(99, 102, 241, 0.08);
+    box-shadow: var(--shadow-hover), 0 0 10px rgba(var(--accent-rgb), 0.08);
     transform: translateY(-1px);
 
     .card-main-row .card-title-group .badge-hint {
@@ -273,15 +273,15 @@ function maskApiKey(key?: string): string {
   &.is-dragging {
     opacity: 0.35;
     border-style: dashed;
-    border-color: rgba(99, 102, 241, 0.6);
+    border-color: rgba(var(--accent-rgb), 0.6);
     cursor: grabbing;
     transform: none;
   }
 
   &.is-drag-over {
     border-color: var(--accent-primary);
-    background: rgba(99, 102, 241, 0.18);
-    box-shadow: 0 0 14px rgba(99, 102, 241, 0.3);
+    background: rgba(var(--accent-rgb), 0.18);
+    box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.3);
     transform: none;
   }
 
@@ -293,8 +293,8 @@ function maskApiKey(key?: string): string {
       left: 0;
       right: 0;
       height: 2px;
-      background: linear-gradient(90deg, var(--accent-icon) 0%, #6366f1 50%, rgba(99, 102, 241, 0.4) 100%);
-      box-shadow: 0 0 10px rgba(99, 102, 241, 0.95), 0 0 2px #ffffff;
+      background: linear-gradient(90deg, var(--accent-icon) 0%, var(--accent-primary) 50%, rgba(var(--accent-rgb), 0.4) 100%);
+      box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.95), 0 0 2px #ffffff;
       border-radius: 9999px;
       pointer-events: none;
       z-index: 10;
@@ -308,7 +308,7 @@ function maskApiKey(key?: string): string {
       height: 8px;
       background: #ffffff;
       border: 2px solid var(--accent-primary, #6366f1);
-      box-shadow: 0 0 8px rgba(99, 102, 241, 0.95);
+      box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.95);
       border-radius: 50%;
       pointer-events: none;
       z-index: 11;
@@ -316,7 +316,7 @@ function maskApiKey(key?: string): string {
   }
 
   &.is-insert-before {
-    border-top-color: rgba(99, 102, 241, 0.65);
+    border-top-color: rgba(var(--accent-rgb), 0.65);
 
     &::before {
       top: -6px;
@@ -327,7 +327,7 @@ function maskApiKey(key?: string): string {
   }
 
   &.is-insert-after {
-    border-bottom-color: rgba(99, 102, 241, 0.65);
+    border-bottom-color: rgba(var(--accent-rgb), 0.65);
 
     &::before {
       bottom: -6px;
@@ -381,8 +381,8 @@ function maskApiKey(key?: string): string {
 
       .badge-hint {
         color: var(--accent-text);
-        background: rgba(99, 102, 241, 0.14);
-        border: 1px solid rgba(99, 102, 241, 0.35);
+        background: rgba(var(--accent-rgb), 0.14);
+        border: 1px solid rgba(var(--accent-rgb), 0.35);
         opacity: 0;
         transform: translateX(-4px);
       }
@@ -431,7 +431,7 @@ function maskApiKey(key?: string): string {
           &:hover {
             background: var(--bg-control-hover);
             color: var(--text-primary);
-            border-color: rgba(99, 102, 241, 0.35);
+            border-color: rgba(var(--accent-rgb), 0.35);
           }
         }
 

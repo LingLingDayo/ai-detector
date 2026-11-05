@@ -274,7 +274,7 @@ onUnmounted(() => {
   transition: all var(--transition-fast);
 
   &:hover {
-    border-color: rgba(99, 102, 241, 0.4);
+    border-color: rgba(var(--accent-rgb), 0.4);
     background: var(--bg-input);
   }
 
@@ -314,9 +314,9 @@ onUnmounted(() => {
     font-size: 11px;
     font-weight: 500;
     border-radius: 4px;
-    background: rgba(99, 102, 241, 0.15);
+    background: rgba(var(--accent-rgb), 0.15);
     color: var(--accent-icon);
-    border: 1px solid rgba(99, 102, 241, 0.25);
+    border: 1px solid rgba(var(--accent-rgb), 0.25);
     margin-left: 2px;
   }
 
@@ -342,7 +342,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   background: var(--bg-popover);
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-popover);
   backdrop-filter: blur(16px);
@@ -391,12 +391,12 @@ onUnmounted(() => {
   transition: background var(--transition-fast), color var(--transition-fast);
 
   &.is-highlighted {
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(var(--accent-rgb), 0.1);
     color: var(--text-primary);
   }
 
   &.is-selected {
-    background: rgba(99, 102, 241, 0.16);
+    background: rgba(var(--accent-rgb), 0.16);
     color: var(--accent-text);
     font-weight: 500;
 
@@ -433,9 +433,9 @@ onUnmounted(() => {
     font-size: 10px;
     font-weight: 500;
     border-radius: 3px;
-    background: rgba(99, 102, 241, 0.12);
+    background: rgba(var(--accent-rgb), 0.12);
     color: var(--accent-icon);
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(var(--accent-rgb), 0.2);
   }
 
   .check-icon {

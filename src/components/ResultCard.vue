@@ -209,16 +209,16 @@ function handleCopyResult(): void {
         border-radius: 9999px;
         font-size: 11px;
         font-weight: 500;
-        background: rgba(99, 102, 241, 0.1);
-        border: 1px solid rgba(99, 102, 241, 0.25);
+        background: rgba(var(--accent-rgb), 0.1);
+        border: 1px solid rgba(var(--accent-rgb), 0.25);
         color: var(--accent-text);
         cursor: help;
         line-height: 1.2;
         transition: all 0.2s ease;
 
         &:hover {
-          background: rgba(99, 102, 241, 0.18);
-          border-color: rgba(99, 102, 241, 0.4);
+          background: rgba(var(--accent-rgb), 0.18);
+          border-color: rgba(var(--accent-rgb), 0.4);
           color: var(--accent-text-soft);
         }
 
@@ -275,9 +275,9 @@ function handleCopyResult(): void {
       justify-content: center;
 
       &.primary {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.08) 100%);
-        border-color: rgba(99, 102, 241, 0.4);
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+        background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15) 0%, rgba(6, 182, 212, 0.08) 100%);
+        border-color: rgba(var(--accent-rgb), 0.4);
+        box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.12);
 
         .hero-val {
           background: var(--accent-gradient);
@@ -411,7 +411,7 @@ function handleCopyResult(): void {
         }
 
         &.winner-row {
-          background: rgba(99, 102, 241, 0.08);
+          background: rgba(var(--accent-rgb), 0.08);
 
           .rank-pill {
             background: var(--accent-gradient);

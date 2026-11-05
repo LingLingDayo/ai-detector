@@ -286,12 +286,12 @@ function buildSvgPreviewDocument(rawContent: string): string {
   &:focus-within,
   &:has(.info-tooltip-popover:hover) {
     z-index: 15;
-    border-color: rgba(99, 102, 241, 0.45);
+    border-color: rgba(var(--accent-rgb), 0.45);
   }
 
   &.is-pinned-card {
     z-index: 80;
-    border-color: rgba(99, 102, 241, 0.65);
+    border-color: rgba(var(--accent-rgb), 0.65);
 
     .info-icon-wrapper {
       opacity: 1;
@@ -374,7 +374,7 @@ function buildSvgPreviewDocument(rawContent: string): string {
       border-color: var(--pelican-floating-pinned-border) !important;
       color: var(--pelican-floating-pinned-color) !important;
       opacity: 1 !important;
-      box-shadow: 0 0 10px rgba(99, 102, 241, 0.35);
+      box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.35);
     }
   }
 

@@ -145,7 +145,7 @@ function handleSelect(option: SegmentedOption): void {
       height: 6px;
       border-radius: 50%;
       background-color: var(--accent-primary, #6366f1);
-      box-shadow: 0 0 8px rgba(99, 102, 241, 0.85);
+      box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.85);
       animation: segment-pulse 1.4s infinite ease-in-out;
       flex-shrink: 0;
     }
@@ -211,12 +211,12 @@ function handleSelect(option: SegmentedOption): void {
   100% {
     transform: scale(0.9);
     opacity: 0.7;
-    box-shadow: 0 0 4px rgba(99, 102, 241, 0.6);
+    box-shadow: 0 0 4px rgba(var(--accent-rgb), 0.6);
   }
   50% {
     transform: scale(1.35);
     opacity: 1;
-    box-shadow: 0 0 10px rgba(99, 102, 241, 1);
+    box-shadow: 0 0 10px rgba(var(--accent-rgb), 1);
   }
 }
 </style>
