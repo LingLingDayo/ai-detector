@@ -5,6 +5,7 @@ import { appearancePage } from "./appearance";
 export const settingsPages: SettingsPage[] = [generalPage, appearancePage];
 
 export type {
+  AppTheme,
   SettingsContext,
   SettingsField,
   SettingsPage,

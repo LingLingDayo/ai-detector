@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, watch, onScopeDispose } from "vue";
+import { computed, ref, watch, onScopeDispose } from "vue";
 import { sendProbe } from "../services/api";
 import type { ClientConfig, PelicanHistoryItem } from "../types";
 import {
@@ -297,34 +297,36 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
 
   const settingsStore = useSettingsStore();
 
+  // 鹈鹕画布只有深浅两态，默认与暗色皮肤都归入深色
+  const pelicanTheme = computed<"dark" | "light">(() =>
+    settingsStore.theme === "light" ? "light" : "dark"
+  );
+
   const bgTheme = ref<"dark" | "light">(
-    loadInitialPelicanBgTheme(settingsStore.theme)
+    loadInitialPelicanBgTheme(pelicanTheme.value)
   );
   const showCode = ref(false);
 
   // 监听全局主题风格切换：切换主题风格时，自动同步切换到对应风格
-  watch(
-    () => settingsStore.theme,
-    (newTheme) => {
-      bgTheme.value = newTheme;
-      try {
-        localStorage.setItem(
-          PELICAN_BG_THEME_PREFERENCE_KEY,
-          JSON.stringify({ forTheme: newTheme, bgTheme: newTheme })
-        );
-        localStorage.setItem(PELICAN_BG_THEME_STORAGE_KEY, newTheme);
-      } catch {
-        // ignore
-      }
+  watch(pelicanTheme, (newTheme) => {
+    bgTheme.value = newTheme;
+    try {
+      localStorage.setItem(
+        PELICAN_BG_THEME_PREFERENCE_KEY,
+        JSON.stringify({ forTheme: newTheme, bgTheme: newTheme })
+      );
+      localStorage.setItem(PELICAN_BG_THEME_STORAGE_KEY, newTheme);
+    } catch {
+      // ignore
     }
-  );
+  });
 
   function setBgTheme(theme: "dark" | "light"): void {
     bgTheme.value = theme;
     try {
       localStorage.setItem(
         PELICAN_BG_THEME_PREFERENCE_KEY,
-        JSON.stringify({ forTheme: settingsStore.theme, bgTheme: theme })
+        JSON.stringify({ forTheme: pelicanTheme.value, bgTheme: theme })
       );
       localStorage.setItem(PELICAN_BG_THEME_STORAGE_KEY, theme);
     } catch {

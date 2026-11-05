@@ -131,7 +131,7 @@ function handleChange(value: SettingsValue): void {
 }
 
 .field-control {
-  width: 188px;
+  width: 212px;
   flex-shrink: 0;
 }
 

@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, reactive, watch } from "vue";
 import { settingsPages } from "../settings";
-import type { SettingsContext, SettingsValue } from "../settings/types";
+import type { AppTheme, SettingsContext, SettingsValue } from "../settings/types";
 import type { ActiveTestMode, ConnectionTestMode } from "../types";
 import { CONNECTION_MODE_STORAGE_KEY } from "../constants";
 
@@ -49,6 +49,12 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
+  // 旧版本用 dark 表示默认深色，升级后归一为 default，避免与新暗色皮肤混淆
+  if (values.theme === "dark") {
+    values.theme = "default";
+    persist();
+  }
+
   // 迁移早期独立存储的连接测试模式，避免老用户升级后丢失偏好
   if (!("defaultConnectionMode" in stored)) {
     try {
@@ -61,7 +67,11 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
-  const theme = computed<"dark" | "light">(() => (values.theme === "light" ? "light" : "dark"));
+  const theme = computed<AppTheme>(() => {
+    if (values.theme === "light") return "light";
+    if (values.theme === "midnight") return "midnight";
+    return "default";
+  });
 
   const defaultTestMode = computed<ActiveTestMode>(() => {
     const mode = values.defaultTestMode;

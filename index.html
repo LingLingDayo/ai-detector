@@ -6,13 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Detector - AI模型检测器</title>
     <script>
-      // 首屏渲染前恢复主题，避免亮色主题启动时闪暗色
+      // 首屏渲染前恢复主题，避免非默认风格启动时闪色
       (function () {
         try {
           var raw = localStorage.getItem("modeltrace_settings");
           var settings = raw ? JSON.parse(raw) : null;
-          if (settings && settings.theme === "light") {
-            document.documentElement.dataset.theme = "light";
+          var theme = settings && settings.theme;
+          if (theme === "light" || theme === "midnight") {
+            document.documentElement.dataset.theme = theme;
           }
         } catch (e) {
           /* 忽略无法读取的本地设置 */
