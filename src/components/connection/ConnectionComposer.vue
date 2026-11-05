@@ -428,7 +428,7 @@ defineExpose({ focus, fillText });
   &.is-ready {
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     border-color: rgba(var(--accent-icon-rgb), 0.55);
-    color: #fff;
+    color: var(--accent-contrast);
     cursor: pointer;
     box-shadow: 0 3px 12px rgba(var(--accent-rgb), 0.38);
 

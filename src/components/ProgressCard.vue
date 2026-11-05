@@ -468,7 +468,7 @@ function closeDetail(): void {
         .step-badge {
           background: var(--accent-primary);
           border-color: transparent;
-          color: #fff;
+          color: var(--accent-contrast);
           box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.5);
         }
 

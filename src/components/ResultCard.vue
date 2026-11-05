@@ -415,7 +415,7 @@ function handleCopyResult(): void {
 
           .rank-pill {
             background: var(--accent-gradient);
-            color: #fff;
+            color: var(--accent-contrast);
           }
 
           .prob-val {

@@ -529,7 +529,7 @@ onUnmounted(() => {
   .btn-primary {
     background: var(--accent-primary);
     border: 1px solid var(--accent-primary);
-    color: #ffffff;
+    color: var(--accent-contrast);
 
     &:hover:not(:disabled) {
       background: var(--accent-primary-hover);
@@ -556,8 +556,8 @@ onUnmounted(() => {
   .btn-spinner {
     width: 13px;
     height: 13px;
-    border: 2px solid rgba(255, 255, 255, 0.35);
-    border-top-color: #ffffff;
+    border: 2px solid var(--accent-contrast-soft);
+    border-top-color: var(--accent-contrast);
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
   }
