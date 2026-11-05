@@ -217,7 +217,7 @@ function buildSvgPreviewDocument(rawContent: string): string {
         </div>
 
         <!-- 4. 浮于图片上方的底栏快捷操作（默认隐藏，hover 时显现） -->
-        <footer class="card-footer">
+        <footer class="card-footer" @click.stop>
           <span class="time-label">{{ formatHistoryTime(item.createdAt) }}</span>
           <div class="footer-btns">
             <button
@@ -425,7 +425,7 @@ function buildSvgPreviewDocument(rawContent: string): string {
   }
 }
 
-/* 卡片底栏操作区：浮在图片上方，默认隐藏，只有 hover 时才显示 */
+/* 卡片底栏操作区：贴底自然多阶羽化渐变过渡，彻底消除生硬截断线 */
 .card-footer {
   position: absolute;
   bottom: 0;
@@ -435,65 +435,73 @@ function buildSvgPreviewDocument(rawContent: string): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 12px 10px;
+  padding: 36px 12px 10px;
   background: var(--pelican-footer-bg);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* 移除硬截断模糊 backdrop-filter，使渐变如空气般平滑融解进插画中 */
   border-bottom-left-radius: calc(var(--radius-md) - 1px);
   border-bottom-right-radius: calc(var(--radius-md) - 1px);
   opacity: 0;
   pointer-events: none;
   transform: translateY(4px);
-  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.2s ease;
 
   .time-label {
     font-size: 11px;
+    line-height: 1;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     color: var(--pelican-footer-text);
     text-shadow: var(--pelican-footer-text-shadow);
     font-weight: 500;
+    letter-spacing: -0.2px;
+    user-select: none;
+    white-space: nowrap;
   }
 
   .footer-btns {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
 
     .tool-btn {
       width: 24px;
       height: 24px;
       border-radius: var(--radius-sm);
-      background: var(--pelican-floating-btn-bg);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      border: 1px solid var(--pelican-floating-btn-border);
-      color: var(--pelican-floating-btn-color);
-      box-shadow: var(--pelican-floating-btn-shadow);
+      background: var(--pelican-footer-btn-bg);
+      border: 1px solid var(--pelican-footer-btn-border);
+      color: var(--pelican-footer-btn-color);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.18s ease;
+      padding: 0;
+      transition: all 0.16s ease;
 
       &:hover {
-        background: var(--pelican-floating-btn-hover-bg);
-        border-color: var(--pelican-floating-btn-hover-border);
-        color: var(--pelican-floating-btn-hover-color);
+        background: var(--pelican-footer-btn-hover-bg);
+        border-color: var(--pelican-footer-btn-hover-border);
+        color: var(--pelican-footer-btn-hover-color);
         transform: translateY(-1px);
       }
 
+      &:active {
+        transform: translateY(0) scale(0.92);
+      }
+
       &.delete-tool-btn:hover {
-        background: var(--pelican-floating-btn-delete-bg);
-        border-color: var(--pelican-floating-btn-delete-border);
-        color: var(--pelican-floating-btn-delete-color);
+        background: var(--pelican-footer-btn-delete-bg);
+        border-color: var(--pelican-footer-btn-delete-border);
+        color: var(--pelican-footer-btn-delete-color);
         transform: translateY(-1px);
       }
     }
   }
 }
 
-/* 卡片 hover 时显示底栏 */
-.pelican-card-item:hover .card-footer {
+/* 卡片 hover 或内部聚焦时平滑显示底栏 */
+.pelican-card-item:hover .card-footer,
+.pelican-card-item:focus-within .card-footer {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
