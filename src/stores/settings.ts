@@ -67,6 +67,13 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
+  // 校验并纠正失败重试次数，避免旧版本残存的非预期选项（如 2 次）导致分段选择器无高亮
+  const VALID_RETRY_COUNTS: ReadonlySet<SettingsValue> = new Set(["0", "1", "3", "5", 0, 1, 3, 5]);
+  if (!VALID_RETRY_COUNTS.has(values.requestRetryCount)) {
+    values.requestRetryCount = "3";
+    persist();
+  }
+
   const theme = computed<AppTheme>(() => {
     if (values.theme === "light") return "light";
     if (values.theme === "midnight") return "midnight";
@@ -88,9 +95,10 @@ export const useSettingsStore = defineStore("settings", () => {
     clampTimeout(values.syncTimeoutSeconds, 240, 900)
   );
 
-  const requestRetryCount = computed<number>(() =>
-    Math.min(3, Math.max(0, Math.round(toNumber(values.requestRetryCount, 3))))
-  );
+  const requestRetryCount = computed<number>(() => {
+    const parsed = Number(values.requestRetryCount);
+    return parsed === 0 || parsed === 1 || parsed === 3 || parsed === 5 ? parsed : 3;
+  });
 
   const historyEnabled = computed<boolean>(() => values.historyEnabled !== false);
 

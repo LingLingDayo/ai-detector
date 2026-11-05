@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { CONNECTION_MODE_STORAGE_KEY } from "../constants";
 import { appearancePage } from "../settings/appearance";
+import { generalPage } from "../settings/general";
 import { useSettingsStore } from "./settings";
 
 const SETTINGS_STORAGE_KEY = "modeltrace_settings";
@@ -38,6 +39,47 @@ describe("settings store 通用设置", () => {
     expect(store.historyEnabled).toBe(true);
     expect(store.historyMaxCount).toBe(100);
     expect(store.defaultConnectionMode).toBe("chat");
+  });
+
+  it("重试次数配置项提供 0、1、3、5 次选项且默认值为 3", () => {
+    const field = generalPage.sections
+      .flatMap((section) => section.fields)
+      .find((item) => item.key === "requestRetryCount");
+    expect(field?.type).toBe("segmented");
+    expect(field?.defaultValue).toBe("3");
+    if (field?.type === "segmented") {
+      expect(field.options.map((option) => option.value)).toEqual(["0", "1", "3", "5"]);
+    }
+  });
+
+  it("重试次数支持 0、1、3、5 档位，非法值回退为默认值 3", () => {
+    storage.clear();
+    const store = newStore();
+    expect(store.requestRetryCount).toBe(3);
+
+    store.setValue("requestRetryCount", "0");
+    expect(store.requestRetryCount).toBe(0);
+
+    store.setValue("requestRetryCount", "1");
+    expect(store.requestRetryCount).toBe(1);
+
+    store.setValue("requestRetryCount", "5");
+    expect(store.requestRetryCount).toBe(5);
+
+    store.setValue("requestRetryCount", "2");
+    expect(store.requestRetryCount).toBe(3);
+
+    store.setValue("requestRetryCount", "invalid");
+    expect(store.requestRetryCount).toBe(3);
+  });
+
+  it("旧版存储中如果存有 2 次重试，初始化时纠正为 3 次并落盘", () => {
+    storage.clear();
+    storage.set(SETTINGS_STORAGE_KEY, JSON.stringify({ requestRetryCount: "2" }));
+    const store = newStore();
+    expect(store.requestRetryCount).toBe(3);
+    expect(store.getValue("requestRetryCount")).toBe("3");
+    expect(JSON.parse(storage.get(SETTINGS_STORAGE_KEY) ?? "{}").requestRetryCount).toBe("3");
   });
 
   it("非法的默认测试模式回退为模型测试", () => {

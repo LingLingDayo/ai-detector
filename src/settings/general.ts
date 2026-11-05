@@ -55,8 +55,8 @@ export const generalPage: SettingsPage = {
           options: [
             { value: "0", label: "0 次" },
             { value: "1", label: "1 次" },
-            { value: "2", label: "2 次" },
             { value: "3", label: "3 次" },
+            { value: "5", label: "5 次" },
           ],
         },
       ],
