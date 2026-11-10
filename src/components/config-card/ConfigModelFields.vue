@@ -11,12 +11,14 @@ const props = defineProps<{
   baseUrl: string;
   apiKey: string;
   disabled: boolean;
+  isCustomModel?: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: "update:modelName", value: string): void;
   (e: "update:apiFormat", value: string): void;
   (e: "update:reasoningEffort", value: string): void;
+  (e: "update:isCustomModel", value: boolean): void;
 }>();
 
 const comboboxRef = ref<InstanceType<typeof ModelCombobox> | null>(null);
@@ -69,9 +71,11 @@ defineExpose({
         :api-key="apiKey"
         :disabled="disabled"
         :required="true"
+        :is-custom-model="isCustomModel === true"
         @update:model-value="emit('update:modelName', $event)"
         @update:api-format="emit('update:apiFormat', $event)"
         @update:reasoning-effort="emit('update:reasoningEffort', $event)"
+        @update:is-custom-model="emit('update:isCustomModel', $event)"
       />
     </div>
 
