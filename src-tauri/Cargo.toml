@@ -21,3 +21,11 @@ tauri = { version = "2", features = [] }
 tauri-plugin-log = "2"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 tokio = { version = "1", features = ["sync", "time"] }
+
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.38"
+windows = "0.61"
+rfd = { version = "0.16", default-features = false }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "test-util"] }

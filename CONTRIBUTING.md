@@ -19,6 +19,9 @@ npm run build
 # 运行全部测试（Vitest，测试文件与对应源码模块同目录）
 npm test
 
+# 运行 Rust 后端测试（使用锁定的依赖版本）
+cargo test --locked --manifest-path src-tauri/Cargo.toml
+
 # 以监听模式运行测试
 npx vitest
 
@@ -78,7 +81,7 @@ git push origin v1.0.1
 
 当推送形如 `v*` 的 Tag 至远程仓库时，[`.github/workflows/release.yml`](.github/workflows/release.yml) 会自动执行：
 1. **环境准备**：检出仓库、加载 Node.js 与 Rust MSVC 工具链、初始化依赖缓存；
-2. **构建校验**：运行 `npm run build` 进行全量类型检查；
+2. **构建与测试校验**：使用 Node 22，运行 `npm run build`、`npm test` 和 `cargo test --locked --manifest-path src-tauri/Cargo.toml`；
 3. **日志截取**：通过 `scripts/extract-changelog.js` 自动从 `CHANGELOG.md` 中提取对应版本的 Release Notes；
 4. **编译应用**：执行 `npm run tauri build` 编译 Windows 应用；
 5. **收集与归档产物**：

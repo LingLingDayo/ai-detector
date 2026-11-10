@@ -6,6 +6,7 @@ import { Info, Copy, Download, X } from "@lucide/vue";
 import { useClipboard } from "../../composables/useClipboard";
 import { useToast } from "../../composables/useToast";
 import { usePopoverPin } from "./usePopoverPin";
+import { savePelicanFile } from "../../services/saveFile";
 import HistoryEmptyState from "./HistoryEmptyState.vue";
 import HistoryDetailPopover from "./HistoryDetailPopover.vue";
 import {
@@ -115,7 +116,7 @@ function handleTogglePin(id: string, e: Event): void {
   togglePin(id, e);
 }
 
-function handleDownloadPelican(item: PelicanHistoryItem): void {
+async function handleDownloadPelican(item: PelicanHistoryItem): Promise<void> {
   const isHtml =
     resolvePelicanContentType(item.contentType, item.content) === "html";
   const mimeType = isHtml
@@ -123,25 +124,18 @@ function handleDownloadPelican(item: PelicanHistoryItem): void {
     : "image/svg+xml;charset=utf-8";
   const ext = isHtml ? "html" : "svg";
   const blob = new Blob([item.content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
   const cleanModel = (item.modelName || "model").replace(
     /[^a-zA-Z0-9_-]/g,
     "_"
   );
   const fileName = `pelican-${cleanModel}-${item.createdAt}.${ext}`;
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast({
-    type: "success",
-    title: "下载完成",
-    message: fileName,
-    duration: 3000,
-  });
+  try {
+    const savedPath = await savePelicanFile(blob, fileName);
+    if (!savedPath) return;
+    showToast({ type: "success", title: "保存完成", message: savedPath, duration: 3000 });
+  } catch (error) {
+    showToast({ type: "error", title: "保存失败", message: error instanceof Error ? error.message : String(error), duration: 5000 });
+  }
 }
 
 async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
@@ -195,7 +189,7 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
               'svg-frame': true,
             }"
             :srcdoc="buildPelicanPreviewDocument(item)"
-            sandbox="allow-scripts"
+            :sandbox="resolvePelicanContentType(item.contentType, item.content) === 'html' ? 'allow-scripts' : ''"
             scrolling="no"
             loading="lazy"
             tabindex="-1"

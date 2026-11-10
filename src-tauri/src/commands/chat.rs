@@ -279,6 +279,20 @@ pub async fn send_chat_request(
     app: tauri::AppHandle,
     req: ChatRequest,
 ) -> Result<ChatResponse, String> {
+    let request_id = req.request_id.clone();
+    let result = crate::cancellation::await_cancellable(
+        send_chat_request_inner(app, req),
+        || is_chat_canceled(&request_id),
+    )
+    .await;
+    let _ = take_chat_canceled(&request_id);
+    result
+}
+
+async fn send_chat_request_inner(
+    app: tauri::AppHandle,
+    req: ChatRequest,
+) -> Result<ChatResponse, String> {
     let is_stream = req.stream.unwrap_or(true);
     let default_timeout = if is_stream { 90 } else { 240 };
     let timeout_sec = req.timeout_seconds.unwrap_or(default_timeout).max(5);
@@ -298,7 +312,6 @@ pub async fn send_chat_request(
     let target_url = normalize_url(&req.base_url, &req.api_format);
     let body = build_chat_body(&req, is_stream);
     let start_time = Instant::now();
-    let _ = take_chat_canceled(&req.request_id);
 
     let mut request_builder = client
         .post(&target_url)
@@ -355,7 +368,6 @@ pub async fn send_chat_request(
     };
 
     if is_chat_canceled(&req.request_id) {
-        let _ = take_chat_canceled(&req.request_id);
         return Err("请求已取消".to_string());
     }
 
@@ -370,8 +382,8 @@ pub async fn send_chat_request(
     }
 
     if is_stream {
-        let first_chunk_res =
-            tokio::time::timeout(Duration::from_secs(timeout_sec), resp.chunk()).await;
+        let remaining = Duration::from_secs(timeout_sec).saturating_sub(start_time.elapsed());
+        let first_chunk_res = tokio::time::timeout(remaining, resp.chunk()).await;
         let first_chunk = match first_chunk_res {
             Ok(Ok(Some(bytes))) => bytes,
             Ok(Ok(None)) => return Err("上游返回了空流响应".to_string()),
@@ -413,7 +425,6 @@ pub async fn send_chat_request(
 
         loop {
             if is_chat_canceled(&req.request_id) {
-                let _ = take_chat_canceled(&req.request_id);
                 return Err("请求已取消".to_string());
             }
             let chunk_res =
@@ -465,8 +476,6 @@ pub async fn send_chat_request(
         let body_text = String::from_utf8_lossy(&raw_bytes);
         let parsed = parse_chat_streaming_body(&body_text, &req.api_format)?;
         let duration_ms = start_time.elapsed().as_millis() as u64;
-        let _ = take_chat_canceled(&req.request_id);
-
         return Ok(ChatResponse {
             text: parsed.text,
             response_model: parsed.response_model,
@@ -487,8 +496,6 @@ pub async fn send_chat_request(
     if state.text.trim().is_empty() {
         return Err("上游响应未包含有效文本内容".to_string());
     }
-    let _ = take_chat_canceled(&req.request_id);
-
     Ok(ChatResponse {
         text: state.text,
         response_model: state.response_model,
