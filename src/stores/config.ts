@@ -506,11 +506,11 @@ export const useConfigStore = defineStore("config", () => {
           baseUrl: savedConfig.baseUrl || "",
           apiKey: savedConfig.apiKey || "",
           apiFormat: savedConfig.apiFormat || "chat_completions",
-        modelName: savedConfig.modelName || "",
-        reasoningEffort: savedConfig.reasoningEffort || "high",
-        stream: savedConfig.stream !== false,
-        isCustomModel: savedConfig.isCustomModel === true,
-        createdAt: Date.now(),
+          modelName: savedConfig.modelName || "",
+          reasoningEffort: savedConfig.reasoningEffort || "high",
+          stream: savedConfig.stream !== false,
+          isCustomModel: savedConfig.isCustomModel === true,
+          createdAt: Date.now(),
           updatedAt: Date.now(),
         };
         loadedList = [defaultItem];
