@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "build:app": "npm run tauri build",
+    "build:debug": "npm run tauri -- build --debug",
     "preview": "vite preview",
     "tauri": "node scripts/run-tauri.js",
     "release:copy": "node scripts/copy-release.js",
