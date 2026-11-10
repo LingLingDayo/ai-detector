@@ -22,6 +22,77 @@
     </script>
   </head>
   <body>
+    <script>
+      // Vue 挂载前的异常无法被应用内捕获：暂存到全局并在页面上兜底展示
+      (function () {
+        var records = [];
+        var overlay = null;
+        window.__AI_DETECTOR_EARLY_ERRORS__ = records;
+
+        function describe(value) {
+          if (value && value.stack) return String(value.stack);
+          if (value && value.message) return String(value.message);
+          if (value && value.reason) return describe(value.reason);
+          return String(value);
+        }
+
+        function render(message) {
+          if (overlay) {
+            overlay.querySelector(".early-error-text").textContent = message;
+            return;
+          }
+          overlay = document.createElement("div");
+          overlay.setAttribute("role", "alert");
+          overlay.style.cssText = "position:fixed;z-index:99999;top:16px;right:16px;max-width:min(560px,90vw);padding:16px 18px;border:1px solid #ef4444;border-radius:10px;background:#1b1220;color:#f8fafc;font:13px/1.6 system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.45)";
+          var title = document.createElement("strong");
+          title.textContent = "启动过程发生错误";
+          var pre = document.createElement("pre");
+          pre.className = "early-error-text";
+          pre.style.cssText = "margin:10px 0;max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-all;color:#fecaca;font:12px/1.5 monospace";
+          pre.textContent = message;
+          var tip = document.createElement("p");
+          tip.style.cssText = "margin:0 0 10px;color:#94a3b8";
+          tip.textContent = "错误已暂存在内存中，可按 Ctrl+Shift+D 打开诊断中心查看完整信息";
+          var close = document.createElement("button");
+          close.type = "button";
+          close.textContent = "关闭";
+          close.style.cssText = "padding:5px 12px;border:1px solid #475569;border-radius:6px;background:#334155;color:#f8fafc;cursor:pointer";
+          close.onclick = function () {
+            window.__AI_DETECTOR_HIDE_EARLY_ERRORS__();
+          };
+          overlay.appendChild(title);
+          overlay.appendChild(pre);
+          overlay.appendChild(tip);
+          overlay.appendChild(close);
+          document.body.appendChild(overlay);
+        }
+
+        function remember(message) {
+          if (records.length >= 20) return;
+          records.push({ message: message, timestamp: Date.now() });
+          render(message);
+        }
+
+        function onError(event) {
+          var detail = describe(event.error || event.message);
+          remember(detail + (event.filename ? " (" + event.filename + ":" + event.lineno + ")" : ""));
+        }
+
+        function onRejection(event) {
+          remember(describe(event.reason));
+        }
+
+        window.addEventListener("error", onError);
+        window.addEventListener("unhandledrejection", onRejection);
+
+        window.__AI_DETECTOR_HIDE_EARLY_ERRORS__ = function () {
+          window.removeEventListener("error", onError);
+          window.removeEventListener("unhandledrejection", onRejection);
+          if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+          overlay = null;
+        };
+      })();
+    </script>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
