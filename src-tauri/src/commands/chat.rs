@@ -338,6 +338,12 @@ pub async fn send_chat_request(
             Ok(Ok(response)) => response,
             Ok(Err(error)) => return Err(format!("无法连接上游接口: {}", error)),
             Err(_) => {
+                log::warn!(
+                    "对话请求(流式)首次响应超时: timeout={}s, model={}, api_format={}",
+                    timeout_sec,
+                    req.model,
+                    req.api_format
+                );
                 return Err(format!(
                     "流式请求首次响应超时（{} 秒内未收到上游响应）",
                     timeout_sec
@@ -362,6 +368,12 @@ pub async fn send_chat_request(
     let status = resp.status();
     if !status.is_success() {
         let error_body = resp.text().await.unwrap_or_default();
+        log::warn!(
+            "对话请求接口返回异常: status={}, model={}, api_format={}",
+            status.as_u16(),
+            req.model,
+            req.api_format
+        );
         return Err(format!(
             "接口请求异常 ({}): {}",
             status.as_u16(),
@@ -485,6 +497,11 @@ pub async fn send_chat_request(
         .map_err(|error| format!("上游未返回有效 JSON 数据: {}", error))?;
     let state = parse_chat_non_streaming_json(&parsed_json, &req.api_format)?;
     if state.text.trim().is_empty() {
+        log::warn!(
+            "对话请求上游响应未包含有效文本内容: model={}, api_format={}",
+            req.model,
+            req.api_format
+        );
         return Err("上游响应未包含有效文本内容".to_string());
     }
     let _ = take_chat_canceled(&req.request_id);
