@@ -1,4 +1,5 @@
 import type { ProbeResponse, SendProbeOptions, TauriInvokeFn } from "../types";
+import { createRequestTimeout } from "../utils/requestTimeout";
 import { isAdaptiveThinkingRequired, isThinkingSwitchModel } from "../data/modelReasoningRules";
 
 let tauriInvoke: TauriInvokeFn | null = null;
@@ -551,20 +552,14 @@ export async function sendProbe({
   }
 
   const controller = new AbortController();
+  const onAbort = () => controller.abort();
   if (signal) {
     if (signal.aborted) {
       throw new DOMException("The user aborted a request.", "AbortError");
     }
-    signal.addEventListener("abort", () => {
-      controller.abort();
-    });
+    signal.addEventListener("abort", onAbort, { once: true });
   }
-  let firstResponseReceived = false;
-  const timeoutTimer = setTimeout(() => {
-    if (!firstResponseReceived) {
-      controller.abort(new Error(isStream ? `流式请求首次响应超时（${actualTimeout} 秒内未收到上游响应）` : `同步请求超时（${actualTimeout} 秒内未收到上游响应）`));
-    }
-  }, actualTimeout * 1000);
+  const requestTimeout = createRequestTimeout(controller, isStream, actualTimeout);
 
   try {
     const res = await fetch(endpoint, {
@@ -605,8 +600,7 @@ export async function sendProbe({
 
       // 首包等待
       const firstChunk = await reader.read();
-      firstResponseReceived = true;
-      clearTimeout(timeoutTimer);
+      requestTimeout.onStreamChunk();
 
       if (firstChunk.value) {
         onStreamStart?.();
@@ -617,6 +611,7 @@ export async function sendProbe({
       while (!firstChunk.done) {
         const { value, done } = await reader.read();
         if (done) break;
+        requestTimeout.onStreamChunk();
         if (value) {
           streamBuffer += decoder.decode(value, { stream: true });
           emitStreamProgress();
@@ -626,8 +621,6 @@ export async function sendProbe({
       emitStreamProgress(true);
       text = parseStreamingText(streamBuffer, apiFormat);
     } else {
-      firstResponseReceived = true;
-      clearTimeout(timeoutTimer);
       const json = await res.json();
       text = parseNonStreamingJson(json, apiFormat);
     }
@@ -647,7 +640,8 @@ export async function sendProbe({
     }
     throw err;
   } finally {
-    clearTimeout(timeoutTimer);
+    requestTimeout.dispose();
+    signal?.removeEventListener("abort", onAbort);
   }
 }
 

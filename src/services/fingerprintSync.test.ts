@@ -10,6 +10,11 @@ import {
   CUSTOM_UNIFIED_BANK_KEY,
 } from "./fingerprintSync";
 import type { UnifiedBank } from "../utils/fingerprint";
+import rawBank from "../data/unified_bank.json";
+
+function validBank(): UnifiedBank {
+  return structuredClone(rawBank) as unknown as UnifiedBank;
+}
 
 const storage = new Map<string, string>();
 vi.stubGlobal("localStorage", {
@@ -43,7 +48,45 @@ describe("fingerprintSync", () => {
         calibration: { test: 1 },
         robust: { r: 1 },
       })
-    ).toBe(true);
+    ).toBe(false);
+    expect(validateUnifiedBank(validBank())).toBe(true);
+  });
+
+  it.each([
+    ["缺少校准项", (b: UnifiedBank) => { delete b.calibration["2"]; }],
+    ["非数值校准系数", (b: UnifiedBank) => { b.calibration["1"].beta = "NaN"; }],
+    ["越界准确率", (b: UnifiedBank) => { b.calibration["1"].cv_accuracy = 2; }],
+    ["重复模型 ID", (b: UnifiedBank) => { b.models[1].id = b.models[0].id; }],
+    ["计数维度错误", (b: UnifiedBank) => { b.models[0].counts.pop(); }],
+    ["负计数", (b: UnifiedBank) => { b.models[0].counts[0] = -1; }],
+    ["缺少 Hellinger 参数", (b: UnifiedBank) => { delete (b.robust as Partial<UnifiedBank["robust"]>).hellinger; }],
+    ["零缩放系数", (b: UnifiedBank) => { b.robust.hellinger.feature_scale[0] = 0; }],
+    ["无限特征值", (b: UnifiedBank) => { b.robust.hellinger.feature_mean[0] = Infinity; }],
+    ["中心数量不符", (b: UnifiedBank) => { b.robust.hellinger.centroids.pop(); }],
+    ["干扰向量维度不符", (b: UnifiedBank) => { b.robust.hellinger.nuisance_basis![0].pop(); }],
+    ["空环境中心", (b: UnifiedBank) => { b.robust.ordered_blocks!.environment_centroids = []; }],
+    ["环境中心维度不符", (b: UnifiedBank) => { b.robust.ordered_blocks!.environment_centroids![0][0].pop(); }],
+    ["混合权重越界", (b: UnifiedBank) => { b.robust.ordered_blocks!.weight = 2; }],
+  ])("拒绝损坏的指纹库：%s", (_name, corrupt) => {
+    const bank = validBank();
+    corrupt(bank);
+    expect(validateUnifiedBank(bank)).toBe(false);
+  });
+
+  it("允许没有分块特征的指纹库和字符串校准系数", () => {
+    const bank = validBank();
+    delete bank.robust.ordered_blocks;
+    bank.calibration["1"].beta = "7.1";
+    expect(validateUnifiedBank(bank)).toBe(true);
+  });
+
+  it("缓存结构损坏时回退内置库", () => {
+    storage.clear();
+    localStorage.setItem(CUSTOM_UNIFIED_BANK_KEY, JSON.stringify({
+      models: [{ id: "broken" }], calibration: {}, robust: {},
+    }));
+    expect(loadActiveUnifiedBank()).toEqual(rawBank);
+    storage.clear();
   });
 
   it("normalizeBankText: 归一化 CRLF 与首尾空白", () => {
@@ -98,18 +141,14 @@ describe("fingerprintSync", () => {
   });
 
   it("fetchRemoteUnifiedBank: 不使用会触发 CORS 预检的 Cache-Control 头", async () => {
-    const bank = {
-      models: [{ id: "model-1" }],
-      calibration: { slope: 1.2 },
-      robust: { feature: "abc" },
-    };
+    const bank = validBank();
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify(bank), { status: 200 })
     );
 
     try {
       const result = await fetchRemoteUnifiedBank();
-      expect(result.parsedBank.models[0].id).toBe("model-1");
+      expect(result.parsedBank.models[0].id).toBe(bank.models[0].id);
 
       const options = fetchMock.mock.calls[0][1] as RequestInit;
       expect(options.headers).toEqual({ Accept: "application/json" });
@@ -139,15 +178,12 @@ describe("fingerprintSync", () => {
     expect(fallbackBank.models.length).toBeGreaterThanOrEqual(18);
 
     // 写入自定义缓存题库后应优先加载缓存
-    const customBank = {
-      models: [{ id: "custom-test-model" }],
-      calibration: { ok: true },
-      robust: { val: 1 },
-    };
+    const customBank = validBank();
+    customBank.models[0].id = "custom-test-model";
     localStorage.setItem(CUSTOM_UNIFIED_BANK_KEY, JSON.stringify(customBank));
 
     const activeBank = loadActiveUnifiedBank();
-    expect(activeBank.models).toHaveLength(1);
+    expect(activeBank.models).toHaveLength(customBank.models.length);
     expect(activeBank.models[0].id).toBe("custom-test-model");
   });
 });

@@ -35,7 +35,7 @@ function handleCopyResult(): void {
   const used = item?.usedOutputs ?? props.analysis.used_outputs;
   const timeStr = formatHistoryTime(item?.createdAt || Date.now());
 
-  const text = `【模型测试诊断结果】\n调用模型: ${modelName}\n判定模型: ${predName} (${prob}%)\n模型家族: ${familyName}\n有效样本: ${used}/3\n测试时间: ${timeStr}`;
+  const text = `【模型测试诊断结果】\n调用模型: ${modelName}\n库内匹配: ${predName} (${prob}%，候选库内相对概率)\n模型家族: ${familyName}\n有效样本: ${used}/3\n测试时间: ${timeStr}\n仅比较已收录模型，不能证明真实模型身份。`;
   copy(text);
 }
 </script>
@@ -77,13 +77,13 @@ function handleCopyResult(): void {
         class="hero-item primary"
         title="当前候选库中后验概率最高的匹配模型。仅匹配候选库内已收录模型，未收录模型仍会被归到最相似的现有候选。"
       >
-        <span class="hero-label">最可能模型预测</span>
+        <span class="hero-label">库内最匹配模型</span>
         <strong class="hero-val" id="winner-name">
           {{ analysis.prediction_name || analysis.prediction }}
         </strong>
         <div class="hero-prob-bar">
           <span class="hero-prob-text" id="winner-prob">
-            全局概率 {{ percentFormat(analysis.probability) }}
+            库内相对概率 {{ percentFormat(analysis.probability) }}
           </span>
         </div>
       </div>
@@ -135,7 +135,7 @@ function handleCopyResult(): void {
               </div>
             </th>
             <th style="width: 130px">家族分类</th>
-            <th style="width: 220px" title="全局归一化后的闭集归因概率">归因概率</th>
+            <th style="width: 220px" title="仅在已收录候选模型之间归一化，不代表真实模型身份的可信度">库内相对概率</th>
             <th style="width: 110px" title="特征分布与模型中心相似度">分布相似度</th>
           </tr>
         </thead>

@@ -51,6 +51,22 @@ pub async fn send_probe_request(
     app: tauri::AppHandle,
     req: ProbeRequest,
 ) -> Result<ProbeResponse, String> {
+    let request_id = req.request_id.clone();
+    let result = crate::cancellation::await_cancellable(
+        send_probe_request_inner(app, req),
+        || request_id.as_deref().map(is_probe_canceled).unwrap_or(false),
+    )
+    .await;
+    if let Some(id) = request_id.as_deref() {
+        let _ = take_probe_canceled(id);
+    }
+    result
+}
+
+async fn send_probe_request_inner(
+    app: tauri::AppHandle,
+    req: ProbeRequest,
+) -> Result<ProbeResponse, String> {
     let is_stream = req.stream.unwrap_or(true);
     let default_timeout = if is_stream { 90 } else { 240 };
     let timeout_sec = req.timeout_seconds.unwrap_or(default_timeout).max(5);
@@ -73,17 +89,9 @@ pub async fn send_probe_request(
     let start_time = Instant::now();
     let max_attempts = 1;
     let request_id_opt = req.request_id.as_deref();
-    let cleanup_canceled = || {
-        if let Some(rid) = request_id_opt {
-            let _ = take_probe_canceled(rid);
-        }
-    };
-    cleanup_canceled();
-
     let check_canceled = || -> Result<(), String> {
         if let Some(rid) = request_id_opt {
             if is_probe_canceled(rid) {
-                cleanup_canceled();
                 return Err("请求已取消".to_string());
             }
         }
@@ -245,7 +253,6 @@ pub async fn send_probe_request(
             let mut resp = match send_res {
                 Ok(Ok(r)) => r,
                 Ok(Err(e)) => {
-                    cleanup_canceled();
                     if attempt < max_attempts {
                         tokio::time::sleep(Duration::from_millis(1000 * attempt)).await;
                         continue;
@@ -253,7 +260,6 @@ pub async fn send_probe_request(
                     return Err(format!("无法连接上游接口: {}", e));
                 }
                 Err(_) => {
-                    cleanup_canceled();
                     return Err(format!(
                         "流式请求首次响应超时（{} 秒内未收到上游响应）",
                         timeout_sec
@@ -265,7 +271,6 @@ pub async fn send_probe_request(
 
             let status = resp.status();
             if !status.is_success() {
-                cleanup_canceled();
                 let err_body = resp.text().await.unwrap_or_default();
                 let err_msg = compact_error(&err_body, status);
                 let status_code = status.as_u16();
@@ -295,16 +300,13 @@ pub async fn send_probe_request(
                 match tokio::time::timeout(step_timeout, resp.chunk()).await {
                     Ok(Ok(Some(bytes))) => break bytes,
                     Ok(Ok(None)) => {
-                        cleanup_canceled();
                         return Err("上游返回了空流响应".to_string());
                     }
                     Ok(Err(e)) => {
-                        cleanup_canceled();
                         return Err(format!("读取上游流式首包数据失败: {}", e));
                     }
                     Err(_) => {
                         if first_chunk_start.elapsed() >= first_chunk_timeout {
-                            cleanup_canceled();
                             return Err(format!(
                                 "流式请求首次响应超时（{} 秒内未收到模型首包响应）",
                                 timeout_sec
@@ -354,12 +356,10 @@ pub async fn send_probe_request(
                         Ok(Ok(Some(bytes))) => break Some(bytes),
                         Ok(Ok(None)) => break None,
                         Ok(Err(e)) => {
-                            cleanup_canceled();
                             return Err(format!("读取上游流式响应数据中断: {}", e));
                         }
                         Err(_) => {
                             if chunk_wait_start.elapsed() >= Duration::from_secs(90) {
-                                cleanup_canceled();
                                 return Err(
                                     "上游流式响应传输中断（90 秒内未收到后续数据分片）"
                                         .to_string(),
@@ -381,8 +381,6 @@ pub async fn send_probe_request(
                 }
             }
             emit_progress(&raw_bytes);
-            cleanup_canceled();
-
             let duration_ms = start_time.elapsed().as_millis() as u64;
             let text_body = String::from_utf8_lossy(&raw_bytes);
             let content = parse_streaming_body(&text_body, &req.api_format)?;
@@ -406,8 +404,6 @@ pub async fn send_probe_request(
                             .map_err(|e| format!("读取上游响应失败: {}", e))?;
 
                         check_canceled()?;
-                        cleanup_canceled();
-
                         let duration_ms = start_time.elapsed().as_millis() as u64;
                         let parsed: serde_json::Value = serde_json::from_str(&text)
                             .map_err(|e| format!("上游未返回有效 JSON 数据: {}", e))?;
@@ -420,7 +416,6 @@ pub async fn send_probe_request(
                             duration_ms,
                         });
                     } else {
-                        cleanup_canceled();
                         let err_body = resp.text().await.unwrap_or_default();
                         let err_msg = compact_error(&err_body, status);
                         let status_code = status.as_u16();
@@ -436,7 +431,6 @@ pub async fn send_probe_request(
                     }
                 }
                 Err(e) => {
-                    cleanup_canceled();
                     if e.is_timeout() {
                         return Err(format!("同步请求超时（{} 秒内未收到上游响应）", timeout_sec));
                     }
@@ -449,8 +443,6 @@ pub async fn send_probe_request(
             }
         }
     }
-
-    cleanup_canceled();
     Err("达到最大重试次数，仍未获得响应".to_string())
 }
 

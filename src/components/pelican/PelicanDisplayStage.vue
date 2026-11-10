@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { PelicanContentType } from "../../stores/pelicanTest";
-import { normalizeSvgForDisplay } from "./pelicanSvgNormalizer";
+import { buildSvgPreviewDocument } from "./pelicanPreview";
 
 const props = withDefaults(
   defineProps<{
@@ -27,7 +27,7 @@ const processedSvgContent = computed(() => {
   if (!displayContent.value || props.contentType !== "svg") {
     return displayContent.value;
   }
-  return normalizeSvgForDisplay(displayContent.value);
+  return buildSvgPreviewDocument(displayContent.value);
 });
 
 const wrappedHtml = computed(() => {
@@ -130,11 +130,13 @@ const wrappedHtml = computed(() => {
       :class="{ 'light-bg': bgTheme === 'light' }"
     >
       <!-- SVG 渲染 -->
-      <div
+      <iframe
         v-if="contentType === 'svg'"
-        class="svg-render-viewport"
-        v-html="processedSvgContent"
-      ></div>
+        class="html-render-frame"
+        :srcdoc="processedSvgContent"
+        sandbox=""
+        title="Pelican SVG Render Viewport"
+      ></iframe>
 
       <!-- HTML 渲染 -->
       <div
@@ -144,7 +146,7 @@ const wrappedHtml = computed(() => {
         <iframe
           class="html-render-frame"
           :srcdoc="wrappedHtml"
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts"
           title="Pelican HTML Render Viewport"
           frameborder="0"
           scrolling="auto"

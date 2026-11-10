@@ -1,4 +1,5 @@
 pub mod commands;
+mod cancellation;
 pub mod parser;
 pub mod types;
 pub mod utils;
@@ -19,7 +20,10 @@ pub fn run() {
             open_external_url,
             generate_candy_challenges,
             generate_single_candy_challenge,
-            evaluate_candy_answer
+            evaluate_candy_answer,
+            record_pelican_frames,
+            stop_pelican_recording,
+            save_pelican_file
         ])
         .run(tauri::generate_context!())
         .expect("运行 Tauri 桌面应用时发生异常");
