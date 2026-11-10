@@ -53,6 +53,7 @@ export const useConfigStore = defineStore("config", () => {
     target.modelName = source.modelName;
     target.reasoningEffort = source.reasoningEffort;
     target.stream = source.stream;
+    target.isCustomModel = source.isCustomModel === true;
   }
 
   function syncConfigOnModeSwitch(fromMode: ActiveTestMode, toMode: ActiveTestMode): void {
@@ -78,6 +79,7 @@ export const useConfigStore = defineStore("config", () => {
     modelName: "",
     reasoningEffort: "high",
     stream: true,
+    isCustomModel: false,
   });
 
   const pelicanConfig = reactive<ClientConfig>({
@@ -87,6 +89,7 @@ export const useConfigStore = defineStore("config", () => {
     modelName: "",
     reasoningEffort: "high",
     stream: true,
+    isCustomModel: false,
   });
 
   const candyConfig = reactive<ClientConfig>({
@@ -96,6 +99,7 @@ export const useConfigStore = defineStore("config", () => {
     modelName: "",
     reasoningEffort: "high",
     stream: true,
+    isCustomModel: false,
   });
 
   const connectionConfig = reactive<ClientConfig>({
@@ -105,6 +109,7 @@ export const useConfigStore = defineStore("config", () => {
     modelName: "",
     reasoningEffort: "high",
     stream: true,
+    isCustomModel: false,
   });
 
   function getModeConfig(mode: ActiveTestMode): ClientConfig {
@@ -256,6 +261,7 @@ export const useConfigStore = defineStore("config", () => {
       modelName: config.modelName,
       reasoningEffort: config.reasoningEffort,
       stream: config.stream !== false,
+      isCustomModel: config.isCustomModel === true,
     };
     isConfigEditModalOpen.value = true;
   }
@@ -327,6 +333,7 @@ export const useConfigStore = defineStore("config", () => {
         config.reasoningEffort || "high"
       ),
       stream: config.stream !== false,
+      isCustomModel: config.isCustomModel === true,
       updatedAt: now,
     };
 
@@ -349,6 +356,7 @@ export const useConfigStore = defineStore("config", () => {
       const targetEffort = item.reasoningEffort || "high";
       cfg.reasoningEffort = resolveValidReasoningEffort(item.modelName, targetEffort);
       cfg.stream = item.stream !== false;
+      cfg.isCustomModel = item.isCustomModel === true;
     };
 
     for (const [mode, targetConfig] of modeConfigEntries) {
@@ -498,10 +506,11 @@ export const useConfigStore = defineStore("config", () => {
           baseUrl: savedConfig.baseUrl || "",
           apiKey: savedConfig.apiKey || "",
           apiFormat: savedConfig.apiFormat || "chat_completions",
-          modelName: savedConfig.modelName || "",
-          reasoningEffort: savedConfig.reasoningEffort || "high",
-          stream: savedConfig.stream !== false,
-          createdAt: Date.now(),
+        modelName: savedConfig.modelName || "",
+        reasoningEffort: savedConfig.reasoningEffort || "high",
+        stream: savedConfig.stream !== false,
+        isCustomModel: savedConfig.isCustomModel === true,
+        createdAt: Date.now(),
           updatedAt: Date.now(),
         };
         loadedList = [defaultItem];
@@ -544,6 +553,9 @@ export const useConfigStore = defineStore("config", () => {
         if (savedConfig.baseUrl !== undefined) target.baseUrl = savedConfig.baseUrl;
         if (savedConfig.apiKey !== undefined) target.apiKey = savedConfig.apiKey;
         if (savedConfig.modelName !== undefined) target.modelName = savedConfig.modelName;
+        if (savedConfig.isCustomModel !== undefined) {
+          target.isCustomModel = savedConfig.isCustomModel === true;
+        }
         if (savedConfig.apiFormat !== undefined) {
           if (
             savedConfig.apiFormat === "responses" ||
@@ -611,6 +623,7 @@ export const useConfigStore = defineStore("config", () => {
       cfg.apiFormat = "chat_completions";
       cfg.reasoningEffort = "high";
       cfg.stream = true;
+      cfg.isCustomModel = false;
     };
 
     resetOne(probeConfig);

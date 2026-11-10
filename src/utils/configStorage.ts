@@ -60,6 +60,7 @@ export function loadStoredConfigs(): LoadedConfigData {
         modelName: savedConfig.modelName || "",
         reasoningEffort: savedConfig.reasoningEffort || "high",
         stream: savedConfig.stream !== false,
+        isCustomModel: savedConfig.isCustomModel === true,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
@@ -170,6 +171,9 @@ export function applyPersistedConfigToTarget(
   if (savedConfig.baseUrl !== undefined) target.baseUrl = savedConfig.baseUrl;
   if (savedConfig.apiKey !== undefined) target.apiKey = savedConfig.apiKey;
   if (savedConfig.modelName !== undefined) target.modelName = savedConfig.modelName;
+  if (savedConfig.isCustomModel !== undefined) {
+    target.isCustomModel = savedConfig.isCustomModel === true;
+  }
 
   if (savedConfig.apiFormat !== undefined) {
     if (
