@@ -26,6 +26,8 @@ npx vitest
 npm run test:changelog
 ```
 
+调试与诊断能力仅面向开发者（隐藏入口、DevTools、零文件日志），说明见 [docs/diagnostics.md](docs/diagnostics.md)。
+
 ---
 
 ## 📦 版本发布流程 (Release SOP)
