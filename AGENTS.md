@@ -1,13 +1,11 @@
 # AGENTS.md
 
-AI Detector：Tauri 2 (Rust) + Vue 3 桌面应用，用于鉴别大模型 API 背后的真实模型。面向中文用户。
+## 目录与职责
 
-## 基本模块
-
-| 路径 | 方向 |
+| 路径 | 职责 |
 | --- | --- |
 | `src/App.vue` | 主界面编排、测试模式切换、全局快捷键与弹窗挂载 |
-| `src/components/` | 按功能分目录的 UI 组件（common / config-* / connection / history / settings / probe-detail / pelican / diagnostics 等） |
+| `src/components/` | 按功能域分目录的 UI 组件（common / config-* / connection / history / settings / probe-detail / pelican / diagnostics 等） |
 | `src/stores/` | Pinia 状态：配置、四类测试、app、settings、toast、confirm |
 | `src/services/` | API 调用、流式 runner、指纹同步、诊断采集 |
 | `src/composables/` | 复用逻辑（toast / confirm / clipboard） |
@@ -17,14 +15,24 @@ AI Detector：Tauri 2 (Rust) + Vue 3 桌面应用，用于鉴别大模型 API �
 | `src-tauri/src/diagnostics.rs`、`lib.rs` | 内存日志桥与 Tauri 入口 |
 | `scripts/`、`docs/` | 构建发布脚本、开发者文档与图片 |
 
-## 方向性约束
+## 技术栈
 
-- 前端用 Vue 3 Composition API + `<script setup>` + TypeScript，构建走 Vite，桌面层走 Tauri 2。
-- 样式用 Sass/SCSS（`<style lang="scss" scoped>`）；颜色与主题统一走 `src/style.css` 的 CSS 变量，不硬编码。
-- 状态管理用 Pinia setup store，跨组件、跨模块状态不留在组件局部 `ref`。
-- 前后端边界：前端 `invoke` 调 Rust command，Rust 用 Emitter / `listen` 传事件；错误信息用中文。
-- 优先复用 `src/components/common/` 与 `src/composables/`；组件名 PascalCase，变量/函数 camelCase，常量 UPPER_SNAKE_CASE。
-- 测试用 Vitest，`*.test.ts` 与源码同目录；node 环境下需要 `window` 时自行 stub。
-- 诊断日志纯内存、不落盘、不写本地存储；开发者能力不在 UI 暴露可见入口，见 `docs/diagnostics.md`。
-- 不擅自新增依赖，需先确认；界面文案、错误信息、注释用中文，注释只解释"为什么"。
-- 提交格式 `type(scope): 中文描述`，关键节点分步提交。通用工程规范另见 `.qoder/rules/main.md`。
+- 前端使用 Vue 3 Composition API + `<script setup>` + TypeScript，构建用 Vite，桌面运行时用 Tauri 2 (Rust)。
+- 组件样式必须写成 SCSS：`<style lang="scss" scoped>`；颜色与主题优先引用 `src/style.css` 的 CSS 变量，避免新增硬编码色值。
+- 状态管理统一用 Pinia setup store（`src/stores/`）；跨组件、跨模块状态不得留在组件局部 `ref`。
+- 单元测试用 Vitest，文件名 `*.test.ts` 且与被测源码同目录；测试运行在 node 环境，需要 `window` / DOM 时自行 stub。
+
+## 项目约定
+
+- 组件按功能域放进 `src/components/<功能域>/`，通用组件集中在 `src/components/common/`。
+- 跨语言边界：前端用 `invoke` 调 Rust command，Rust 用 Emitter 发事件、前端用 `listen` 接收。
+
+## 禁止事项
+
+- 诊断与日志数据只存内存：禁止写日志文件、写 `localStorage` / `sessionStorage`、导出到文件；对外传递只走剪贴板，且必须先脱敏。细则见 `docs/diagnostics.md`。
+- 不得为诊断或 DevTools 能力添加按钮、菜单、设置项等用户可见入口，也不得在面向用户的文案中提示隐藏快捷键。
+
+## 提交与验证
+
+- 提交信息沿用仓库历史格式 `type(scope): 中文描述`。
+- 前端改动后运行 `npm test`、`npx vue-tsc --noEmit`、`npm run build`；Rust 改动后追加 `cd src-tauri && cargo check`。
