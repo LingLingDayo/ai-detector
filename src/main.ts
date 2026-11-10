@@ -2,11 +2,7 @@ import { createApp } from "vue";
 import { createPinia } from "pinia";
 import App from "./App.vue";
 import { initTauri } from "./services/api";
-import {
-  handleVueError,
-  hideEarlyErrorOverlay,
-  installDiagnostics,
-} from "./services/diagnostics";
+import { handleVueError, installDiagnostics } from "./services/diagnostics";
 import "./style.css";
 
 async function bootstrap(): Promise<void> {
@@ -22,9 +18,6 @@ async function bootstrap(): Promise<void> {
   app.config.errorHandler = (err, _instance, info) => handleVueError(err, info);
   app.use(pinia);
   app.mount("#app");
-
-  // 挂载成功才移除首屏兜底浮层，白屏时保留错误提示
-  hideEarlyErrorOverlay();
 }
 
 void bootstrap();

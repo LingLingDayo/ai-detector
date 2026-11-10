@@ -44,7 +44,7 @@ interface EarlyErrorRecord {
 
 interface EarlyErrorBridge {
   __AI_DETECTOR_EARLY_ERRORS__?: EarlyErrorRecord[];
-  __AI_DETECTOR_HIDE_EARLY_ERRORS__?: () => void;
+  __AI_DETECTOR_STOP_EARLY_CAPTURE__?: () => void;
 }
 
 type EntriesListener = (entries: DiagnosticEntry[]) => void;
@@ -217,6 +217,9 @@ function importEarlyErrors(): void {
       message: redactSecrets(String(record.message ?? "")),
     });
   });
+
+  // 应用内的 window 监听已就绪，后续错误由它采集，早期临时监听即可退出
+  bridge?.__AI_DETECTOR_STOP_EARLY_CAPTURE__?.();
 }
 
 async function attachTauriLogs(): Promise<void> {
@@ -244,11 +247,6 @@ async function attachTauriLogs(): Promise<void> {
       message: `无法订阅 Rust 日志: ${formatUnknownValue(err)}`,
     });
   }
-}
-
-/** Vue 挂载成功后才隐藏首屏浮层，挂载失败时保留浮层以便白屏也能看到错误 */
-export function hideEarlyErrorOverlay(): void {
-  earlyBridge()?.__AI_DETECTOR_HIDE_EARLY_ERRORS__?.();
 }
 
 export function installDiagnostics(): void {

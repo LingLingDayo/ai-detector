@@ -168,6 +168,7 @@ function handleOpenGithub(): void {
   openExternalUrl(GITHUB_REPO_URL);
 }
 
+// 诊断能力仅面向开发者，不提供可见入口；打开方式见 docs/diagnostics.md
 function handleGlobalKeydown(event: KeyboardEvent): void {
   if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "d") {
     event.preventDefault();
@@ -356,7 +357,7 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
       @close="appStore.closeSettingsModal"
     />
 
-    <!-- 诊断中心弹窗（日志仅存内存，不产生本地文件） -->
+    <!-- 开发者诊断弹窗：仅由隐藏快捷键唤起，日志只存内存 -->
     <DiagnosticsModal
       :is-open="appStore.isDiagnosticsModalOpen"
       @close="appStore.closeDiagnosticsModal"

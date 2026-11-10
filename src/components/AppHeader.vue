@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangle } from "@lucide/vue";
-import { useAppStore } from "../stores";
 import logoUrl from "../assets/logo.png";
-
-const appStore = useAppStore();
 </script>
 
 <template>
@@ -19,17 +15,6 @@ const appStore = useAppStore();
         </p>
       </div>
     </div>
-
-    <button
-      type="button"
-      class="diagnostics-entry"
-      title="打开诊断中心 (Ctrl+Shift+D)"
-      aria-label="打开诊断中心"
-      @click="appStore.openDiagnosticsModal()"
-    >
-      <AlertTriangle :size="14" />
-      <span>诊断</span>
-    </button>
   </header>
 </template>
 
@@ -87,26 +72,6 @@ const appStore = useAppStore();
       font-size: 12px;
       color: var(--text-secondary);
       line-height: 1.2;
-    }
-  }
-
-  .diagnostics-entry {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-    padding: 6px 10px;
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    background: var(--bg-control);
-    color: var(--text-secondary);
-    font-size: 12px;
-    cursor: pointer;
-
-    &:hover {
-      border-color: var(--border-focus);
-      background: var(--bg-control-hover);
-      color: var(--text-strong);
     }
   }
 }

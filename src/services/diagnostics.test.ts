@@ -179,4 +179,24 @@ describe("diagnostics 内存诊断服务", () => {
     expect(entry?.message).toBe("上游返回 401");
     expect(entry?.timestamp).toBe(1762718400000);
   });
+
+  it("早期错误导入缓冲后卸载临时监听，且不向页面渲染任何内容", () => {
+    const stop = vi.fn();
+    vi.stubGlobal("window", {
+      __AI_DETECTOR_EARLY_ERRORS__: [
+        { message: "启动失败 sk-plaintext-123456", timestamp: 1000 },
+      ],
+      __AI_DETECTOR_STOP_EARLY_CAPTURE__: stop,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    });
+
+    installDiagnostics();
+
+    const entry = getDiagnosticEntries().find((item) => item.target === "bootstrap");
+    expect(entry?.message).toContain("启动失败");
+    expect(entry?.message).not.toContain("sk-plaintext-123456");
+    expect(entry?.timestamp).toBe(1000);
+    expect(stop).toHaveBeenCalledTimes(1);
+  });
 });
