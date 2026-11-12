@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import type { PelicanContentType } from "../../stores/pelicanTest";
 import { normalizeSvgForDisplay } from "./pelicanSvgNormalizer";
+import { FIT_VIEWPORT_SCRIPT } from "./pelicanPreview";
 
 const props = withDefaults(
   defineProps<{
@@ -20,6 +21,7 @@ const props = withDefaults(
   }
 );
 
+const svgViewportRef = ref<HTMLElement | null>(null);
 const displayContent = computed(() => props.content || props.svg || "");
 const bodyColor = computed(() => (props.bgTheme === "light" ? "#1e293b" : "#e2e8f0"));
 
@@ -28,6 +30,61 @@ const processedSvgContent = computed(() => {
     return displayContent.value;
   }
   return normalizeSvgForDisplay(displayContent.value);
+});
+
+/**
+ * 若挂载后的 SVG 缺少 viewBox（模型既未给 viewBox 也未给 width/height），
+ * 通过 getBBox() 动态计算图形真实边界框并注入 viewBox，确保任意尺寸图形完整显示。
+ */
+function ensureMountedSvgFit(): void {
+  const container = svgViewportRef.value;
+  if (!container) return;
+  const svgEl = container.querySelector<SVGSVGElement>("svg");
+  if (!svgEl) return;
+
+  if (!svgEl.getAttribute("viewBox")) {
+    const wAttr = parseFloat(svgEl.getAttribute("width") || "");
+    const hAttr = parseFloat(svgEl.getAttribute("height") || "");
+    if (wAttr > 0 && hAttr > 0) {
+      svgEl.setAttribute("viewBox", `0 0 ${wAttr} ${hAttr}`);
+    } else if (typeof svgEl.getBBox === "function") {
+      try {
+        const bbox = svgEl.getBBox();
+        if (bbox && bbox.width > 0 && bbox.height > 0) {
+          const pad = Math.max(bbox.width, bbox.height) * 0.04;
+          svgEl.setAttribute(
+            "viewBox",
+            `${bbox.x - pad} ${bbox.y - pad} ${bbox.width + pad * 2} ${bbox.height + pad * 2}`
+          );
+        }
+      } catch {
+        // 忽略隐藏或异常状态下的 getBBox 调用错误
+      }
+    }
+  }
+
+  const par = svgEl.getAttribute("preserveAspectRatio");
+  if (!par || par === "none" || /slice/i.test(par)) {
+    svgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  }
+}
+
+watch(
+  [processedSvgContent, () => props.isRunning, () => props.contentType],
+  () => {
+    if (!props.isRunning && props.contentType === "svg" && processedSvgContent.value) {
+      nextTick(() => {
+        ensureMountedSvgFit();
+      });
+    }
+  },
+  { immediate: true }
+);
+
+onMounted(() => {
+  nextTick(() => {
+    ensureMountedSvgFit();
+  });
 });
 
 const wrappedHtml = computed(() => {
@@ -40,6 +97,9 @@ const wrappedHtml = computed(() => {
 <style id="__pelican_injected_style">
   *, *::before, *::after {
     box-sizing: border-box;
+  }
+  :root {
+    color-scheme: ${props.bgTheme};
   }
   html, body {
     background-color: transparent !important;
@@ -55,14 +115,17 @@ const wrappedHtml = computed(() => {
     align-items: center;
     color: ${bodyColor.value};
   }
-  svg, canvas, img {
+  body > svg, body > canvas, body > img {
     width: 100%;
     height: 100%;
+    min-width: 0;
+    min-height: 0;
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
   }
 </style>
+${FIT_VIEWPORT_SCRIPT}
 `;
     if (/<head[\s>]/i.test(raw)) {
       return raw.replace(/<head[\s>]/i, (m) => `${m}${styleInjection}`);
@@ -80,6 +143,9 @@ const wrappedHtml = computed(() => {
     *, *::before, *::after {
       box-sizing: border-box;
     }
+    :root {
+      color-scheme: ${props.bgTheme};
+    }
     html, body {
       background-color: transparent !important;
       width: 100%;
@@ -96,14 +162,17 @@ const wrappedHtml = computed(() => {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       color: ${bodyColor.value};
     }
-    svg, canvas, img {
+    body > svg, body > canvas, body > img {
       width: 100%;
       height: 100%;
+      min-width: 0;
+      min-height: 0;
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
     }
   </style>
+  ${FIT_VIEWPORT_SCRIPT}
 </head>
 <body>
   ${raw}
@@ -132,6 +201,7 @@ const wrappedHtml = computed(() => {
       <!-- SVG 渲染 -->
       <div
         v-if="contentType === 'svg'"
+        ref="svgViewportRef"
         class="svg-render-viewport"
         v-html="processedSvgContent"
       ></div>
@@ -266,10 +336,12 @@ const wrappedHtml = computed(() => {
   overflow: hidden;
 
   :deep(svg) {
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
     object-fit: contain;
     display: block;
     margin: 0 auto;

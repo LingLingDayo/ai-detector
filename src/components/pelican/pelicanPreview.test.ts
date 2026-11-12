@@ -42,10 +42,17 @@ describe("pelicanPreview", () => {
     });
 
     it("当原本为 slice 时由 normalizer 纠正为保持等比的规范形态", () => {
-      const rawSvg = '<svg viewBox="0 0 100 100"><path d="M0 0"/></svg>';
+      const rawSvg = '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"><path d="M0 0"/></svg>';
       const doc = buildSvgPreviewDocument(rawSvg);
       expect(doc).toContain('preserveAspectRatio="xMidYMid meet"');
       expect(doc).not.toContain("slice");
+    });
+
+    it("注入与主题一致的 color-scheme 及自适应脚本，防止 SVG 填充失效变黑", () => {
+      const rawSvg = '<svg viewBox="0 0 100 100"><path d="M0 0"/></svg>';
+      const lightDoc = buildSvgPreviewDocument(rawSvg, "light");
+      expect(lightDoc).toContain("color-scheme: light;");
+      expect(lightDoc).toContain("__pelican_fit_viewport_script");
     });
   });
 

@@ -50,9 +50,13 @@ export function extractPureSvg(rawContent: string): string {
  * 保证使用 preserveAspectRatio="xMidYMid meet" 且补齐 viewBox，
  * 居中等比充满但绝对不裁切任何主体边缘。
  */
-export function buildSvgPreviewDocument(rawContent: string): string {
+export function buildSvgPreviewDocument(
+  rawContent: string,
+  colorScheme: "dark" | "light" = "dark"
+): string {
   const pureSvg = extractPureSvg(rawContent);
   const normalizedSvg = normalizeSvgForDisplay(pureSvg);
+  const bodyColor = colorScheme === "light" ? "#1e293b" : "#e2e8f0";
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -61,6 +65,9 @@ export function buildSvgPreviewDocument(rawContent: string): string {
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
+    }
+    :root {
+      color-scheme: ${colorScheme};
     }
     html, body {
       width: 100%;
@@ -72,28 +79,124 @@ export function buildSvgPreviewDocument(rawContent: string): string {
       display: flex;
       align-items: center;
       justify-content: center;
+      color: ${bodyColor};
     }
     svg {
       width: 100% !important;
       height: 100% !important;
-      max-width: 100%;
-      max-height: 100%;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
       object-fit: contain;
       display: block;
       margin: 0 auto;
     }
   </style>
+  ${FIT_VIEWPORT_SCRIPT}
 </head>
 <body>${normalizedSvg}</body>
 </html>`;
 }
 
+export const FIT_VIEWPORT_SCRIPT = `
+<script id="__pelican_fit_viewport_script">
+(function() {
+  function fitContent() {
+    var root = document.documentElement;
+    var body = document.body;
+    if (!root || !body) return;
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    if (vw <= 0 || vh <= 0) return;
+
+    // 1. 尝试为缺少 viewBox 的 SVG 自动根据 width/height 或真实边界框 (getBBox) 补齐 viewBox
+    var svgs = document.querySelectorAll('svg');
+    for (var i = 0; i < svgs.length; i++) {
+      var svg = svgs[i];
+      if (!svg.getAttribute('viewBox')) {
+        var wAttr = parseFloat(svg.getAttribute('width') || '');
+        var hAttr = parseFloat(svg.getAttribute('height') || '');
+        if (wAttr > 0 && hAttr > 0) {
+          svg.setAttribute('viewBox', '0 0 ' + wAttr + ' ' + hAttr);
+        } else if (typeof svg.getBBox === 'function') {
+          try {
+            var bbox = svg.getBBox();
+            if (bbox && bbox.width > 0 && bbox.height > 0) {
+              var pad = Math.max(bbox.width, bbox.height) * 0.04;
+              svg.setAttribute(
+                'viewBox',
+                (bbox.x - pad) + ' ' + (bbox.y - pad) + ' ' + (bbox.width + pad * 2) + ' ' + (bbox.height + pad * 2)
+              );
+            }
+          } catch (e) {}
+        }
+      }
+      var par = svg.getAttribute('preserveAspectRatio');
+      if (!par || !/\bmeet\b/i.test(par)) {
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      }
+    }
+
+    // 2. 检查固定尺寸的子容器或画布是否超出当前视口，若超出则等比缩放使其完整居中显示
+    body.style.transform = '';
+    body.style.width = '';
+    body.style.height = '';
+    var children = body.children;
+    var maxRight = 0;
+    var maxBottom = 0;
+    var minLeft = 0;
+    var minTop = 0;
+
+    for (var j = 0; j < children.length; j++) {
+      var el = children[j];
+      if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE' || el.tagName === 'LINK') continue;
+      var rect = el.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) continue;
+      if (rect.left < minLeft) minLeft = rect.left;
+      if (rect.top < minTop) minTop = rect.top;
+      if (rect.right > maxRight) maxRight = rect.right;
+      if (rect.bottom > maxBottom) maxBottom = rect.bottom;
+    }
+
+    var contentW = Math.max(body.scrollWidth, root.scrollWidth, maxRight - Math.min(0, minLeft));
+    var contentH = Math.max(body.scrollHeight, root.scrollHeight, maxBottom - Math.min(0, minTop));
+
+    if (contentW > vw + 2 || contentH > vh + 2) {
+      var scale = Math.min(vw / contentW, vh / contentH);
+      if (scale > 0 && scale < 1) {
+        body.style.width = contentW + 'px';
+        body.style.height = contentH + 'px';
+        body.style.transformOrigin = '0 0';
+        var offsetX = Math.max(0, (vw - contentW * scale) / 2);
+        var offsetY = Math.max(0, (vh - contentH * scale) / 2);
+        body.style.transform = 'translate(' + offsetX + 'px, ' + offsetY + 'px) scale(' + scale + ')';
+      }
+    }
+  }
+
+  window.addEventListener('load', function() {
+    fitContent();
+    setTimeout(fitContent, 120);
+    setTimeout(fitContent, 400);
+  });
+  window.addEventListener('resize', fitContent);
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(fitContent, 0);
+  }
+})();
+</script>
+`;
+
 /**
  * 构建 HTML 完整预览文档：
  * 严禁截取子 SVG，保留完整的 HTML DOM、Canvas、脚本与样式，
- * 注入防溢出与静音样式，供基准视口（800x600）等比缩放渲染。
+ * 注入防溢出、静音与自适应缩放脚本，供基准视口（800x600）或主舞台等比缩放完整渲染。
  */
-export function buildHtmlPreviewDocument(rawContent: string): string {
+export function buildHtmlPreviewDocument(
+  rawContent: string,
+  colorScheme: "dark" | "light" = "dark"
+): string {
   if (!rawContent) return "";
   const trimmed = rawContent.trim();
 
@@ -101,6 +204,9 @@ export function buildHtmlPreviewDocument(rawContent: string): string {
 <style id="__pelican_history_preview_style">
   *, *::before, *::after {
     box-sizing: border-box;
+  }
+  :root {
+    color-scheme: ${colorScheme};
   }
   html, body {
     width: 100%;
@@ -114,6 +220,7 @@ export function buildHtmlPreviewDocument(rawContent: string): string {
     display: none !important;
   }
 </style>
+${FIT_VIEWPORT_SCRIPT}
 `;
 
   // 1. 如果已包含完整 HTML 文档，注入样式到 head 或开头
@@ -144,13 +251,16 @@ export function buildHtmlPreviewDocument(rawContent: string): string {
 /**
  * 根据项目类型生成对应的预览 HTML
  */
-export function buildPelicanPreviewDocument(item: {
-  contentType?: string;
-  content: string;
-}): string {
+export function buildPelicanPreviewDocument(
+  item: {
+    contentType?: string;
+    content: string;
+  },
+  colorScheme: "dark" | "light" = "dark"
+): string {
   const type = resolvePelicanContentType(item.contentType, item.content);
   if (type === "html") {
-    return buildHtmlPreviewDocument(item.content);
+    return buildHtmlPreviewDocument(item.content, colorScheme);
   }
-  return buildSvgPreviewDocument(item.content);
+  return buildSvgPreviewDocument(item.content, colorScheme);
 }

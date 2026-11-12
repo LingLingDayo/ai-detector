@@ -12,6 +12,7 @@ import {
   resolvePelicanContentType,
   buildPelicanPreviewDocument,
 } from "../pelican/pelicanPreview";
+import { usePelicanTestStore } from "../../stores";
 
 const props = defineProps<{
   pelicanList: PelicanHistoryItem[];
@@ -26,6 +27,7 @@ const emit = defineEmits<{
 const { copy: copyText } = useClipboard();
 const { showToast } = useToast();
 const { pinnedId, togglePin } = usePopoverPin();
+const pelicanStore = usePelicanTestStore();
 const popoverPlacementMap = ref<Record<string, "top" | "bottom">>({});
 
 const gridContainerRef = ref<HTMLElement | null>(null);
@@ -194,8 +196,8 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
               'is-html-frame': resolvePelicanContentType(item.contentType, item.content) === 'html',
               'svg-frame': true,
             }"
-            :srcdoc="buildPelicanPreviewDocument(item)"
-            sandbox="allow-scripts"
+            :srcdoc="buildPelicanPreviewDocument(item, pelicanStore.bgTheme)"
+            sandbox="allow-scripts allow-same-origin"
             scrolling="no"
             loading="lazy"
             tabindex="-1"

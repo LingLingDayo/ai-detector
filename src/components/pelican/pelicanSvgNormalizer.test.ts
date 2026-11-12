@@ -34,4 +34,20 @@ describe("normalizeSvgForDisplay", () => {
     expect(result).toContain('preserveAspectRatio="xMidYMid meet"');
     expect(result).not.toContain('preserveAspectRatio="none"');
   });
+
+  it("当 SVG 原有 preserveAspectRatio 包含 slice 时，自动纠正为 xMidYMid meet 防止裁切", () => {
+    const rawSvg = '<svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice"><rect width="800" height="600"/></svg>';
+    const result = normalizeSvgForDisplay(rawSvg);
+    expect(result).toContain('preserveAspectRatio="xMidYMid meet"');
+    expect(result).not.toContain("slice");
+  });
+
+  it("当 SVG 仅在内联 style 中定义了宽高且无 viewBox 时，自动提取 viewBox 并移除内联固定宽高", () => {
+    const rawSvg = '<svg style="width: 1200px; height: 900px; background: #fff;"><circle cx="600" cy="450" r="100"/></svg>';
+    const result = normalizeSvgForDisplay(rawSvg);
+    expect(result).toContain('viewBox="0 0 1200 900"');
+    expect(result).toContain('style="background: #fff"');
+    expect(result).not.toContain("width: 1200px");
+    expect(result).not.toContain("height: 900px");
+  });
 });
