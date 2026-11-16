@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed } from "vue";
 import type { PelicanContentType } from "../../stores/pelicanTest";
-import { normalizeSvgForDisplay } from "./pelicanSvgNormalizer";
-import { FIT_VIEWPORT_SCRIPT } from "./pelicanPreview";
+import {
+  buildPelicanPreviewDocument,
+  resolvePelicanContentType,
+} from "./pelicanPreview";
 
 const props = withDefaults(
   defineProps<{
@@ -21,163 +23,21 @@ const props = withDefaults(
   }
 );
 
-const svgViewportRef = ref<HTMLElement | null>(null);
 const displayContent = computed(() => props.content || props.svg || "");
-const bodyColor = computed(() => (props.bgTheme === "light" ? "#1e293b" : "#e2e8f0"));
 
-const processedSvgContent = computed(() => {
-  if (!displayContent.value || props.contentType !== "svg") {
-    return displayContent.value;
-  }
-  return normalizeSvgForDisplay(displayContent.value);
-});
-
-/**
- * 若挂载后的 SVG 缺少 viewBox（模型既未给 viewBox 也未给 width/height），
- * 通过 getBBox() 动态计算图形真实边界框并注入 viewBox，确保任意尺寸图形完整显示。
- */
-function ensureMountedSvgFit(): void {
-  const container = svgViewportRef.value;
-  if (!container) return;
-  const svgEl = container.querySelector<SVGSVGElement>("svg");
-  if (!svgEl) return;
-
-  if (!svgEl.getAttribute("viewBox")) {
-    const wAttr = parseFloat(svgEl.getAttribute("width") || "");
-    const hAttr = parseFloat(svgEl.getAttribute("height") || "");
-    if (wAttr > 0 && hAttr > 0) {
-      svgEl.setAttribute("viewBox", `0 0 ${wAttr} ${hAttr}`);
-    } else if (typeof svgEl.getBBox === "function") {
-      try {
-        const bbox = svgEl.getBBox();
-        if (bbox && bbox.width > 0 && bbox.height > 0) {
-          const pad = Math.max(bbox.width, bbox.height) * 0.04;
-          svgEl.setAttribute(
-            "viewBox",
-            `${bbox.x - pad} ${bbox.y - pad} ${bbox.width + pad * 2} ${bbox.height + pad * 2}`
-          );
-        }
-      } catch {
-        // 忽略隐藏或异常状态下的 getBBox 调用错误
-      }
-    }
-  }
-
-  const par = svgEl.getAttribute("preserveAspectRatio");
-  if (!par || par === "none" || /slice/i.test(par)) {
-    svgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
-  }
-}
-
-watch(
-  [processedSvgContent, () => props.isRunning, () => props.contentType],
-  () => {
-    if (!props.isRunning && props.contentType === "svg" && processedSvgContent.value) {
-      nextTick(() => {
-        ensureMountedSvgFit();
-      });
-    }
-  },
-  { immediate: true }
+const resolvedContentType = computed(() =>
+  resolvePelicanContentType(props.contentType, displayContent.value)
 );
 
-onMounted(() => {
-  nextTick(() => {
-    ensureMountedSvgFit();
-  });
-});
-
-const wrappedHtml = computed(() => {
+const previewDocument = computed(() => {
   if (!displayContent.value) return "";
-  const raw = displayContent.value.trim();
-
-  // 如果已经包含完整 <html> 或 <!DOCTYPE html>
-  if (/<!DOCTYPE\s+html|<html[\s>]/i.test(raw)) {
-    const styleInjection = `
-<style id="__pelican_injected_style">
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-  :root {
-    color-scheme: ${props.bgTheme};
-  }
-  html, body {
-    background-color: transparent !important;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-  }
-  body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: ${bodyColor.value};
-  }
-  body > svg, body > canvas, body > img {
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-</style>
-${FIT_VIEWPORT_SCRIPT}
-`;
-    if (/<head[\s>]/i.test(raw)) {
-      return raw.replace(/<head[\s>]/i, (m) => `${m}${styleInjection}`);
-    }
-    return `${styleInjection}${raw}`;
-  }
-
-  // 如果是 HTML 代码片段，包裹为标准 HTML 文档
-  return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    *, *::before, *::after {
-      box-sizing: border-box;
-    }
-    :root {
-      color-scheme: ${props.bgTheme};
-    }
-    html, body {
-      background-color: transparent !important;
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-    body {
-      padding: 16px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      color: ${bodyColor.value};
-    }
-    body > svg, body > canvas, body > img {
-      width: 100%;
-      height: 100%;
-      min-width: 0;
-      min-height: 0;
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-  </style>
-  ${FIT_VIEWPORT_SCRIPT}
-</head>
-<body>
-  ${raw}
-</body>
-</html>`;
+  return buildPelicanPreviewDocument(
+    {
+      contentType: resolvedContentType.value,
+      content: displayContent.value,
+    },
+    props.bgTheme
+  );
 });
 </script>
 
@@ -192,32 +52,24 @@ ${FIT_VIEWPORT_SCRIPT}
       </div>
     </div>
 
-    <!-- 渲染成功态 -->
+    <!-- 渲染成功态（SVG 与 HTML 统一走隔离预览文档与沙箱 iframe，保证与历史记录一致） -->
     <div
       v-else-if="displayContent"
-      class="display-stage svg-stage"
+      class="display-stage"
       :class="{ 'light-bg': bgTheme === 'light' }"
     >
-      <!-- SVG 渲染 -->
-      <div
-        v-if="contentType === 'svg'"
-        ref="svgViewportRef"
-        class="svg-render-viewport"
-        v-html="processedSvgContent"
-      ></div>
-
-      <!-- HTML 渲染 -->
-      <div
-        v-else-if="contentType === 'html'"
-        class="html-render-viewport"
-      >
+      <div class="render-viewport">
         <iframe
-          class="html-render-frame"
-          :srcdoc="wrappedHtml"
+          class="render-frame"
+          :class="{
+            'is-svg-frame': resolvedContentType === 'svg',
+            'is-html-frame': resolvedContentType === 'html',
+          }"
+          :srcdoc="previewDocument"
           sandbox="allow-scripts allow-same-origin"
-          title="Pelican HTML Render Viewport"
+          title="Pelican Render Viewport"
           frameborder="0"
-          scrolling="auto"
+          scrolling="no"
         ></iframe>
       </div>
     </div>
@@ -317,54 +169,13 @@ ${FIT_VIEWPORT_SCRIPT}
   &.light-bg {
     background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
 
-    :deep(svg) {
-      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.12));
-    }
-
-    .html-render-frame {
+    .render-frame {
       filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.12));
     }
   }
 }
 
-.svg-render-viewport {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-
-  :deep(svg) {
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-width: 100% !important;
-    max-height: 100% !important;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
-    user-select: none;
-    transition: filter 0.25s ease;
-  }
-
-  :deep(img) {
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
-    user-select: none;
-    transition: filter 0.25s ease;
-  }
-}
-
-.html-render-viewport {
+.render-viewport {
   width: 100%;
   height: 100%;
   display: flex;
@@ -375,7 +186,7 @@ ${FIT_VIEWPORT_SCRIPT}
   border-radius: var(--radius-sm);
 }
 
-.html-render-frame {
+.render-frame {
   width: 100%;
   height: 100%;
   border: none;

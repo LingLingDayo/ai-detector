@@ -83,6 +83,8 @@ describe("pelicanPreview", () => {
       expect(doc).toContain("pause-btn");
       expect(doc).toContain("__pelican_history_preview_style");
       expect(doc).toContain("overflow: hidden !important;");
+      expect(doc).not.toContain("video, audio");
+      expect(doc).not.toContain("background-color: transparent !important");
     });
 
     it("当传入富 HTML 片段时自动补全 HTML5 骨架", () => {
@@ -92,6 +94,25 @@ describe("pelicanPreview", () => {
       expect(doc).toContain("<!DOCTYPE html>");
       expect(doc).toContain('<meta name="viewport" content="width=800, initial-scale=1.0">');
       expect(doc).toContain("动画标语");
+    });
+
+    it("带属性的 head 标签和无 head 的 html 文档都能正确注入样式与适配脚本", () => {
+      const headWithAttr = '<!DOCTYPE html><html><head data-env="prod"><title>t</title></head><body><canvas></canvas></body></html>';
+      const noHead = '<!DOCTYPE html><html lang="en"><body><div class="box">hi</div></body></html>';
+
+      const doc1 = buildHtmlPreviewDocument(headWithAttr, "light");
+      const doc2 = buildHtmlPreviewDocument(noHead, "dark");
+
+      expect(doc1).toContain('<head data-env="prod">\n<style id="__pelican_history_preview_style">');
+      expect(doc2).toContain('<html lang="en"><head>');
+      expect(doc2).toContain("ResizeObserver");
+      expect(doc2).toContain("syncFallbackTextColor");
+    });
+
+    it("仅在 body 只有单一 svg/canvas/img 视觉元素时做居中撑满约束，多元素页面保留文档流", () => {
+      const doc = buildHtmlPreviewDocument("<div>多元素</div><canvas></canvas>");
+      expect(doc).toContain("body:has(> canvas:only-of-type)");
+      expect(doc).not.toMatch(/^\s*body\s*\{[^}]*display:\s*flex/m);
     });
   });
 
