@@ -56,14 +56,14 @@ const hasCacheUsage = computed(
     <span
       v-if="outputSpeed !== null"
       class="meta-item"
-      title="按首字之后的生成时长估算，过短时按总耗时计算"
+      title="输出 token 数 ÷ 生成时长（流式扣除首字延迟，非流式或无有效间隔按总耗时）"
     >
       {{ formatSpeed(outputSpeed) }}
     </span>
     <span
       v-if="message.firstTokenMs !== undefined"
       class="meta-item"
-      title="从发起请求到收到首个文本 token"
+      title="从发起请求到收到首个输出 token（含思考过程）"
     >
       首字 {{ formatFirstToken(message.firstTokenMs) }}
     </span>

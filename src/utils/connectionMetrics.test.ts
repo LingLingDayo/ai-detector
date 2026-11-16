@@ -104,40 +104,75 @@ describe("连接测试统计聚合", () => {
     expect(stats.usageEstimated).toBe(false);
   });
 
-  it("首字与结束时间过于接近时回退总耗时计算速度", () => {
-    const message = assistantMessage({
+  it("流式与非流式及首字时间异常时按 Cherry Studio 口径计算速度", () => {
+    const streamMsg = assistantMessage({
       requestedModel: "gpt-4o",
-      responseModel: "gpt-4o",
-      content: "Hi! How can I help you today?",
+      content: "ok",
       durationMs: 1200,
-      firstTokenMs: 1199,
-      usage: {
-        inputTokens: 31,
-        outputTokens: 30,
-        cacheWriteTokens: 31,
-      },
+      firstTokenMs: 200,
+      usage: { outputTokens: 50 },
     });
+    expect(getMessageOutputSpeed(streamMsg)).toBeCloseTo(50, 4);
 
-    expect(getMessageOutputSpeed(message)).toBeCloseTo(25, 4);
-
-    const stats = aggregateConnectionMessages([message]);
-    expect(stats.outputSpeed).toBeCloseTo(25, 4);
-  });
-
-  it("生成窗口小于 20ms 时回退总耗时，恰好 20ms 仍按差值计算", () => {
-    const base = {
+    const nonStreamMsg = assistantMessage({
       requestedModel: "gpt-4o",
-      content: "Hi",
+      content: "ok",
       durationMs: 1200,
       usage: { outputTokens: 30 },
-    };
+    });
+    expect(getMessageOutputSpeed(nonStreamMsg)).toBeCloseTo(25, 4);
 
-    expect(
-      getMessageOutputSpeed(assistantMessage({ ...base, firstTokenMs: 1181 }))
-    ).toBeCloseTo(25, 4);
-    expect(
-      getMessageOutputSpeed(assistantMessage({ ...base, firstTokenMs: 1180 }))
-    ).toBeCloseTo(1500, 4);
+    const equalFirstTokenMsg = assistantMessage({
+      requestedModel: "gpt-4o",
+      content: "ok",
+      durationMs: 1200,
+      firstTokenMs: 1200,
+      usage: { outputTokens: 30 },
+    });
+    expect(getMessageOutputSpeed(equalFirstTokenMsg)).toBeCloseTo(25, 4);
+
+    const exceededFirstTokenMsg = assistantMessage({
+      requestedModel: "gpt-4o",
+      content: "ok",
+      durationMs: 1200,
+      firstTokenMs: 1300,
+      usage: { outputTokens: 30 },
+    });
+    expect(getMessageOutputSpeed(exceededFirstTokenMsg)).toBeCloseTo(25, 4);
+  });
+
+  it("失败请求与缺少耗时或零输出的消息不污染会话输出速度", () => {
+    const stats = aggregateConnectionMessages([
+      assistantMessage({
+        requestedModel: "gpt-4o",
+        responseModel: "gpt-4o",
+        content: "ok",
+        durationMs: 2200,
+        firstTokenMs: 200,
+        usage: { outputTokens: 100 },
+      }),
+      assistantMessage({
+        requestedModel: "gpt-4o",
+        content: "",
+        durationMs: 8000,
+        error: "HTTP 500",
+      }),
+      assistantMessage({
+        requestedModel: "gpt-4o",
+        content: "",
+        durationMs: 1000,
+        usage: { outputTokens: 0 },
+      }),
+      assistantMessage({
+        requestedModel: "gpt-4o",
+        content: "missing duration",
+        usage: { outputTokens: 500 },
+      }),
+    ]);
+
+    expect(stats.outputSpeed).toBeCloseTo(50, 4);
+    expect(stats.totalDurationMs).toBe(11200);
+    expect(stats.outputTokens).toBe(600);
   });
 
   it("缺少 usage 时估算输出 token，并保留进行中的请求", () => {
