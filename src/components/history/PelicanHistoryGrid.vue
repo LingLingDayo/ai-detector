@@ -32,10 +32,11 @@ const popoverPlacementMap = ref<Record<string, "top" | "bottom">>({});
 
 const gridContainerRef = ref<HTMLElement | null>(null);
 const stageWidth = ref(360);
+const stageHeight = ref(270);
 
 const stagePreviewScale = computed(() => {
-  // 基准画布视口为 800px × 600px (4:3)，根据卡片实际像素宽度等比缩放
-  const scale = stageWidth.value / 800;
+  // 基准画布视口为 800px × 600px (4:3)，取宽高缩放最大值以 cover 铺满卡片，避免像素舍入产生 1px 黑/白边
+  const scale = Math.max(stageWidth.value / 800, stageHeight.value / 600);
   return Number.isFinite(scale) && scale > 0 ? scale : 0.45;
 });
 
@@ -48,14 +49,17 @@ function updateStageWidth(): void {
   const firstStage = gridContainerRef.value.querySelector<HTMLElement>(".image-stage");
   if (firstStage) {
     const rect = firstStage.getBoundingClientRect();
-    if (rect.width > 0) {
+    if (rect.width > 0 && rect.height > 0) {
       stageWidth.value = rect.width;
+      stageHeight.value = rect.height;
       return;
     }
   }
   const containerW = gridContainerRef.value.getBoundingClientRect().width;
   if (containerW > 0) {
-    stageWidth.value = containerW > 640 ? (containerW - 16) / 2 : containerW;
+    const fallbackW = containerW > 640 ? (containerW - 16) / 2 : containerW;
+    stageWidth.value = fallbackW;
+    stageHeight.value = (fallbackW * 3) / 4;
   }
 }
 
@@ -197,7 +201,7 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
               'is-html-frame': resolvePelicanContentType(item.contentType, item.content) === 'html',
               'svg-frame': true,
             }"
-            :srcdoc="buildPelicanPreviewDocument(item, pelicanStore.bgTheme)"
+            :srcdoc="buildPelicanPreviewDocument(item, pelicanStore.bgTheme, 'cover')"
             sandbox="allow-scripts allow-same-origin"
             scrolling="no"
             tabindex="-1"
@@ -453,12 +457,12 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
 
     &.is-html-frame {
       position: absolute;
-      top: 0;
-      left: 0;
+      top: 50%;
+      left: 50%;
       width: 800px;
       height: 600px;
-      transform-origin: 0 0;
-      transform: scale(var(--stage-preview-scale, 0.45));
+      transform-origin: center center;
+      transform: translate(-50%, -50%) scale(var(--stage-preview-scale, 0.45));
     }
   }
 }

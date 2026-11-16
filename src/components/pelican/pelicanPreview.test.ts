@@ -134,5 +134,30 @@ describe("pelicanPreview", () => {
       expect(svgDoc).toContain("<svg");
       expect(svgDoc).toContain('preserveAspectRatio="xMidYMid meet"');
     });
+    it("cover 模式用于历史卡片铺满无黑边白边，contain 模式用于主舞台完整展示", () => {
+      const svgItem = {
+        contentType: "svg" as const,
+        content: '<svg viewBox="0 0 500 500"><rect width="500" height="500"/></svg>',
+      };
+      const htmlItem = {
+        contentType: "html" as const,
+        content: "<canvas width='500' height='500'></canvas>",
+      };
+
+      const svgCover = buildPelicanPreviewDocument(svgItem, "dark", "cover");
+      const svgContain = buildPelicanPreviewDocument(svgItem, "dark", "contain");
+      const htmlCover = buildPelicanPreviewDocument(htmlItem, "dark", "cover");
+      const htmlContain = buildPelicanPreviewDocument(htmlItem, "dark", "contain");
+
+      expect(svgCover).toContain('preserveAspectRatio="xMidYMid slice"');
+      expect(svgCover).toContain("object-fit: cover;");
+      expect(svgContain).toContain('preserveAspectRatio="xMidYMid meet"');
+      expect(svgContain).toContain("object-fit: contain;");
+
+      expect(htmlCover).toContain("object-fit: cover;");
+      expect(htmlCover).toContain("FIT_MODE = 'cover'");
+      expect(htmlContain).toContain("object-fit: contain;");
+      expect(htmlContain).toContain("FIT_MODE = 'contain'");
+    });
   });
 });

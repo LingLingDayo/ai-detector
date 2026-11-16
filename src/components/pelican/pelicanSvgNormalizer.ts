@@ -1,10 +1,17 @@
+export type PelicanFitMode = "contain" | "cover";
+
 /**
- * 预处理 SVG 内容，确保内部图形以不拉伸的缩放方式尽量充满容器且完整展示不裁剪：
+ * 预处理 SVG 内容，确保内部图形按指定适配模式展示：
  * 1. 若缺少 viewBox 但具备具体的 width/height 属性或内联样式，自动补充对应的 viewBox
  * 2. 若包含内联 style 中的固定宽高或最小宽高，自动清理以避免撑破父容器
- * 3. 确保 preserveAspectRatio="xMidYMid meet"（防止因缺失、none 或 slice 导致拉伸失真或边缘裁切）
+ * 3. 按 fitMode 设置 preserveAspectRatio：
+ *    - "contain"（默认，主舞台完整展示）：xMidYMid meet，绝不裁切
+ *    - "cover"（历史缩略图铺满卡片）：xMidYMid slice，消除黑/白边并居中保留最大可视内容
  */
-export function normalizeSvgForDisplay(svgText: string): string {
+export function normalizeSvgForDisplay(
+  svgText: string,
+  fitMode: PelicanFitMode = "contain"
+): string {
   if (!svgText) return "";
   const svg = svgText.trim();
   const svgTagMatch = svg.match(/<svg\b([^>]*)>/i);
@@ -49,14 +56,16 @@ export function normalizeSvgForDisplay(svgText: string): string {
     }
   }
 
-  // 3. 确保 preserveAspectRatio 为等比自适应且完整显示 (meet)，纠正 none 或 slice
+  // 3. 按适配模式设置 preserveAspectRatio，防止拉伸失真
+  const targetAspectRatio =
+    fitMode === "cover" ? "xMidYMid slice" : "xMidYMid meet";
   if (/\bpreserveAspectRatio\s*=/i.test(attrs)) {
     attrs = attrs.replace(
       /\bpreserveAspectRatio\s*=\s*["'][^"']*["']/i,
-      'preserveAspectRatio="xMidYMid meet"'
+      `preserveAspectRatio="${targetAspectRatio}"`
     );
   } else {
-    attrs = `${attrs} preserveAspectRatio="xMidYMid meet"`;
+    attrs = `${attrs} preserveAspectRatio="${targetAspectRatio}"`;
   }
 
   return svg.replace(fullTag, `<svg${attrs}>`);

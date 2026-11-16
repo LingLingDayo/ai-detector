@@ -36,7 +36,8 @@ const previewDocument = computed(() => {
       contentType: resolvedContentType.value,
       content: displayContent.value,
     },
-    props.bgTheme
+    props.bgTheme,
+    "contain"
   );
 });
 </script>
