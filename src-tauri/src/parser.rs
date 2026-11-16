@@ -415,6 +415,107 @@ pub struct ChatParseState {
     pub usage: ChatUsage,
     pub error_message: Option<String>,
     pub saw_sse_data: bool,
+    pub has_semantic_output: bool,
+}
+
+fn non_empty_str(value: Option<&serde_json::Value>) -> bool {
+    value
+        .and_then(|v| v.as_str())
+        .map(|s| !s.is_empty())
+        .unwrap_or(false)
+}
+
+fn has_non_empty_text_array(value: Option<&serde_json::Value>) -> bool {
+    let Some(parts) = value.and_then(|v| v.as_array()) else {
+        return false;
+    };
+    parts.iter().any(|part| {
+        if let Some(s) = part.as_str() {
+            return !s.is_empty();
+        }
+        non_empty_str(part.get("text"))
+            || non_empty_str(part.get("summary"))
+            || non_empty_str(part.get("data"))
+    })
+}
+
+/// 判断流式分片是否包含模型语义输出（含文本、思考/推理与工具调用增量），用于准确记录首字延迟。
+fn has_stream_semantic_output(value: &serde_json::Value, api_format: &str) -> bool {
+    if api_format == "anthropic" {
+        if value.get("type").and_then(|t| t.as_str()) == Some("content_block_delta") {
+            let Some(delta) = value.get("delta") else {
+                return false;
+            };
+            let delta_type = delta.get("type").and_then(|t| t.as_str()).unwrap_or("");
+            return match delta_type {
+                "text_delta" => non_empty_str(delta.get("text")),
+                "thinking_delta" => non_empty_str(delta.get("thinking")),
+                "input_json_delta" => non_empty_str(delta.get("partial_json")),
+                _ => false,
+            };
+        }
+        return false;
+    }
+
+    if api_format == "responses" || api_format == "openai_responses" {
+        let val_type = value.get("type").and_then(|t| t.as_str()).unwrap_or("");
+        if val_type == "response.output_text.delta"
+            || val_type == "response.reasoning_summary_text.delta"
+            || val_type == "response.reasoning_text.delta"
+            || val_type == "response.reasoning.delta"
+            || val_type == "response.reasoning_summary.delta"
+            || val_type == "response.function_call_arguments.delta"
+        {
+            return non_empty_str(value.get("delta"))
+                || non_empty_str(value.pointer("/delta/text"))
+                || non_empty_str(value.get("text"));
+        }
+        if val_type == "response.output_text.done" {
+            return non_empty_str(value.get("text"));
+        }
+        if val_type.starts_with("response.") {
+            return false;
+        }
+        if non_empty_str(value.get("delta"))
+            || non_empty_str(value.get("output_text"))
+            || non_empty_str(value.get("text"))
+        {
+            return true;
+        }
+    }
+
+    let Some(choice) = value.get("choices").and_then(|c| c.as_array()).and_then(|c| c.get(0)) else {
+        return false;
+    };
+    if let Some(delta) = choice.get("delta") {
+        if non_empty_str(delta.get("content"))
+            || has_non_empty_text_array(delta.get("content"))
+            || non_empty_str(delta.get("reasoning_content"))
+            || non_empty_str(delta.get("reasoning"))
+            || non_empty_str(delta.get("thinking"))
+            || has_non_empty_text_array(delta.get("reasoning_details"))
+        {
+            return true;
+        }
+        if delta
+            .get("tool_calls")
+            .and_then(|t| t.as_array())
+            .map(|arr| !arr.is_empty())
+            .unwrap_or(false)
+        {
+            return true;
+        }
+    }
+    if let Some(message) = choice.get("message") {
+        if non_empty_str(message.get("content"))
+            || has_non_empty_text_array(message.get("content"))
+            || non_empty_str(message.get("reasoning_content"))
+            || non_empty_str(message.get("reasoning"))
+        {
+            return true;
+        }
+    }
+    false
 }
 
 fn value_as_u64(value: &serde_json::Value) -> Option<u64> {
@@ -620,12 +721,15 @@ pub fn parse_chat_non_streaming_json(
     if let Some(message) = extract_error_message(parsed) {
         return Err(message);
     }
+    let text = extract_chat_non_streaming_text(parsed, api_format);
+    let has_semantic_output = !text.is_empty();
     Ok(ChatParseState {
-        text: extract_chat_non_streaming_text(parsed, api_format),
+        text,
         response_model: extract_response_model(parsed, api_format),
         usage: extract_chat_usage(parsed, api_format),
         error_message: None,
         saw_sse_data: false,
+        has_semantic_output,
     })
 }
 
@@ -660,7 +764,13 @@ pub fn scan_chat_stream(body: &str, api_format: &str) -> ChatParseState {
         if usage.has_any() {
             state.usage.merge(&usage);
         }
+        if !state.has_semantic_output && has_stream_semantic_output(&value, api_format) {
+            state.has_semantic_output = true;
+        }
         if let Some(delta) = extract_stream_delta_text(&value, api_format) {
+            if !delta.is_empty() {
+                state.has_semantic_output = true;
+            }
             state.text.push_str(&delta);
             continue;
         }
@@ -671,6 +781,9 @@ pub fn scan_chat_stream(body: &str, api_format: &str) -> ChatParseState {
                     == Some("response.output_text.done")
                 {
                     if let Some(text) = value.get("text").and_then(|text| text.as_str()) {
+                        if !text.is_empty() {
+                            state.has_semantic_output = true;
+                        }
                         state.text = text.to_string();
                     }
                 }
@@ -679,6 +792,9 @@ pub fn scan_chat_stream(body: &str, api_format: &str) -> ChatParseState {
                     .pointer("/choices/0/message/content")
                     .and_then(|content| content.as_str())
                 {
+                    if !text.is_empty() {
+                        state.has_semantic_output = true;
+                    }
                     state.text = text.to_string();
                 }
             }
@@ -848,5 +964,31 @@ mod tests {
         assert_eq!(state.response_model.as_deref(), Some("gpt-5.1"));
         assert_eq!(state.usage.input_tokens, Some(50));
         assert_eq!(state.usage.cached_tokens, Some(40));
+    }
+
+    #[test]
+    fn test_scan_chat_stream_detects_reasoning_semantic_output() {
+        let empty_role = "data: {\"choices\":[{\"delta\":{\"role\":\"assistant\",\"content\":\"\"}}]}\n\n";
+        let state_empty = scan_chat_stream(empty_role, "chat_completions");
+        assert!(!state_empty.has_semantic_output);
+        assert!(state_empty.text.is_empty());
+
+        let reasoning_sse = "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"think...\"}}]}\n\n";
+        let state_reasoning = scan_chat_stream(reasoning_sse, "chat_completions");
+        assert!(state_reasoning.has_semantic_output);
+        assert!(state_reasoning.text.is_empty());
+
+        let anthropic_thinking = concat!(
+            "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\n",
+            "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"step 1\"}}\n\n"
+        );
+        let state_anthropic = scan_chat_stream(anthropic_thinking, "anthropic");
+        assert!(state_anthropic.has_semantic_output);
+        assert!(state_anthropic.text.is_empty());
+
+        let responses_reasoning = "data: {\"type\":\"response.reasoning_summary_text.delta\",\"delta\":\"thinking\"}\n\n";
+        let state_responses = scan_chat_stream(responses_reasoning, "responses");
+        assert!(state_responses.has_semantic_output);
+        assert!(state_responses.text.is_empty());
     }
 }
