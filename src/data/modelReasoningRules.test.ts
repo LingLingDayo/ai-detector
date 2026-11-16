@@ -214,6 +214,26 @@ describe("modelReasoningRules", () => {
     expect(opus55Rule?.allowDisableReasoning).toBe(false);
     expect(findModelReasoningRule("Claude 5.5 Opus")?.model).toBe("Claude 5.5 Opus");
 
+    // Anthropic Claude Fable 5 / 5.1 / 5.2 系列
+    for (const fableId of [
+      "claude-fable-5",
+      "claude-fable-5-1",
+      "claude-fable-5-2",
+      "anthropic/claude-fable-5-2",
+      "claude-fable-5-2-20261116",
+      "Claude Fable 5.2",
+      "Claude 5.2 Fable",
+      "fable-5.1",
+      "fable-5.2",
+    ]) {
+      const fableRule = findModelReasoningRule(fableId);
+      expect(fableRule?.series, `${fableId} 应命中 Claude Fable 5 系列`).toBe("Claude Fable 5");
+      expect(fableRule?.supportedEfforts).toEqual(["low", "medium", "high", "xhigh", "max"]);
+      expect(fableRule?.defaultEffort).toBe("high");
+      expect(fableRule?.allowDisableReasoning).toBe(false);
+      expect(fableRule?.requiresAdaptiveThinking).toBe(true);
+    }
+
     // Google Gemini 系列自动匹配当前型号与同系列新增型号
     const gemini4ArgonRule = findModelReasoningRule("gemini-4-argon");
     expect(gemini4ArgonRule?.series).toBe("Gemini 4");
@@ -541,6 +561,14 @@ describe("modelReasoningRules", () => {
     // GPT-6.1 系列新增型号自动应用系列限定
     expect(resolveValidReasoningEffort("gpt-6.1-luna", "none")).toBe("medium");
     expect(resolveValidReasoningEffort("gpt-6.1-luna", "xhigh")).toBe("xhigh");
+
+    // Claude Fable 5 / 5.1 / 5.2 系列：始终开启思考，不支持 none，其余 5 档保留
+    expect(resolveValidReasoningEffort("claude-fable-5", "none")).toBe("high");
+    expect(resolveValidReasoningEffort("claude-fable-5-1", "none")).toBe("high");
+    expect(resolveValidReasoningEffort("claude-fable-5-2", "none")).toBe("high");
+    expect(resolveValidReasoningEffort("claude-fable-5-2", "minimal")).toBe("high");
+    expect(resolveValidReasoningEffort("claude-fable-5-2", "xhigh")).toBe("xhigh");
+    expect(resolveValidReasoningEffort("claude-fable-5-2", "max")).toBe("max");
   });
 
   it("ALL_REASONING_EFFORT_OPTIONS 不再包含已移除的 ultra 档位", () => {
@@ -560,6 +588,10 @@ describe("modelReasoningRules", () => {
     // 官方强制要求自适应思考的模型 (即传 enabled 会报 400 的模型)：4.7, 4.8 及 5.x+ 系列
     expect(isAdaptiveThinkingRequired("claude-sonnet-5-5")).toBe(true);
     expect(isAdaptiveThinkingRequired("claude-opus-5-5")).toBe(true);
+    expect(isAdaptiveThinkingRequired("claude-fable-5")).toBe(true);
+    expect(isAdaptiveThinkingRequired("claude-fable-5-1")).toBe(true);
+    expect(isAdaptiveThinkingRequired("claude-fable-5-2")).toBe(true);
+    expect(isAdaptiveThinkingRequired("fable-5.2")).toBe(true);
     expect(isAdaptiveThinkingRequired("anthropic/claude-sonnet-5")).toBe(true);
     expect(isAdaptiveThinkingRequired("claude-opus-4-7")).toBe(true);
     expect(isAdaptiveThinkingRequired("claude-opus-4-8")).toBe(true);

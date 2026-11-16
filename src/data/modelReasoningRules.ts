@@ -228,7 +228,7 @@ export const SERIES_REASONING_RULES: readonly SeriesReasoningRule[] = [
     requiresAdaptiveThinking: true,
     // 排除 5-5 / 5.5 等次版本，同时保留 5-20260514 类日期快照后缀的匹配
     patterns: [
-      /^claude-(?:sonnet|opus|haiku|fable|mythos)-5(?![.\-]\d(?:$|[-_:]))(?:$|[-_:])/,
+      /^claude-(?:sonnet|opus|haiku|mythos)-5(?![.\-]\d(?:$|[-_:]))(?:$|[-_:])/,
       /^claude-5(?![.\-]\d(?:$|[-_:]))(?:$|[-_:])/,
     ],
   },
@@ -239,8 +239,20 @@ export const SERIES_REASONING_RULES: readonly SeriesReasoningRule[] = [
     defaultEffort: "high",
     requiresAdaptiveThinking: true,
     patterns: [
-      /^claude-(?:sonnet|opus|haiku|fable|mythos)-(?:5-5|5\.5)(?:$|[-_:])/,
+      /^claude-(?:sonnet|opus|haiku|mythos)-(?:5-5|5\.5)(?:$|[-_:])/,
       /^claude-(?:5-5|5\.5)(?:$|[-_:])/,
+    ],
+  },
+  {
+    vendor: "Anthropic Claude",
+    series: "Claude Fable 5",
+    supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "high",
+    requiresAdaptiveThinking: true,
+    // 覆盖 Fable 5 / 5.1 / 5.2 及同代后续 5.x 型号（自适应思考始终开启，不支持关闭）
+    patterns: [
+      /^(?:claude-)?fable-5(?:[.\-]\d+)?(?:$|[-_:])/,
+      /^claude-5(?:[.\-]\d+)?-fable(?:$|[-_:])/,
     ],
   },
 
