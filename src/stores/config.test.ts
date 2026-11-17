@@ -538,3 +538,102 @@ describe("配置列表拖动插入排序 moveConfigItem 测试套件", () => {
   });
 });
 
+describe("自定义模型来源标记的配置持久化", () => {
+  const customItem: ConfigItem = {
+    id: "cfg_custom_001",
+    name: "自定义模型配置",
+    baseUrl: "https://api.custom-model.com",
+    apiKey: "sk-custom-key",
+    apiFormat: "chat_completions",
+    modelName: "my-private-model",
+    reasoningEffort: "high",
+    stream: true,
+    isCustomModel: true,
+  };
+
+  it("应用配置预设时，四种测试模式均恢复自定义模型标记", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    store.loadConfig();
+    store.configList = [customItem];
+    store.applyConfig(customItem);
+
+    expect(store.config.modelName).toBe("my-private-model");
+    expect(store.probeConfig.isCustomModel).toBe(true);
+    expect(store.pelicanConfig.isCustomModel).toBe(true);
+    expect(store.candyConfig.isCustomModel).toBe(true);
+    expect(store.connectionConfig.isCustomModel).toBe(true);
+  });
+
+  it("手动输入后切换测试模式，自定义模型标记随配置顺延", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    store.loadConfig();
+    store.probeConfig.modelName = "my-private-model";
+    store.probeConfig.isCustomModel = true;
+
+    store.setActiveMode("pelican");
+
+    expect(store.pelicanConfig.modelName).toBe("my-private-model");
+    expect(store.pelicanConfig.isCustomModel).toBe(true);
+  });
+
+  it("更新配置预设时，自定义模型标记随预设一起持久化", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    store.loadConfig();
+    store.configList = [customItem];
+    store.applyConfig(customItem);
+
+    store.config.modelName = "my-private-model-v2";
+    expect(store.updateCurrentConfig()).toBe(true);
+    expect(store.configList[0].isCustomModel).toBe(true);
+    const persisted = JSON.parse(storage.get(CONFIG_LIST_STORAGE_KEY)!);
+    expect(persisted[0].isCustomModel).toBe(true);
+  });
+
+  it("保存后重新加载页面，仍能从缓存恢复自定义模型标记", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    store.loadConfig();
+    store.configList = [customItem];
+
+    store.config.baseUrl = customItem.baseUrl;
+    store.config.apiKey = customItem.apiKey;
+    store.config.modelName = "my-private-model";
+    store.config.isCustomModel = true;
+    store.saveConfig();
+
+    expect(JSON.parse(storage.get(STORAGE_KEY)!).isCustomModel).toBe(true);
+
+    setActivePinia(createPinia());
+    const freshStore = useConfigStore();
+    freshStore.loadConfig();
+
+    expect(freshStore.config.modelName).toBe("my-private-model");
+    expect(freshStore.config.isCustomModel).toBe(true);
+  });
+
+  it("旧预设没有来源标记时，默认按列表选中的模型处理", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    store.loadConfig();
+    const listItem: ConfigItem = {
+      id: "cfg_list_001",
+      name: "列表模型配置",
+      baseUrl: "https://api.custom-model.com",
+      apiKey: "sk-custom-key",
+      modelName: "gpt-4o",
+    };
+    store.configList = [listItem];
+    store.applyConfig(listItem);
+
+    expect(store.config.isCustomModel).toBe(false);
+  });
+});
+

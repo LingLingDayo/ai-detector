@@ -22,6 +22,44 @@
     </script>
   </head>
   <body>
+    <script>
+      // Vue 挂载前的异常无法被应用内捕获：只暂存到内存，不向用户展示；开发者查看方式见 docs/diagnostics.md
+      (function () {
+        var records = [];
+        window.__AI_DETECTOR_EARLY_ERRORS__ = records;
+
+        function describe(value) {
+          if (value && value.stack) return String(value.stack);
+          if (value && value.message) return String(value.message);
+          if (value && value.reason) return describe(value.reason);
+          return String(value);
+        }
+
+        function remember(message) {
+          if (records.length >= 20) return;
+          records.push({ message: message, timestamp: Date.now() });
+        }
+
+        function onError(event) {
+          var detail = describe(event.error || event.message);
+          remember(detail + (event.filename ? " (" + event.filename + ":" + event.lineno + ")" : ""));
+        }
+
+        function onRejection(event) {
+          remember(describe(event.reason));
+        }
+
+        window.addEventListener("error", onError);
+        window.addEventListener("unhandledrejection", onRejection);
+
+        // 应用内的全局监听安装完成后卸载此处临时监听，避免同一错误被采集两次
+        window.__AI_DETECTOR_STOP_EARLY_CAPTURE__ = function () {
+          window.removeEventListener("error", onError);
+          window.removeEventListener("unhandledrejection", onRejection);
+          window.__AI_DETECTOR_STOP_EARLY_CAPTURE__ = undefined;
+        };
+      })();
+    </script>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

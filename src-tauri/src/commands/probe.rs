@@ -257,6 +257,12 @@ async fn send_probe_request_inner(
                         tokio::time::sleep(Duration::from_millis(1000 * attempt)).await;
                         continue;
                     }
+                    log::error!(
+                        "探测请求(流式)无法连接上游接口: model={}, api_format={}, error={}",
+                        req.model,
+                        req.api_format,
+                        e
+                    );
                     return Err(format!("无法连接上游接口: {}", e));
                 }
                 Err(_) => {
@@ -282,6 +288,12 @@ async fn send_probe_request_inner(
                     tokio::time::sleep(Duration::from_millis(1000 * attempt)).await;
                     continue;
                 }
+                log::warn!(
+                    "探测请求(流式)接口返回异常: status={}, model={}, api_format={}",
+                    status_code,
+                    req.model,
+                    req.api_format
+                );
                 return Err(format!("接口请求异常 ({}): {}", status_code, err_msg));
             }
 
@@ -443,6 +455,12 @@ async fn send_probe_request_inner(
             }
         }
     }
+
+    log::error!(
+        "探测请求达到最大重试次数仍未获得响应: model={}, api_format={}",
+        req.model,
+        req.api_format
+    );
     Err("达到最大重试次数，仍未获得响应".to_string())
 }
 

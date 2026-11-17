@@ -13,6 +13,7 @@ import {
   resolvePelicanContentType,
   buildPelicanPreviewDocument,
 } from "../pelican/pelicanPreview";
+import { usePelicanTestStore } from "../../stores";
 
 const props = defineProps<{
   pelicanList: PelicanHistoryItem[];
@@ -27,6 +28,7 @@ const emit = defineEmits<{
 const { copy: copyText } = useClipboard();
 const { showToast } = useToast();
 const { pinnedId, togglePin } = usePopoverPin();
+const pelicanStore = usePelicanTestStore();
 const popoverPlacementMap = ref<Record<string, "top" | "bottom">>({});
 
 const gridContainerRef = ref<HTMLElement | null>(null);
@@ -176,11 +178,12 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
           :class="{
             'is-apply-disabled': applyDisabled,
             'is-html-stage': resolvePelicanContentType(item.contentType, item.content) === 'html',
+            'light-bg': pelicanStore.bgTheme === 'light',
           }"
           @click="handleApply(item)"
           title="点击将此图片载入主界面查看"
         >
-          <!-- 允许动态脚本运行；不授予同源权限，避免脚本访问主界面 -->
+          <!-- 允许动态脚本运行并即时加载，与主界面共用同款预览文档，避免懒加载导致动画静止 -->
           <iframe
             class="preview-frame"
             :class="{
@@ -188,10 +191,9 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
               'is-html-frame': resolvePelicanContentType(item.contentType, item.content) === 'html',
               'svg-frame': true,
             }"
-            :srcdoc="buildPelicanPreviewDocument(item)"
-            :sandbox="resolvePelicanContentType(item.contentType, item.content) === 'html' ? 'allow-scripts' : ''"
+            :srcdoc="buildPelicanPreviewDocument(item, pelicanStore.bgTheme)"
+            sandbox="allow-scripts"
             scrolling="no"
-            loading="lazy"
             tabindex="-1"
             :title="`${item.modelName} 鹈鹕测试预览`"
           ></iframe>
@@ -413,12 +415,16 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
   height: 100%;
   border-radius: calc(var(--radius-md) - 1px);
   overflow: hidden;
-  background: var(--bg-pelican-stage);
+  background: var(--pelican-canvas-radial);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: background 0.2s ease;
+
+  &.light-bg {
+    background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
+  }
 
   &.is-apply-disabled {
     cursor: not-allowed;

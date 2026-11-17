@@ -351,6 +351,12 @@ async fn send_chat_request_inner(
             Ok(Ok(response)) => response,
             Ok(Err(error)) => return Err(format!("无法连接上游接口: {}", error)),
             Err(_) => {
+                log::warn!(
+                    "对话请求(流式)首次响应超时: timeout={}s, model={}, api_format={}",
+                    timeout_sec,
+                    req.model,
+                    req.api_format
+                );
                 return Err(format!(
                     "流式请求首次响应超时（{} 秒内未收到上游响应）",
                     timeout_sec
@@ -374,6 +380,12 @@ async fn send_chat_request_inner(
     let status = resp.status();
     if !status.is_success() {
         let error_body = resp.text().await.unwrap_or_default();
+        log::warn!(
+            "对话请求接口返回异常: status={}, model={}, api_format={}",
+            status.as_u16(),
+            req.model,
+            req.api_format
+        );
         return Err(format!(
             "接口请求异常 ({}): {}",
             status.as_u16(),
@@ -419,11 +431,11 @@ async fn send_chat_request_inner(
             &mut last_text_len,
             &mut last_model,
         );
-        if !first_state.text.is_empty() {
+        if first_state.has_semantic_output {
             first_token_ms = Some(start_time.elapsed().as_millis() as u64);
         }
 
-        loop {
+        let duration_ms = loop {
             if is_chat_canceled(&req.request_id) {
                 return Err("请求已取消".to_string());
             }
@@ -443,13 +455,13 @@ async fn send_chat_request_inner(
                             &mut last_text_len,
                             &mut last_model,
                         );
-                        if first_token_ms.is_none() && !state.text.is_empty() {
+                        if first_token_ms.is_none() && state.has_semantic_output {
                             first_token_ms = Some(start_time.elapsed().as_millis() as u64);
                         }
                         last_progress_at = Instant::now();
                     }
                 }
-                Ok(Ok(None)) => break,
+                Ok(Ok(None)) => break start_time.elapsed().as_millis() as u64,
                 Ok(Err(error)) => {
                     return Err(format!("读取上游流式响应数据中断: {}", error));
                 }
@@ -459,7 +471,7 @@ async fn send_chat_request_inner(
                     );
                 }
             }
-        }
+        };
 
         let final_state = inspect_stream(
             &app,
@@ -469,13 +481,12 @@ async fn send_chat_request_inner(
             &mut last_text_len,
             &mut last_model,
         );
-        if first_token_ms.is_none() && !final_state.text.is_empty() {
-            first_token_ms = Some(start_time.elapsed().as_millis() as u64);
+        if first_token_ms.is_none() && final_state.has_semantic_output {
+            first_token_ms = Some(duration_ms);
         }
 
         let body_text = String::from_utf8_lossy(&raw_bytes);
         let parsed = parse_chat_streaming_body(&body_text, &req.api_format)?;
-        let duration_ms = start_time.elapsed().as_millis() as u64;
         return Ok(ChatResponse {
             text: parsed.text,
             response_model: parsed.response_model,
@@ -494,6 +505,11 @@ async fn send_chat_request_inner(
         .map_err(|error| format!("上游未返回有效 JSON 数据: {}", error))?;
     let state = parse_chat_non_streaming_json(&parsed_json, &req.api_format)?;
     if state.text.trim().is_empty() {
+        log::warn!(
+            "对话请求上游响应未包含有效文本内容: model={}, api_format={}",
+            req.model,
+            req.api_format
+        );
         return Err("上游响应未包含有效文本内容".to_string());
     }
     Ok(ChatResponse {

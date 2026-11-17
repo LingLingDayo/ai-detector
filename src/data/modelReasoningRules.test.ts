@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   ALL_REASONING_EFFORT_OPTIONS,
+  MODEL_REASONING_OVERRIDES,
   MODEL_REASONING_RULES,
+  SERIES_REASONING_RULES,
   findModelReasoningRule,
   getReasoningOptionsForModel,
   resolveValidReasoningEffort,
@@ -10,119 +12,112 @@ import {
 } from "./modelReasoningRules";
 
 describe("modelReasoningRules", () => {
-  it("MODEL_REASONING_RULES 包含了全部 31 个模型规则", () => {
-    expect(MODEL_REASONING_RULES).toHaveLength(31);
+  it("SERIES_REASONING_RULES 与 MODEL_REASONING_OVERRIDES 结构完整且自洽", () => {
+    const seriesNames = new Set(SERIES_REASONING_RULES.map((s) => s.series));
+    expect(seriesNames.size).toBe(SERIES_REASONING_RULES.length);
 
-    const modelNames = MODEL_REASONING_RULES.map((r) => r.model);
-    const expectedModels = [
-      "GPT-5.6 Sol",
-      "GPT-5.6 Terra",
-      "GPT-5.6 Luna",
-      "GPT-6 Astra",
-      "GPT-6 Sol",
-      "GPT-6 Luna",
-      "GPT-6.1 Sol",
-      "GLM-5.3",
-      "GLM-5.3 Flash",
-      "GLM-5.3 FlashX",
-      "Kimi K3.1 Pro",
-      "Kimi K3",
-      "Kimi K2.8 Preview",
-      "Qwen3.8 Max",
-      "Qwen3.8 Flash",
-      "MiMo V2.6 Pro",
-      "MiMo V2.6 Flash",
-      "MiMo V2.6 Pro-UltraSpeed",
-      "DeepSeek V4 Pro",
-      "DeepSeek V4.1 Flash",
-      "Grok 4.6",
-      "Grok 4.7",
-      "Claude 5 Sonnet",
-      "Claude 5.5 Sonnet",
-      "Claude 5 Opus",
-      "Claude 5.5 Opus",
-      "Gemini 4 Argon",
-      "Gemini 3.8 Flash",
-      "Gemini 3.7 Flash",
-      "Gemini 3.6 Flash",
-      "Gemini 3.1 Pro",
-    ];
-
-    for (const expected of expectedModels) {
-      expect(modelNames, `必须包含模型规则: ${expected}`).toContain(expected);
+    for (const seriesRule of SERIES_REASONING_RULES) {
+      expect(
+        seriesRule.supportedEfforts.includes(seriesRule.defaultEffort),
+        `系列 ${seriesRule.series} 的 defaultEffort 必须在 supportedEfforts 中`
+      ).toBe(true);
     }
+
+    for (const override of MODEL_REASONING_OVERRIDES) {
+      if (override.series) {
+        expect(
+          seriesNames.has(override.series),
+          `覆盖配置 ${override.model} 引用的系列 ${override.series} 必须存在`
+        ).toBe(true);
+      }
+    }
+
+    expect(MODEL_REASONING_RULES).toHaveLength(
+      SERIES_REASONING_RULES.length + MODEL_REASONING_OVERRIDES.length
+    );
   });
 
-  it("精确匹配与前缀匹配", () => {
-    // GLM-5.3 Flash 与 GLM-5.3 优先级测试
+  it("按系列匹配并支持单模型覆盖及同系列未来型号自动兼容", () => {
+    // GLM-5.3 系列及同系列不同变体
     const flashRule = findModelReasoningRule("glm-5.3-flash");
-    expect(flashRule?.model).toBe("GLM-5.3 Flash");
+    expect(flashRule?.series).toBe("GLM-5.3");
+    expect(flashRule?.isOverride).toBe(false);
     expect(flashRule?.supportedEfforts).toEqual(["low", "high", "max"]);
     expect(flashRule?.defaultEffort).toBe("max");
     expect(flashRule?.allowDisableReasoning).toBe(false);
 
     const baseGlm = findModelReasoningRule("glm-5.3");
-    expect(baseGlm?.model).toBe("GLM-5.3");
+    expect(baseGlm?.series).toBe("GLM-5.3");
 
-    // GLM-5.3 FlashX 必须优先于 Flash，避免被短词规则劫持
     const flashxRule = findModelReasoningRule("glm-5.3-flashx");
-    expect(flashxRule?.model).toBe("GLM-5.3 FlashX");
-    expect(flashxRule?.supportedEfforts).toEqual(["low", "high", "max"]);
-    expect(flashxRule?.defaultEffort).toBe("max");
+    expect(flashxRule?.series).toBe("GLM-5.3");
 
-    // Kimi 当前主力效率模型与最新 K3.1 Pro
+    const futureGlmRule = findModelReasoningRule("glm-5.3-air");
+    expect(futureGlmRule?.series).toBe("GLM-5.3");
+    expect(futureGlmRule?.supportedEfforts).toEqual(["low", "high", "max"]);
+    expect(futureGlmRule?.defaultEffort).toBe("max");
+
+    // Moonshot Kimi 系列与子版本互不抢占
     const kimiK31ProRule = findModelReasoningRule("kimi-k3.1-pro");
-    expect(kimiK31ProRule?.model).toBe("Kimi K3.1 Pro");
+    expect(kimiK31ProRule?.series).toBe("Kimi K3.1");
     expect(kimiK31ProRule?.supportedEfforts).toEqual(["low", "high", "max"]);
     expect(kimiK31ProRule?.defaultEffort).toBe("max");
     expect(kimiK31ProRule?.allowDisableReasoning).toBe(false);
 
     const kimiK31AliasRule = findModelReasoningRule("kimi-k3.1");
-    expect(kimiK31AliasRule?.model).toBe("Kimi K3.1 Pro");
+    expect(kimiK31AliasRule?.series).toBe("Kimi K3.1");
 
     const slashKimiK31Rule = findModelReasoningRule("moonshot/kimi-k3.1-pro");
-    expect(slashKimiK31Rule?.model).toBe("Kimi K3.1 Pro");
+    expect(slashKimiK31Rule?.series).toBe("Kimi K3.1");
+
+    const futureKimiK31Rule = findModelReasoningRule("kimi-k3.1-turbo");
+    expect(futureKimiK31Rule?.series).toBe("Kimi K3.1");
 
     const kimiK3Rule = findModelReasoningRule("kimi-k3");
-    expect(kimiK3Rule?.model).toBe("Kimi K3");
+    expect(kimiK3Rule?.series).toBe("Kimi K3");
 
     const kimiPreviewRule = findModelReasoningRule("kimi-k2.8-preview");
-    expect(kimiPreviewRule?.model).toBe("Kimi K2.8 Preview");
+    expect(kimiPreviewRule?.series).toBe("Kimi K2.8");
     expect(kimiPreviewRule?.defaultEffort).toBe("max");
 
-    // Qwen3.8 当前主力模型与快照/供应商前缀兼容
+    // Qwen3.8 系列与快照/供应商前缀/新增型号兼容
     const qwenMaxRule = findModelReasoningRule("qwen3.8-max-0902");
-    expect(qwenMaxRule?.model).toBe("Qwen3.8 Max");
+    expect(qwenMaxRule?.series).toBe("Qwen3.8");
     expect(qwenMaxRule?.supportedEfforts).toEqual(["none", "low", "medium", "xhigh"]);
     expect(qwenMaxRule?.defaultEffort).toBe("xhigh");
 
     const qwenFlashRule = findModelReasoningRule("dashscope/qwen3.8-flash");
-    expect(qwenFlashRule?.model).toBe("Qwen3.8 Flash");
+    expect(qwenFlashRule?.series).toBe("Qwen3.8");
     expect(qwenFlashRule?.defaultEffort).toBe("xhigh");
 
-    // Xiaomi MiMo V2.6 仅支持 thinking 开关，长型号必须优先于短词
+    const futureQwenRule = findModelReasoningRule("qwen3.8-coder");
+    expect(futureQwenRule?.series).toBe("Qwen3.8");
+    expect(futureQwenRule?.supportedEfforts).toEqual(["none", "low", "medium", "xhigh"]);
+
+    // Xiaomi MiMo V2.6 系列仅支持 thinking 开关，新增同系列模型自动继承
     const mimoProRule = findModelReasoningRule("mimo-v2.6-pro");
-    expect(mimoProRule?.model).toBe("MiMo V2.6 Pro");
+    expect(mimoProRule?.series).toBe("MiMo V2.6");
     expect(mimoProRule?.supportedEfforts).toEqual(["none", "high"]);
     expect(mimoProRule?.defaultEffort).toBe("high");
     expect(mimoProRule?.thinkingSwitchOnly).toBe(true);
 
     const mimoFlashRule = findModelReasoningRule("xiaomi/mimo-v2.6-flash");
-    expect(mimoFlashRule?.model).toBe("MiMo V2.6 Flash");
+    expect(mimoFlashRule?.series).toBe("MiMo V2.6");
     expect(mimoFlashRule?.defaultEffort).toBe("high");
 
     const mimoUltraRule = findModelReasoningRule("mimo-v2.6-pro-ultraspeed");
-    expect(mimoUltraRule?.model).toBe("MiMo V2.6 Pro-UltraSpeed");
+    expect(mimoUltraRule?.series).toBe("MiMo V2.6");
 
     expect(isThinkingSwitchModel("mimo-v2.6-pro")).toBe(true);
     expect(isThinkingSwitchModel("mimo-v2.6-flash")).toBe(true);
     expect(isThinkingSwitchModel("mimo-v2.6-pro-ultraspeed")).toBe(true);
+    expect(isThinkingSwitchModel("mimo-v2.6-lite")).toBe(true);
     expect(isThinkingSwitchModel("gpt-5.6-sol")).toBe(false);
     expect(isThinkingSwitchModel("glm-5.3")).toBe(false);
 
-    // OpenAI 模型测试
+    // OpenAI 系列 + GPT-6 Astra 单模型覆盖 + GPT-6.1 系列不与 GPT-6 混淆
     const solRule = findModelReasoningRule("gpt-5.6-sol");
-    expect(solRule?.model).toBe("GPT-5.6 Sol");
+    expect(solRule?.series).toBe("GPT-5.6");
     expect(solRule?.supportedEfforts).toEqual([
       "none",
       "low",
@@ -132,78 +127,138 @@ describe("modelReasoningRules", () => {
       "max",
     ]);
     expect(solRule?.defaultEffort).toBe("medium");
+    expect(findModelReasoningRule("gpt-5.6-mini")?.series).toBe("GPT-5.6");
+
+    const gpt6MiniRule = findModelReasoningRule("gpt-6-mini");
+    expect(gpt6MiniRule?.series).toBe("GPT-6");
+    expect(gpt6MiniRule?.isOverride).toBe(false);
+    expect(gpt6MiniRule?.allowDisableReasoning).toBe(true);
 
     const astraRule = findModelReasoningRule("openai/gpt-6-astra-preview");
     expect(astraRule?.model).toBe("GPT-6 Astra");
+    expect(astraRule?.series).toBe("GPT-6");
+    expect(astraRule?.isOverride).toBe(true);
     expect(astraRule?.allowDisableReasoning).toBe(false);
     expect(astraRule?.defaultEffort).toBe("medium");
+    expect(astraRule?.supportedEfforts).toEqual(["low", "medium", "high", "xhigh", "max"]);
 
-    // Grok 测试
+    const gpt61SolRule = findModelReasoningRule("gpt-6.1-sol");
+    expect(gpt61SolRule?.series).toBe("GPT-6.1");
+    expect(gpt61SolRule?.allowDisableReasoning).toBe(false);
+    expect(gpt61SolRule?.supportedEfforts).toEqual(["low", "medium", "high", "xhigh", "max"]);
+
+    const gpt61FutureRule = findModelReasoningRule("openai/gpt-6.1-luna");
+    expect(gpt61FutureRule?.series).toBe("GPT-6.1");
+    expect(gpt61FutureRule?.allowDisableReasoning).toBe(false);
+    expect(gpt61FutureRule?.defaultEffort).toBe("medium");
+
+    // Grok 系列测试
     const grokRule = findModelReasoningRule("grok-4.6");
-    expect(grokRule?.model).toBe("Grok 4.6");
+    expect(grokRule?.series).toBe("Grok 4.6");
     expect(grokRule?.defaultEffort).toBe("high");
     expect(grokRule?.supportedEfforts).toEqual(["low", "medium", "high", "xhigh"]);
+    expect(findModelReasoningRule("grok-4.7-mini")?.series).toBe("Grok 4.7");
 
-    // DeepSeek 别名与标准名测试
+    // DeepSeek 系列与别名测试
     const flashAliasRule = findModelReasoningRule("deepseek-flash");
-    expect(flashAliasRule?.model).toBe("DeepSeek V4.1 Flash");
+    expect(flashAliasRule?.series).toBe("DeepSeek V4.1");
     expect(flashAliasRule?.defaultEffort).toBe("high");
     expect(flashAliasRule?.supportedEfforts).toEqual(["none", "low", "high", "max"]);
 
     const slashFlashRule = findModelReasoningRule("deepseek/deepseek-flash");
-    expect(slashFlashRule?.model).toBe("DeepSeek V4.1 Flash");
+    expect(slashFlashRule?.series).toBe("DeepSeek V4.1");
 
     const deepseekProRule = findModelReasoningRule("deepseek-v4-pro");
-    expect(deepseekProRule?.model).toBe("DeepSeek V4 Pro");
+    expect(deepseekProRule?.series).toBe("DeepSeek V4");
 
     const deepseekProSnapshotRule = findModelReasoningRule("deepseek-v4-pro-0813");
-    expect(deepseekProSnapshotRule?.model).toBe("DeepSeek V4 Pro");
+    expect(deepseekProSnapshotRule?.series).toBe("DeepSeek V4");
 
-    // Anthropic Claude 官方模型标识与标准名称双向测试
+    // Anthropic Claude 系列 + Claude 5.5 Opus 默认值覆盖测试
     const sonnet5Rule = findModelReasoningRule("claude-sonnet-5");
-    expect(sonnet5Rule?.model).toBe("Claude 5 Sonnet");
+    expect(sonnet5Rule?.series).toBe("Claude 5");
     expect(sonnet5Rule?.defaultEffort).toBe("high");
     expect(sonnet5Rule?.allowDisableReasoning).toBe(true);
 
     const sonnet5NameRule = findModelReasoningRule("Claude 5 Sonnet");
-    expect(sonnet5NameRule?.model).toBe("Claude 5 Sonnet");
+    expect(sonnet5NameRule?.series).toBe("Claude 5");
+
+    const sonnet5SnapshotRule = findModelReasoningRule("claude-sonnet-5-20260514");
+    expect(sonnet5SnapshotRule?.series).toBe("Claude 5");
+
+    const haiku5Rule = findModelReasoningRule("claude-haiku-5");
+    expect(haiku5Rule?.series).toBe("Claude 5");
+    expect(haiku5Rule?.allowDisableReasoning).toBe(true);
 
     const sonnet55Rule = findModelReasoningRule("claude-sonnet-5-5");
-    expect(sonnet55Rule?.model).toBe("Claude 5.5 Sonnet");
+    expect(sonnet55Rule?.series).toBe("Claude 5.5");
+    expect(sonnet55Rule?.isOverride).toBe(false);
+    expect(sonnet55Rule?.defaultEffort).toBe("high");
+    expect(sonnet55Rule?.allowDisableReasoning).toBe(false);
+
+    const haiku55Rule = findModelReasoningRule("claude-5.5-haiku");
+    expect(haiku55Rule?.series).toBe("Claude 5.5");
+    expect(haiku55Rule?.defaultEffort).toBe("high");
 
     const opus5Rule = findModelReasoningRule("claude-opus-5");
-    expect(opus5Rule?.model).toBe("Claude 5 Opus");
+    expect(opus5Rule?.series).toBe("Claude 5");
 
     const slashOpusRule = findModelReasoningRule("anthropic/claude-opus-5");
-    expect(slashOpusRule?.model).toBe("Claude 5 Opus");
+    expect(slashOpusRule?.series).toBe("Claude 5");
 
     const opus55Rule = findModelReasoningRule("claude-opus-5-5");
     expect(opus55Rule?.model).toBe("Claude 5.5 Opus");
+    expect(opus55Rule?.series).toBe("Claude 5.5");
+    expect(opus55Rule?.isOverride).toBe(true);
+    expect(opus55Rule?.defaultEffort).toBe("medium");
+    expect(opus55Rule?.allowDisableReasoning).toBe(false);
+    expect(findModelReasoningRule("Claude 5.5 Opus")?.model).toBe("Claude 5.5 Opus");
 
-    // Google Gemini 官方模型标识与精确前缀测试
+    // Anthropic Claude Fable 5 / 5.1 / 5.2 系列
+    for (const fableId of [
+      "claude-fable-5",
+      "claude-fable-5-1",
+      "claude-fable-5-2",
+      "anthropic/claude-fable-5-2",
+      "claude-fable-5-2-20261116",
+      "Claude Fable 5.2",
+      "Claude 5.2 Fable",
+      "fable-5.1",
+      "fable-5.2",
+    ]) {
+      const fableRule = findModelReasoningRule(fableId);
+      expect(fableRule?.series, `${fableId} 应命中 Claude Fable 5 系列`).toBe("Claude Fable 5");
+      expect(fableRule?.supportedEfforts).toEqual(["low", "medium", "high", "xhigh", "max"]);
+      expect(fableRule?.defaultEffort).toBe("high");
+      expect(fableRule?.allowDisableReasoning).toBe(false);
+      expect(fableRule?.requiresAdaptiveThinking).toBe(true);
+    }
+
+    // Google Gemini 系列自动匹配当前型号与同系列新增型号
     const gemini4ArgonRule = findModelReasoningRule("gemini-4-argon");
-    expect(gemini4ArgonRule?.model).toBe("Gemini 4 Argon");
+    expect(gemini4ArgonRule?.series).toBe("Gemini 4");
     expect(gemini4ArgonRule?.allowDisableReasoning).toBe(false);
     expect(gemini4ArgonRule?.defaultEffort).toBe("medium");
     expect(gemini4ArgonRule?.supportedEfforts).toEqual(["low", "medium", "high"]);
 
     const slashGemini4Rule = findModelReasoningRule("google/gemini-4-argon");
-    expect(slashGemini4Rule?.model).toBe("Gemini 4 Argon");
+    expect(slashGemini4Rule?.series).toBe("Gemini 4");
 
     const gemini38FlashRule = findModelReasoningRule("gemini-3.8-flash");
-    expect(gemini38FlashRule?.model).toBe("Gemini 3.8 Flash");
+    expect(gemini38FlashRule?.series).toBe("Gemini 3.8");
     expect(gemini38FlashRule?.allowDisableReasoning).toBe(false);
     expect(gemini38FlashRule?.defaultEffort).toBe("medium");
     expect(gemini38FlashRule?.supportedEfforts).toEqual(["low", "medium", "high"]);
 
     const slashGemini38Rule = findModelReasoningRule("google/gemini-3.8-flash");
-    expect(slashGemini38Rule?.model).toBe("Gemini 3.8 Flash");
+    expect(slashGemini38Rule?.series).toBe("Gemini 3.8");
 
-    // 防误触断言：泛系列前缀（gemini-4, gemini-3.8）不得匹配，避免劫持未来衍生型号（如 gemini-4-flash, gemini-3.8-pro）
-    expect(findModelReasoningRule("gemini-4")).toBeUndefined();
-    expect(findModelReasoningRule("gemini-4-flash")).toBeUndefined();
-    expect(findModelReasoningRule("gemini-3.8")).toBeUndefined();
-    expect(findModelReasoningRule("gemini-3.8-pro")).toBeUndefined();
+    // 同系列新增型号自动兼容，而未配置的老版本系列保持 undefined
+    expect(findModelReasoningRule("gemini-4")?.series).toBe("Gemini 4");
+    expect(findModelReasoningRule("gemini-4-flash")?.series).toBe("Gemini 4");
+    expect(findModelReasoningRule("gemini-3.8")?.series).toBe("Gemini 3.8");
+    expect(findModelReasoningRule("gemini-3.8-pro")?.series).toBe("Gemini 3.8");
+    expect(findModelReasoningRule("gemini-2.5-pro")).toBeUndefined();
   });
 
   it("表格全部 31 个模型的思考强度与默认值完全对齐需求表", () => {
@@ -502,6 +557,18 @@ describe("modelReasoningRules", () => {
     expect(resolveValidReasoningEffort("mimo-v2.6-pro", "medium")).toBe("high");
     expect(resolveValidReasoningEffort("mimo-v2.6-flash", "max")).toBe("high");
     expect(resolveValidReasoningEffort("mimo-v2.6-pro-ultraspeed", "none")).toBe("none");
+
+    // GPT-6.1 系列新增型号自动应用系列限定
+    expect(resolveValidReasoningEffort("gpt-6.1-luna", "none")).toBe("medium");
+    expect(resolveValidReasoningEffort("gpt-6.1-luna", "xhigh")).toBe("xhigh");
+
+    // Claude Fable 5 / 5.1 / 5.2 系列：始终开启思考，不支持 none，其余 5 档保留
+    expect(resolveValidReasoningEffort("claude-fable-5", "none")).toBe("high");
+    expect(resolveValidReasoningEffort("claude-fable-5-1", "none")).toBe("high");
+    expect(resolveValidReasoningEffort("claude-fable-5-2", "none")).toBe("high");
+    expect(resolveValidReasoningEffort("claude-fable-5-2", "minimal")).toBe("high");
+    expect(resolveValidReasoningEffort("claude-fable-5-2", "xhigh")).toBe("xhigh");
+    expect(resolveValidReasoningEffort("claude-fable-5-2", "max")).toBe("max");
   });
 
   it("ALL_REASONING_EFFORT_OPTIONS 不再包含已移除的 ultra 档位", () => {
@@ -521,6 +588,10 @@ describe("modelReasoningRules", () => {
     // 官方强制要求自适应思考的模型 (即传 enabled 会报 400 的模型)：4.7, 4.8 及 5.x+ 系列
     expect(isAdaptiveThinkingRequired("claude-sonnet-5-5")).toBe(true);
     expect(isAdaptiveThinkingRequired("claude-opus-5-5")).toBe(true);
+    expect(isAdaptiveThinkingRequired("claude-fable-5")).toBe(true);
+    expect(isAdaptiveThinkingRequired("claude-fable-5-1")).toBe(true);
+    expect(isAdaptiveThinkingRequired("claude-fable-5-2")).toBe(true);
+    expect(isAdaptiveThinkingRequired("fable-5.2")).toBe(true);
     expect(isAdaptiveThinkingRequired("anthropic/claude-sonnet-5")).toBe(true);
     expect(isAdaptiveThinkingRequired("claude-opus-4-7")).toBe(true);
     expect(isAdaptiveThinkingRequired("claude-opus-4-8")).toBe(true);

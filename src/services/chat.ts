@@ -17,8 +17,14 @@ import {
 import {
   parseChatNonStreamingJson,
   parseChatStreamingBody,
-  type ChatResponseState,
+  scanChatStream,
 } from "./chatParsing";
+
+function nowMs(): number {
+  return typeof performance !== "undefined" && typeof performance.now === "function"
+    ? performance.now()
+    : Date.now();
+}
 
 export const CONNECTION_STREAM_START_EVENT = "connection-stream-start";
 export const CONNECTION_STREAM_PROGRESS_EVENT = "connection-stream-progress";
@@ -363,7 +369,7 @@ async function sendChatViaWeb(
   timeoutSeconds: number
 ): Promise<SendChatResult> {
   const endpoint = resolveApiEndpoint(options.baseUrl, options.apiFormat);
-  const startTime = Date.now();
+  const startTime = nowMs();
   const body = buildChatRequestBody(options, isStream);
   const controller = new AbortController();
   const onAbort = () => controller.abort();
@@ -394,6 +400,7 @@ async function sendChatViaWeb(
 
     if (!isStream || !response.body) {
       const json = await response.json();
+      const durationMs = Math.max(0, Math.round(nowMs() - startTime));
       const state = parseChatNonStreamingJson(json, options.apiFormat);
       if (state.responseModel) options.onResponseModel?.(state.responseModel);
       return {
@@ -401,7 +408,7 @@ async function sendChatViaWeb(
         responseModel: state.responseModel,
         usage: state.usage,
         rawStatus: response.status,
-        durationMs: Date.now() - startTime,
+        durationMs,
       };
     }
 
@@ -415,20 +422,15 @@ async function sendChatViaWeb(
     let streamStarted = false;
 
     const emitProgress = (force = false): void => {
-      let state: ChatResponseState;
-      try {
-        state = parseChatStreamingBody(buffer, options.apiFormat);
-      } catch {
-        return;
-      }
-      if (!firstTokenMs && state.text) {
-        firstTokenMs = Date.now() - startTime;
+      const state = scanChatStream(buffer, options.apiFormat);
+      if (firstTokenMs === undefined && state.hasSemanticOutput) {
+        firstTokenMs = Math.max(0, Math.round(nowMs() - startTime));
       }
       if (state.responseModel && state.responseModel !== lastEmittedModel) {
         lastEmittedModel = state.responseModel;
         options.onResponseModel?.(state.responseModel);
       }
-      const now = Date.now();
+      const now = nowMs();
       if (!force && now - lastProgressAt < 80) return;
       lastProgressAt = now;
       if (state.text && state.text !== lastEmittedText) {
@@ -457,6 +459,7 @@ async function sendChatViaWeb(
         emitProgress();
       }
     }
+    const durationMs = Math.max(0, Math.round(nowMs() - startTime));
     buffer += decoder.decode();
     emitProgress(true);
 
@@ -473,7 +476,7 @@ async function sendChatViaWeb(
       responseModel: finalState.responseModel,
       usage: finalState.usage,
       rawStatus: response.status,
-      durationMs: Date.now() - startTime,
+      durationMs,
       firstTokenMs,
     };
   } catch (err) {

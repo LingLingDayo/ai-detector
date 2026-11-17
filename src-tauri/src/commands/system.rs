@@ -31,3 +31,14 @@ pub fn open_external_url(url: String) -> Result<(), String> {
 
     Ok(())
 }
+
+#[tauri::command]
+pub fn open_devtools(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri::Manager;
+
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "未找到名为 main 的主窗口，无法打开 DevTools".to_string())?;
+    window.open_devtools();
+    Ok(())
+}

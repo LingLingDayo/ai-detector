@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { PelicanContentType } from "../../stores/pelicanTest";
-import { buildSvgPreviewDocument } from "./pelicanPreview";
+import {
+  buildPelicanPreviewDocument,
+  resolvePelicanContentType,
+} from "./pelicanPreview";
 
 const props = withDefaults(
   defineProps<{
@@ -21,94 +24,20 @@ const props = withDefaults(
 );
 
 const displayContent = computed(() => props.content || props.svg || "");
-const bodyColor = computed(() => (props.bgTheme === "light" ? "#1e293b" : "#e2e8f0"));
 
-const processedSvgContent = computed(() => {
-  if (!displayContent.value || props.contentType !== "svg") {
-    return displayContent.value;
-  }
-  return buildSvgPreviewDocument(displayContent.value);
-});
+const resolvedContentType = computed(() =>
+  resolvePelicanContentType(props.contentType, displayContent.value)
+);
 
-const wrappedHtml = computed(() => {
+const previewDocument = computed(() => {
   if (!displayContent.value) return "";
-  const raw = displayContent.value.trim();
-
-  // 如果已经包含完整 <html> 或 <!DOCTYPE html>
-  if (/<!DOCTYPE\s+html|<html[\s>]/i.test(raw)) {
-    const styleInjection = `
-<style id="__pelican_injected_style">
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-  html, body {
-    background-color: transparent !important;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-  }
-  body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: ${bodyColor.value};
-  }
-  svg, canvas, img {
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-</style>
-`;
-    if (/<head[\s>]/i.test(raw)) {
-      return raw.replace(/<head[\s>]/i, (m) => `${m}${styleInjection}`);
-    }
-    return `${styleInjection}${raw}`;
-  }
-
-  // 如果是 HTML 代码片段，包裹为标准 HTML 文档
-  return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    *, *::before, *::after {
-      box-sizing: border-box;
-    }
-    html, body {
-      background-color: transparent !important;
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-    body {
-      padding: 16px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      color: ${bodyColor.value};
-    }
-    svg, canvas, img {
-      width: 100%;
-      height: 100%;
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-  </style>
-</head>
-<body>
-  ${raw}
-</body>
-</html>`;
+  return buildPelicanPreviewDocument(
+    {
+      contentType: resolvedContentType.value,
+      content: displayContent.value,
+    },
+    props.bgTheme
+  );
 });
 </script>
 
@@ -123,33 +52,24 @@ const wrappedHtml = computed(() => {
       </div>
     </div>
 
-    <!-- 渲染成功态 -->
+    <!-- 渲染成功态（SVG 与 HTML 统一走隔离预览文档与沙箱 iframe，保证与历史记录一致） -->
     <div
       v-else-if="displayContent"
-      class="display-stage svg-stage"
+      class="display-stage"
       :class="{ 'light-bg': bgTheme === 'light' }"
     >
-      <!-- SVG 渲染 -->
-      <iframe
-        v-if="contentType === 'svg'"
-        class="html-render-frame"
-        :srcdoc="processedSvgContent"
-        sandbox=""
-        title="Pelican SVG Render Viewport"
-      ></iframe>
-
-      <!-- HTML 渲染 -->
-      <div
-        v-else-if="contentType === 'html'"
-        class="html-render-viewport"
-      >
+      <div class="render-viewport">
         <iframe
-          class="html-render-frame"
-          :srcdoc="wrappedHtml"
+          class="render-frame"
+          :class="{
+            'is-svg-frame': resolvedContentType === 'svg',
+            'is-html-frame': resolvedContentType === 'html',
+          }"
+          :srcdoc="previewDocument"
           sandbox="allow-scripts"
-          title="Pelican HTML Render Viewport"
+          title="Pelican Render Viewport"
           frameborder="0"
-          scrolling="auto"
+          scrolling="no"
         ></iframe>
       </div>
     </div>
@@ -249,52 +169,13 @@ const wrappedHtml = computed(() => {
   &.light-bg {
     background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
 
-    :deep(svg) {
-      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.12));
-    }
-
-    .html-render-frame {
+    .render-frame {
       filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.12));
     }
   }
 }
 
-.svg-render-viewport {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-
-  :deep(svg) {
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
-    user-select: none;
-    transition: filter 0.25s ease;
-  }
-
-  :deep(img) {
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
-    user-select: none;
-    transition: filter 0.25s ease;
-  }
-}
-
-.html-render-viewport {
+.render-viewport {
   width: 100%;
   height: 100%;
   display: flex;
@@ -305,7 +186,7 @@ const wrappedHtml = computed(() => {
   border-radius: var(--radius-sm);
 }
 
-.html-render-frame {
+.render-frame {
   width: 100%;
   height: 100%;
   border: none;

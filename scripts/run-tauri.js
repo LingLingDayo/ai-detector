@@ -10,6 +10,7 @@ const tauriBinPath = path.resolve(rootDir, "node_modules/@tauri-apps/cli/tauri.j
 
 const args = process.argv.slice(2);
 const isBuildCommand = args.includes("build");
+const isDebugBuild = args.includes("--debug");
 
 const child = spawn(process.execPath, [tauriBinPath, ...args], {
   cwd: rootDir,
@@ -18,13 +19,17 @@ const child = spawn(process.execPath, [tauriBinPath, ...args], {
 });
 
 child.on("close", (code) => {
-  if (code === 0 && isBuildCommand) {
+  // 调试构建产物在 target/debug，归档脚本会误扫到旧的 release 产物，故跳过
+  if (code === 0 && isBuildCommand && !isDebugBuild) {
     try {
       copyReleaseArtifacts({ rootDir });
     } catch (err) {
       console.error("\x1b[31m[发布归档错误]\x1b[0m 归档产物至 release 目录失败:", err);
       process.exit(1);
     }
+  }
+  if (code === 0 && isDebugBuild) {
+    console.info("\x1b[36m[调试构建] 产物位于 src-tauri/target/debug，未归档至 release 目录。\x1b[0m");
   }
   process.exit(code ?? 0);
 });

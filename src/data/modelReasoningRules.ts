@@ -34,13 +34,73 @@ export interface ReasoningEffortOptionItem {
 }
 
 /**
- * 模型思考强度限定配置规则
+ * 按模型系列配置思考强度规则
+ */
+export interface SeriesReasoningRule {
+  /** 厂商名称 (如 OpenAI GPT-6.1、Anthropic Claude) */
+  vendor: string;
+  /** 系列名称 (如 GPT-6.1、GLM-5.3、Claude 5.5) */
+  series: string;
+  /** 系列支持的思考强度列表 (有序) */
+  supportedEfforts: readonly ReasoningEffortLevel[];
+  /** 系列默认思考强度 */
+  defaultEffort: ReasoningEffortLevel;
+  /** 是否可关闭思考 (未显式指定时按 supportedEfforts 是否包含 "none" 自动推导) */
+  allowDisableReasoning?: boolean;
+  /** 是否强制要求自适应思考 (即 API 拒绝 budget_tokens 且强制要求 type: "adaptive") */
+  requiresAdaptiveThinking?: boolean;
+  /** 是否仅支持 thinking.type 开关 (enabled/disabled)，不支持 reasoning_effort */
+  thinkingSwitchOnly?: boolean;
+  /** 备注说明 */
+  notes?: string;
+  /**
+   * 系列匹配标识或正则模式 (可选)。
+   * 若未提供，将基于 series 名称进行智能归一化前缀匹配。
+   */
+  patterns?: readonly (string | RegExp)[];
+}
+
+/**
+ * 具体模型的覆盖配置（基于所属系列按需覆盖字段，也可省略 series 独立配置）
+ */
+export interface ModelReasoningOverride {
+  /** 所属系列名称 (对应 SERIES_REASONING_RULES 中的 series，用于继承系列配置) */
+  series?: string;
+  /** 厂商名称 (未关联 series 时必填，关联 series 时默认继承) */
+  vendor?: string;
+  /** 具体模型标准名称 (如 GPT-6 Astra、Claude 5.5 Opus) */
+  model: string;
+  /** 覆盖支持的思考强度列表 (可选，不填则继承系列) */
+  supportedEfforts?: readonly ReasoningEffortLevel[];
+  /** 覆盖默认思考强度 (可选，不填则继承系列) */
+  defaultEffort?: ReasoningEffortLevel;
+  /** 覆盖是否可关闭思考 (可选；若覆盖了 supportedEfforts 且未显式指定，则按是否含 "none" 自动推导) */
+  allowDisableReasoning?: boolean;
+  /** 覆盖是否强制要求自适应思考 (可选，不填则继承系列) */
+  requiresAdaptiveThinking?: boolean;
+  /** 覆盖是否仅支持 thinking.type 开关 (可选，不填则继承系列) */
+  thinkingSwitchOnly?: boolean;
+  /** 覆盖备注说明 (可选，不填则继承系列) */
+  notes?: string;
+  /**
+   * 显式匹配标识或正则模式 (可选)。
+   * 若未提供，将基于 model 标准名称进行智能归一化匹配。
+   */
+  patterns?: readonly (string | RegExp)[];
+}
+
+/**
+ * 解析后的模型思考强度限定配置规则 (兼容原有调用方)
  */
 export interface ModelReasoningRule {
   /** 厂商 / 系列 */
   vendor: string;
-  /** 模型标准名称 (如 GPT-5.6 Sol) */
+  /** 所属系列名称 */
+  series?: string;
+  /** 匹配到的标准名称 (具体覆盖模型名，或系列展示名) */
   model: string;
+  /** 是否为单模型覆盖规则 */
+  isOverride?: boolean;
   /** 支持的思考强度列表 (有序) */
   supportedEfforts: readonly ReasoningEffortLevel[];
   /** 默认思考强度 */
@@ -53,288 +113,197 @@ export interface ModelReasoningRule {
   thinkingSwitchOnly?: boolean;
   /** 备注说明 */
   notes?: string;
-  /**
-   * 显式匹配标识或正则模式 (可选)。
-   * 若未提供，将基于模型标准名称进行智能归一化匹配。
-   */
+  /** 匹配标识或正则模式 */
   patterns?: readonly (string | RegExp)[];
 }
 
 /**
- * 各厂商与系列模型的思考强度限定规则配置表
- * 后续修改现有模型或新增模型时，只需在此配置表中直接增改条目即可。
+ * 第一层：按模型系列配置思考强度规则表
+ * 后续新增同系列模型时无需逐个登记，会自动命中对应系列规则。
  */
-export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
-  // ==================== OpenAI GPT-5.6 ====================
+export const SERIES_REASONING_RULES: readonly SeriesReasoningRule[] = [
+  // ==================== OpenAI GPT ====================
   {
     vendor: "OpenAI GPT-5.6",
-    model: "GPT-5.6 Sol",
+    series: "GPT-5.6",
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
-    allowDisableReasoning: true,
-  },
-  {
-    vendor: "OpenAI GPT-5.6",
-    model: "GPT-5.6 Terra",
-    supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
-    defaultEffort: "medium",
-    allowDisableReasoning: true,
-  },
-  {
-    vendor: "OpenAI GPT-5.6",
-    model: "GPT-5.6 Luna",
-    supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
-    defaultEffort: "medium",
-    allowDisableReasoning: true,
-  },
-
-  // ==================== OpenAI GPT-6 ====================
-  {
-    vendor: "OpenAI GPT-6",
-    model: "GPT-6 Astra",
-    supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
-    defaultEffort: "medium",
-    allowDisableReasoning: false,
   },
   {
     vendor: "OpenAI GPT-6",
-    model: "GPT-6 Sol",
+    series: "GPT-6",
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
-    allowDisableReasoning: true,
   },
-  {
-    vendor: "OpenAI GPT-6",
-    model: "GPT-6 Luna",
-    supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
-    defaultEffort: "medium",
-    allowDisableReasoning: true,
-  },
-
-  // ==================== OpenAI GPT-6.1 ====================
   {
     vendor: "OpenAI GPT-6.1",
-    model: "GPT-6.1 Sol",
+    series: "GPT-6.1",
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
-    allowDisableReasoning: false,
   },
 
-  // ==================== Zhipu GLM-5.3 ====================
+  // ==================== Zhipu GLM ====================
   {
     vendor: "Zhipu GLM-5.3",
-    model: "GLM-5.3",
+    series: "GLM-5.3",
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
-    allowDisableReasoning: false,
-  },
-  {
-    vendor: "Zhipu GLM-5.3",
-    model: "GLM-5.3 Flash",
-    supportedEfforts: ["low", "high", "max"],
-    defaultEffort: "max",
-    allowDisableReasoning: false,
-    patterns: ["glm-5.3-flash"],
-  },
-  {
-    vendor: "Zhipu GLM-5.3",
-    model: "GLM-5.3 FlashX",
-    supportedEfforts: ["low", "high", "max"],
-    defaultEffort: "max",
-    allowDisableReasoning: false,
-    patterns: ["glm-5.3-flashx"],
   },
 
   // ==================== Moonshot Kimi ====================
   {
     vendor: "Moonshot Kimi",
-    model: "Kimi K3.1 Pro",
+    series: "Kimi K3.1",
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
-    allowDisableReasoning: false,
-    patterns: ["kimi-k3.1-pro", "kimi-k3.1"],
   },
   {
     vendor: "Moonshot Kimi",
-    model: "Kimi K3",
+    series: "Kimi K3",
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
-    allowDisableReasoning: false,
   },
   {
     vendor: "Moonshot Kimi",
-    model: "Kimi K2.8 Preview",
+    series: "Kimi K2.8",
     supportedEfforts: ["low", "high", "max"],
     defaultEffort: "max",
-    allowDisableReasoning: false,
-    patterns: ["kimi-k2.8-preview", "kimi-k2.8"],
   },
 
   // ==================== Alibaba Qwen ====================
   {
     vendor: "Alibaba Qwen",
-    model: "Qwen3.8 Max",
+    series: "Qwen3.8",
     supportedEfforts: ["none", "low", "medium", "xhigh"],
     defaultEffort: "xhigh",
-    allowDisableReasoning: true,
-    patterns: ["qwen3.8-max"],
-  },
-  {
-    vendor: "Alibaba Qwen",
-    model: "Qwen3.8 Flash",
-    supportedEfforts: ["none", "low", "medium", "xhigh"],
-    defaultEffort: "xhigh",
-    allowDisableReasoning: true,
-    patterns: ["qwen3.8-flash"],
+    patterns: ["qwen3.8", "qwen-3.8"],
   },
 
   // ==================== Xiaomi MiMo ====================
   {
     vendor: "Xiaomi MiMo",
-    model: "MiMo V2.6 Pro",
+    series: "MiMo V2.6",
     supportedEfforts: ["none", "high"],
     defaultEffort: "high",
-    allowDisableReasoning: true,
     thinkingSwitchOnly: true,
     notes: "仅支持 thinking 开关，high 表示开启思考",
-    patterns: ["mimo-v2.6-pro"],
-  },
-  {
-    vendor: "Xiaomi MiMo",
-    model: "MiMo V2.6 Flash",
-    supportedEfforts: ["none", "high"],
-    defaultEffort: "high",
-    allowDisableReasoning: true,
-    thinkingSwitchOnly: true,
-    notes: "仅支持 thinking 开关，high 表示开启思考",
-    patterns: ["mimo-v2.6-flash"],
-  },
-  {
-    vendor: "Xiaomi MiMo",
-    model: "MiMo V2.6 Pro-UltraSpeed",
-    supportedEfforts: ["none", "high"],
-    defaultEffort: "high",
-    allowDisableReasoning: true,
-    thinkingSwitchOnly: true,
-    notes: "仅支持 thinking 开关，high 表示开启思考",
-    patterns: ["mimo-v2.6-pro-ultraspeed"],
   },
 
   // ==================== DeepSeek ====================
   {
     vendor: "DeepSeek",
-    model: "DeepSeek V4 Pro",
+    series: "DeepSeek V4",
     supportedEfforts: ["none", "low", "high", "max"],
     defaultEffort: "high",
-    allowDisableReasoning: true,
-    patterns: ["deepseek-v4-pro", "deepseek-v4-pro-0813"],
   },
   {
     vendor: "DeepSeek",
-    model: "DeepSeek V4.1 Flash",
+    series: "DeepSeek V4.1",
     supportedEfforts: ["none", "low", "high", "max"],
     defaultEffort: "high",
-    allowDisableReasoning: true,
     notes: "官方别名 deepseek-flash",
-    patterns: ["deepseek-v4.1-flash", "deepseek-flash"],
+    patterns: ["deepseek-v4.1", "deepseek-flash"],
   },
 
   // ==================== xAI Grok ====================
   {
     vendor: "xAI Grok",
-    model: "Grok 4.6",
+    series: "Grok 4.6",
     supportedEfforts: ["low", "medium", "high", "xhigh"],
     defaultEffort: "high",
-    allowDisableReasoning: false,
-    patterns: ["grok-4.6"],
   },
   {
     vendor: "xAI Grok",
-    model: "Grok 4.7",
+    series: "Grok 4.7",
     supportedEfforts: ["low", "medium", "high", "xhigh"],
     defaultEffort: "high",
-    allowDisableReasoning: false,
-    patterns: ["grok-4.7"],
   },
 
   // ==================== Anthropic Claude ====================
   {
     vendor: "Anthropic Claude",
-    model: "Claude 5 Sonnet",
+    series: "Claude 5",
     supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
     defaultEffort: "high",
-    allowDisableReasoning: true,
     requiresAdaptiveThinking: true,
-    patterns: ["claude-sonnet-5", "claude-5-sonnet"],
+    // 排除 5-5 / 5.5 等次版本，同时保留 5-20260514 类日期快照后缀的匹配
+    patterns: [
+      /^claude-(?:sonnet|opus|haiku|mythos)-5(?![.\-]\d(?:$|[-_:]))(?:$|[-_:])/,
+      /^claude-5(?![.\-]\d(?:$|[-_:]))(?:$|[-_:])/,
+    ],
   },
   {
     vendor: "Anthropic Claude",
-    model: "Claude 5.5 Sonnet",
+    series: "Claude 5.5",
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
     defaultEffort: "high",
-    allowDisableReasoning: false,
     requiresAdaptiveThinking: true,
-    patterns: ["claude-sonnet-5-5", "claude-5.5-sonnet"],
+    patterns: [
+      /^claude-(?:sonnet|opus|haiku|mythos)-(?:5-5|5\.5)(?:$|[-_:])/,
+      /^claude-(?:5-5|5\.5)(?:$|[-_:])/,
+    ],
   },
   {
     vendor: "Anthropic Claude",
-    model: "Claude 5 Opus",
-    supportedEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
-    defaultEffort: "high",
-    allowDisableReasoning: true,
-    requiresAdaptiveThinking: true,
-    patterns: ["claude-opus-5", "claude-5-opus"],
-  },
-  {
-    vendor: "Anthropic Claude",
-    model: "Claude 5.5 Opus",
+    series: "Claude Fable 5",
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
-    defaultEffort: "medium",
-    allowDisableReasoning: false,
+    defaultEffort: "high",
     requiresAdaptiveThinking: true,
-    patterns: ["claude-opus-5-5", "claude-5.5-opus"],
+    // 覆盖 Fable 5 / 5.1 / 5.2 及同代后续 5.x 型号（自适应思考始终开启，不支持关闭）
+    patterns: [
+      /^(?:claude-)?fable-5(?:[.\-]\d+)?(?:$|[-_:])/,
+      /^claude-5(?:[.\-]\d+)?-fable(?:$|[-_:])/,
+    ],
   },
 
   // ==================== Google Gemini ====================
   {
     vendor: "Google Gemini",
-    model: "Gemini 4 Argon",
+    series: "Gemini 4",
     supportedEfforts: ["low", "medium", "high"],
     defaultEffort: "medium",
-    allowDisableReasoning: false,
-    patterns: ["gemini-4-argon"],
   },
   {
     vendor: "Google Gemini",
-    model: "Gemini 3.8 Flash",
+    series: "Gemini 3.8",
     supportedEfforts: ["low", "medium", "high"],
     defaultEffort: "medium",
-    allowDisableReasoning: false,
-    patterns: ["gemini-3.8-flash"],
   },
   {
     vendor: "Google Gemini",
-    model: "Gemini 3.7 Flash",
+    series: "Gemini 3.7",
     supportedEfforts: ["low", "medium", "high"],
     defaultEffort: "medium",
-    allowDisableReasoning: false,
-    patterns: ["gemini-3.7-flash"],
   },
   {
     vendor: "Google Gemini",
-    model: "Gemini 3.6 Flash",
+    series: "Gemini 3.6",
     supportedEfforts: ["low", "medium", "high"],
     defaultEffort: "medium",
-    allowDisableReasoning: false,
-    patterns: ["gemini-3.6-flash"],
   },
   {
     vendor: "Google Gemini",
-    model: "Gemini 3.1 Pro",
+    series: "Gemini 3.1",
     supportedEfforts: ["low", "medium", "high"],
     defaultEffort: "medium",
-    allowDisableReasoning: false,
-    patterns: ["gemini-3.1-pro", "gemini-3.1-pro-preview"],
+  },
+] as const;
+
+/**
+ * 第二层：具体模型覆盖配置表
+ * 当某个具体模型的思考强度列表、默认值或能力开关与所属系列不同，仅需在此覆盖差异项。
+ */
+export const MODEL_REASONING_OVERRIDES: readonly ModelReasoningOverride[] = [
+  {
+    series: "GPT-6",
+    model: "GPT-6 Astra",
+    supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
+  },
+  {
+    series: "Claude 5.5",
+    model: "Claude 5.5 Opus",
+    defaultEffort: "medium",
+    patterns: ["claude-opus-5-5", "claude-5.5-opus", "claude-5-5-opus"],
   },
 ] as const;
 
@@ -354,15 +323,151 @@ export function normalizeModelName(name?: string): string {
     .trim();
 }
 
+function buildSeriesRule(seriesRule: SeriesReasoningRule): ModelReasoningRule {
+  return {
+    vendor: seriesRule.vendor,
+    series: seriesRule.series,
+    model: `${seriesRule.series} 系列`,
+    isOverride: false,
+    supportedEfforts: seriesRule.supportedEfforts,
+    defaultEffort: seriesRule.defaultEffort,
+    allowDisableReasoning:
+      seriesRule.allowDisableReasoning ?? seriesRule.supportedEfforts.includes("none"),
+    requiresAdaptiveThinking: seriesRule.requiresAdaptiveThinking,
+    thinkingSwitchOnly: seriesRule.thinkingSwitchOnly,
+    notes: seriesRule.notes,
+    patterns: seriesRule.patterns,
+  };
+}
+
+function resolveOverrideRule(
+  override: ModelReasoningOverride,
+  seriesMap: ReadonlyMap<string, SeriesReasoningRule>
+): ModelReasoningRule {
+  const baseSeries = override.series ? seriesMap.get(override.series) : undefined;
+  if (override.series && !baseSeries) {
+    throw new Error(
+      `模型覆盖配置 "${override.model}" 引用了不存在的系列 "${override.series}"`
+    );
+  }
+
+  const vendor = override.vendor ?? baseSeries?.vendor;
+  const supportedEfforts = override.supportedEfforts ?? baseSeries?.supportedEfforts;
+  const rawDefaultEffort = override.defaultEffort ?? baseSeries?.defaultEffort;
+
+  if (!vendor || !supportedEfforts || !rawDefaultEffort) {
+    throw new Error(
+      `独立模型覆盖配置 "${override.model}" 缺少 vendor / supportedEfforts / defaultEffort`
+    );
+  }
+
+  const defaultEffort = supportedEfforts.includes(rawDefaultEffort)
+    ? rawDefaultEffort
+    : supportedEfforts[0];
+
+  const allowDisableReasoning =
+    override.allowDisableReasoning ??
+    (override.supportedEfforts !== undefined
+      ? supportedEfforts.includes("none")
+      : baseSeries?.allowDisableReasoning ?? supportedEfforts.includes("none"));
+
+  return {
+    vendor,
+    series: baseSeries?.series ?? override.series,
+    model: override.model,
+    isOverride: true,
+    supportedEfforts,
+    defaultEffort,
+    allowDisableReasoning,
+    requiresAdaptiveThinking:
+      override.requiresAdaptiveThinking ?? baseSeries?.requiresAdaptiveThinking,
+    thinkingSwitchOnly: override.thinkingSwitchOnly ?? baseSeries?.thinkingSwitchOnly,
+    notes: override.notes ?? baseSeries?.notes,
+    patterns: override.patterns,
+  };
+}
+
+function getRuleSpecificity(rule: ModelReasoningRule, fallbackName: string): number {
+  const baseLength = normalizeModelName(fallbackName).length;
+  if (!rule.patterns || rule.patterns.length === 0) {
+    return baseLength;
+  }
+  let maxLength = baseLength;
+  for (const pattern of rule.patterns) {
+    if (typeof pattern === "string") {
+      maxLength = Math.max(maxLength, normalizeModelName(pattern).length);
+    }
+  }
+  return maxLength;
+}
+
+const SERIES_RULE_MAP = new Map<string, SeriesReasoningRule>(
+  SERIES_REASONING_RULES.map((rule) => [rule.series, rule])
+);
+
+const RESOLVED_OVERRIDE_RULES: readonly ModelReasoningRule[] = MODEL_REASONING_OVERRIDES.map(
+  (override) => resolveOverrideRule(override, SERIES_RULE_MAP)
+).sort((a, b) => getRuleSpecificity(b, b.model) - getRuleSpecificity(a, a.model));
+
+const RESOLVED_SERIES_RULES: readonly ModelReasoningRule[] = SERIES_REASONING_RULES.map(
+  buildSeriesRule
+).sort(
+  (a, b) =>
+    getRuleSpecificity(b, b.series ?? b.model) -
+    getRuleSpecificity(a, a.series ?? a.model)
+);
+
 /**
- * 预处理：按规范化名称长度降序排列规则，确保更具体长词 (如 GLM-5.3-FLASH) 优先于短词 (GLM-5.3) 匹配
+ * 汇总后的模型思考强度规则表 (单模型覆盖规则优先于系列规则)
  */
-const SORTED_RULES = [...MODEL_REASONING_RULES].sort((a, b) => {
-  return normalizeModelName(b.model).length - normalizeModelName(a.model).length;
-});
+export const MODEL_REASONING_RULES: readonly ModelReasoningRule[] = [
+  ...RESOLVED_OVERRIDE_RULES,
+  ...RESOLVED_SERIES_RULES,
+];
+
+function matchesRule(
+  rule: ModelReasoningRule,
+  rawModelName: string,
+  normalizedModelName: string,
+  defaultTargetName: string
+): boolean {
+  // 1. 若配置了显式 patterns，仅按显式 patterns 匹配，避免宽松前缀误触衍生/兄弟系列
+  if (rule.patterns && rule.patterns.length > 0) {
+    for (const pattern of rule.patterns) {
+      if (typeof pattern === "string") {
+        const normPattern = normalizeModelName(pattern);
+        if (
+          normalizedModelName === normPattern ||
+          normalizedModelName.startsWith(`${normPattern}-`) ||
+          normalizedModelName.startsWith(`${normPattern}_`) ||
+          normalizedModelName.startsWith(`${normPattern}:`)
+        ) {
+          return true;
+        }
+      } else if (pattern instanceof RegExp) {
+        if (pattern.test(rawModelName) || pattern.test(normalizedModelName)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // 2. 未显式提供 patterns 时，基于系列名/模型名进行归一化精确或前缀匹配
+  const normTarget = normalizeModelName(defaultTargetName);
+  if (!normTarget) return false;
+
+  return (
+    normalizedModelName === normTarget ||
+    normalizedModelName.startsWith(`${normTarget}-`) ||
+    normalizedModelName.startsWith(`${normTarget}_`) ||
+    normalizedModelName.startsWith(`${normTarget}:`)
+  );
+}
 
 /**
  * 根据输入的模型名称寻找匹配的思考强度规则
+ * 匹配优先级：具体模型覆盖 (MODEL_REASONING_OVERRIDES) > 系列规则 (SERIES_REASONING_RULES)
  * @param modelName 用户输入或接口返回的模型名称
  * @returns 匹配的规则对象，若未匹配则返回 undefined
  */
@@ -371,42 +476,22 @@ export function findModelReasoningRule(modelName?: string): ModelReasoningRule |
   const normalized = normalizeModelName(modelName);
   if (!normalized) return undefined;
 
-  for (const rule of SORTED_RULES) {
-    // 1. 若配置了显式 patterns 规则，优先判定
-    if (rule.patterns && rule.patterns.length > 0) {
-      for (const pattern of rule.patterns) {
-        if (typeof pattern === "string") {
-          const normPattern = normalizeModelName(pattern);
-          if (
-            normalized === normPattern ||
-            normalized.startsWith(`${normPattern}-`) ||
-            normalized.startsWith(`${normPattern}:`)
-          ) {
-            return rule;
-          }
-        } else if (pattern instanceof RegExp) {
-          if (pattern.test(modelName) || pattern.test(normalized)) {
-            return rule;
-          }
-        }
-      }
+  for (const overrideRule of RESOLVED_OVERRIDE_RULES) {
+    if (matchesRule(overrideRule, modelName, normalized, overrideRule.model)) {
+      return overrideRule;
     }
+  }
 
-    // 2. 默认智能匹配规则模型名
-    const normRuleModel = normalizeModelName(rule.model);
-
-    // 精确相等
-    if (normalized === normRuleModel) {
-      return rule;
-    }
-
-    // 前缀匹配 (带有子版本后缀或分支标签，如 gpt-5.6-sol-preview, kimi-k3-chat)
+  for (const seriesRule of RESOLVED_SERIES_RULES) {
     if (
-      normalized.startsWith(`${normRuleModel}-`) ||
-      normalized.startsWith(`${normRuleModel}_`) ||
-      normalized.startsWith(`${normRuleModel}:`)
+      matchesRule(
+        seriesRule,
+        modelName,
+        normalized,
+        seriesRule.series ?? seriesRule.model
+      )
     ) {
-      return rule;
+      return seriesRule;
     }
   }
 

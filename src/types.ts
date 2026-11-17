@@ -9,6 +9,8 @@ export interface ClientConfig {
   modelName: string;
   reasoningEffort: string;
   stream?: boolean;
+  /** 模型是否由用户手动输入；手动输入的模型不受模型列表刷新时的自动替换规则约束 */
+  isCustomModel?: boolean;
 }
 
 export interface ConfigItem {
@@ -20,6 +22,8 @@ export interface ConfigItem {
   modelName?: string;
   reasoningEffort?: string;
   stream?: boolean;
+  /** 随预设持久化，保证保存后重新加载仍能识别手动输入的模型 */
+  isCustomModel?: boolean;
   createdAt?: number;
   updatedAt?: number;
 }

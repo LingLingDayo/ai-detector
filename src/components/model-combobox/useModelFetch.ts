@@ -10,11 +10,13 @@ export interface UseModelFetchOptions {
     apiKey: string;
     apiFormat?: string;
     autoSelectFirst?: boolean;
+    isCustomModel?: boolean;
   };
   emit: {
     (e: "update:modelValue", value: string): void;
     (e: "update:apiFormat", value: string): void;
     (e: "update:reasoningEffort", value: string): void;
+    (e: "update:isCustomModel", value: boolean): void;
   };
 }
 
@@ -26,8 +28,14 @@ export type CredentialModelResolution =
 export function resolveModelAfterCredentialChange(
   currentModel: string,
   models: string[],
-  fetchFailed: boolean
+  fetchFailed: boolean,
+  isCustomModel: boolean = false
 ): CredentialModelResolution {
+  // 手动输入的模型并非从列表选中，列表刷新结果不参与其保留、替换或清空判定
+  if (isCustomModel && currentModel.trim()) {
+    return { action: "keep" };
+  }
+
   if (fetchFailed || models.length === 0) {
     return { action: "clear" };
   }
@@ -63,6 +71,7 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
 
   function applyAutoSelectedModel(model: string): void {
     emit("update:modelValue", model);
+    emit("update:isCustomModel", false);
     if (model.toLowerCase().includes("claude")) {
       emit("update:apiFormat", "anthropic");
     }
@@ -96,7 +105,8 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
       const resolution = resolveModelAfterCredentialChange(
         current.modelValue,
         list,
-        modelsStore.getStatus(url).lastFetchFailed
+        modelsStore.getStatus(url).lastFetchFailed,
+        current.isCustomModel === true
       );
 
       if (resolution.action === "clear") {
@@ -148,6 +158,7 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
   function selectModel(model: string): void {
     const props = getProps();
     emit("update:modelValue", model);
+    emit("update:isCustomModel", false);
     if (model.toLowerCase().includes("claude")) {
       emit("update:apiFormat", "anthropic");
     } else if (props.apiFormat !== "responses") {

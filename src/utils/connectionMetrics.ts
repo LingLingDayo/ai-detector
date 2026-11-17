@@ -55,19 +55,27 @@ export function computeSuccessRate(
   return successCount / finishedCount;
 }
 
-const MIN_GENERATION_WINDOW_MS = 20;
-
-/** 首字与结束时间过近时，差值受计时精度影响极大，回退到总耗时估算。 */
-function resolveGenerationDurationMs(
+/**
+ * 参考 Cherry Studio 的生成耗时口径：
+ * 当流式首字延迟有效（0 <= firstTokenMs < durationMs）时扣除首字等待耗时；
+ * 非流式或首字/结束时间重合等无效情况回退到总耗时。
+ */
+export function resolveGenerationDurationMs(
   durationMs?: number,
   firstTokenMs?: number
 ): number {
-  if (durationMs === undefined || durationMs <= 0) return 0;
-  if (firstTokenMs === undefined) return durationMs;
-  const generationWindow = durationMs - firstTokenMs;
-  return generationWindow >= MIN_GENERATION_WINDOW_MS
-    ? generationWindow
-    : durationMs;
+  if (durationMs === undefined || !Number.isFinite(durationMs) || durationMs <= 0) {
+    return 0;
+  }
+  if (
+    firstTokenMs !== undefined &&
+    Number.isFinite(firstTokenMs) &&
+    firstTokenMs >= 0 &&
+    firstTokenMs < durationMs
+  ) {
+    return durationMs - firstTokenMs;
+  }
+  return durationMs;
 }
 
 export function aggregateConnectionMessages(
@@ -88,8 +96,8 @@ export function aggregateConnectionMessages(
   let hasInputUsage = false;
   let usageEstimated = false;
   let totalDurationMs = 0;
-  let generationMs = 0;
-  let completedOutputTokens = 0;
+  let measuredOutputTokens = 0;
+  let measuredGenerationMs = 0;
   let firstTokenSum = 0;
   let firstTokenCount = 0;
 
@@ -127,23 +135,30 @@ export function aggregateConnectionMessages(
     if (usage?.cacheWriteTokens !== undefined) {
       cacheWriteTokens += usage.cacheWriteTokens;
     }
-    if (usage?.outputTokens !== undefined) {
-      outputTokens += usage.outputTokens;
-      if (!message.streaming) completedOutputTokens += usage.outputTokens;
-    } else if (message.content.trim()) {
-      const estimated = estimateTokenCount(message.content);
-      outputTokens += estimated;
-      if (!message.streaming) completedOutputTokens += estimated;
-      usageEstimated = true;
+
+    const tokenInfo = getMessageOutputTokens(message);
+    if (tokenInfo.count > 0) {
+      outputTokens += tokenInfo.count;
+      if (tokenInfo.estimated) {
+        usageEstimated = true;
+      }
     }
 
     if (message.durationMs !== undefined) {
       totalDurationMs += message.durationMs;
-      generationMs += resolveGenerationDurationMs(
+    }
+
+    if (!message.streaming && !message.error && tokenInfo.count > 0) {
+      const generationMs = resolveGenerationDurationMs(
         message.durationMs,
         message.firstTokenMs
       );
+      if (generationMs > 0) {
+        measuredOutputTokens += tokenInfo.count;
+        measuredGenerationMs += generationMs;
+      }
     }
+
     if (message.firstTokenMs !== undefined) {
       firstTokenSum += message.firstTokenMs;
       firstTokenCount += 1;
@@ -165,7 +180,9 @@ export function aggregateConnectionMessages(
     cacheWriteTokens,
     totalDurationMs,
     outputSpeed:
-      generationMs > 0 ? completedOutputTokens / (generationMs / 1000) : null,
+      measuredOutputTokens > 0 && measuredGenerationMs > 0
+        ? measuredOutputTokens / (measuredGenerationMs / 1000)
+        : null,
     cacheRate: hasInputUsage && inputTokens > 0 ? cachedTokens / inputTokens : null,
     avgFirstTokenMs: firstTokenCount > 0 ? firstTokenSum / firstTokenCount : null,
     usageEstimated,
@@ -188,8 +205,9 @@ export function getMessageOutputTokens(message: ConnectionChatMessage): {
 export function getMessageOutputSpeed(
   message: ConnectionChatMessage
 ): number | null {
+  if (message.streaming || message.error) return null;
   const { count } = getMessageOutputTokens(message);
-  if (count <= 0 || !message.durationMs || message.durationMs <= 0) return null;
+  if (count <= 0) return null;
   const generationMs = resolveGenerationDurationMs(
     message.durationMs,
     message.firstTokenMs

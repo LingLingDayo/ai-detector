@@ -25,6 +25,8 @@ export {
   ALL_REASONING_EFFORT_OPTIONS,
   REASONING_EFFORT_OPTIONS,
   MODEL_REASONING_RULES,
+  SERIES_REASONING_RULES,
+  MODEL_REASONING_OVERRIDES,
   findModelReasoningRule,
   getSupportedReasoningEfforts,
   getReasoningOptionsForModel,
@@ -32,9 +34,12 @@ export {
   isAdaptiveThinkingRequired,
   isAdaptiveThinkingModel,
   isClaudeFamilyModel,
+  isThinkingSwitchModel,
 } from "./data/modelReasoningRules";
 export type {
   ReasoningEffortLevel,
   ModelReasoningRule,
+  SeriesReasoningRule,
+  ModelReasoningOverride,
   ReasoningEffortOptionItem,
 } from "./data/modelReasoningRules";

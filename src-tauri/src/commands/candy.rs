@@ -383,6 +383,10 @@ pub fn generate_single_candy_challenge(
     }
 
     // 兜底生成
+    log::warn!(
+        "糖果题生成: 随机尝试 80 次仍未找到满足约束的题目, index={}, 使用兜底参数",
+        index
+    );
     build_candy_challenge(index, 8, 10, 7, 6, 8, 5)
 }
 
@@ -404,6 +408,13 @@ pub fn generate_candy_challenges(count: Option<usize>) -> Vec<CandyChallenge> {
 #[tauri::command]
 pub fn evaluate_candy_answer(response_text: String, expected_answer: u32) -> CandyEvaluationResult {
     let extracted_answer = extract_candy_answer(&response_text);
+    if extracted_answer.is_none() {
+        log::warn!(
+            "糖果题评测: 未能从模型输出中解析出数字答案, expected={}, 响应长度={}",
+            expected_answer,
+            response_text.len()
+        );
+    }
     let is_correct = extracted_answer == Some(expected_answer);
     CandyEvaluationResult {
         extracted_answer,

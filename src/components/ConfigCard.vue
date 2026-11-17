@@ -360,6 +360,7 @@ defineExpose({
         v-model:model-name="activeConfig.modelName"
         v-model:api-format="activeConfig.apiFormat"
         v-model:reasoning-effort="activeConfig.reasoningEffort"
+        v-model:is-custom-model="activeConfig.isCustomModel"
         :base-url="activeConfig.baseUrl"
         :api-key="activeConfig.apiKey"
         :disabled="isCurrentRunning"

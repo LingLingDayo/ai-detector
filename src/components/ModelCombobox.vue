@@ -16,6 +16,7 @@ const props = withDefaults(
     title?: string;
     required?: boolean;
     autoSelectFirst?: boolean;
+    isCustomModel?: boolean;
     disabled?: boolean;
   }>(),
   {
@@ -25,6 +26,7 @@ const props = withDefaults(
     title: "测试模型 ID。可点击右侧下拉按钮或刷新按钮自动获取当前 Key 允许的模型列表",
     required: false,
     autoSelectFirst: true,
+    isCustomModel: false,
     disabled: false,
   }
 );
@@ -33,6 +35,7 @@ const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
   (e: "update:apiFormat", value: string): void;
   (e: "update:reasoningEffort", value: string): void;
+  (e: "update:isCustomModel", value: boolean): void;
 }>();
 
 const comboboxRef = ref<HTMLDivElement | null>(null);
@@ -97,6 +100,7 @@ function handleSelect(model: string): void {
 function handleInput(e: Event): void {
   const target = e.target as HTMLInputElement;
   emit("update:modelValue", target.value);
+  emit("update:isCustomModel", true);
 }
 
 function handleDocumentClick(e: MouseEvent): void {

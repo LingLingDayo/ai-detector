@@ -6,6 +6,12 @@ export interface ChatResponseState {
   usage: ChatUsageMeta;
 }
 
+export interface ChatScanState extends ChatResponseState {
+  hasSemanticOutput: boolean;
+  sawSseData: boolean;
+  errorMessage?: string;
+}
+
 function asRecord(value: unknown): Record<string, any> | undefined {
   return value && typeof value === "object" ? (value as Record<string, any>) : undefined;
 }
@@ -223,15 +229,109 @@ function extractStreamDeltaText(value: any, apiFormat: string): string {
   return "";
 }
 
-export function parseChatStreamingBody(
+function isNonEmptyString(value: unknown): boolean {
+  return typeof value === "string" && value.length > 0;
+}
+
+function hasNonEmptyTextArray(value: unknown): boolean {
+  if (!Array.isArray(value)) return false;
+  return value.some((part) => {
+    if (typeof part === "string") return part.length > 0;
+    if (!part || typeof part !== "object") return false;
+    const record = part as Record<string, unknown>;
+    return (
+      isNonEmptyString(record.text) ||
+      isNonEmptyString(record.summary) ||
+      isNonEmptyString(record.data)
+    );
+  });
+}
+
+/** 判断流式分片是否包含语义输出（含文本、思考/推理与工具调用增量），用于准确计算首字延迟。 */
+function hasStreamSemanticOutput(value: any, apiFormat: string): boolean {
+  if (!value || typeof value !== "object") return false;
+
+  if (apiFormat === "anthropic") {
+    if (value.type !== "content_block_delta" || !value.delta) return false;
+    const deltaType = value.delta.type;
+    if (deltaType === "text_delta") return isNonEmptyString(value.delta.text);
+    if (deltaType === "thinking_delta") return isNonEmptyString(value.delta.thinking);
+    if (deltaType === "input_json_delta") {
+      return isNonEmptyString(value.delta.partial_json);
+    }
+    return false;
+  }
+
+  if (apiFormat === "responses" || apiFormat === "openai_responses") {
+    const type = typeof value.type === "string" ? value.type : "";
+    if (
+      type === "response.output_text.delta" ||
+      type === "response.reasoning_summary_text.delta" ||
+      type === "response.reasoning_text.delta" ||
+      type === "response.reasoning.delta" ||
+      type === "response.reasoning_summary.delta" ||
+      type === "response.function_call_arguments.delta"
+    ) {
+      return (
+        isNonEmptyString(value.delta) ||
+        isNonEmptyString(value.delta?.text) ||
+        isNonEmptyString(value.text)
+      );
+    }
+    if (type === "response.output_text.done") {
+      return isNonEmptyString(value.text);
+    }
+    if (type.startsWith("response.")) {
+      return false;
+    }
+    if (
+      isNonEmptyString(value.delta) ||
+      isNonEmptyString(value.output_text) ||
+      isNonEmptyString(value.text)
+    ) {
+      return true;
+    }
+  }
+
+  const choice = value.choices?.[0];
+  if (!choice || typeof choice !== "object") return false;
+  const delta = choice.delta;
+  if (delta && typeof delta === "object") {
+    if (
+      isNonEmptyString(delta.content) ||
+      hasNonEmptyTextArray(delta.content) ||
+      isNonEmptyString(delta.reasoning_content) ||
+      isNonEmptyString(delta.reasoning) ||
+      isNonEmptyString(delta.thinking) ||
+      hasNonEmptyTextArray(delta.reasoning_details) ||
+      (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0)
+    ) {
+      return true;
+    }
+  }
+  const message = choice.message;
+  if (message && typeof message === "object") {
+    return (
+      isNonEmptyString(message.content) ||
+      hasNonEmptyTextArray(message.content) ||
+      isNonEmptyString(message.reasoning_content) ||
+      isNonEmptyString(message.reasoning)
+    );
+  }
+  return false;
+}
+
+/** 宽松扫描 SSE 流：供实时进度与首字延迟识别使用，不在尚未出现文本时抛错。 */
+export function scanChatStream(
   body: string,
   apiFormat: string
-): ChatResponseState {
+): ChatScanState {
   let text = "";
   let responseModel: string | undefined;
   let usage: ChatUsageMeta = {};
   let sawSseData = false;
-  let streamError: string | undefined;
+  let hasSemanticOutput = false;
+  let errorMessage: string | undefined;
 
   for (const line of body.split(/\r?\n/)) {
     const trimmed = line.trim();
@@ -251,7 +351,9 @@ export function parseChatStreamingBody(
     }
 
     if (value?.error?.message) {
-      streamError = String(value.error.message);
+      if (!errorMessage) {
+        errorMessage = String(value.error.message);
+      }
       continue;
     }
 
@@ -263,8 +365,13 @@ export function parseChatStreamingBody(
       usage = mergeUsage(usage, nextUsage);
     }
 
+    if (!hasSemanticOutput && hasStreamSemanticOutput(value, apiFormat)) {
+      hasSemanticOutput = true;
+    }
+
     const deltaText = extractStreamDeltaText(value, apiFormat);
     if (deltaText) {
+      hasSemanticOutput = true;
       text += deltaText;
       continue;
     }
@@ -279,22 +386,40 @@ export function parseChatStreamingBody(
           value?.type === "response.output_text.done" &&
           typeof value.text === "string"
         ) {
+          if (value.text) hasSemanticOutput = true;
           text = value.text;
         }
       } else if (apiFormat !== "anthropic") {
         const fullContent = value?.choices?.[0]?.message?.content;
         if (typeof fullContent === "string") {
+          if (fullContent) hasSemanticOutput = true;
           text = fullContent;
         }
       }
     }
   }
 
-  if (streamError) {
-    throw new Error(streamError);
+  return {
+    text,
+    responseModel,
+    usage,
+    hasSemanticOutput,
+    sawSseData,
+    errorMessage,
+  };
+}
+
+export function parseChatStreamingBody(
+  body: string,
+  apiFormat: string
+): ChatResponseState {
+  const scanned = scanChatStream(body, apiFormat);
+
+  if (scanned.errorMessage) {
+    throw new Error(scanned.errorMessage);
   }
 
-  if (!sawSseData || !text) {
+  if (!scanned.sawSseData || !scanned.text) {
     try {
       const parsed = JSON.parse(body);
       const fallback = parseChatNonStreamingJson(parsed, apiFormat);
@@ -302,10 +427,14 @@ export function parseChatStreamingBody(
     } catch {
       // 不是完整 JSON，交由下面的错误提示
     }
-    if (!text) {
+    if (!scanned.text) {
       throw new Error("流式响应未包含有效文本内容");
     }
   }
 
-  return { text, responseModel, usage };
+  return {
+    text: scanned.text,
+    responseModel: scanned.responseModel,
+    usage: scanned.usage,
+  };
 }

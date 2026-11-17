@@ -19,6 +19,12 @@ const STREAM_TEXT_TAIL_LENGTH = 120;
 const MAX_HISTORY_TITLE_LENGTH = 48;
 const MAX_IMAGES_PER_MESSAGE = 4;
 
+function nowMs(): number {
+  return typeof performance !== "undefined" && typeof performance.now === "function"
+    ? performance.now()
+    : Date.now();
+}
+
 interface ConnectionSessionMeta {
   configName?: string;
   baseUrl: string;
@@ -313,11 +319,11 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
             : undefined,
       }));
 
-    const requestStart = Date.now();
+    const requestStart = nowMs();
     let firstTokenMs: number | undefined;
     const timer = setInterval(() => {
       if (runId === currentRunId) {
-        activeElapsedMs.value = Date.now() - requestStart;
+        activeElapsedMs.value = Math.max(0, Math.round(nowMs() - requestStart));
       }
     }, 100);
 
@@ -346,8 +352,8 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
         onStreamProgress: (preview) => {
           if (runId !== currentRunId) return;
           isConnectionGenerating.value = true;
-          if (!firstTokenMs && preview) {
-            firstTokenMs = Date.now() - requestStart;
+          if (firstTokenMs === undefined && preview) {
+            firstTokenMs = Math.max(0, Math.round(nowMs() - requestStart));
           }
           assistant.content = preview;
           streamedCharCount.value = preview.length;
@@ -379,7 +385,7 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
       if (stopRequested) {
         assistant.stopped = true;
         assistant.streaming = false;
-        assistant.durationMs = Date.now() - requestStart;
+        assistant.durationMs = Math.max(0, Math.round(nowMs() - requestStart));
         assistant.firstTokenMs = firstTokenMs;
         return;
       }
@@ -392,7 +398,7 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
           : "请求异常，请检查网络或配置";
       assistant.error = message;
       assistant.streaming = false;
-      assistant.durationMs = Date.now() - requestStart;
+      assistant.durationMs = Math.max(0, Math.round(nowMs() - requestStart));
       assistant.firstTokenMs = firstTokenMs;
       errorMsg.value = message;
     } finally {

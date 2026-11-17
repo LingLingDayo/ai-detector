@@ -22,6 +22,7 @@ import PelicanTestCard from "./components/PelicanTestCard.vue";
 import ConnectionTestCard from "./components/connection/ConnectionTestCard.vue";
 import TestHistoryModal from "./components/history/TestHistoryModal.vue";
 import SettingsModal from "./components/settings/SettingsModal.vue";
+import DiagnosticsModal from "./components/diagnostics/DiagnosticsModal.vue";
 import { APP_VERSION, GITHUB_REPO_URL } from "./constants";
 import { openExternalUrl } from "./services/api";
 import { useToast } from "./composables/useToast";
@@ -39,6 +40,7 @@ onMounted(() => {
   configStore.loadConfig();
   probeStore.initStartupFingerprintCheck();
   void candyStore.initCandyChallenges();
+  document.addEventListener("keydown", handleGlobalKeydown);
 });
 
 let scrollRafId: number | null = null;
@@ -159,10 +161,23 @@ watch(
 
 onUnmounted(() => {
   cancelScroll();
+  document.removeEventListener("keydown", handleGlobalKeydown);
 });
 
 function handleOpenGithub(): void {
   openExternalUrl(GITHUB_REPO_URL);
+}
+
+// 诊断能力仅面向开发者，不提供可见入口；打开方式见 docs/diagnostics.md
+function handleGlobalKeydown(event: KeyboardEvent): void {
+  if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "d") {
+    event.preventDefault();
+    if (appStore.isDiagnosticsModalOpen) {
+      appStore.closeDiagnosticsModal();
+    } else {
+      appStore.openDiagnosticsModal();
+    }
+  }
 }
 </script>
 
@@ -340,6 +355,12 @@ function handleOpenGithub(): void {
     <SettingsModal
       :is-open="appStore.isSettingsModalOpen"
       @close="appStore.closeSettingsModal"
+    />
+
+    <!-- 开发者诊断弹窗：仅由隐藏快捷键唤起，日志只存内存 -->
+    <DiagnosticsModal
+      :is-open="appStore.isDiagnosticsModalOpen"
+      @close="appStore.closeDiagnosticsModal"
     />
 
     <!-- 全局公共顶部提示 -->

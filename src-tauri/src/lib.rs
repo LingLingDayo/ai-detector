@@ -1,5 +1,6 @@
 pub mod commands;
 mod cancellation;
+pub mod diagnostics;
 pub mod parser;
 pub mod types;
 pub mod utils;
@@ -10,7 +11,10 @@ pub use types::*;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::default().build())
+        .setup(|app| {
+            diagnostics::init(app.handle().clone());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             send_probe_request,
             cancel_probe_request,
@@ -18,6 +22,7 @@ pub fn run() {
             cancel_chat_request,
             fetch_models_list,
             open_external_url,
+            open_devtools,
             generate_candy_challenges,
             generate_single_candy_challenge,
             evaluate_candy_answer,

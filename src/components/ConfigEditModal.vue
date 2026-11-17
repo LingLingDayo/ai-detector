@@ -60,6 +60,7 @@ const formData = reactive({
   modelName: "",
   reasoningEffort: "high",
   stream: true,
+  isCustomModel: false,
 });
 
 const matchedRule = computed(() => findModelReasoningRule(formData.modelName));
@@ -97,6 +98,7 @@ function initForm(): void {
       props.initialData.reasoningEffort || "high"
     );
     formData.stream = props.initialData.stream !== false;
+    formData.isCustomModel = props.initialData.isCustomModel === true;
     // 如果有设置过模型、非默认格式或非默认传输方式，自动展开更多设置
     if (formData.modelName || formData.apiFormat !== "chat_completions" || !formData.stream) {
       isAdvancedExpanded.value = true;
@@ -111,6 +113,7 @@ function initForm(): void {
     formData.modelName = "";
     formData.reasoningEffort = "high";
     formData.stream = true;
+    formData.isCustomModel = false;
     isAdvancedExpanded.value = false;
   }
 }
@@ -155,6 +158,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
       modelName: formData.modelName.trim(),
       reasoningEffort: formData.reasoningEffort,
       stream: formData.stream,
+      isCustomModel: formData.isCustomModel,
     },
     props.mode === "edit" || (props.mode === "save-current" && props.initialData?.id)
       ? props.initialData?.id
@@ -348,6 +352,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
                   v-model:model-value="formData.modelName"
                   v-model:api-format="formData.apiFormat"
                   v-model:reasoning-effort="formData.reasoningEffort"
+                  v-model:is-custom-model="formData.isCustomModel"
                   :base-url="formData.baseUrl"
                   :api-key="formData.apiKey"
                   :required="false"

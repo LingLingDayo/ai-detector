@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseChatNonStreamingJson,
   parseChatStreamingBody,
+  scanChatStream,
 } from "./chatParsing";
 import { buildChatRequestBody } from "./chat";
 import type { SendChatOptions } from "../types";
@@ -199,5 +200,38 @@ describe("连接测试响应解析", () => {
         "chat_completions"
       )
     ).toThrow("流式响应未包含有效文本内容");
+  });
+
+  it("流式扫描在思考/推理分片即标记 semantic output，忽略空角色分片", () => {
+    const emptyRole = scanChatStream(
+      'data: {"choices":[{"delta":{"role":"assistant","content":""}}]}\n\n',
+      "chat_completions"
+    );
+    expect(emptyRole.hasSemanticOutput).toBe(false);
+    expect(emptyRole.text).toBe("");
+
+    const reasoning = scanChatStream(
+      'data: {"choices":[{"delta":{"reasoning_content":"思考中"}}]}\n\n',
+      "chat_completions"
+    );
+    expect(reasoning.hasSemanticOutput).toBe(true);
+    expect(reasoning.text).toBe("");
+
+    const anthropicThinking = scanChatStream(
+      [
+        'data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}}',
+        'data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"step 1"}}',
+      ].join("\n"),
+      "anthropic"
+    );
+    expect(anthropicThinking.hasSemanticOutput).toBe(true);
+    expect(anthropicThinking.text).toBe("");
+
+    const responsesReasoning = scanChatStream(
+      'data: {"type":"response.reasoning_summary_text.delta","delta":"thinking"}\n\n',
+      "responses"
+    );
+    expect(responsesReasoning.hasSemanticOutput).toBe(true);
+    expect(responsesReasoning.text).toBe("");
   });
 });

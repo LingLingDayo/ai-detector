@@ -127,7 +127,7 @@ const successTitle = computed(
 
     <div
       class="stat-item"
-      title="按首个输出 token 之后的生成时长计算"
+      title="有效响应的输出 token 总数 ÷ 生成总时长（流式扣除首字延迟，非流式按总耗时）"
     >
       <span class="stat-icon"><Gauge :size="12" /></span>
       <span class="stat-label">输出速度</span>

@@ -73,7 +73,14 @@ pub async fn fetch_models_list(
 
     let mut resp = send_request(&target_url)
         .await
-        .map_err(|e| format!("无法连接模型列表接口: {}", e))?;
+        .map_err(|e| {
+            log::error!(
+                "获取模型列表: 无法连接接口, api_format={}, error={}",
+                api_format,
+                e
+            );
+            format!("无法连接模型列表接口: {}", e)
+        })?;
 
     let mut status = resp.status();
     if (status == reqwest::StatusCode::NOT_FOUND || status == reqwest::StatusCode::METHOD_NOT_ALLOWED)
@@ -91,6 +98,11 @@ pub async fn fetch_models_list(
 
     if !status.is_success() {
         let err_body = resp.text().await.unwrap_or_default();
+        log::warn!(
+            "获取模型列表失败: status={}, api_format={}",
+            status.as_u16(),
+            api_format
+        );
         return Err(format!(
             "获取模型列表失败 ({}): {}",
             status.as_u16(),
@@ -101,7 +113,14 @@ pub async fn fetch_models_list(
     let json_val: serde_json::Value = resp
         .json()
         .await
-        .map_err(|e| format!("解析模型列表 JSON 失败: {}", e))?;
+        .map_err(|e| {
+            log::error!(
+                "获取模型列表: 解析 JSON 失败, api_format={}, error={}",
+                api_format,
+                e
+            );
+            format!("解析模型列表 JSON 失败: {}", e)
+        })?;
 
     let models = extract_models_from_json(&json_val);
     Ok(models)
