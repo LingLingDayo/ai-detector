@@ -9,6 +9,7 @@ import {
   isThinkingSwitchModel,
 } from "../data/modelReasoningRules";
 import {
+  getActiveUserAgent,
   getTauriInvoke,
   isTauriApp,
   resolveApiEndpoint,
@@ -237,10 +238,16 @@ export function buildChatRequestBody(
   return body;
 }
 
-function buildHeaders(apiKey: string, apiFormat: string, isStream: boolean): Record<string, string> {
+function buildHeaders(
+  apiKey: string,
+  apiFormat: string,
+  isStream: boolean,
+  userAgent?: string
+): Record<string, string> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: isStream ? "text/event-stream, application/json" : "application/json",
+    "User-Agent": getActiveUserAgent(userAgent),
   };
   if (apiFormat === "anthropic") {
     headers["x-api-key"] = apiKey;
@@ -319,6 +326,7 @@ async function sendChatViaTauri(
       reasoning_effort: options.reasoningEffort,
       stream: isStream,
       timeout_seconds: timeoutSeconds,
+      user_agent: getActiveUserAgent(options.userAgent),
     },
   });
 
@@ -395,7 +403,7 @@ async function sendChatViaWeb(
   try {
     const response = await fetch(endpoint, {
       method: "POST",
-      headers: buildHeaders(options.apiKey, options.apiFormat, isStream),
+      headers: buildHeaders(options.apiKey, options.apiFormat, isStream, options.userAgent),
       body: JSON.stringify(body),
       signal: controller.signal,
     });

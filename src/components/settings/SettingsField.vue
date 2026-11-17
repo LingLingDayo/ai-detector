@@ -3,6 +3,7 @@ import { computed } from "vue";
 import SegmentedControl from "../common/SegmentedControl.vue";
 import CustomSelect from "../common/CustomSelect.vue";
 import NumberInput from "../common/NumberInput.vue";
+import TextInput from "../common/TextInput.vue";
 import ToggleSwitch from "../common/ToggleSwitch.vue";
 import { useSettingsStore } from "../../stores";
 import type { SettingsField, SettingsValue } from "../../settings/types";
@@ -25,6 +26,11 @@ const numberValue = computed(() => {
 const booleanValue = computed(() => rawValue.value === true || rawValue.value === "true");
 
 const isDisabled = computed(() => props.field.disabled?.(settingsStore.context) ?? false);
+const isStacked = computed(() => props.field.type === "text" && props.field.stacked === true);
+const resolvedDescription = computed(() => {
+  const desc = props.field.description;
+  return typeof desc === "function" ? desc(settingsStore.context) : desc;
+});
 
 const defaultValueTitle = computed(() => {
   const field = props.field;
@@ -34,6 +40,8 @@ const defaultValueTitle = computed(() => {
     text = field.options.find((option) => option.value === String(fallback))?.label ?? String(fallback);
   } else if (field.type === "toggle") {
     text = fallback ? "开启" : "关闭";
+  } else if (field.type === "text") {
+    text = String(fallback).trim() || "空";
   } else {
     text = field.unit ? `${fallback} ${field.unit}` : String(fallback);
   }
@@ -47,13 +55,16 @@ function handleChange(value: SettingsValue): void {
 </script>
 
 <template>
-  <div class="settings-field">
+  <div
+    class="settings-field"
+    :class="{ 'is-stacked': isStacked }"
+  >
     <div class="field-meta">
       <span class="field-label">{{ field.label }}</span>
       <span
-        v-if="field.description"
+        v-if="resolvedDescription"
         class="field-desc"
-      >{{ field.description }}</span>
+      >{{ resolvedDescription }}</span>
     </div>
 
     <SegmentedControl
@@ -91,6 +102,19 @@ function handleChange(value: SettingsValue): void {
       @change="handleChange"
     />
 
+    <TextInput
+      v-else-if="field.type === 'text'"
+      class="field-control"
+      :class="{ 'field-control-full': isStacked }"
+      :model-value="stringValue"
+      :placeholder="field.placeholder"
+      :max-length="field.maxLength"
+      :monospace="field.monospace"
+      :disabled="isDisabled"
+      :title="defaultValueTitle"
+      @change="handleChange"
+    />
+
     <ToggleSwitch
       v-else-if="field.type === 'toggle'"
       class="field-toggle"
@@ -110,6 +134,12 @@ function handleChange(value: SettingsValue): void {
   justify-content: space-between;
   gap: 18px;
   padding: 6px 0;
+
+  &.is-stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
 }
 
 .field-meta {
@@ -128,6 +158,7 @@ function handleChange(value: SettingsValue): void {
 .field-desc {
   font-size: 12px;
   color: var(--text-muted);
+  word-break: break-all;
 }
 
 .field-control {
@@ -137,6 +168,10 @@ function handleChange(value: SettingsValue): void {
 
 .field-control-narrow {
   width: 120px;
+}
+
+.field-control-full {
+  width: 100%;
 }
 
 .field-toggle {

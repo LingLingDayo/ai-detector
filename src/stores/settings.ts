@@ -4,8 +4,15 @@ import { settingsPages } from "../settings";
 import type { AppTheme, SettingsContext, SettingsValue } from "../settings/types";
 import type { ActiveTestMode, ConnectionTestMode } from "../types";
 import { CONNECTION_MODE_STORAGE_KEY } from "../constants";
+import {
+  DEFAULT_USER_AGENT_PRESET,
+  isValidUserAgentPreset,
+  resolveUserAgent,
+  type UserAgentPresetKey,
+} from "../data/userAgentPresets";
 
-const STORAGE_KEY = "modeltrace_settings";
+export const SETTINGS_STORAGE_KEY = "modeltrace_settings";
+const STORAGE_KEY = SETTINGS_STORAGE_KEY;
 
 function collectDefaultValues(): Record<string, SettingsValue> {
   const defaults: Record<string, SettingsValue> = {};
@@ -74,6 +81,12 @@ export const useSettingsStore = defineStore("settings", () => {
     persist();
   }
 
+  // 校验客户端标识预设，非法值归一为默认 Codex 标识
+  if (!isValidUserAgentPreset(values.userAgentPreset)) {
+    values.userAgentPreset = DEFAULT_USER_AGENT_PRESET;
+    persist();
+  }
+
   const theme = computed<AppTheme>(() => {
     if (values.theme === "light") return "light";
     if (values.theme === "midnight") return "midnight";
@@ -109,6 +122,21 @@ export const useSettingsStore = defineStore("settings", () => {
 
   const defaultConnectionMode = computed<ConnectionTestMode>(() =>
     values.defaultConnectionMode === "quick" ? "quick" : "chat"
+  );
+
+  const userAgentPreset = computed<UserAgentPresetKey>(() =>
+    isValidUserAgentPreset(values.userAgentPreset)
+      ? values.userAgentPreset
+      : DEFAULT_USER_AGENT_PRESET
+  );
+
+  const customUserAgent = computed<string>(() =>
+    typeof values.customUserAgent === "string" ? values.customUserAgent : ""
+  );
+
+  /** 当前所有 API 请求实际使用的 User-Agent 标识 */
+  const resolvedUserAgent = computed<string>(() =>
+    resolveUserAgent(userAgentPreset.value, customUserAgent.value)
   );
 
   function resolveRequestTimeout(isStream: boolean): number {
@@ -166,6 +194,9 @@ export const useSettingsStore = defineStore("settings", () => {
     historyEnabled,
     historyMaxCount,
     defaultConnectionMode,
+    userAgentPreset,
+    customUserAgent,
+    resolvedUserAgent,
     resolveRequestTimeout,
     trimHistoryList,
     appendHistoryEntry,

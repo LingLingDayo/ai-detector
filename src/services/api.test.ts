@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createPinia, setActivePinia } from "pinia";
 
 const mockInvoke = vi.fn();
 
@@ -11,7 +12,19 @@ vi.mock("@tauri-apps/api/event", () => ({
   listen: vi.fn().mockResolvedValue(() => {}),
 }));
 
-import { cancelProbeRequest, initTauri, sendProbe } from "./api";
+import {
+  cancelProbeRequest,
+  fetchRemoteModels,
+  getActiveUserAgent,
+  initTauri,
+  sendProbe,
+} from "./api";
+import {
+  CLAUDE_CODE_USER_AGENT,
+  CODEX_USER_AGENT,
+  OPENCODE_USER_AGENT,
+} from "../data/userAgentPresets";
+import { useSettingsStore } from "../stores/settings";
 
 describe("api 服务模块取消与中断测试套件", () => {
   beforeEach(() => {
@@ -92,5 +105,112 @@ describe("api 服务模块取消与中断测试套件", () => {
     expect(mockInvoke).toHaveBeenCalledWith("cancel_probe_request", {
       requestId: "probe_test_req_123",
     });
+  });
+
+  it("Tauri 环境下 sendProbe 与 fetchRemoteModels 会传递设置中配置的 user_agent", async () => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        storage.set(key, String(value));
+      },
+      removeItem: (key: string) => {
+        storage.delete(key);
+      },
+      clear: () => storage.clear(),
+    });
+
+    setActivePinia(createPinia());
+    const settingsStore = useSettingsStore();
+    settingsStore.setValue("userAgentPreset", "claude");
+
+    mockInvoke.mockImplementation(async (command: string) => {
+      if (command === "send_probe_request") {
+        return { text: "ok", raw_status: 200, duration_ms: 12 };
+      }
+      if (command === "fetch_models_list") {
+        return ["claude-sonnet-4-5"];
+      }
+      return undefined;
+    });
+
+    vi.stubGlobal("window", {
+      isTauri: true,
+      __TAURI_INTERNALS__: {},
+    });
+
+    await initTauri();
+
+    await sendProbe({
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-test",
+      model: "claude-sonnet-4-5",
+      prompt: "hello",
+      apiFormat: "anthropic",
+      stream: false,
+    });
+
+    expect(mockInvoke).toHaveBeenCalledWith("send_probe_request", {
+      req: expect.objectContaining({
+        user_agent: CLAUDE_CODE_USER_AGENT,
+      }),
+    });
+
+    settingsStore.setValue("userAgentPreset", "custom");
+    settingsStore.setValue("customUserAgent", "custom-probe-client/9.9");
+
+    await fetchRemoteModels("https://api.test.com", "sk-test", "openai");
+    expect(mockInvoke).toHaveBeenCalledWith("fetch_models_list", {
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-test",
+      apiFormat: "openai",
+      userAgent: "custom-probe-client/9.9",
+    });
+
+    expect(getActiveUserAgent(OPENCODE_USER_AGENT)).toBe(OPENCODE_USER_AGENT);
+  });
+
+  it("Web 回退模式下 sendProbe 请求头携带当前生效的 User-Agent", async () => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        storage.set(key, String(value));
+      },
+      removeItem: (key: string) => {
+        storage.delete(key);
+      },
+      clear: () => storage.clear(),
+    });
+    setActivePinia(createPinia());
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        choices: [{ message: { content: "hi" } }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", {});
+    await initTauri();
+
+    await sendProbe({
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-test",
+      model: "gpt-4o",
+      prompt: "hello",
+      apiFormat: "openai",
+      stream: false,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.test.com/v1/chat/completions",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "User-Agent": CODEX_USER_AGENT,
+        }),
+      })
+    );
   });
 });

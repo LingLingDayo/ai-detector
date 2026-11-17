@@ -3,6 +3,12 @@ import { createPinia, setActivePinia } from "pinia";
 import { CONNECTION_MODE_STORAGE_KEY } from "../constants";
 import { appearancePage } from "../settings/appearance";
 import { generalPage } from "../settings/general";
+import {
+  BROWSER_USER_AGENT,
+  CLAUDE_CODE_USER_AGENT,
+  CODEX_USER_AGENT,
+  OPENCODE_USER_AGENT,
+} from "../data/userAgentPresets";
 import { useSettingsStore } from "./settings";
 
 const SETTINGS_STORAGE_KEY = "modeltrace_settings";
@@ -201,5 +207,61 @@ describe("settings store 界面风格", () => {
     store.setValue("theme", "midnight");
     setActivePinia(createPinia());
     expect(useSettingsStore().theme).toBe("midnight");
+  });
+});
+
+describe("settings store 请求客户端标识", () => {
+  it("默认使用 Codex 标识，切换预设后立即生效并可持久化", () => {
+    storage.clear();
+    const store = newStore();
+    expect(store.userAgentPreset).toBe("codex");
+    expect(store.customUserAgent).toBe("");
+    expect(store.resolvedUserAgent).toBe(CODEX_USER_AGENT);
+
+    store.setValue("userAgentPreset", "claude");
+    expect(store.userAgentPreset).toBe("claude");
+    expect(store.resolvedUserAgent).toBe(CLAUDE_CODE_USER_AGENT);
+
+    store.setValue("userAgentPreset", "opencode");
+    expect(store.resolvedUserAgent).toBe(OPENCODE_USER_AGENT);
+
+    store.setValue("userAgentPreset", "browser");
+    expect(store.resolvedUserAgent).toBe(BROWSER_USER_AGENT);
+
+    setActivePinia(createPinia());
+    expect(useSettingsStore().resolvedUserAgent).toBe(BROWSER_USER_AGENT);
+  });
+
+  it("选择自定义标识时支持手动输入并在空白时回退默认 Codex 标识", () => {
+    storage.clear();
+    const store = newStore();
+    const ctx = store.context;
+    const customField = generalPage.sections
+      .flatMap((section) => section.fields)
+      .find((item) => item.key === "customUserAgent");
+    expect(customField?.visible?.(ctx)).toBe(false);
+
+    store.setValue("userAgentPreset", "custom");
+    expect(customField?.visible?.(ctx)).toBe(true);
+    expect(store.resolvedUserAgent).toBe(CODEX_USER_AGENT);
+
+    store.setValue("customUserAgent", "  my-agent/1.0.0  ");
+    expect(store.customUserAgent).toBe("  my-agent/1.0.0  ");
+    expect(store.resolvedUserAgent).toBe("my-agent/1.0.0");
+
+    store.setValue("customUserAgent", "   ");
+    expect(store.resolvedUserAgent).toBe(CODEX_USER_AGENT);
+  });
+
+  it("历史存储中存在非法 userAgentPreset 时初始化自动回退为 codex", () => {
+    storage.clear();
+    storage.set(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ userAgentPreset: "non_existent_client" })
+    );
+    const store = newStore();
+    expect(store.userAgentPreset).toBe("codex");
+    expect(store.resolvedUserAgent).toBe(CODEX_USER_AGENT);
+    expect(JSON.parse(storage.get(SETTINGS_STORAGE_KEY) ?? "{}").userAgentPreset).toBe("codex");
   });
 });

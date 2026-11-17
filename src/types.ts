@@ -38,6 +38,7 @@ export interface SendProbeOptions {
   reasoningEffort?: string;
   stream?: boolean;
   timeoutSeconds?: number;
+  userAgent?: string;
   signal?: AbortSignal;
   onStreamStart?: () => void;
   /** 流式输出过程中回调当前累计的模型文本 */
@@ -211,6 +212,7 @@ export interface SendChatOptions {
   reasoningEffort?: string;
   stream?: boolean;
   timeoutSeconds?: number;
+  userAgent?: string;
   signal?: AbortSignal;
   onStreamStart?: () => void;
   /** 流式输出过程中回调当前累计的模型文本 */

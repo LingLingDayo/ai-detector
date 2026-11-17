@@ -14,7 +14,7 @@ export interface SettingsContext {
 interface SettingsFieldBase {
   key: string;
   label: string;
-  description?: string;
+  description?: string | ((ctx: SettingsContext) => string);
   defaultValue: SettingsValue;
   /** 依据当前设置值决定是否展示（显隐联动） */
   visible?: (ctx: SettingsContext) => boolean;
@@ -53,11 +53,22 @@ export interface SelectSettingsField extends SettingsFieldBase {
   placeholder?: string;
 }
 
+export interface TextSettingsField extends SettingsFieldBase {
+  type: "text";
+  defaultValue: string;
+  placeholder?: string;
+  maxLength?: number;
+  monospace?: boolean;
+  /** 控件是否独占下一行（用于较长的文本输入框） */
+  stacked?: boolean;
+}
+
 export type SettingsField =
   | SegmentedSettingsField
   | ToggleSettingsField
   | NumberSettingsField
-  | SelectSettingsField;
+  | SelectSettingsField
+  | TextSettingsField;
 
 export interface SettingsSection {
   id: string;
