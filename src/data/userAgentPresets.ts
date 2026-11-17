@@ -3,10 +3,11 @@ import type { SelectOption } from "../components/common";
 export type UserAgentPresetKey =
   | "codex"
   | "claude"
+  | "browser"
   | "opencode"
   | "gemini_cli"
+  | "grok"
   | "cherry_studio"
-  | "browser"
   | "openai_sdk"
   | "custom";
 
@@ -18,15 +19,16 @@ export interface UserAgentPresetItem {
 }
 
 export const CODEX_USER_AGENT =
-  "Codex Desktop/0.147.0-alpha.1.2 (Windows 10.0.26200; x86_64) unknown (codex_exec; 0.147.0-alpha.1.2)";
+  "Codex Desktop/0.169.0 (Windows 10.0.26200; x86_64) unknown (codex_exec; 0.169.0)";
 export const CLAUDE_CODE_USER_AGENT = "claude-cli/2.1.76 (external, cli)";
+export const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 export const OPENCODE_USER_AGENT = "opencode/2.1.0";
 export const GEMINI_CLI_USER_AGENT =
   "GeminiCLI/0.34.0 (win32; x64) google-api-nodejs-client/10.3.0";
+export const GROK_USER_AGENT = "grok-cli/1.0.77";
 export const CHERRY_STUDIO_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) CherryStudio/1.7.13 Chrome/134.0.6998.44 Electron/35.0.2 Safari/537.36";
-export const BROWSER_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 export const OPENAI_SDK_USER_AGENT = "OpenAI/JS 4.104.0";
 
 export const DEFAULT_USER_AGENT = CODEX_USER_AGENT;
@@ -46,6 +48,12 @@ export const USER_AGENT_PRESETS: readonly UserAgentPresetItem[] = [
     userAgent: CLAUDE_CODE_USER_AGENT,
   },
   {
+    key: "browser",
+    label: "浏览器",
+    description: "Chrome 桌面端",
+    userAgent: BROWSER_USER_AGENT,
+  },
+  {
     key: "opencode",
     label: "OpenCode",
     description: "OpenCode CLI",
@@ -58,16 +66,16 @@ export const USER_AGENT_PRESETS: readonly UserAgentPresetItem[] = [
     userAgent: GEMINI_CLI_USER_AGENT,
   },
   {
+    key: "grok",
+    label: "Grok",
+    description: "xAI Grok CLI",
+    userAgent: GROK_USER_AGENT,
+  },
+  {
     key: "cherry_studio",
     label: "Cherry Studio",
     description: "桌面客户端",
     userAgent: CHERRY_STUDIO_USER_AGENT,
-  },
-  {
-    key: "browser",
-    label: "浏览器",
-    description: "Chrome 桌面端",
-    userAgent: BROWSER_USER_AGENT,
   },
   {
     key: "openai_sdk",

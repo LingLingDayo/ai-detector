@@ -13,7 +13,7 @@ use crate::utils::{
 };
 
 pub const DEFAULT_USER_AGENT: &str =
-    "Codex Desktop/0.147.0-alpha.1.2 (Windows 10.0.26200; x86_64) unknown (codex_exec; 0.147.0-alpha.1.2)";
+    "Codex Desktop/0.169.0 (Windows 10.0.26200; x86_64) unknown (codex_exec; 0.169.0)";
 
 /// 解析最终生效的 User-Agent；自定义值空白、含非 ASCII 或非法 HTTP 头字符时回退到指定默认标识
 pub fn resolve_user_agent_with_fallback<'a>(
