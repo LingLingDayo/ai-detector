@@ -4,6 +4,7 @@ import type {
   SendChatOptions,
   SendChatResult,
 } from "../types";
+import { createRequestTimeout } from "../utils/requestTimeout";
 import {
   isAdaptiveThinkingRequired,
   isThinkingSwitchModel,
@@ -371,26 +372,16 @@ async function sendChatViaWeb(
   const startTime = nowMs();
   const body = buildChatRequestBody(options, isStream);
   const controller = new AbortController();
+  const onAbort = () => controller.abort();
 
   if (options.signal) {
     if (options.signal.aborted) {
       throw new DOMException("The user aborted a request.", "AbortError");
     }
-    options.signal.addEventListener("abort", () => controller.abort(), { once: true });
+    options.signal.addEventListener("abort", onAbort, { once: true });
   }
 
-  let responseReceived = false;
-  const timeoutTimer = setTimeout(() => {
-    if (!responseReceived) {
-      controller.abort(
-        new Error(
-          isStream
-            ? `流式请求首次响应超时（${timeoutSeconds} 秒内未收到上游响应）`
-            : `同步请求超时（${timeoutSeconds} 秒内未收到上游响应）`
-        )
-      );
-    }
-  }, timeoutSeconds * 1000);
+  const requestTimeout = createRequestTimeout(controller, isStream, timeoutSeconds);
 
   try {
     const response = await fetch(endpoint, {
@@ -406,9 +397,6 @@ async function sendChatViaWeb(
         `上游接口返回错误 (HTTP ${response.status}): ${errorText.slice(0, 300)}`
       );
     }
-
-    responseReceived = true;
-    clearTimeout(timeoutTimer);
 
     if (!isStream || !response.body) {
       const json = await response.json();
@@ -452,6 +440,7 @@ async function sendChatViaWeb(
     };
 
     const firstChunk = await reader.read();
+    requestTimeout.onStreamChunk();
     if (firstChunk.value) {
       if (!streamStarted) {
         streamStarted = true;
@@ -464,6 +453,7 @@ async function sendChatViaWeb(
     while (!firstChunk.done) {
       const { value, done } = await reader.read();
       if (done) break;
+      requestTimeout.onStreamChunk();
       if (value) {
         buffer += decoder.decode(value, { stream: true });
         emitProgress();
@@ -501,7 +491,8 @@ async function sendChatViaWeb(
     }
     throw err;
   } finally {
-    clearTimeout(timeoutTimer);
+    requestTimeout.dispose();
+    options.signal?.removeEventListener("abort", onAbort);
   }
 }
 

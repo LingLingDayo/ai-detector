@@ -1,4 +1,4 @@
-import type { UnifiedBank } from "../utils/fingerprint";
+import { DIMENSION, type UnifiedBank } from "../utils/fingerprint";
 import rawUnifiedBank from "../data/unified_bank.json" with { type: "json" };
 
 export const FINGERPRINT_UPDATE_AVAILABLE_KEY = "modeltrace_fingerprint_update_available";
@@ -13,12 +13,61 @@ export const UPSTREAM_BANK_FALLBACK_URL =
  * 校验指纹库结构是否合法
  */
 export function validateUnifiedBank(bank: unknown): bank is UnifiedBank {
-  if (!bank || typeof bank !== "object") return false;
-  const b = bank as Record<string, unknown>;
-  if (!Array.isArray(b.models) || b.models.length === 0) return false;
-  if (!b.calibration || typeof b.calibration !== "object") return false;
-  if (!b.robust || typeof b.robust !== "object") return false;
-  return true;
+  if (!isRecord(bank) || !Array.isArray(bank.models) || !bank.models.length) return false;
+  const ids = new Set<string>();
+  for (const model of bank.models) {
+    if (!isRecord(model) || typeof model.id !== "string" || !model.id.trim()
+      || ids.has(model.id) || typeof model.display_name !== "string" || !model.display_name.trim()
+      || !isVector(model.counts, DIMENSION)
+      || !model.counts.every((value) => Number.isInteger(value) && value >= 0)
+      || (model.family !== undefined && typeof model.family !== "string")
+      || (model.family_name !== undefined && typeof model.family_name !== "string")) return false;
+    ids.add(model.id);
+  }
+  if (!isRecord(bank.calibration) || !isRecord(bank.robust)) return false;
+  for (const key of ["1", "2", "3"]) {
+    const entry = bank.calibration[key];
+    if (!isRecord(entry) || !isNumeric(entry.beta) || Number(entry.beta) <= 0
+      || typeof entry.cv_accuracy !== "number" || !Number.isFinite(entry.cv_accuracy)
+      || entry.cv_accuracy < 0 || entry.cv_accuracy > 1) return false;
+  }
+  if (!isArtifact(bank.robust.hellinger, DIMENSION, ids.size)) return false;
+  const ordered = bank.robust.ordered_blocks;
+  if (ordered === undefined) return true;
+  if (!isArtifact(ordered, 74, ids.size)) return false;
+  // 分块模板评分会对每个环境取最大值，因此启用时必须有环境中心。
+  if (Number(ordered.weight ?? 0) === 0) return true;
+  return Array.isArray(ordered.environment_centroids) && ordered.environment_centroids.length > 0
+    && ordered.environment_centroids.every((matrix) => isMatrix(matrix, ids.size, 74));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isNumeric(value: unknown): boolean {
+  return (typeof value === "number" || (typeof value === "string" && value.trim() !== ""))
+    && Number.isFinite(Number(value));
+}
+
+function isVector(value: unknown, dimension: number): value is number[] {
+  return Array.isArray(value) && value.length === dimension
+    && value.every((item) => typeof item === "number" && Number.isFinite(item));
+}
+
+function isMatrix(value: unknown, rows: number, dimension: number): boolean {
+  return Array.isArray(value) && value.length === rows
+    && value.every((row) => isVector(row, dimension));
+}
+
+function isArtifact(value: unknown, dimension: number, models: number): value is Record<string, unknown> {
+  return isRecord(value) && isVector(value.feature_mean, dimension)
+    && isVector(value.feature_scale, dimension) && value.feature_scale.every((scale) => scale > 0)
+    && isMatrix(value.centroids, models, dimension)
+    && (value.nuisance_basis === undefined || (Array.isArray(value.nuisance_basis)
+      && value.nuisance_basis.every((vector) => isVector(vector, dimension))))
+    && (value.weight === undefined || (isNumeric(value.weight)
+      && Number(value.weight) >= 0 && Number(value.weight) <= 1));
 }
 
 /**
@@ -125,8 +174,6 @@ export async function fetchRemoteUnifiedBank(timeoutMs = 12000): Promise<{
         signal: controller.signal,
       });
 
-      clearTimeout(timer);
-
       if (!res.ok) {
         throw new Error(`HTTP ${res.status} from ${url}`);
       }
@@ -140,8 +187,9 @@ export async function fetchRemoteUnifiedBank(timeoutMs = 12000): Promise<{
 
       return { rawText, parsedBank };
     } catch (err) {
-      clearTimeout(timer);
       lastError = err instanceof Error ? err : new Error(String(err));
+    } finally {
+      clearTimeout(timer);
     }
   }
 

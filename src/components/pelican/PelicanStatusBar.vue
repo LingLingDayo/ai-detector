@@ -21,6 +21,7 @@ const props = withDefaults(
     bgTheme?: "dark" | "light";
     showCode: boolean;
     svgCopied: boolean;
+    canExportGif?: boolean;
   }>(),
   {
     isGenerating: false,
@@ -40,6 +41,7 @@ const emit = defineEmits<{
   (e: "update:showCode", value: boolean): void;
   (e: "copy-svg"): void;
   (e: "download-svg"): void;
+  (e: "export-gif"): void;
 }>();
 
 const displayContent = computed(() => props.content || props.svg || "");
@@ -140,6 +142,10 @@ function toggleBgTheme(): void {
       >
         <Download :size="12" />
         <span>下载</span>
+      </button>
+
+      <button v-if="canExportGif" type="button" class="ctrl-btn" title="录制并下载循环播放的 GIF 动图" @click="emit('export-gif')">
+        <Download :size="12" /><span>导出 GIF</span>
       </button>
 
       <button

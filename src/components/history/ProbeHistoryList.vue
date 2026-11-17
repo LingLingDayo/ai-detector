@@ -72,7 +72,7 @@ function handleTogglePin(id: string, e: Event): void {
 
 async function handleCopyProbeSummary(item: ProbeHistoryItem): Promise<void> {
   const prob = (item.probability * 100).toFixed(1);
-  const text = `【模型测试诊断结果】\n调用模型: ${item.modelName}\n判定模型: ${item.predictionName} (${prob}%)\n模型家族: ${item.familyPredictionName || "通用系列"}\n有效样本: ${item.usedOutputs}/3\n测试时间: ${formatHistoryTime(item.createdAt)}`;
+  const text = `【模型测试诊断结果】\n调用模型: ${item.modelName}\n库内匹配: ${item.predictionName} (${prob}%，候选库内相对概率)\n模型家族: ${item.familyPredictionName || "通用系列"}\n有效样本: ${item.usedOutputs}/3\n测试时间: ${formatHistoryTime(item.createdAt)}\n仅比较已收录模型，不能证明真实模型身份。`;
   const copied = await copyText(text);
   showToast(
     copied

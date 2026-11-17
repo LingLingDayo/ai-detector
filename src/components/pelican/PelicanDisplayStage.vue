@@ -66,7 +66,7 @@ const previewDocument = computed(() => {
             'is-html-frame': resolvedContentType === 'html',
           }"
           :srcdoc="previewDocument"
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts"
           title="Pelican Render Viewport"
           frameborder="0"
           scrolling="no"
