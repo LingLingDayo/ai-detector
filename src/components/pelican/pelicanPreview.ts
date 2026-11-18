@@ -2,6 +2,7 @@ import {
   normalizeSvgForDisplay,
   type PelicanFitMode,
 } from "./pelicanSvgNormalizer";
+import { extractSvgBlock } from "../../utils/svgExtract";
 
 export type { PelicanFitMode } from "./pelicanSvgNormalizer";
 export type PelicanContentType = "svg" | "html";
@@ -45,8 +46,7 @@ export function resolvePelicanContentType(
 export function extractPureSvg(rawContent: string): string {
   if (!rawContent) return "";
   const trimmed = rawContent.trim();
-  const svgMatch = trimmed.match(/<svg[\s\S]*?<\/svg>/i);
-  return svgMatch ? svgMatch[0] : trimmed;
+  return extractSvgBlock(trimmed) ?? trimmed;
 }
 
 /**

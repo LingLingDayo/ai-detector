@@ -11,6 +11,7 @@ import {
   usePelicanTestStore,
   hasExtraneousText,
   stripXmlProlog,
+  extractRenderableContent,
 } from "./pelicanTest";
 import { useSettingsStore } from "./settings";
 import * as api from "../services/api";
@@ -353,6 +354,36 @@ describe("鹈鹕测试背景亮暗色跟随主题与自定义覆盖测试套件"
     settingsStore.setValue("theme", "light");
     await nextTick();
     expect(pelicanStore.bgTheme).toBe("light");
+  });
+});
+
+describe("鹈鹕测试嵌套 SVG 提取回归套件", () => {
+  const nestedSvg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620">' +
+    '<rect width="900" height="620" fill="#e2ecda"/>' +
+    '<svg x="75" y="487" width="750" height="18" overflow="hidden"><rect width="1080" height="18"/></svg>' +
+    '<g id="crane"><circle cx="400" cy="300" r="80" fill="#fff"/></g>' +
+    "</svg>";
+
+  it("裸返回含嵌套 svg 时保留内层闭合之后的主体，不在第一个 </svg> 截断", () => {
+    const res = extractRenderableContent(nestedSvg);
+    expect(res.hasContent).toBe(true);
+    expect(res.contentType).toBe("svg");
+    expect(res.content).toBe(nestedSvg);
+    expect(res.content).toContain('id="crane"');
+  });
+
+  it("markdown 代码块包裹的嵌套 svg 同样完整保留", () => {
+    const res = extractRenderableContent("```svg\n" + nestedSvg + "\n```");
+    expect(res.hasContent).toBe(true);
+    expect(res.content).toBe(nestedSvg);
+    expect(res.content).toContain('id="crane"');
+  });
+
+  it("带前导说明文本的嵌套 svg 仍提取完整外层块", () => {
+    const res = extractRenderableContent("好的，这是代码：\n" + nestedSvg);
+    expect(res.hasContent).toBe(true);
+    expect(res.content).toBe(nestedSvg);
   });
 });
 

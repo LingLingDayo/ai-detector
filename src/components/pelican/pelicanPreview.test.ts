@@ -28,6 +28,16 @@ describe("pelicanPreview", () => {
       const raw = "这是说明文本：\n<svg width='100' height='100'><rect/></svg>\n请查看";
       expect(extractPureSvg(raw)).toBe("<svg width='100' height='100'><rect/></svg>");
     });
+
+    it("嵌套 svg（如滚动路面）不会在第一个内层闭合标签处截断主体", () => {
+      const raw =
+        '<svg viewBox="0 0 900 620"><rect width="900" height="620"/>' +
+        '<svg x="75" y="487" width="750" height="18"><rect/></svg>' +
+        '<g id="crane"><circle cx="400" cy="300" r="80"/></g></svg>';
+      const got = extractPureSvg(raw);
+      expect(got).toBe(raw);
+      expect(got).toContain('id="crane"');
+    });
   });
 
   describe("buildSvgPreviewDocument", () => {

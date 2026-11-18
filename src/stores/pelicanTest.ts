@@ -13,6 +13,7 @@ import { PELICAN_PRESETS } from "../data/pelicanPresets";
 import { sleep } from "../utils/timer";
 import { isTimeoutError } from "../utils/retry";
 import { maskApiKey } from "../utils/pelicanFormatters";
+import { extractSvgBlock } from "../utils/svgExtract";
 import { useSettingsStore } from "./settings";
 
 export const DEFAULT_PELICAN_PROMPT =
@@ -98,18 +99,18 @@ export function extractRenderableContent(text: string): RenderableContent {
 
     // 1.2 如果代码块是完整 HTML 或富 HTML 片段
     if (isHtmlDocumentOrSnippet(blockContent)) {
-      const svgMatch = blockContent.match(/<svg[\s\S]*?<\/svg>/i);
+      const svgMatch = extractSvgBlock(blockContent);
       const hasOtherHtmlTags = /<(?:!DOCTYPE|html|head|body|canvas|style|script|div|span|p|section|main)[\s>]/i.test(blockContent);
       if (svgMatch && !hasOtherHtmlTags) {
-        return { content: svgMatch[0].trim(), contentType: "svg", hasContent: true };
+        return { content: svgMatch.trim(), contentType: "svg", hasContent: true };
       }
       return { content: blockContent, contentType: "html", hasContent: true };
     }
 
     // 1.3 代码块中包含内嵌的 <svg ... </svg>
-    const svgMatch = blockContent.match(/<svg[\s\S]*?<\/svg>/i);
+    const svgMatch = extractSvgBlock(blockContent);
     if (svgMatch) {
-      return { content: svgMatch[0].trim(), contentType: "svg", hasContent: true };
+      return { content: svgMatch.trim(), contentType: "svg", hasContent: true };
     }
   }
 
@@ -120,12 +121,12 @@ export function extractRenderableContent(text: string): RenderableContent {
   }
 
   // 3. 全文匹配独立完整的 <svg ... </svg>
-  const directSvgMatch = trimmedText.match(/<svg[\s\S]*?<\/svg>/i);
+  const directSvgMatch = extractSvgBlock(trimmedText);
   if (directSvgMatch) {
     if (isHtmlDocumentOrSnippet(trimmedText) && /<(?:!DOCTYPE|html|head|body|canvas|style|script|div)[\s>]/i.test(trimmedText)) {
       return { content: trimmedText, contentType: "html", hasContent: true };
     }
-    return { content: directSvgMatch[0].trim(), contentType: "svg", hasContent: true };
+    return { content: directSvgMatch.trim(), contentType: "svg", hasContent: true };
   }
 
   // 4. 全文匹配富 HTML 片段（包含 style/div/canvas/script 等且包含对应闭合标签）
