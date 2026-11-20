@@ -169,10 +169,6 @@ const previewDocument = computed(() => {
 
   &.light-bg {
     background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
-
-    .render-frame {
-      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.12));
-    }
   }
 }
 
@@ -193,8 +189,6 @@ const previewDocument = computed(() => {
   border: none;
   background: transparent;
   display: block;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
-  transition: filter 0.25s ease;
 }
 
 .fallback-text-box {
