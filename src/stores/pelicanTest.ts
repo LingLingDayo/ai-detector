@@ -514,10 +514,10 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
         streamedCharCount.value = 0;
         streamedTextTail.value = "";
         isPelicanGenerating.value = false;
-        // 总计时沿用 testStartTime 持续累加，只有思考耗时按每次请求重新计量
+        // 总计时沿用 testStartTime 持续累加，思考耗时从收到首包进入思考阶段时重新从 0 计时
         retryAttempt.value = attempt - 1;
         thinkingMs.value = 0;
-        thinkingStartTime = Date.now();
+        thinkingStartTime = 0;
 
         try {
           const res = await sendProbe({
@@ -533,6 +533,10 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
             onStreamStart: () => {
               if (runId === currentRunId && !abortController?.signal.aborted) {
                 isPelicanGenerating.value = true;
+                if (thinkingStartTime === 0) {
+                  thinkingMs.value = 0;
+                  thinkingStartTime = Date.now();
+                }
               }
             },
             onStreamProgress: (text) => {

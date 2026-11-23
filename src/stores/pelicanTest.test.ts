@@ -178,19 +178,20 @@ describe("鹈鹕测试思考耗时与重试计时测试套件", () => {
     expect(store.isPelicanGenerating).toBe(false);
     expect(store.durationMs).toBeGreaterThanOrEqual(7000);
 
-    // 模型响应后回到正常的思考状态
+    // 模型响应后回到正常的思考状态，此时思考计时刚从 0 开始
     await vi.advanceTimersByTimeAsync(1000);
     expect(store.isPelicanGenerating).toBe(true);
     expect(store.streamedCharCount).toBe(0);
+    expect(store.thinkingMs).toBe(0);
 
-    // 首个正文字符到达，思考耗时定格为本次重试请求的耗时
+    // 首个正文字符到达，思考耗时定格为从开始思考到首字输出的耗时（不含等待首包的 1000ms）
     await vi.advanceTimersByTimeAsync(2000);
-    expect(store.thinkingMs).toBe(3000);
+    expect(store.thinkingMs).toBe(2000);
 
     await vi.advanceTimersByTimeAsync(1000);
     await run;
 
-    expect(store.thinkingMs).toBe(3000);
+    expect(store.thinkingMs).toBe(2000);
     // 总耗时为端到端累计值，不会被最后一次请求的 duration_ms 覆盖而倒退
     expect(store.durationMs).toBe(11000);
     expect(store.isPelicanRunning).toBe(false);

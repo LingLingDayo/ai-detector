@@ -55,12 +55,12 @@ const runningLabel = computed(() => {
     ? `正在重试中 ${props.retryAttempt}/${DEFAULT_REQUEST_RETRY_COUNT}`
     : "等待响应...";
 });
-// 等待首包期间思考计时已在走但无法确认是模型在思考，此时隐藏避免误导
-const showThinking = computed(
-  () => props.thinkingMs > 0 && (!props.isRunning || props.isGenerating)
-);
+// 进入思考阶段后即显示思考计时（从 0s 开始），等待首包期间隐藏避免误导
 const isAwaitingFirstText = computed(
   () => props.isRunning && props.isGenerating && props.streamedCharCount === 0
+);
+const showThinking = computed(
+  () => isAwaitingFirstText.value || (props.thinkingMs > 0 && (!props.isRunning || props.isGenerating))
 );
 const streamTail = computed(() => {
   const compact = props.streamedTextTail.replace(/\s+/g, " ").trim();
@@ -98,7 +98,7 @@ function toggleBgTheme(): void {
       <span v-if="durationMs > 0 || isRunning" class="meta-item">
         耗时: <strong>{{ durationSeconds }}s</strong>
       </span>
-      <span v-if="showThinking" class="meta-item" title="从请求发出到模型输出首个正文字符的时间">
+      <span v-if="showThinking" class="meta-item" title="从模型开始流式响应到输出首个正文字符的时间">
         思考: <strong>{{ thinkingSeconds }}s</strong>
       </span>
     </div>
