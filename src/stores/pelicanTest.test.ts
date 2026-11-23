@@ -387,4 +387,53 @@ describe("鹈鹕测试嵌套 SVG 提取回归套件", () => {
   });
 });
 
+describe("鹈鹕测试历史记录提示词归档套件", () => {
+  it("成功生成后将当时使用的自定义提示词记录到历史条目", async () => {
+    storage.clear();
+    const store = newStore();
+    store.setPelicanPrompt(CUSTOM_PROMPT);
+
+    vi.spyOn(api, "sendProbe").mockResolvedValue({
+      text: "<svg><circle cx='10' cy='10' r='5' /></svg>",
+      raw_status: 200,
+      duration_ms: 20,
+    });
+
+    await store.startPelicanTest({
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-test-123456",
+      apiFormat: "openai",
+      modelName: "test-model",
+      reasoningEffort: "high",
+      stream: false,
+    });
+
+    expect(store.pelicanHistoryList).toHaveLength(1);
+    expect(store.pelicanHistoryList[0].prompt).toBe(CUSTOM_PROMPT);
+  });
+
+  it("使用默认提示词测试成功时同样完整记录该提示词", async () => {
+    storage.clear();
+    const store = newStore();
+
+    vi.spyOn(api, "sendProbe").mockResolvedValue({
+      text: "<svg><rect width='10' height='10' /></svg>",
+      raw_status: 200,
+      duration_ms: 15,
+    });
+
+    await store.startPelicanTest({
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-test-123456",
+      apiFormat: "openai",
+      modelName: "test-model",
+      reasoningEffort: "medium",
+      stream: false,
+    });
+
+    expect(store.pelicanHistoryList).toHaveLength(1);
+    expect(store.pelicanHistoryList[0].prompt).toBe(DEFAULT_PELICAN_PROMPT);
+  });
+});
+
 
