@@ -14,6 +14,9 @@ pub struct ProbeRequest {
     /// 用于让前端区分并发或已取消请求残留的流式事件；旧调用方可不传
     #[serde(default)]
     pub request_id: Option<String>,
+    /// 客户端请求标识（User-Agent）；未传或为空白时使用默认标识
+    #[serde(default)]
+    pub user_agent: Option<String>,
 }
 
 pub fn default_api_format() -> String {
@@ -66,6 +69,9 @@ pub struct ChatRequest {
     pub reasoning_effort: Option<String>,
     pub stream: Option<bool>,
     pub timeout_seconds: Option<u64>,
+    /// 客户端请求标识（User-Agent）；未传或为空白时使用默认标识
+    #[serde(default)]
+    pub user_agent: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]

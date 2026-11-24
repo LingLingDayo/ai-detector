@@ -1,5 +1,10 @@
-import { normalizeSvgForDisplay } from "./pelicanSvgNormalizer";
+import {
+  normalizeSvgForDisplay,
+  type PelicanFitMode,
+} from "./pelicanSvgNormalizer";
+import { extractSvgBlock } from "../../utils/svgExtract";
 
+export type { PelicanFitMode } from "./pelicanSvgNormalizer";
 export type PelicanContentType = "svg" | "html";
 
 /**
@@ -41,21 +46,21 @@ export function resolvePelicanContentType(
 export function extractPureSvg(rawContent: string): string {
   if (!rawContent) return "";
   const trimmed = rawContent.trim();
-  const svgMatch = trimmed.match(/<svg[\s\S]*?<\/svg>/i);
-  return svgMatch ? svgMatch[0] : trimmed;
+  return extractSvgBlock(trimmed) ?? trimmed;
 }
 
 /**
- * 构建 SVG 缩略图预览文档：
- * 保证使用 preserveAspectRatio="xMidYMid meet" 且补齐 viewBox，
- * 居中等比充满但绝对不裁切任何主体边缘。
+ * 构建 SVG 预览文档：
+ * 按 fitMode 决定是完整展示（"contain"，xMidYMid meet）还是铺满裁边（"cover"，xMidYMid slice），
+ * 并自动补齐缺失的 viewBox。
  */
 export function buildSvgPreviewDocument(
   rawContent: string,
-  colorScheme: "dark" | "light" = "dark"
+  colorScheme: "dark" | "light" = "dark",
+  fitMode: PelicanFitMode = "contain"
 ): string {
   const pureSvg = extractPureSvg(rawContent);
-  const normalizedSvg = normalizeSvgForDisplay(pureSvg);
+  const normalizedSvg = normalizeSvgForDisplay(pureSvg, fitMode);
   const bodyColor = colorScheme === "light" ? "#1e293b" : "#e2e8f0";
 
   return `<!DOCTYPE html>
@@ -88,20 +93,29 @@ export function buildSvgPreviewDocument(
       min-height: 0 !important;
       max-width: 100% !important;
       max-height: 100% !important;
-      object-fit: contain;
+      object-fit: ${fitMode === "cover" ? "cover" : "contain"};
       display: block;
       margin: 0 auto;
     }
   </style>
-  ${FIT_VIEWPORT_SCRIPT}
+  ${createFitViewportScript(fitMode, true)}
 </head>
 <body>${normalizedSvg}</body>
 </html>`;
 }
 
-export const FIT_VIEWPORT_SCRIPT = `
+export function createFitViewportScript(
+  fitMode: PelicanFitMode = "contain",
+  isSvgDocument = false
+): string {
+  const isCover = fitMode === "cover";
+  const rootPar = isCover ? "xMidYMid slice" : "xMidYMid meet";
+  return `
 <script id="__pelican_fit_viewport_script">
 (function() {
+  var FIT_MODE = ${isCover ? "'cover'" : "'contain'"};
+  var IS_SVG_DOC = ${isSvgDocument ? "true" : "false"};
+  var ROOT_PAR = '${rootPar}';
   var lastVw = 0;
   var lastVh = 0;
 
@@ -111,6 +125,20 @@ export const FIT_VIEWPORT_SCRIPT = `
     if (!m) return null;
     var a = m[4] !== undefined ? parseFloat(m[4]) : 1;
     return { r: parseInt(m[1], 10), g: parseInt(m[2], 10), b: parseInt(m[3], 10), a: a };
+  }
+
+  function hasOpaqueBackground(root, body) {
+    if (!window.getComputedStyle) return false;
+    var els = [body, root];
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (!el) continue;
+      var st = window.getComputedStyle(el);
+      if (st.backgroundImage && st.backgroundImage !== 'none') return true;
+      var bg = parseRgba(st.backgroundColor);
+      if (bg && bg.a >= 0.2) return true;
+    }
+    return false;
   }
 
   function syncFallbackTextColor(root, body) {
@@ -135,28 +163,44 @@ export const FIT_VIEWPORT_SCRIPT = `
     }
   }
 
+  function isSkippedTag(tag) {
+    return (
+      tag === 'SCRIPT' ||
+      tag === 'STYLE' ||
+      tag === 'LINK' ||
+      tag === 'META' ||
+      tag === 'TITLE' ||
+      tag === 'NOSCRIPT' ||
+      tag === 'TEMPLATE'
+    );
+  }
+
+  function countVisualChildren(body) {
+    var count = 0;
+    var sole = null;
+    for (var i = 0; i < body.children.length; i++) {
+      var el = body.children[i];
+      var tag = el.tagName ? el.tagName.toUpperCase() : '';
+      if (isSkippedTag(tag)) continue;
+      count++;
+      sole = el;
+    }
+    return { count: count, sole: count === 1 ? sole : null };
+  }
+
   function collectBounds(parent, bounds) {
     var children = parent.children;
     for (var i = 0; i < children.length; i++) {
       var el = children[i];
       var tag = el.tagName ? el.tagName.toUpperCase() : '';
-      if (
-        tag === 'SCRIPT' ||
-        tag === 'STYLE' ||
-        tag === 'LINK' ||
-        tag === 'META' ||
-        tag === 'TITLE' ||
-        tag === 'NOSCRIPT' ||
-        tag === 'TEMPLATE'
-      ) {
-        continue;
-      }
+      if (isSkippedTag(tag)) continue;
 
       var style = window.getComputedStyle ? window.getComputedStyle(el) : null;
       if (style && style.display === 'none') continue;
 
       var rect = el.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0 && (!style || style.visibility !== 'hidden')) {
+        bounds.hasVisible = true;
         if (rect.left < bounds.minLeft) bounds.minLeft = rect.left;
         if (rect.top < bounds.minTop) bounds.minTop = rect.top;
         if (rect.right > bounds.maxRight) bounds.maxRight = rect.right;
@@ -184,6 +228,9 @@ export const FIT_VIEWPORT_SCRIPT = `
 
     syncFallbackTextColor(root, body);
 
+    var visualInfo = countVisualChildren(body);
+    var soleVisualTag = visualInfo.sole && visualInfo.sole.tagName ? visualInfo.sole.tagName.toUpperCase() : '';
+
     // 1. 尝试为缺少 viewBox 的 SVG 自动根据 width/height 或真实边界框 (getBBox) 补齐 viewBox
     var svgs = document.querySelectorAll('svg');
     for (var i = 0; i < svgs.length; i++) {
@@ -206,19 +253,67 @@ export const FIT_VIEWPORT_SCRIPT = `
           } catch (e) {}
         }
       }
+      var isRootSvg = svg.parentElement === body && (IS_SVG_DOC || soleVisualTag === 'SVG');
       var par = svg.getAttribute('preserveAspectRatio');
-      if (!par || !/\\bmeet\\b/i.test(par)) {
+      if (isRootSvg) {
+        if (FIT_MODE === 'cover') {
+          if (par !== ROOT_PAR) {
+            svg.setAttribute('preserveAspectRatio', ROOT_PAR);
+          }
+        } else if (!par || !/\\bmeet\\b/i.test(par)) {
+          svg.setAttribute('preserveAspectRatio', ROOT_PAR);
+        }
+      } else if (!par || !/\\bmeet\\b/i.test(par)) {
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
       }
     }
 
-    // 2. 检查固定尺寸或偏移的子容器是否超出当前视口，若超出则等比缩放并补偿负坐标使其完整居中显示
+    if (IS_SVG_DOC) return;
+
+    // 2. 按适配模式对 HTML 内容进行居中适配：
+    //    - contain（主舞台）：确保所有元素完整显示，不被裁切
+    //    - cover（历史卡片）：保证无白边/黑边，同时以最小必要裁剪居中保留最大画面
     body.style.transform = '';
     body.style.width = '';
     body.style.height = '';
 
-    var bounds = { minLeft: 0, minTop: 0, maxRight: 0, maxBottom: 0 };
+    var bounds = { hasVisible: false, minLeft: Infinity, minTop: Infinity, maxRight: -Infinity, maxBottom: -Infinity };
     collectBounds(body, bounds);
+    if (!bounds.hasVisible) return;
+
+    var spanW = bounds.maxRight - bounds.minLeft;
+    var spanH = bounds.maxBottom - bounds.minTop;
+    if (spanW <= 0 || spanH <= 0) return;
+
+    if (FIT_MODE === 'cover') {
+      var overflows =
+        bounds.minLeft < -2 ||
+        bounds.minTop < -2 ||
+        bounds.maxRight > vw + 2 ||
+        bounds.maxBottom > vh + 2 ||
+        body.scrollWidth > vw + 2 ||
+        body.scrollHeight > vh + 2;
+      var hasEmptyMargins = !hasOpaqueBackground(root, body) && (spanW < vw - 4 || spanH < vh - 4);
+
+      if ((overflows || hasEmptyMargins) && spanW > 20 && spanH > 20) {
+        var coverScale = Math.max(vw / spanW, vh / spanH);
+        var needTransform =
+          Math.abs(coverScale - 1) > 0.015 ||
+          bounds.minLeft < -2 ||
+          bounds.minTop < -2 ||
+          bounds.maxRight > vw + 2 ||
+          bounds.maxBottom > vh + 2;
+        if (coverScale > 0 && needTransform) {
+          body.style.width = Math.max(vw, bounds.maxRight, body.scrollWidth) + 'px';
+          body.style.height = Math.max(vh, bounds.maxBottom, body.scrollHeight) + 'px';
+          body.style.transformOrigin = '0 0';
+          var coverOffsetX = (vw - spanW * coverScale) / 2 - bounds.minLeft * coverScale;
+          var coverOffsetY = (vh - spanH * coverScale) / 2 - bounds.minTop * coverScale;
+          body.style.transform = 'translate(' + coverOffsetX + 'px, ' + coverOffsetY + 'px) scale(' + coverScale + ')';
+        }
+      }
+      return;
+    }
 
     var negLeft = Math.min(0, bounds.minLeft);
     var negTop = Math.min(0, bounds.minTop);
@@ -259,15 +354,19 @@ export const FIT_VIEWPORT_SCRIPT = `
 })();
 </script>
 `;
+}
+
+export const FIT_VIEWPORT_SCRIPT = createFitViewportScript("contain", false);
 
 /**
  * 构建 HTML 完整预览文档：
  * 严禁截取子 SVG，保留完整的 HTML DOM、Canvas、脚本与样式，
- * 注入防溢出、主题对比度兜底与自适应缩放脚本，供主舞台与历史记录统一完整渲染。
+ * 注入防溢出、主题对比度兜底与自适应缩放脚本，供主舞台与历史记录统一渲染。
  */
 export function buildHtmlPreviewDocument(
   rawContent: string,
-  colorScheme: "dark" | "light" = "dark"
+  colorScheme: "dark" | "light" = "dark",
+  fitMode: PelicanFitMode = "contain"
 ): string {
   if (!rawContent) return "";
   const trimmed = rawContent.trim();
@@ -312,10 +411,10 @@ export function buildHtmlPreviewDocument(
     min-height: 0;
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain;
+    object-fit: ${fitMode === "cover" ? "cover" : "contain"};
   }
 </style>
-${FIT_VIEWPORT_SCRIPT}
+${createFitViewportScript(fitMode, false)}
 `;
 
   // 1. 如果已包含完整 HTML 文档，注入样式到 head（若无 head 则补到 html 起始标签后）
@@ -357,11 +456,12 @@ export function buildPelicanPreviewDocument(
     contentType?: string;
     content: string;
   },
-  colorScheme: "dark" | "light" = "dark"
+  colorScheme: "dark" | "light" = "dark",
+  fitMode: PelicanFitMode = "contain"
 ): string {
   const type = resolvePelicanContentType(item.contentType, item.content);
   if (type === "html") {
-    return buildHtmlPreviewDocument(item.content, colorScheme);
+    return buildHtmlPreviewDocument(item.content, colorScheme, fitMode);
   }
-  return buildSvgPreviewDocument(item.content, colorScheme);
+  return buildSvgPreviewDocument(item.content, colorScheme, fitMode);
 }

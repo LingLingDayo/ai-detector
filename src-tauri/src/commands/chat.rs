@@ -13,7 +13,7 @@ use crate::utils::{
     compact_error, is_adaptive_thinking_required, is_mimo_thinking_switch_model, normalize_url,
 };
 
-use super::probe::DEFAULT_USER_AGENT;
+use super::probe::resolve_user_agent;
 
 const MAX_OUTPUT_TOKENS: u64 = 8192;
 
@@ -315,7 +315,10 @@ async fn send_chat_request_inner(
 
     let mut request_builder = client
         .post(&target_url)
-        .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT)
+        .header(
+            reqwest::header::USER_AGENT,
+            resolve_user_agent(req.user_agent.as_deref()),
+        )
         .header(reqwest::header::CONTENT_TYPE, "application/json")
         .header(
             reqwest::header::ACCEPT,
@@ -552,6 +555,7 @@ mod tests {
             reasoning_effort: Some("high".to_string()),
             stream: Some(true),
             timeout_seconds: Some(90),
+            user_agent: None,
         }
     }
 

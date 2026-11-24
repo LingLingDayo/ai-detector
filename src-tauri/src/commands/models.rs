@@ -3,6 +3,8 @@ use std::time::Duration;
 use crate::parser::extract_models_from_json;
 use crate::utils::compact_error;
 
+use super::probe::resolve_user_agent_with_fallback;
+
 pub const MODEL_FETCH_USER_AGENT: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
@@ -11,6 +13,7 @@ pub async fn fetch_models_list(
     base_url: String,
     api_key: String,
     api_format: String,
+    user_agent: Option<String>,
 ) -> Result<Vec<String>, String> {
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(20))
@@ -48,10 +51,13 @@ pub async fn fetch_models_list(
         None
     };
 
+    let resolved_user_agent =
+        resolve_user_agent_with_fallback(user_agent.as_deref(), MODEL_FETCH_USER_AGENT);
+
     let send_request = |url: &str| {
         let mut builder = client
             .get(url)
-            .header(reqwest::header::USER_AGENT, MODEL_FETCH_USER_AGENT)
+            .header(reqwest::header::USER_AGENT, resolved_user_agent)
             .header(reqwest::header::ACCEPT, "application/json");
 
         if api_format == "anthropic" {

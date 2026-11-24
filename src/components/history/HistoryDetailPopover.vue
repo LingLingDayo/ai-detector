@@ -34,6 +34,12 @@ function isCandyItem(
   return "diagnostics" in target && "passed" in target;
 }
 
+function isPelicanItem(
+  target: PelicanHistoryItem | ProbeHistoryItem | CandyHistoryItem
+): target is PelicanHistoryItem {
+  return "content" in target && "contentType" in target;
+}
+
 function formatProb(prob: number | undefined): string {
   if (prob === undefined || isNaN(prob)) return "0.0%";
   return `${(prob * 100).toFixed(1)}%`;
@@ -50,7 +56,7 @@ function formatProb(prob: number | undefined): string {
     role="tooltip"
     @click.stop
   >
-    <div class="popover-header">
+    <div v-if="!isPelicanItem(item)" class="popover-header">
       <span class="popover-title">测试参数详情</span>
     </div>
     <div class="popover-list">
@@ -90,6 +96,20 @@ function formatProb(prob: number | undefined): string {
         <span class="item-label">思考强度</span>
         <span class="item-value">
           {{ formatReasoningEffort(item.reasoningEffort) }}
+        </span>
+      </div>
+
+      <!-- 鹈鹕测试特有字段：提示词 -->
+      <div
+        v-if="isPelicanItem(item) && item.prompt?.trim()"
+        class="popover-item"
+      >
+        <span class="item-label">提示词</span>
+        <span
+          class="item-value single-line selectable"
+          :title="item.prompt"
+        >
+          {{ item.prompt }}
         </span>
       </div>
 
@@ -303,6 +323,14 @@ function formatProb(prob: number | undefined): string {
       &.selectable {
         user-select: text;
         cursor: text;
+      }
+
+      &.single-line {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        word-break: normal;
       }
 
       &.text-muted {

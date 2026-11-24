@@ -1,5 +1,10 @@
 import { SlidersHorizontal } from "@lucide/vue";
 import type { SettingsPage } from "./types";
+import {
+  DEFAULT_USER_AGENT_PRESET,
+  USER_AGENT_SELECT_OPTIONS,
+  resolveUserAgent,
+} from "../data/userAgentPresets";
 
 export const generalPage: SettingsPage = {
   id: "general",
@@ -58,6 +63,27 @@ export const generalPage: SettingsPage = {
             { value: "3", label: "3 次" },
             { value: "5", label: "5 次" },
           ],
+        },
+        {
+          key: "userAgentPreset",
+          type: "select",
+          label: "请求客户端标识",
+          description: (ctx) =>
+            `当前生效：${resolveUserAgent(ctx.values.userAgentPreset, ctx.values.customUserAgent)}`,
+          defaultValue: DEFAULT_USER_AGENT_PRESET,
+          options: USER_AGENT_SELECT_OPTIONS,
+        },
+        {
+          key: "customUserAgent",
+          type: "text",
+          label: "自定义标识 (User-Agent)",
+          description: "输入自定义 User-Agent 请求头，留空时默认回退为 Codex 标识",
+          defaultValue: "",
+          placeholder: "例如：claude-cli/2.1.76 (external, cli)",
+          maxLength: 512,
+          monospace: true,
+          stacked: true,
+          visible: (ctx) => ctx.values.userAgentPreset === "custom",
         },
       ],
     },

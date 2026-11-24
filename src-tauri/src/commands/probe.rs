@@ -13,7 +13,29 @@ use crate::utils::{
 };
 
 pub const DEFAULT_USER_AGENT: &str =
-    "Codex Desktop/0.147.0-alpha.1.2 (Windows 10.0.26200; x86_64) unknown (codex_exec; 0.147.0-alpha.1.2)";
+    "Codex Desktop/0.169.0 (Windows 10.0.26200; x86_64) unknown (codex_exec; 0.169.0)";
+
+/// 解析最终生效的 User-Agent；自定义值空白、含非 ASCII 或非法 HTTP 头字符时回退到指定默认标识
+pub fn resolve_user_agent_with_fallback<'a>(
+    custom: Option<&'a str>,
+    fallback: &'a str,
+) -> &'a str {
+    if let Some(raw) = custom {
+        let trimmed = raw.trim();
+        if !trimmed.is_empty() {
+            if trimmed.is_ascii() && reqwest::header::HeaderValue::from_str(trimmed).is_ok() {
+                return trimmed;
+            }
+            log::warn!("自定义 User-Agent 包含非 ASCII 或非法 HTTP 头字符，已回退默认标识");
+        }
+    }
+    fallback
+}
+
+/// 解析探测与对话请求生效的 User-Agent，缺省回退至 DEFAULT_USER_AGENT
+pub fn resolve_user_agent(custom: Option<&str>) -> &str {
+    resolve_user_agent_with_fallback(custom, DEFAULT_USER_AGENT)
+}
 
 static CANCELED_PROBE_REQUESTS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 
@@ -104,7 +126,10 @@ async fn send_probe_request_inner(
         let mut request_builder = client.post(&target_url);
 
         request_builder = request_builder
-            .header(reqwest::header::USER_AGENT, DEFAULT_USER_AGENT)
+            .header(
+                reqwest::header::USER_AGENT,
+                resolve_user_agent(req.user_agent.as_deref()),
+            )
             .header(reqwest::header::CONTENT_TYPE, "application/json");
 
         if is_stream {
@@ -475,5 +500,24 @@ mod tests {
         assert!(is_probe_canceled(request_id));
         assert!(take_probe_canceled(request_id));
         assert!(!is_probe_canceled(request_id));
+    }
+
+    #[test]
+    fn test_resolve_user_agent() {
+        assert_eq!(resolve_user_agent(None), DEFAULT_USER_AGENT);
+        assert_eq!(resolve_user_agent(Some("")), DEFAULT_USER_AGENT);
+        assert_eq!(resolve_user_agent(Some("   \t  ")), DEFAULT_USER_AGENT);
+        assert_eq!(
+            resolve_user_agent(Some("  claude-cli/2.1.76 (external, cli)  ")),
+            "claude-cli/2.1.76 (external, cli)"
+        );
+        assert_eq!(
+            resolve_user_agent(Some("invalid\nheader")),
+            DEFAULT_USER_AGENT
+        );
+        assert_eq!(
+            resolve_user_agent(Some("中文非法标识")),
+            DEFAULT_USER_AGENT
+        );
     }
 }

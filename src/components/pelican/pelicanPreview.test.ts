@@ -28,6 +28,16 @@ describe("pelicanPreview", () => {
       const raw = "这是说明文本：\n<svg width='100' height='100'><rect/></svg>\n请查看";
       expect(extractPureSvg(raw)).toBe("<svg width='100' height='100'><rect/></svg>");
     });
+
+    it("嵌套 svg（如滚动路面）不会在第一个内层闭合标签处截断主体", () => {
+      const raw =
+        '<svg viewBox="0 0 900 620"><rect width="900" height="620"/>' +
+        '<svg x="75" y="487" width="750" height="18"><rect/></svg>' +
+        '<g id="crane"><circle cx="400" cy="300" r="80"/></g></svg>';
+      const got = extractPureSvg(raw);
+      expect(got).toBe(raw);
+      expect(got).toContain('id="crane"');
+    });
   });
 
   describe("buildSvgPreviewDocument", () => {
@@ -133,6 +143,31 @@ describe("pelicanPreview", () => {
       expect(htmlDoc).toContain("HTML 卡片");
       expect(svgDoc).toContain("<svg");
       expect(svgDoc).toContain('preserveAspectRatio="xMidYMid meet"');
+    });
+    it("cover 模式用于历史卡片铺满无黑边白边，contain 模式用于主舞台完整展示", () => {
+      const svgItem = {
+        contentType: "svg" as const,
+        content: '<svg viewBox="0 0 500 500"><rect width="500" height="500"/></svg>',
+      };
+      const htmlItem = {
+        contentType: "html" as const,
+        content: "<canvas width='500' height='500'></canvas>",
+      };
+
+      const svgCover = buildPelicanPreviewDocument(svgItem, "dark", "cover");
+      const svgContain = buildPelicanPreviewDocument(svgItem, "dark", "contain");
+      const htmlCover = buildPelicanPreviewDocument(htmlItem, "dark", "cover");
+      const htmlContain = buildPelicanPreviewDocument(htmlItem, "dark", "contain");
+
+      expect(svgCover).toContain('preserveAspectRatio="xMidYMid slice"');
+      expect(svgCover).toContain("object-fit: cover;");
+      expect(svgContain).toContain('preserveAspectRatio="xMidYMid meet"');
+      expect(svgContain).toContain("object-fit: contain;");
+
+      expect(htmlCover).toContain("object-fit: cover;");
+      expect(htmlCover).toContain("FIT_MODE = 'cover'");
+      expect(htmlContain).toContain("object-fit: contain;");
+      expect(htmlContain).toContain("FIT_MODE = 'contain'");
     });
   });
 });

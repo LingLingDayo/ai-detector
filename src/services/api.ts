@@ -1,8 +1,42 @@
+import { getActivePinia } from "pinia";
 import type { ProbeResponse, SendProbeOptions, TauriInvokeFn } from "../types";
 import { createRequestTimeout } from "../utils/requestTimeout";
 import { isAdaptiveThinkingRequired, isThinkingSwitchModel } from "../data/modelReasoningRules";
+import { DEFAULT_USER_AGENT, resolveUserAgent } from "../data/userAgentPresets";
+import { SETTINGS_STORAGE_KEY, useSettingsStore } from "../stores/settings";
 
 let tauriInvoke: TauriInvokeFn | null = null;
+
+/** 获取当前生效的客户端 User-Agent 标识（优先显式传参，其次全局设置与本地存储） */
+export function getActiveUserAgent(explicitUserAgent?: string): string {
+  const explicit = typeof explicitUserAgent === "string" ? explicitUserAgent.trim() : "";
+  if (explicit) {
+    return explicit;
+  }
+
+  try {
+    const pinia = getActivePinia();
+    if (pinia) {
+      return useSettingsStore(pinia).resolvedUserAgent;
+    }
+  } catch {
+    // Pinia 未初始化时回退读取本地持久化设置
+  }
+
+  try {
+    if (typeof localStorage !== "undefined") {
+      const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        return resolveUserAgent(parsed?.userAgentPreset, parsed?.customUserAgent);
+      }
+    }
+  } catch {
+    // 忽略本地存储读取异常
+  }
+
+  return DEFAULT_USER_AGENT;
+}
 
 export function isTauriApp(): boolean {
   if (typeof window === "undefined") return false;
@@ -108,14 +142,17 @@ export function extractModelsFromData(data: any): string[] {
 export async function fetchRemoteModels(
   baseUrl: string,
   apiKey: string,
-  apiFormat: string
+  apiFormat: string,
+  userAgent?: string
 ): Promise<string[]> {
+  const resolvedUserAgent = getActiveUserAgent(userAgent);
   if (tauriInvoke && isTauriApp()) {
     try {
       return await tauriInvoke<string[]>("fetch_models_list", {
         baseUrl,
         apiKey,
         apiFormat,
+        userAgent: resolvedUserAgent,
       });
     } catch (err) {
       if (!isTauriApp()) {
@@ -370,12 +407,14 @@ export async function sendProbe({
   reasoningEffort = "high",
   stream = true,
   timeoutSeconds,
+  userAgent,
   signal,
   onStreamStart,
   onStreamProgress,
 }: SendProbeOptions): Promise<ProbeResponse> {
   const isStream = stream !== false;
   const actualTimeout = timeoutSeconds ?? (isStream ? 90 : 240);
+  const resolvedUserAgent = getActiveUserAgent(userAgent);
 
   if (tauriInvoke && isTauriApp()) {
     // Tauri 命令无法被前端中止，已取消的请求仍会继续推送事件；事件是全局广播，
@@ -422,6 +461,7 @@ export async function sendProbe({
         stream: isStream,
         timeout_seconds: actualTimeout,
         request_id: requestId,
+        user_agent: resolvedUserAgent,
       },
     });
 
@@ -452,6 +492,7 @@ export async function sendProbe({
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: isStream ? "text/event-stream, application/json" : "application/json",
+    "User-Agent": resolvedUserAgent,
   };
   interface RequestBody {
     model: string;

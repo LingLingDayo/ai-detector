@@ -50,4 +50,10 @@ describe("normalizeSvgForDisplay", () => {
     expect(result).not.toContain("width: 1200px");
     expect(result).not.toContain("height: 900px");
   });
+
+  it("当 fitMode 为 cover 时使用 xMidYMid slice 铺满历史卡片且不留白边黑边", () => {
+    const rawSvg = '<svg viewBox="0 0 800 800"><rect width="800" height="800"/></svg>';
+    const result = normalizeSvgForDisplay(rawSvg, "cover");
+    expect(result).toContain('preserveAspectRatio="xMidYMid slice"');
+  });
 });

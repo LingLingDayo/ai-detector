@@ -11,6 +11,7 @@ import {
   usePelicanTestStore,
   hasExtraneousText,
   stripXmlProlog,
+  extractRenderableContent,
 } from "./pelicanTest";
 import { useSettingsStore } from "./settings";
 import * as api from "../services/api";
@@ -177,19 +178,20 @@ describe("鹈鹕测试思考耗时与重试计时测试套件", () => {
     expect(store.isPelicanGenerating).toBe(false);
     expect(store.durationMs).toBeGreaterThanOrEqual(7000);
 
-    // 模型响应后回到正常的思考状态
+    // 模型响应后回到正常的思考状态，此时思考计时刚从 0 开始
     await vi.advanceTimersByTimeAsync(1000);
     expect(store.isPelicanGenerating).toBe(true);
     expect(store.streamedCharCount).toBe(0);
+    expect(store.thinkingMs).toBe(0);
 
-    // 首个正文字符到达，思考耗时定格为本次重试请求的耗时
+    // 首个正文字符到达，思考耗时定格为从开始思考到首字输出的耗时（不含等待首包的 1000ms）
     await vi.advanceTimersByTimeAsync(2000);
-    expect(store.thinkingMs).toBe(3000);
+    expect(store.thinkingMs).toBe(2000);
 
     await vi.advanceTimersByTimeAsync(1000);
     await run;
 
-    expect(store.thinkingMs).toBe(3000);
+    expect(store.thinkingMs).toBe(2000);
     // 总耗时为端到端累计值，不会被最后一次请求的 duration_ms 覆盖而倒退
     expect(store.durationMs).toBe(11000);
     expect(store.isPelicanRunning).toBe(false);
@@ -353,6 +355,85 @@ describe("鹈鹕测试背景亮暗色跟随主题与自定义覆盖测试套件"
     settingsStore.setValue("theme", "light");
     await nextTick();
     expect(pelicanStore.bgTheme).toBe("light");
+  });
+});
+
+describe("鹈鹕测试嵌套 SVG 提取回归套件", () => {
+  const nestedSvg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620">' +
+    '<rect width="900" height="620" fill="#e2ecda"/>' +
+    '<svg x="75" y="487" width="750" height="18" overflow="hidden"><rect width="1080" height="18"/></svg>' +
+    '<g id="crane"><circle cx="400" cy="300" r="80" fill="#fff"/></g>' +
+    "</svg>";
+
+  it("裸返回含嵌套 svg 时保留内层闭合之后的主体，不在第一个 </svg> 截断", () => {
+    const res = extractRenderableContent(nestedSvg);
+    expect(res.hasContent).toBe(true);
+    expect(res.contentType).toBe("svg");
+    expect(res.content).toBe(nestedSvg);
+    expect(res.content).toContain('id="crane"');
+  });
+
+  it("markdown 代码块包裹的嵌套 svg 同样完整保留", () => {
+    const res = extractRenderableContent("```svg\n" + nestedSvg + "\n```");
+    expect(res.hasContent).toBe(true);
+    expect(res.content).toBe(nestedSvg);
+    expect(res.content).toContain('id="crane"');
+  });
+
+  it("带前导说明文本的嵌套 svg 仍提取完整外层块", () => {
+    const res = extractRenderableContent("好的，这是代码：\n" + nestedSvg);
+    expect(res.hasContent).toBe(true);
+    expect(res.content).toBe(nestedSvg);
+  });
+});
+
+describe("鹈鹕测试历史记录提示词归档套件", () => {
+  it("成功生成后将当时使用的自定义提示词记录到历史条目", async () => {
+    storage.clear();
+    const store = newStore();
+    store.setPelicanPrompt(CUSTOM_PROMPT);
+
+    vi.spyOn(api, "sendProbe").mockResolvedValue({
+      text: "<svg><circle cx='10' cy='10' r='5' /></svg>",
+      raw_status: 200,
+      duration_ms: 20,
+    });
+
+    await store.startPelicanTest({
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-test-123456",
+      apiFormat: "openai",
+      modelName: "test-model",
+      reasoningEffort: "high",
+      stream: false,
+    });
+
+    expect(store.pelicanHistoryList).toHaveLength(1);
+    expect(store.pelicanHistoryList[0].prompt).toBe(CUSTOM_PROMPT);
+  });
+
+  it("使用默认提示词测试成功时同样完整记录该提示词", async () => {
+    storage.clear();
+    const store = newStore();
+
+    vi.spyOn(api, "sendProbe").mockResolvedValue({
+      text: "<svg><rect width='10' height='10' /></svg>",
+      raw_status: 200,
+      duration_ms: 15,
+    });
+
+    await store.startPelicanTest({
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-test-123456",
+      apiFormat: "openai",
+      modelName: "test-model",
+      reasoningEffort: "medium",
+      stream: false,
+    });
+
+    expect(store.pelicanHistoryList).toHaveLength(1);
+    expect(store.pelicanHistoryList[0].prompt).toBe(DEFAULT_PELICAN_PROMPT);
   });
 });
 
