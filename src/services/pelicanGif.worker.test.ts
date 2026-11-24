@@ -77,4 +77,33 @@ describe("静默采集的GIF编码", () => {
     await scope.onmessage({ data: { type: "frame", data: "AA==", timestampMs: 0 } });
     expect(scope.postMessage).toHaveBeenCalledWith({ type: "error", message: "PNG 无效" });
   });
+
+  it("按视口缩放比例从整页截图中裁剪目标预览区域", async () => {
+    const scope = { postMessage: vi.fn(), onmessage: undefined as unknown as (event: { data: object }) => Promise<void> };
+    vi.stubGlobal("self", scope);
+    const drawCalls: unknown[][] = [];
+    vi.stubGlobal("createImageBitmap", vi.fn(async () => ({ width: 2000, height: 1800, close: vi.fn() })));
+    vi.stubGlobal("OffscreenCanvas", class {
+      constructor(public width: number, public height: number) {}
+      getContext() {
+        return {
+          drawImage: (...args: unknown[]) => { drawCalls.push(args); },
+          getImageData: () => ({ data: new Uint8ClampedArray(this.width * this.height * 4) }),
+        };
+      }
+    });
+    await import("./pelicanGif.worker");
+    await scope.onmessage({
+      data: {
+        type: "init",
+        width: 640,
+        height: 320,
+        durationMs: 100,
+        crop: { x: 20, y: 100, width: 800, height: 400, viewportWidth: 1000, viewportHeight: 900 },
+      },
+    });
+    await scope.onmessage({ data: { type: "frame", data: "AA==", timestampMs: 0 } });
+    expect(drawCalls[0].slice(1)).toEqual([40, 200, 1600, 800, 0, 0, 640, 320]);
+    expect(drawCalls[1].slice(1)).toEqual([40, 200, 1600, 800, 0, 0, 32, 24]);
+  });
 });

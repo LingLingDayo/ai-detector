@@ -40,8 +40,18 @@ export async function recordPelicanGif(element: HTMLElement, { signal }: { signa
   if (signal.aborted) throw new DOMException("下载已取消", "AbortError");
   const bounds = element.getBoundingClientRect();
   if (!element.isConnected || bounds.width < 1 || bounds.height < 1) throw new Error("预览尚未就绪，请稍后重试");
-  const clip = { x: bounds.left + scrollX, y: bounds.top + scrollY, width: bounds.width, height: bounds.height,
-    scale: Math.min(1, 640 / bounds.width, 480 / bounds.height) };
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  if (viewportWidth < 1 || viewportHeight < 1) throw new Error("预览窗口尺寸无效，请稍后重试");
+  const scale = Math.min(1, 640 / bounds.width, 480 / bounds.height);
+  const crop = {
+    x: bounds.left,
+    y: bounds.top,
+    width: bounds.width,
+    height: bounds.height,
+    viewportWidth,
+    viewportHeight,
+  };
   const initialSource = (element as HTMLIFrameElement).srcdoc;
   const durationMs = resolveGifDuration(readAnimationPeriods(element));
   const requestId = crypto.randomUUID();
@@ -65,8 +75,9 @@ export async function recordPelicanGif(element: HTMLElement, { signal }: { signa
   const checkPreview = () => {
     const current = element.getBoundingClientRect();
     if (!element.isConnected || (element as HTMLIFrameElement).srcdoc !== initialSource ||
-      Math.abs(current.left + scrollX - clip.x) > 1 || Math.abs(current.top + scrollY - clip.y) > 1 ||
-      Math.abs(current.width - clip.width) > 1 || Math.abs(current.height - clip.height) > 1) {
+      window.innerWidth !== viewportWidth || window.innerHeight !== viewportHeight ||
+      Math.abs(current.left - crop.x) > 1 || Math.abs(current.top - crop.y) > 1 ||
+      Math.abs(current.width - crop.width) > 1 || Math.abs(current.height - crop.height) > 1) {
       fail(new Error("预览已改变，请重新下载 GIF"));
       return false;
     }
@@ -120,9 +131,9 @@ export async function recordPelicanGif(element: HTMLElement, { signal }: { signa
 
   try {
     if (!checkPreview()) throw captureError;
-    worker.postMessage({ type: "init", width: Math.max(1, Math.round(bounds.width * clip.scale)),
-      height: Math.max(1, Math.round(bounds.height * clip.scale)), durationMs });
-    const count = await Promise.race([invoke<number>("capture_pelican_frames", { requestId, clip, durationMs, onFrame: channel }), failure]);
+    worker.postMessage({ type: "init", width: Math.max(1, Math.round(bounds.width * scale)),
+      height: Math.max(1, Math.round(bounds.height * scale)), durationMs, crop });
+    const count = await Promise.race([invoke<number>("capture_pelican_frames", { requestId, durationMs, onFrame: channel }), failure]);
     captureCompleted = true;
     if (captureError) throw captureError;
     if (!Number.isInteger(count) || count < 1 || count > 100) throw new Error("未采集到有效预览画面，请稍后重试");

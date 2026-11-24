@@ -40,9 +40,17 @@ describe("现有预览静默采集", () => {
     expect(blob.type).toBe("image/gif");
     expect(await blob.text()).toBe("GIF89a");
     expect(invoke).toHaveBeenCalledWith("capture_pelican_frames", expect.objectContaining({
-      clip: { x: 20, y: 150, width: 800, height: 400, scale: 0.8 }, durationMs: 2000,
+      durationMs: 2000,
     }));
+    expect(invoke.mock.calls[0][1]).not.toHaveProperty("clip");
     expect(workers[0].terminate).toHaveBeenCalledOnce();
+    expect(workers[0].postMessage).toHaveBeenCalledWith({
+      type: "init",
+      width: 640,
+      height: 320,
+      durationMs: 2000,
+      crop: { x: 20, y: 100, width: 800, height: 400, viewportWidth: 1000, viewportHeight: 900 },
+    });
     expect(workers[0].postMessage).toHaveBeenCalledWith({ type: "frame", data: "AA==", timestampMs: 100 });
   });
 

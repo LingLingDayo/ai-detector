@@ -1,7 +1,8 @@
 import { applyPalette, GIFEncoder, quantize } from "gifenc";
 import { MAX_GIF_DURATION_MS, sampleGifTimeline } from "./gifTimeline";
 
-type Settings = { type: "init"; width: number; height: number; durationMs: number };
+type CropRect = { x: number; y: number; width: number; height: number; viewportWidth: number; viewportHeight: number };
+type Settings = { type: "init"; width: number; height: number; durationMs: number; crop?: CropRect };
 type Message = Settings | { type: "frame"; data: string; timestampMs: number } | { type: "finish" };
 interface Frame { time: number; pixels: Uint8ClampedArray; sample: Uint8ClampedArray }
 
@@ -23,8 +24,20 @@ async function addFrame(message: Extract<Message, { type: "frame" }>): Promise<v
   const bytes = Uint8Array.from(raw, character => character.charCodeAt(0));
   const image = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
   try {
-    context.drawImage(image, 0, 0, settings.width, settings.height);
-    sampleContext.drawImage(image, 0, 0, 32, 24);
+    if (settings.crop) {
+      const { x, y, width, height, viewportWidth, viewportHeight } = settings.crop;
+      const scaleX = image.width / viewportWidth;
+      const scaleY = image.height / viewportHeight;
+      const sx = Math.max(0, Math.min(image.width - 1, x * scaleX));
+      const sy = Math.max(0, Math.min(image.height - 1, y * scaleY));
+      const sw = Math.max(1, Math.min(image.width - sx, width * scaleX));
+      const sh = Math.max(1, Math.min(image.height - sy, height * scaleY));
+      context.drawImage(image, sx, sy, sw, sh, 0, 0, settings.width, settings.height);
+      sampleContext.drawImage(image, sx, sy, sw, sh, 0, 0, 32, 24);
+    } else {
+      context.drawImage(image, 0, 0, settings.width, settings.height);
+      sampleContext.drawImage(image, 0, 0, 32, 24);
+    }
     firstTimestamp ??= message.timestampMs;
     frames.push({
       time: message.timestampMs - firstTimestamp,
@@ -65,6 +78,9 @@ async function handle(message: Message): Promise<void> {
   if (message.type === "init") {
     if (!Number.isInteger(message.width) || !Number.isInteger(message.height) || message.width < 1 || message.height < 1 || message.width > 640 || message.height > 480 || message.durationMs < 10 || message.durationMs > MAX_GIF_DURATION_MS) {
       throw new Error("GIF 输出参数无效");
+    }
+    if (message.crop && (!Number.isFinite(message.crop.x) || !Number.isFinite(message.crop.y) || !Number.isFinite(message.crop.width) || !Number.isFinite(message.crop.height) || !Number.isFinite(message.crop.viewportWidth) || !Number.isFinite(message.crop.viewportHeight) || message.crop.width <= 0 || message.crop.height <= 0 || message.crop.viewportWidth <= 0 || message.crop.viewportHeight <= 0)) {
+      throw new Error("GIF 裁剪参数无效");
     }
     settings = message;
     context = new OffscreenCanvas(settings.width, settings.height).getContext("2d", { alpha: false, willReadFrequently: true })!;

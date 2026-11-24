@@ -16,23 +16,10 @@ const FRAME_INTERVAL_MS: u64 = 50;
 const FRAME_TIMEOUT_MS: u64 = 2000;
 const MAX_CAPTURE_DURATION_MS: u64 = 5000;
 const MAX_CAPTURE_FRAMES: usize = 100;
-const MAX_CAPTURE_WIDTH: f64 = 640.0;
-const MAX_CAPTURE_HEIGHT: f64 = 480.0;
-const PIXEL_BOUNDARY_EPSILON: f64 = 0.000001;
 #[cfg(any(target_os = "windows", test))]
-const MAX_FRAME_DATA_BYTES: usize = 2 * 1024 * 1024;
+const MAX_FRAME_DATA_BYTES: usize = 16 * 1024 * 1024;
 const MAX_DOWNLOAD_BYTES: usize = 20 * 1024 * 1024;
 const MAX_FILE_COLLISIONS: usize = 1000;
-
-#[derive(Clone, Copy, Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CaptureClip {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
-    pub scale: f64,
-}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -88,33 +75,6 @@ fn sanitize_download_name(file_name: &str) -> Result<String, String> {
     Ok(format!("{stem}.{extension}"))
 }
 
-fn validate_capture_clip(clip: &CaptureClip) -> Result<(), String> {
-    if [clip.x, clip.y, clip.width, clip.height, clip.scale]
-        .iter()
-        .any(|value| !value.is_finite())
-        || clip.x < 0.0
-        || clip.y < 0.0
-        || clip.width <= 0.0
-        || clip.height <= 0.0
-        || clip.scale <= 0.0
-        || clip.scale > 1.0
-        || !(clip.x + clip.width).is_finite()
-        || !(clip.y + clip.height).is_finite()
-    {
-        return Err("作品裁剪区域或缩放参数无效".to_string());
-    }
-    let width = clip.width * clip.scale;
-    let height = clip.height * clip.scale;
-    if width < 1.0
-        || height < 1.0
-        || width > MAX_CAPTURE_WIDTH + PIXEL_BOUNDARY_EPSILON
-        || height > MAX_CAPTURE_HEIGHT + PIXEL_BOUNDARY_EPSILON
-    {
-        return Err("GIF 帧尺寸必须介于 1×1 和 640×480 之间".to_string());
-    }
-    Ok(())
-}
-
 fn capture_frame_limit(duration_ms: u64) -> Result<usize, String> {
     if duration_ms == 0 || duration_ms > MAX_CAPTURE_DURATION_MS {
         return Err("GIF 采集时长必须大于 0 且不超过 5 秒".to_string());
@@ -126,24 +86,14 @@ fn capture_frame_limit(duration_ms: u64) -> Result<usize, String> {
 }
 
 #[cfg(any(target_os = "windows", test))]
-fn screenshot_parameters(clip: &CaptureClip, device_scale: f64) -> Result<String, String> {
-    validate_capture_clip(clip)?;
-    if !device_scale.is_finite() || device_scale <= 0.0 {
-        return Err("主窗口屏幕缩放比例无效".to_string());
-    }
-    Ok(json!({
+fn screenshot_parameters() -> String {
+    // 仅截取当前可见视口合成层，不传 clip 以避免 Chromium 临时覆盖视口参数引发页面层闪烁。
+    json!({
         "format": "png",
         "fromSurface": true,
         "captureBeyondViewport": false,
-        "clip": {
-            "x": clip.x,
-            "y": clip.y,
-            "width": clip.width,
-            "height": clip.height,
-            "scale": clip.scale.min(MAX_CAPTURE_WIDTH / clip.width).min(MAX_CAPTURE_HEIGHT / clip.height) / device_scale,
-        },
     })
-    .to_string())
+    .to_string()
 }
 
 #[cfg(any(target_os = "windows", test))]
@@ -330,7 +280,6 @@ async fn wait_capture_result(
 #[cfg(target_os = "windows")]
 async fn capture_png(
     window: &WebviewWindow,
-    clip: CaptureClip,
     state: Arc<CaptureState>,
     task_deadline: Instant,
 ) -> Result<String, String> {
@@ -339,7 +288,6 @@ async fn capture_png(
     let deadline = task_deadline.min(Instant::now() + Duration::from_millis(FRAME_TIMEOUT_MS));
     let (sender, mut receiver) = tokio::sync::mpsc::channel(1);
     let callback_state = state.clone();
-    let main_window = window.clone();
     window
         .with_webview(move |webview| {
             if sender.is_closed()
@@ -349,10 +297,7 @@ async fn capture_png(
                 return;
             }
             let result = (|| {
-                let device_scale = main_window
-                    .scale_factor()
-                    .map_err(|error| format!("读取主窗口缩放比例失败: {error}"))?;
-                let parameters = screenshot_parameters(&clip, device_scale)?;
+                let parameters = screenshot_parameters();
                 let core = unsafe { webview.controller().CoreWebView2() }
                     .map_err(|error| format!("获取主窗口 WebView2 失败: {error}"))?;
                 let callback_sender = sender.clone();
@@ -367,7 +312,7 @@ async fn capture_png(
                 ));
                 let method = CoTaskMemPWSTR::from("Page.captureScreenshot");
                 let parameters = CoTaskMemPWSTR::from(parameters.as_str());
-                // WebView2 的 COM 操作必须留在 Tauri 调度的 UI 线程，且仅申请作品裁剪区域。
+                // WebView2 的 COM 操作必须留在 Tauri 调度的 UI 线程；交由前端 Worker 按预览区域裁剪。
                 unsafe {
                     core.CallDevToolsProtocolMethod(
                         *method.as_ref().as_pcwstr(),
@@ -390,12 +335,10 @@ async fn capture_png(
 pub async fn capture_pelican_frames(
     window: WebviewWindow,
     request_id: String,
-    clip: CaptureClip,
     duration_ms: u64,
     on_frame: Channel<CaptureFrame>,
 ) -> Result<usize, String> {
     ensure_main_window(window.label())?;
-    validate_capture_clip(&clip)?;
     let frame_limit = capture_frame_limit(duration_ms)?;
     let guard = capture_registry().begin(&request_id)?;
     guard.state.ensure_running()?;
@@ -414,7 +357,7 @@ pub async fn capture_pelican_frames(
                 break;
             }
             let timestamp_ms = started.elapsed().as_secs_f64() * 1000.0;
-            let data = capture_png(&window, clip, guard.state.clone(), task_deadline).await?;
+            let data = capture_png(&window, guard.state.clone(), task_deadline).await?;
             guard.state.ensure_running()?;
             on_frame
                 .send(CaptureFrame { data, timestamp_ms })
@@ -494,16 +437,6 @@ mod tests {
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    fn valid_clip() -> CaptureClip {
-        CaptureClip {
-            x: 120.0,
-            y: 900.0,
-            width: 800.0,
-            height: 600.0,
-            scale: 0.8,
-        }
-    }
-
     fn test_download_dir(name: &str) -> PathBuf {
         let unique = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -553,41 +486,6 @@ mod tests {
     }
 
     #[test]
-    fn test_capture_clip_accepts_scaled_output_at_limit() {
-        assert!(validate_capture_clip(&valid_clip()).is_ok());
-    }
-
-    #[test]
-    fn test_capture_clip_rejects_nonfinite_negative_and_oversized_values() {
-        let base = valid_clip();
-        for clip in [
-            CaptureClip {
-                x: f64::NAN,
-                ..base
-            },
-            CaptureClip { y: -1.0, ..base },
-            CaptureClip {
-                width: f64::INFINITY,
-                ..base
-            },
-            CaptureClip { width: 0.0, ..base },
-            CaptureClip { scale: 0.0, ..base },
-            CaptureClip { scale: 1.1, ..base },
-            CaptureClip {
-                width: 801.0,
-                ..base
-            },
-            CaptureClip {
-                height: 601.0,
-                ..base
-            },
-            CaptureClip { width: 0.1, ..base },
-        ] {
-            assert!(validate_capture_clip(&clip).is_err(), "{clip:?}");
-        }
-    }
-
-    #[test]
     fn test_capture_duration_has_twenty_fps_and_one_hundred_frame_limit() {
         assert_eq!(capture_frame_limit(1).unwrap(), 1);
         assert_eq!(capture_frame_limit(50).unwrap(), 1);
@@ -599,19 +497,13 @@ mod tests {
     }
 
     #[test]
-    fn test_screenshot_parameters_only_capture_absolute_clip_at_device_scale() {
+    fn test_screenshot_parameters_captures_surface_without_clip() {
         let parameters: serde_json::Value =
-            serde_json::from_str(&screenshot_parameters(&valid_clip(), 2.0).unwrap()).unwrap();
+            serde_json::from_str(&screenshot_parameters()).unwrap();
         assert_eq!(parameters["format"], "png");
         assert_eq!(parameters["fromSurface"], true);
         assert_eq!(parameters["captureBeyondViewport"], false);
-        assert_eq!(parameters["clip"]["x"], 120.0);
-        assert_eq!(parameters["clip"]["y"], 900.0);
-        assert_eq!(parameters["clip"]["width"], 800.0);
-        assert_eq!(parameters["clip"]["height"], 600.0);
-        assert_eq!(parameters["clip"]["scale"], 0.4);
-        assert!(screenshot_parameters(&valid_clip(), 0.0).is_err());
-        assert!(screenshot_parameters(&valid_clip(), f64::NAN).is_err());
+        assert!(parameters.get("clip").is_none());
     }
 
     #[test]
@@ -824,26 +716,6 @@ mod tests {
     }
 
     #[test]
-    fn test_capture_clip_allows_only_floating_point_noise_at_pixel_limit() {
-        let clip = CaptureClip {
-            width: 800.0000000001,
-            height: 600.0000000001,
-            ..valid_clip()
-        };
-        assert!(validate_capture_clip(&clip).is_ok());
-        assert!(validate_capture_clip(&CaptureClip {
-            width: 800.001,
-            ..clip
-        })
-        .is_err());
-        let parameters: serde_json::Value =
-            serde_json::from_str(&screenshot_parameters(&clip, 1.0).unwrap()).unwrap();
-        let scale = parameters["clip"]["scale"].as_f64().unwrap();
-        assert!(clip.width * scale <= MAX_CAPTURE_WIDTH);
-        assert!(clip.height * scale <= MAX_CAPTURE_HEIGHT);
-    }
-
-    #[test]
     fn test_next_capture_instant_skips_missed_ticks_without_exceeding_duration() {
         let started = Instant::now();
         let end = started + Duration::from_secs(5);
@@ -932,7 +804,6 @@ mod tests {
             Command: FnOnce(
                 WebviewWindow,
                 String,
-                CaptureClip,
                 u64,
                 Channel<CaptureFrame>,
             ) -> ResultFuture,
