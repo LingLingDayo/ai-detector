@@ -137,7 +137,7 @@ function mountMenu(initialProps: { contentType?: "svg" | "html"; disabled?: bool
   const renderer = createRenderer<TestElement, TestElement>({
     createElement: (tag) => {
       const element = new TestElement(tag);
-      if (tag === "div") element.rect = { left: 0, top: 0, right: 144, bottom: 72, width: 144, height: 72 };
+      if (tag === "div") element.rect = { left: 0, top: 0, right: 120, bottom: 72, width: 120, height: 72 };
       return element;
     },
     createText: (text) => { const node = new TestElement("#text"); node.text = text; return node; },
@@ -309,7 +309,7 @@ describe("鹈鹕下载格式菜单", () => {
     const style = getMenu()!.props.style as Record<string, string>;
 
     expect(parseFloat(style.top)).toBeLessThan(trigger.rect.top);
-    expect(parseFloat(style.left)).toBeLessThanOrEqual(windowStub.innerWidth - 144 - 8);
+    expect(parseFloat(style.left)).toBeLessThanOrEqual(windowStub.innerWidth - 120 - 8);
     expect(parseFloat(style.left)).toBeGreaterThanOrEqual(8);
   });
 

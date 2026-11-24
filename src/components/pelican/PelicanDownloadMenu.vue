@@ -40,7 +40,7 @@ function updateMenuPosition(): void {
   const menu = menuRef.value.getBoundingClientRect();
   const margin = 8;
   const gap = 4;
-  const width = Math.min(menu.width || 144, window.innerWidth - margin * 2);
+  const width = Math.min(menu.width || 120, window.innerWidth - margin * 2);
   const height = menu.height || 72;
   const spaceBelow = Math.max(0, window.innerHeight - anchor.bottom - gap - margin);
   const spaceAbove = Math.max(0, anchor.top - gap - margin);
@@ -273,10 +273,11 @@ onUnmounted(() => {
   z-index: 10050;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  width: 144px;
+  gap: 1px;
+  width: 120px;
   max-width: calc(100vw - 16px);
-  padding: 4px;
+  padding: 3px;
+  box-sizing: border-box;
   overflow-y: auto;
   background: var(--bg-popover);
   border: 1px solid rgba(var(--accent-rgb), 0.35);
@@ -286,8 +287,8 @@ onUnmounted(() => {
 
 .download-option {
   flex-shrink: 0;
-  min-height: 28px;
-  padding: 5px 8px;
+  min-height: 25px;
+  padding: 4px 7px;
   background: transparent;
   border: 0;
   border-radius: var(--radius-sm);
