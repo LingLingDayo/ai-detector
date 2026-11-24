@@ -525,6 +525,7 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
     gap: 5px;
 
     .tool-btn {
+      position: relative;
       width: 24px;
       height: 24px;
       border-radius: var(--radius-sm);
@@ -548,6 +549,16 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
         border-color: var(--pelican-footer-btn-hover-border);
         color: var(--pelican-footer-btn-hover-color);
         transform: translateY(-1px);
+
+        // 按钮上移 1px 时向下补齐透明命中区，防止指针停在底边临界位置时反复触发 hover 抖动
+        &::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          bottom: -2px;
+        }
       }
 
       &:active {

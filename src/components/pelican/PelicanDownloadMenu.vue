@@ -272,6 +272,7 @@ onUnmounted(() => {
   }
 
   &.is-icon-only {
+    position: relative;
     width: 24px;
     height: 24px;
     padding: 0;
@@ -285,6 +286,15 @@ onUnmounted(() => {
       border-color: var(--pelican-footer-btn-hover-border);
       color: var(--pelican-footer-btn-hover-color);
       transform: translateY(-1px);
+    }
+
+    &:hover:not(:disabled)::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: -2px;
     }
 
     &:active:not(:disabled) {
