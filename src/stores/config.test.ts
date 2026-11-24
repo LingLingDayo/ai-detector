@@ -4,6 +4,7 @@ import { nextTick } from "vue";
 import {
   STORAGE_KEY,
   CONFIG_LIST_STORAGE_KEY,
+  CONFIG_GROUPS_STORAGE_KEY,
   ACTIVE_CONFIG_ID_KEY,
 } from "../constants";
 import { useConfigStore } from "./config";
@@ -636,4 +637,164 @@ describe("自定义模型来源标记的配置持久化", () => {
     expect(store.config.isCustomModel).toBe(false);
   });
 });
+
+describe("配置分组管理、拖拽归组与级联删除测试套件", () => {
+  function createMockConfig(
+    id: string,
+    name: string,
+    groupId?: string
+  ): ConfigItem {
+    const item: ConfigItem = {
+      id,
+      name,
+      baseUrl: `https://api.${id}.com`,
+      apiKey: `key-${id}`,
+      apiFormat: "chat_completions",
+      modelName: "test-model",
+      reasoningEffort: "high",
+      stream: true,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    if (groupId) {
+      item.groupId = groupId;
+    }
+    return item;
+  }
+
+  it("支持新建分组、重命名、折叠展开以及持久化恢复", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    store.loadConfig();
+
+    expect(store.createConfigGroup("   ")).toBeNull();
+
+    const group = store.createConfigGroup("  生产环境  ");
+    expect(group).not.toBeNull();
+    expect(group!.name).toBe("生产环境");
+    expect(group!.collapsed).toBe(false);
+    expect(store.configGroups).toHaveLength(1);
+
+    expect(store.renameConfigGroup(group!.id, "  ")).toBe(false);
+    expect(store.renameConfigGroup(group!.id, "正式环境")).toBe(true);
+    expect(store.configGroups[0].name).toBe("正式环境");
+
+    store.toggleConfigGroupCollapsed(group!.id);
+    expect(store.configGroups[0].collapsed).toBe(true);
+
+    store.setAllConfigGroupsCollapsed(false);
+    expect(store.configGroups[0].collapsed).toBe(false);
+
+    // 重新创建 store 从 localStorage 恢复
+    setActivePinia(createPinia());
+    const freshStore = useConfigStore();
+    freshStore.loadConfig();
+    expect(freshStore.configGroups).toHaveLength(1);
+    expect(freshStore.configGroups[0].name).toBe("正式环境");
+    expect(freshStore.configGroups[0].collapsed).toBe(false);
+  });
+
+  it("支持将配置移入分组与移出至未分组", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    store.loadConfig();
+
+    const group = store.createConfigGroup("常用节点")!;
+    const c1 = createMockConfig("c1", "配置1");
+    store.configList = [c1];
+
+    expect(store.moveConfigToGroup("c1", "not_exist")).toBe(false);
+    expect(store.moveConfigToGroup("c1", group.id)).toBe(true);
+    expect(store.configList[0].groupId).toBe(group.id);
+
+    expect(store.moveConfigToGroup("c1", null)).toBe(true);
+    expect(store.configList[0].groupId).toBeUndefined();
+  });
+
+  it("moveConfigItem 跨分组拖动时同步目标项的 groupId 并保持准确顺序", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    store.loadConfig();
+
+    const g1 = store.createConfigGroup("分组1")!;
+    const g2 = store.createConfigGroup("分组2")!;
+
+    store.configList = [
+      createMockConfig("c1", "配置1", g1.id),
+      createMockConfig("c2", "配置2", g2.id),
+      createMockConfig("c3", "配置3"),
+    ];
+
+    // 将未分组 c3 拖到分组1的 c1 之后
+    store.moveConfigItem("c3", "c1", "after");
+    expect(store.configList.map((c) => c.id)).toEqual(["c1", "c3", "c2"]);
+    expect(store.configList[1].groupId).toBe(g1.id);
+
+    // 将分组2的 c2 拖到未分组（假设先恢复一个未分组项 c4）
+    store.configList.push(createMockConfig("c4", "配置4"));
+    store.moveConfigItem("c2", "c4", "before");
+    const movedC2 = store.configList.find((c) => c.id === "c2")!;
+    expect(movedC2.groupId).toBeUndefined();
+  });
+
+  it("删除分组时弹出确认框，确认后级联删除组内所有配置并清理 activeConfigId", async () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    const confirmStore = useConfirmStore();
+    store.loadConfig();
+
+    const g1 = store.createConfigGroup("待删分组")!;
+    const g2 = store.createConfigGroup("保留分组")!;
+    const c1 = createMockConfig("c1", "组内配置1", g1.id);
+    const c2 = createMockConfig("c2", "组内配置2", g1.id);
+    const c3 = createMockConfig("c3", "保留配置", g2.id);
+
+    store.configList = [c1, c2, c3];
+    store.applyConfig(c1);
+    expect(store.activeConfigId).toBe("c1");
+
+    // 1. 取消删除
+    const cancelPromise = store.deleteConfigGroup(g1.id);
+    expect(confirmStore.confirmState.isOpen).toBe(true);
+    expect(confirmStore.confirmState.message).toContain("2 条配置预设也将一并永久删除");
+    confirmStore.handleCancel();
+    await expect(cancelPromise).resolves.toBe(false);
+    expect(store.configGroups).toHaveLength(2);
+    expect(store.configList).toHaveLength(3);
+
+    // 2. 确认删除
+    const confirmPromise = store.deleteConfigGroup(g1.id);
+    expect(confirmStore.confirmState.isOpen).toBe(true);
+    confirmStore.handleConfirm();
+    await expect(confirmPromise).resolves.toBe(true);
+
+    expect(store.configGroups.map((g) => g.id)).toEqual([g2.id]);
+    expect(store.configList.map((c) => c.id)).toEqual(["c3"]);
+    expect(store.activeConfigId).toBeNull();
+  });
+
+  it("loadConfig 自动清理指向不存在分组的孤立 groupId", () => {
+    storage.clear();
+    storage.set(CONFIG_GROUPS_STORAGE_KEY, JSON.stringify([{ id: "g_valid", name: "有效组" }]));
+    storage.set(
+      CONFIG_LIST_STORAGE_KEY,
+      JSON.stringify([
+        createMockConfig("c1", "正常", "g_valid"),
+        createMockConfig("c2", "孤立", "g_deleted"),
+      ])
+    );
+
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    store.loadConfig();
+
+    expect(store.configList[0].groupId).toBe("g_valid");
+    expect(store.configList[1].groupId).toBeUndefined();
+  });
+});
+
 
