@@ -70,6 +70,7 @@ export const generalPage: SettingsPage = {
           label: "请求客户端标识",
           description: (ctx) =>
             `当前生效：${resolveUserAgent(ctx.values.userAgentPreset, ctx.values.customUserAgent)}`,
+          descriptionSingleLine: true,
           defaultValue: DEFAULT_USER_AGENT_PRESET,
           options: USER_AGENT_SELECT_OPTIONS,
         },

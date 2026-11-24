@@ -64,6 +64,8 @@ function handleChange(value: SettingsValue): void {
       <span
         v-if="resolvedDescription"
         class="field-desc"
+        :class="{ 'is-single-line': field.descriptionSingleLine }"
+        :title="field.descriptionSingleLine ? resolvedDescription : undefined"
       >{{ resolvedDescription }}</span>
     </div>
 
@@ -146,6 +148,7 @@ function handleChange(value: SettingsValue): void {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
   min-width: 0;
 }
 
@@ -159,6 +162,13 @@ function handleChange(value: SettingsValue): void {
   font-size: 12px;
   color: var(--text-muted);
   word-break: break-all;
+
+  &.is-single-line {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: normal;
+  }
 }
 
 .field-control {
