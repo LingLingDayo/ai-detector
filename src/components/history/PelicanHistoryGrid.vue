@@ -2,17 +2,21 @@
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 import type { PelicanHistoryItem } from "../../types";
 import { formatHistoryTime } from "../../utils/pelicanFormatters";
-import { Info, Copy, Download, X } from "@lucide/vue";
+import { Info, Copy, X } from "@lucide/vue";
 import { useClipboard } from "../../composables/useClipboard";
 import { useToast } from "../../composables/useToast";
 import { usePopoverPin } from "./usePopoverPin";
 import HistoryEmptyState from "./HistoryEmptyState.vue";
 import HistoryDetailPopover from "./HistoryDetailPopover.vue";
+import PelicanDownloadMenu from "../pelican/PelicanDownloadMenu.vue";
 import {
   resolvePelicanContentType,
   buildPelicanPreviewDocument,
 } from "../pelican/pelicanPreview";
+import { canExportPelicanGif } from "../../services/pelicanGif";
+import type { PelicanDownloadFormat } from "../../services/pelicanExportTypes";
 import { usePelicanTestStore } from "../../stores";
+import { usePelicanExportStore } from "../../stores/pelicanExport";
 
 const props = defineProps<{
   pelicanList: PelicanHistoryItem[];
@@ -28,6 +32,10 @@ const { copy: copyText } = useClipboard();
 const { showToast } = useToast();
 const { pinnedId, togglePin } = usePopoverPin();
 const pelicanStore = usePelicanTestStore();
+const pelicanExportStore = usePelicanExportStore();
+const gifAvailable = canExportPelicanGif();
+const openMenuId = ref<string | null>(null);
+const recordingItemId = ref<string | null>(null);
 const popoverPlacementMap = ref<Record<string, "top" | "bottom">>({});
 
 const gridContainerRef = ref<HTMLElement | null>(null);
@@ -121,33 +129,38 @@ function handleTogglePin(id: string, e: Event): void {
   togglePin(id, e);
 }
 
-function handleDownloadPelican(item: PelicanHistoryItem): void {
-  const isHtml =
-    resolvePelicanContentType(item.contentType, item.content) === "html";
-  const mimeType = isHtml
-    ? "text/html;charset=utf-8"
-    : "image/svg+xml;charset=utf-8";
-  const ext = isHtml ? "html" : "svg";
-  const blob = new Blob([item.content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const cleanModel = (item.modelName || "model").replace(
-    /[^a-zA-Z0-9_-]/g,
-    "_"
-  );
-  const fileName = `pelican-${cleanModel}-${item.createdAt}.${ext}`;
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast({
-    type: "success",
-    title: "下载完成",
-    message: fileName,
-    duration: 3000,
-  });
+function handleMenuOpenChange(id: string, isOpen: boolean): void {
+  if (isOpen) {
+    openMenuId.value = id;
+  } else if (openMenuId.value === id) {
+    openMenuId.value = null;
+  }
+}
+
+async function handleDownloadPelican(item: PelicanHistoryItem, format: PelicanDownloadFormat): Promise<void> {
+  if (pelicanExportStore.isExporting) return;
+  const contentType = resolvePelicanContentType(item.contentType, item.content);
+  if (format === "gif") {
+    recordingItemId.value = item.id;
+  }
+  try {
+    await pelicanExportStore.exportFile({
+      content: item.content,
+      contentType,
+      modelName: item.modelName,
+      createdAt: item.createdAt,
+      getPreviewElement: () => {
+        const card = Array.from(
+          gridContainerRef.value?.querySelectorAll<HTMLElement>("[data-history-id]") ?? []
+        ).find((el) => el.dataset.historyId === item.id);
+        return card?.querySelector<HTMLElement>(".image-stage") ?? null;
+      },
+    }, format);
+  } finally {
+    if (recordingItemId.value === item.id) {
+      recordingItemId.value = null;
+    }
+  }
 }
 
 async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
@@ -179,8 +192,13 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
       <article
         v-for="item in pelicanList"
         :key="item.id"
+        :data-history-id="item.id"
         class="pelican-card-item"
-        :class="{ 'is-pinned-card': pinnedId === item.id }"
+        :class="{
+          'is-pinned-card': pinnedId === item.id,
+          'is-menu-open': openMenuId === item.id,
+          'is-recording': recordingItemId === item.id,
+        }"
       >
         <!-- 1. 图片展示区域（纯原生矢量 SVG 等比居中展示，HTML 按 800x600 等比缩放微缩展示） -->
         <div
@@ -251,14 +269,14 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
             >
               <Copy :size="12" />
             </button>
-            <button
-              type="button"
-              class="tool-btn"
-              title="下载图片文件"
-              @click.stop="handleDownloadPelican(item)"
-            >
-              <Download :size="12" />
-            </button>
+            <PelicanDownloadMenu
+              :content-type="resolvePelicanContentType(item.contentType, item.content)"
+              :disabled="pelicanExportStore.isExporting"
+              :gif-available="gifAvailable"
+              icon-only
+              @open-change="handleMenuOpenChange(item.id, $event)"
+              @download="handleDownloadPelican(item, $event)"
+            />
             <button
               type="button"
               class="tool-btn delete-tool-btn"
@@ -507,6 +525,7 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
     gap: 5px;
 
     .tool-btn {
+      position: relative;
       width: 24px;
       height: 24px;
       border-radius: var(--radius-sm);
@@ -520,11 +539,26 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
       padding: 0;
       transition: all 0.16s ease;
 
-      &:hover {
+      &:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+
+      &:hover:not(:disabled) {
         background: var(--pelican-footer-btn-hover-bg);
         border-color: var(--pelican-footer-btn-hover-border);
         color: var(--pelican-footer-btn-hover-color);
         transform: translateY(-1px);
+
+        // 按钮上移 1px 时向下补齐透明命中区，防止指针停在底边临界位置时反复触发 hover 抖动
+        &::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          bottom: -2px;
+        }
       }
 
       &:active {
@@ -543,9 +577,22 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
 
 /* 卡片 hover 或内部聚焦时平滑显示底栏 */
 .pelican-card-item:hover .card-footer,
-.pelican-card-item:focus-within .card-footer {
+.pelican-card-item:focus-within .card-footer,
+.pelican-card-item.is-menu-open .card-footer {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
+}
+
+/* 录制历史卡片 GIF 时隐藏角标与底栏覆盖层，避免遮挡画面或进入动图 */
+.pelican-card-item.is-recording {
+  .model-tag,
+  .info-icon-wrapper,
+  .card-footer {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: none !important;
+  }
 }
 </style>

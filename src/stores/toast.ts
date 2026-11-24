@@ -2,10 +2,12 @@ import { defineStore } from "pinia";
 import { onScopeDispose, reactive } from "vue";
 
 export type ToastType = "success" | "error" | "warning" | "info";
+export type ToastPauseReason = "pointer" | "focus";
 
 export interface ToastOptions {
   title: string;
   message?: string;
+  filePath?: string;
   type?: ToastType;
   /** 自动关闭时长，传 0 表示不自动关闭 */
   duration?: number;
@@ -16,6 +18,7 @@ export interface ToastState {
   type: ToastType;
   title: string;
   message: string;
+  filePath: string;
 }
 
 const DEFAULT_TOAST_DURATION = 4000;
@@ -26,13 +29,14 @@ export const useToastStore = defineStore("toast", () => {
     type: "info",
     title: "",
     message: "",
+    filePath: "",
   });
 
   let timer: ReturnType<typeof setTimeout> | null = null;
   let remainingMs = 0;
   let timerStartedAt = 0;
   let autoCloseEnabled = false;
-  let isPaused = false;
+  const pauseReasons = new Set<ToastPauseReason>();
 
   function clearTimer(): void {
     if (timer) {
@@ -42,23 +46,22 @@ export const useToastStore = defineStore("toast", () => {
   }
 
   function startTimer(): void {
-    if (isPaused || timer || remainingMs <= 0) return;
+    if (pauseReasons.size > 0 || timer || remainingMs <= 0) return;
     timerStartedAt = Date.now();
     timer = setTimeout(hideToast, remainingMs);
   }
 
-  function pauseToast(): void {
-    if (!toastState.isOpen || isPaused) return;
-    isPaused = true;
+  function pauseToast(reason: ToastPauseReason = "pointer"): void {
+    if (!toastState.isOpen || pauseReasons.has(reason)) return;
+    pauseReasons.add(reason);
     if (!autoCloseEnabled || !timer) return;
     remainingMs = Math.max(0, remainingMs - (Date.now() - timerStartedAt));
     clearTimer();
   }
 
-  function resumeToast(): void {
-    if (!isPaused) return;
-    isPaused = false;
-    if (!toastState.isOpen || !autoCloseEnabled) return;
+  function resumeToast(reason: ToastPauseReason = "pointer"): void {
+    if (!pauseReasons.delete(reason)) return;
+    if (pauseReasons.size > 0 || !toastState.isOpen || !autoCloseEnabled) return;
     if (remainingMs <= 0) {
       hideToast();
       return;
@@ -70,7 +73,7 @@ export const useToastStore = defineStore("toast", () => {
     clearTimer();
     remainingMs = 0;
     autoCloseEnabled = false;
-    isPaused = false;
+    pauseReasons.clear();
     toastState.isOpen = false;
   }
 
@@ -80,6 +83,7 @@ export const useToastStore = defineStore("toast", () => {
     toastState.type = options.type ?? "info";
     toastState.title = options.title;
     toastState.message = options.message ?? "";
+    toastState.filePath = options.filePath ?? "";
     toastState.isOpen = true;
 
     const duration = options.duration ?? DEFAULT_TOAST_DURATION;
@@ -92,12 +96,13 @@ export const useToastStore = defineStore("toast", () => {
     clearTimer();
     remainingMs = 0;
     autoCloseEnabled = false;
-    isPaused = false;
+    pauseReasons.clear();
     Object.assign(toastState, {
       isOpen: false,
       type: "info",
       title: "",
       message: "",
+      filePath: "",
     });
   }
 

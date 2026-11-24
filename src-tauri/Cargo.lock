@@ -29,6 +29,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-log",
  "tokio",
+ "webview2-com",
 ]
 
 [[package]]

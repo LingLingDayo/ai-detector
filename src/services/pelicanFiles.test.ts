@@ -1,0 +1,47 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { buildPelicanFileName, savePelicanFile } from "./pelicanFiles";
+
+const { invoke, desktop } = vi.hoisted(() => ({ invoke: vi.fn(), desktop: { value: true } }));
+vi.mock("./api", () => ({ isTauriApp: () => desktop.value, getTauriInvoke: () => invoke }));
+
+beforeEach(() => { invoke.mockReset(); desktop.value = true; vi.useFakeTimers(); });
+afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+describe("鹈鹕下载文件", () => {
+  it("下载文件名沿用模型与时间戳，排除路径符号", () => {
+    expect(buildPelicanFileName("model/test:1", "gif", 123)).toBe("pelican-model_test_1-123.gif");
+    expect(buildPelicanFileName("", "html", 123)).toBe("pelican-model-123.html");
+  });
+
+  it("原生保存完成才返回真实下载路径与完整UTF8字节", async () => {
+    const path = "C:\\Users\\测试\\Downloads\\图形 (1).svg";
+    invoke.mockResolvedValue(path);
+    const blob = new Blob(["<svg>中文</svg>"]);
+    expect(await savePelicanFile(blob, "图形.svg")).toEqual({ fileName: "图形.svg", path });
+    expect(invoke).toHaveBeenCalledWith("save_pelican_download", {
+      fileName: "图形.svg", data: Array.from(new TextEncoder().encode("<svg>中文</svg>")),
+    });
+  });
+
+  it("写入失败不冒充成功路径", async () => {
+    invoke.mockRejectedValue("磁盘空间不足");
+    await expect(savePelicanFile(new Blob(["GIF"]), "test.gif")).rejects.toBe("磁盘空间不足");
+  });
+
+  it("浏览器回退明确未知实际路径，延迟回收下载URL", async () => {
+    desktop.value = false;
+    const link = { href: "", download: "", click: vi.fn(), remove: vi.fn() };
+    const createObjectURL = vi.fn(() => "blob:qa");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    vi.stubGlobal("document", { createElement: () => link, body: { appendChild: vi.fn() } });
+    expect(await savePelicanFile(new Blob(["<html></html>"]), "page.html")).toEqual({ fileName: "page.html", path: null });
+    expect(link.download).toBe("page.html");
+    expect(link.click).toHaveBeenCalledOnce();
+    expect(invoke).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(29_999);
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:qa");
+  });
+});
