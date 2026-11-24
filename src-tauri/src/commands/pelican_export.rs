@@ -406,6 +406,38 @@ fn parse_custom_download_dir(custom_dir: Option<&str>) -> Result<Option<PathBuf>
 }
 
 #[tauri::command]
+pub async fn pick_download_directory(
+    app: AppHandle,
+    window: WebviewWindow,
+    current_dir: Option<String>,
+) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    ensure_main_window(window.label())?;
+    let initial_dir = parse_custom_download_dir(current_dir.as_deref())
+        .ok()
+        .flatten()
+        .filter(|path| path.is_dir())
+        .or_else(|| app.path().download_dir().ok());
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    let mut builder = app
+        .dialog()
+        .file()
+        .set_title("选择文件下载目录")
+        .set_parent(&window);
+    if let Some(dir) = initial_dir {
+        builder = builder.set_directory(dir);
+    }
+    builder.pick_folder(move |folder| {
+        let _ = sender.send(folder.and_then(|file_path| file_path.into_path().ok()));
+    });
+    let selected = receiver
+        .await
+        .map_err(|_| "等待文件夹选择结果失败".to_string())?;
+    Ok(selected.map(|path| display_download_path(&path)))
+}
+
+#[tauri::command]
 pub async fn save_pelican_download(
     app: AppHandle,
     file_name: String,

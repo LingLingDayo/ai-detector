@@ -140,14 +140,11 @@ export const generalPage: SettingsPage = {
       fields: [
         {
           key: "downloadDirectory",
-          type: "text",
+          type: "directory",
           label: "自定义下载目录",
-          description: "填写本地文件夹绝对路径，留空则使用系统“下载”文件夹",
+          description: "选择本地文件夹作为默认保存位置，未设置时保存到系统“下载”文件夹",
           defaultValue: "",
-          placeholder: "例如：D:\\Downloads\\pelican（留空使用系统下载目录）",
-          maxLength: 512,
-          monospace: true,
-          stacked: true,
+          placeholder: "系统默认“下载”文件夹",
         },
       ],
     },

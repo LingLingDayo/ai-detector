@@ -65,12 +65,19 @@ export interface TextSettingsField extends SettingsFieldBase {
   stacked?: boolean;
 }
 
+export interface DirectorySettingsField extends SettingsFieldBase {
+  type: "directory";
+  defaultValue: string;
+  placeholder?: string;
+}
+
 export type SettingsField =
   | SegmentedSettingsField
   | ToggleSettingsField
   | NumberSettingsField
   | SelectSettingsField
-  | TextSettingsField;
+  | TextSettingsField
+  | DirectorySettingsField;
 
 export interface SettingsSection {
   id: string;

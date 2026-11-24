@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
-import { buildPelicanFileName, savePelicanFile } from "./pelicanFiles";
+import { buildPelicanFileName, pickDownloadDirectory, savePelicanFile } from "./pelicanFiles";
 import { useSettingsStore } from "../stores";
 
 const { invoke, desktop } = vi.hoisted(() => ({ invoke: vi.fn(), desktop: { value: true } }));
@@ -67,5 +67,18 @@ describe("鹈鹕下载文件", () => {
     expect(revokeObjectURL).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:qa");
+  });
+
+  it("桌面端唤起文件夹选择器并返回所选目录，取消时返回 null", async () => {
+    invoke.mockResolvedValueOnce("D:\\Exports\\pelican");
+    expect(await pickDownloadDirectory("C:\\Old")).toBe("D:\\Exports\\pelican");
+    expect(invoke).toHaveBeenCalledWith("pick_download_directory", { currentDir: "C:\\Old" });
+
+    invoke.mockResolvedValueOnce(null);
+    expect(await pickDownloadDirectory()).toBeNull();
+    expect(invoke).toHaveBeenLastCalledWith("pick_download_directory", {});
+
+    desktop.value = false;
+    await expect(pickDownloadDirectory()).rejects.toThrow("仅桌面应用支持选择本地文件夹");
   });
 });

@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
+import { FolderOpen, RotateCcw } from "@lucide/vue";
 import SegmentedControl from "../common/SegmentedControl.vue";
 import CustomSelect from "../common/CustomSelect.vue";
 import NumberInput from "../common/NumberInput.vue";
 import TextInput from "../common/TextInput.vue";
 import ToggleSwitch from "../common/ToggleSwitch.vue";
 import { useSettingsStore } from "../../stores";
+import { useToast } from "../../composables/useToast";
+import { pickDownloadDirectory } from "../../services/pelicanFiles";
 import type { SettingsField, SettingsValue } from "../../settings/types";
 
 const props = defineProps<{
@@ -13,6 +16,8 @@ const props = defineProps<{
 }>();
 
 const settingsStore = useSettingsStore();
+const { showToast } = useToast();
+const isPickingDirectory = ref(false);
 
 const rawValue = computed<SettingsValue>(
   () => settingsStore.getValue(props.field.key) ?? props.field.defaultValue
@@ -26,7 +31,9 @@ const numberValue = computed(() => {
 const booleanValue = computed(() => rawValue.value === true || rawValue.value === "true");
 
 const isDisabled = computed(() => props.field.disabled?.(settingsStore.context) ?? false);
-const isStacked = computed(() => props.field.type === "text" && props.field.stacked === true);
+const isStacked = computed(
+  () => props.field.type === "directory" || (props.field.type === "text" && props.field.stacked === true)
+);
 const resolvedDescription = computed(() => {
   const desc = props.field.description;
   return typeof desc === "function" ? desc(settingsStore.context) : desc;
@@ -42,6 +49,8 @@ const defaultValueTitle = computed(() => {
     text = fallback ? "开启" : "关闭";
   } else if (field.type === "text") {
     text = String(fallback).trim() || "空";
+  } else if (field.type === "directory") {
+    text = String(fallback).trim() || "系统默认“下载”文件夹";
   } else {
     text = field.unit ? `${fallback} ${field.unit}` : String(fallback);
   }
@@ -51,6 +60,26 @@ const defaultValueTitle = computed(() => {
 function handleChange(value: SettingsValue): void {
   settingsStore.setValue(props.field.key, value);
   props.field.onChange?.(value, settingsStore.context);
+}
+
+async function handlePickDirectory(): Promise<void> {
+  if (isDisabled.value || isPickingDirectory.value) return;
+  isPickingDirectory.value = true;
+  try {
+    const selected = await pickDownloadDirectory(stringValue.value.trim() || undefined);
+    if (selected) {
+      handleChange(selected);
+    }
+  } catch (error) {
+    showToast({
+      type: "error",
+      title: "选择文件夹失败",
+      message: error instanceof Error ? error.message : String(error),
+      duration: 4000,
+    });
+  } finally {
+    isPickingDirectory.value = false;
+  }
 }
 </script>
 
@@ -116,6 +145,40 @@ function handleChange(value: SettingsValue): void {
       :title="defaultValueTitle"
       @change="handleChange"
     />
+
+    <div
+      v-else-if="field.type === 'directory'"
+      class="directory-picker"
+    >
+      <div
+        class="directory-path"
+        :class="{ 'is-empty': !stringValue.trim() }"
+        :title="stringValue.trim() || field.placeholder || '系统默认“下载”文件夹'"
+      >
+        {{ stringValue.trim() || field.placeholder || "系统默认“下载”文件夹" }}
+      </div>
+      <button
+        type="button"
+        class="directory-btn"
+        :disabled="isDisabled || isPickingDirectory"
+        :title="defaultValueTitle"
+        @click="handlePickDirectory"
+      >
+        <FolderOpen :size="13" />
+        <span>选择文件夹</span>
+      </button>
+      <button
+        v-if="stringValue.trim()"
+        type="button"
+        class="directory-btn directory-reset-btn"
+        :disabled="isDisabled || isPickingDirectory"
+        title="恢复默认（系统“下载”文件夹）"
+        @click="handleChange('')"
+      >
+        <RotateCcw :size="12" />
+        <span>默认</span>
+      </button>
+    </div>
 
     <ToggleSwitch
       v-else-if="field.type === 'toggle'"
@@ -186,6 +249,75 @@ function handleChange(value: SettingsValue): void {
 
 .field-toggle {
   flex-shrink: 0;
+}
+
+.directory-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.directory-path {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  line-height: 30px;
+  padding: 0 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: text;
+
+  &.is-empty {
+    color: var(--text-muted);
+    font-family: inherit;
+    user-select: none;
+  }
+}
+
+.directory-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 10px;
+  flex-shrink: 0;
+  background: var(--bg-surface-control);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--bg-control-hover);
+    color: var(--text-strong);
+    border-color: rgba(var(--accent-rgb), 0.4);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &.directory-reset-btn {
+    padding: 0 9px;
+  }
 }
 
 @media (max-width: 560px) {

@@ -7,6 +7,18 @@ export function buildPelicanFileName(modelName: string, format: PelicanDownloadF
   return `pelican-${model}-${createdAt}.${format}`;
 }
 
+export async function pickDownloadDirectory(currentDir?: string): Promise<string | null> {
+  if (!isTauriApp()) {
+    throw new Error("仅桌面应用支持选择本地文件夹");
+  }
+  const invoke = getTauriInvoke();
+  if (!invoke) throw new Error("桌面文件接口尚未就绪");
+  const selected = await invoke<string | null>("pick_download_directory", {
+    ...(currentDir ? { currentDir } : {}),
+  });
+  return selected?.trim() || null;
+}
+
 export async function savePelicanFile(blob: Blob, fileName: string): Promise<PelicanFileResult> {
   if (isTauriApp()) {
     const invoke = getTauriInvoke();

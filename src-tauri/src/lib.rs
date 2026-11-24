@@ -10,6 +10,7 @@ pub use types::*;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             diagnostics::init(app.handle().clone());
             Ok(())
@@ -27,7 +28,8 @@ pub fn run() {
             evaluate_candy_answer,
             capture_pelican_frames,
             cancel_pelican_capture,
-            save_pelican_download
+            save_pelican_download,
+            pick_download_directory
         ])
         .run(tauri::generate_context!())
         .expect("运行 Tauri 桌面应用时发生异常");
