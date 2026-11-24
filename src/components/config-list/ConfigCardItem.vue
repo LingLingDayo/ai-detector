@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ConfigItem } from "../../types";
-import { Check, GripVertical, Pencil, Trash2 } from "@lucide/vue";
+import { Check, Pencil, Trash2 } from "@lucide/vue";
 
 const props = withDefaults(
   defineProps<{
@@ -141,9 +141,6 @@ function maskApiKey(key?: string): string {
     <!-- 主信息与操作栏 -->
     <div class="card-main-row">
       <div class="card-title-group">
-        <span class="drag-handle" title="拖动调整顺序或移入分组">
-          <GripVertical :size="14" />
-        </span>
         <span class="item-name">{{ item.name }}</span>
         <!-- 激活状态标记 -->
         <span v-if="isActive" class="status-badge badge-active">
@@ -228,10 +225,6 @@ function maskApiKey(key?: string): string {
     background: var(--bg-card-hover);
     box-shadow: var(--shadow-hover), 0 0 10px rgba(var(--accent-rgb), 0.08);
     transform: translateY(-1px);
-
-    .card-main-row .card-title-group .drag-handle {
-      color: var(--text-secondary);
-    }
 
     .card-main-row .card-title-group .badge-hint {
       opacity: 1;
@@ -363,19 +356,9 @@ function maskApiKey(key?: string): string {
     .card-title-group {
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
       min-width: 0;
       flex: 1;
-
-      .drag-handle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-placeholder);
-        cursor: grab;
-        flex-shrink: 0;
-        transition: color var(--transition-fast);
-      }
 
       .item-name {
         font-size: 14px;
@@ -480,7 +463,7 @@ function maskApiKey(key?: string): string {
   .card-meta-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     font-size: 12px;
     min-width: 0;
 
@@ -513,7 +496,7 @@ function maskApiKey(key?: string): string {
       }
 
       &.meta-url {
-        flex: 1 1 auto;
+        flex: 0 1 auto;
         max-width: 280px;
 
         .meta-value {
@@ -530,7 +513,8 @@ function maskApiKey(key?: string): string {
       }
 
       &.meta-model {
-        flex: 0 1 160px;
+        flex: 0 1 auto;
+        max-width: 180px;
 
         .meta-value {
           color: var(--accent-text);
