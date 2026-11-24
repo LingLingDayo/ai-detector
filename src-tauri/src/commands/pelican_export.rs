@@ -381,6 +381,61 @@ async fn call_cdp_method(
 }
 
 #[cfg(target_os = "windows")]
+unsafe fn make_window_invisible_offscreen(hwnd: *mut std::ffi::c_void) {
+    const GWL_EXSTYLE: i32 = -20;
+    const WS_EX_TRANSPARENT: isize = 0x0000_0020;
+    const WS_EX_TOOLWINDOW: isize = 0x0000_0080;
+    const WS_EX_APPWINDOW: isize = 0x0004_0000;
+    const WS_EX_LAYERED: isize = 0x0008_0000;
+    const WS_EX_NOACTIVATE: isize = 0x0800_0000;
+    const LWA_ALPHA: u32 = 0x0000_0002;
+    const HWND_BOTTOM: *mut std::ffi::c_void = 1 as *mut std::ffi::c_void;
+    const SWP_NOSIZE: u32 = 0x0001;
+    const SWP_NOACTIVATE: u32 = 0x0010;
+    const SWP_SHOWWINDOW: u32 = 0x0040;
+
+    #[link(name = "user32")]
+    extern "system" {
+        fn GetWindowLongPtrW(hwnd: *mut std::ffi::c_void, index: i32) -> isize;
+        fn SetWindowLongPtrW(hwnd: *mut std::ffi::c_void, index: i32, new_long: isize) -> isize;
+        fn SetLayeredWindowAttributes(
+            hwnd: *mut std::ffi::c_void,
+            cr_key: u32,
+            b_alpha: u8,
+            dw_flags: u32,
+        ) -> i32;
+        fn SetWindowPos(
+            hwnd: *mut std::ffi::c_void,
+            hwnd_insert_after: *mut std::ffi::c_void,
+            x: i32,
+            y: i32,
+            cx: i32,
+            cy: i32,
+            flags: u32,
+        ) -> i32;
+    }
+
+    // 先设置为工具窗+不抢焦点+点击穿透+全透明，再移至屏幕外并置为可合成状态，确保用户全程无感。
+    let ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    let next_style = (ex_style & !WS_EX_APPWINDOW)
+        | WS_EX_TOOLWINDOW
+        | WS_EX_NOACTIVATE
+        | WS_EX_TRANSPARENT
+        | WS_EX_LAYERED;
+    SetWindowLongPtrW(hwnd, GWL_EXSTYLE, next_style);
+    SetLayeredWindowAttributes(hwnd, 0, 0, LWA_ALPHA);
+    SetWindowPos(
+        hwnd,
+        HWND_BOTTOM,
+        -20000,
+        -20000,
+        0,
+        0,
+        SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+    );
+}
+
+#[cfg(target_os = "windows")]
 async fn navigate_render_html(window: &WebviewWindow, html: String) -> Result<(), String> {
     use webview2_com::CoTaskMemPWSTR;
 
@@ -388,7 +443,10 @@ async fn navigate_render_html(window: &WebviewWindow, html: String) -> Result<()
     window
         .with_webview(move |webview| {
             let result = (|| {
-                let core = unsafe { webview.controller().CoreWebView2() }
+                let controller = webview.controller();
+                unsafe { controller.SetIsVisible(true) }
+                    .map_err(|error| format!("激活离屏渲染控制器失败: {error}"))?;
+                let core = unsafe { controller.CoreWebView2() }
                     .map_err(|error| format!("获取离屏渲染 WebView2 失败: {error}"))?;
                 let content = CoTaskMemPWSTR::from(html.as_str());
                 unsafe { core.NavigateToString(*content.as_ref().as_pcwstr()) }
@@ -477,17 +535,16 @@ pub async fn capture_pelican_frames(
                 .parse()
                 .map_err(|_| "离屏渲染初始地址无效".to_string())?,
         );
-        // 使用独立的离屏窗口并禁用原生遮挡与后台节流，确保导出过程不受主窗口尺寸、滚动或弹窗影响。
+        // 先以隐藏态创建避免首帧闪窗，再通过 Win32 设为全透明+无焦点+屏幕外合成，确保导出全程无感。
         let render_window = tauri::WebviewWindowBuilder::new(&app, label, about_blank)
             .title("Pelican GIF Renderer")
             .inner_size(GIF_CAPTURE_WIDTH, GIF_CAPTURE_HEIGHT)
-            .position(-20000.0, -20000.0)
             .decorations(false)
             .shadow(false)
             .resizable(false)
             .skip_taskbar(true)
             .focused(false)
-            .visible(true)
+            .visible(false)
             .data_directory(renderer_data_dir)
             .additional_browser_args(
                 "--disable-features=CalculateNativeWinOcclusion --disable-background-timer-throttling --disable-renderer-backgrounding",
@@ -495,6 +552,10 @@ pub async fn capture_pelican_frames(
             .build()
             .map_err(|error| format!("创建离屏渲染窗口失败: {error}"))?;
         let _render_guard = RenderWindowGuard(render_window.clone());
+        let hwnd = render_window
+            .hwnd()
+            .map_err(|error| format!("获取离屏渲染窗口句柄失败: {error}"))?;
+        unsafe { make_window_invisible_offscreen(hwnd.0 as *mut std::ffi::c_void) };
 
         navigate_render_html(&render_window, html).await?;
         let ready_deadline = Instant::now() + Duration::from_millis(RENDER_READY_TIMEOUT_MS);
