@@ -2,7 +2,9 @@
 import { ref, computed, watch, nextTick } from "vue";
 import { AlertCircle } from "@lucide/vue";
 import { useClipboard } from "../composables/useClipboard";
-import { useToast } from "../composables/useToast";
+import { usePelicanExportStore } from "../stores/pelicanExport";
+import type { PelicanDownloadFormat } from "../services/pelicanExportTypes";
+import { canExportPelicanGif } from "../services/pelicanGif";
 import { DEFAULT_PELICAN_PROMPT, type PelicanContentType, hasExtraneousText } from "../stores/pelicanTest";
 import PelicanHeader from "./pelican/PelicanHeader.vue";
 import PelicanPromptBox from "./pelican/PelicanPromptBox.vue";
@@ -53,7 +55,9 @@ import { usePelicanTestStore } from "../stores";
 
 const pelicanStore = usePelicanTestStore();
 const { copied: svgCopied, copy: copySvg } = useClipboard();
-const { showToast } = useToast();
+const pelicanExportStore = usePelicanExportStore();
+const stageRootRef = ref<HTMLElement | null>(null);
+const gifAvailable = canExportPelicanGif();
 
 watch(
   () => pelicanStore.showCode,
@@ -128,33 +132,19 @@ function handleCopyContent(): void {
   }
 }
 
-function handleDownloadContent(): void {
-  if (!displayContent.value) return;
-  const isHtml = props.contentType === "html";
-  const mimeType = isHtml ? "text/html;charset=utf-8" : "image/svg+xml;charset=utf-8";
-  const ext = isHtml ? "html" : "svg";
-  const blob = new Blob([displayContent.value], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const cleanModel = (props.modelName || "model").replace(/[^a-zA-Z0-9_-]/g, "_");
-  const fileName = `pelican-${cleanModel}-${Date.now()}.${ext}`;
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast({
-    type: "success",
-    title: "下载完成",
-    message: fileName,
-    duration: 3000,
-  });
+async function handleDownloadContent(format: PelicanDownloadFormat): Promise<void> {
+  if (!displayContent.value || props.isRunning || pelicanExportStore.isExporting) return;
+  await pelicanExportStore.exportFile({
+    content: displayContent.value,
+    contentType: props.contentType,
+    modelName: props.modelName,
+    getPreviewElement: () => stageRootRef.value?.querySelector<HTMLElement>(".render-frame") ?? null,
+  }, format);
 }
 </script>
 
 <template>
-  <section class="card pelican-card" id="pelican-section">
+  <section ref="stageRootRef" class="card pelican-card" id="pelican-section">
     <!-- 卡片顶部标头 -->
     <PelicanHeader />
 
@@ -184,10 +174,12 @@ function handleDownloadContent(): void {
       :bg-theme="pelicanStore.bgTheme"
       :show-code="pelicanStore.showCode"
       :svg-copied="svgCopied"
+      :disabled="pelicanExportStore.isExporting"
+      :gif-available="gifAvailable"
       @update:bg-theme="pelicanStore.setBgTheme"
       @update:show-code="pelicanStore.setShowCode"
       @copy-svg="handleCopyContent"
-      @download-svg="handleDownloadContent"
+      @download="handleDownloadContent"
     />
 
     <!-- 错误警告提示 -->

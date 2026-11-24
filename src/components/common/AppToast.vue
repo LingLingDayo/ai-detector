@@ -1,9 +1,39 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { AlertTriangle, CheckCircle2, Info, X } from "@lucide/vue";
+import { computed, nextTick, ref, watch } from "vue";
+import { AlertTriangle, Check, CheckCircle2, Copy, Info, X } from "@lucide/vue";
 import { useToast } from "../../composables/useToast";
+import { useClipboard } from "../../composables/useClipboard";
 
 const { toastState, hideToast, pauseToast, resumeToast } = useToast();
+const { copied: pathCopied, copy: copyPath, reset: resetPathCopy } = useClipboard();
+const copyFailed = ref(false);
+const toastRef = ref<HTMLElement | null>(null);
+
+watch(() => [toastState.isOpen, toastState.title, toastState.message, toastState.filePath], () => {
+  resetPathCopy();
+  copyFailed.value = false;
+  nextTick(() => {
+    if (!toastRef.value?.contains(document.activeElement)) resumeToast("focus");
+  });
+});
+
+async function handleCopyPath(): Promise<void> {
+  const path = toastState.filePath;
+  if (!path) return;
+  const succeeded = await copyPath(path);
+  if (!toastState.isOpen || toastState.filePath !== path) {
+    resetPathCopy();
+    return;
+  }
+  copyFailed.value = !succeeded;
+}
+
+function handleFocusOut(event: FocusEvent): void {
+  const container = event.currentTarget as HTMLElement;
+  if (!(event.relatedTarget instanceof Node) || !container.contains(event.relatedTarget)) {
+    resumeToast("focus");
+  }
+}
 
 const toastIcon = computed(() => {
   if (toastState.type === "success") return CheckCircle2;
@@ -16,7 +46,7 @@ const ariaRole = computed(() =>
   toastState.type === "error" ? "alert" : "status"
 );
 
-const hasMessage = computed(() => Boolean(toastState.message));
+const hasDetails = computed(() => Boolean(toastState.message || toastState.filePath));
 </script>
 
 <template>
@@ -24,12 +54,15 @@ const hasMessage = computed(() => Boolean(toastState.message));
     <Transition name="app-toast">
       <div
         v-if="toastState.isOpen"
+        ref="toastRef"
         class="app-toast"
-        :class="[`is-${toastState.type}`, { 'is-multiline': hasMessage }]"
+        :class="[`is-${toastState.type}`, { 'is-multiline': hasDetails }]"
         :role="ariaRole"
         :aria-live="toastState.type === 'error' ? 'assertive' : 'polite'"
-        @mouseenter="pauseToast"
-        @mouseleave="resumeToast"
+        @mouseenter="pauseToast('pointer')"
+        @mouseleave="resumeToast('pointer')"
+        @focusin="pauseToast('focus')"
+        @focusout="handleFocusOut"
       >
         <span class="toast-icon">
           <component :is="toastIcon" :size="16" />
@@ -39,11 +72,28 @@ const hasMessage = computed(() => Boolean(toastState.message));
           <p v-if="toastState.message" class="toast-message">
             {{ toastState.message }}
           </p>
+          <div v-if="toastState.filePath" class="toast-file">
+            <p class="toast-path" :title="toastState.filePath">{{ toastState.filePath }}</p>
+            <button
+              type="button"
+              class="toast-copy"
+              :title="pathCopied ? '已复制路径' : '复制文件路径'"
+              :aria-label="pathCopied ? '已复制文件路径' : '复制文件路径'"
+              @click="handleCopyPath"
+            >
+              <Check v-if="pathCopied" :size="13" aria-hidden="true" />
+              <Copy v-else :size="13" aria-hidden="true" />
+            </button>
+          </div>
+          <p v-if="copyFailed" class="toast-copy-error" role="status">
+            复制失败，可选中路径手动复制
+          </p>
         </div>
         <button
           type="button"
           class="toast-close"
           title="关闭提示"
+          aria-label="关闭提示"
           @click="hideToast"
         >
           <X :size="13" />
@@ -149,7 +199,38 @@ const hasMessage = computed(() => Boolean(toastState.message));
   word-break: break-word;
 }
 
-.toast-close {
+.toast-file {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 4px 5px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.toast-path {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  user-select: text;
+}
+
+.toast-copy-error {
+  margin-top: 4px;
+  color: var(--warning-text);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.toast-close,
+.toast-copy {
   flex-shrink: 0;
   width: 20px;
   height: 20px;
@@ -167,6 +248,12 @@ const hasMessage = computed(() => Boolean(toastState.message));
     color: var(--text-body);
     background: var(--overlay-soft);
   }
+}
+
+.toast-close:focus-visible,
+.toast-copy:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
 .app-toast-enter-active,

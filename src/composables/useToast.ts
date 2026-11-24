@@ -1,11 +1,12 @@
 import {
   useToastStore,
   type ToastOptions,
+  type ToastPauseReason,
   type ToastState,
   type ToastType,
 } from "../stores/toast";
 
-export type { ToastOptions, ToastState, ToastType };
+export type { ToastOptions, ToastPauseReason, ToastState, ToastType };
 
 export function useToast() {
   const toastStore = useToastStore();

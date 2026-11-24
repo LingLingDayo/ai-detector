@@ -13,6 +13,7 @@ import {
   buildPelicanPreviewDocument,
 } from "../pelican/pelicanPreview";
 import { usePelicanTestStore } from "../../stores";
+import { usePelicanExportStore } from "../../stores/pelicanExport";
 
 const props = defineProps<{
   pelicanList: PelicanHistoryItem[];
@@ -28,6 +29,7 @@ const { copy: copyText } = useClipboard();
 const { showToast } = useToast();
 const { pinnedId, togglePin } = usePopoverPin();
 const pelicanStore = usePelicanTestStore();
+const pelicanExportStore = usePelicanExportStore();
 const popoverPlacementMap = ref<Record<string, "top" | "bottom">>({});
 
 const gridContainerRef = ref<HTMLElement | null>(null);
@@ -121,33 +123,14 @@ function handleTogglePin(id: string, e: Event): void {
   togglePin(id, e);
 }
 
-function handleDownloadPelican(item: PelicanHistoryItem): void {
-  const isHtml =
-    resolvePelicanContentType(item.contentType, item.content) === "html";
-  const mimeType = isHtml
-    ? "text/html;charset=utf-8"
-    : "image/svg+xml;charset=utf-8";
-  const ext = isHtml ? "html" : "svg";
-  const blob = new Blob([item.content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const cleanModel = (item.modelName || "model").replace(
-    /[^a-zA-Z0-9_-]/g,
-    "_"
-  );
-  const fileName = `pelican-${cleanModel}-${item.createdAt}.${ext}`;
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast({
-    type: "success",
-    title: "下载完成",
-    message: fileName,
-    duration: 3000,
-  });
+async function handleDownloadPelican(item: PelicanHistoryItem): Promise<void> {
+  const contentType = resolvePelicanContentType(item.contentType, item.content);
+  await pelicanExportStore.exportFile({
+    content: item.content,
+    contentType,
+    modelName: item.modelName,
+    createdAt: item.createdAt,
+  }, contentType);
 }
 
 async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
@@ -255,6 +238,7 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
               type="button"
               class="tool-btn"
               title="下载图片文件"
+              :disabled="pelicanExportStore.isExporting"
               @click.stop="handleDownloadPelican(item)"
             >
               <Download :size="12" />
@@ -520,7 +504,12 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
       padding: 0;
       transition: all 0.16s ease;
 
-      &:hover {
+      &:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+
+      &:hover:not(:disabled) {
         background: var(--pelican-footer-btn-hover-bg);
         border-color: var(--pelican-footer-btn-hover-border);
         color: var(--pelican-footer-btn-hover-color);
