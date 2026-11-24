@@ -25,12 +25,8 @@
 ## 项目约定
 
 - 组件按功能域放进 `src/components/<功能域>/`，通用组件集中在 `src/components/common/`。
+- 新增弹窗、表单控件或调用交互能力（如确认框、Toast 提示、剪贴板操作等）时，必须优先复用 `src/components/common/` 下的已有组件与 `src/composables/`、`src/stores/` 中的现成封装，并在布局、动效与视觉细节上与现有弹窗/组件风格保持一致，禁止使用原生 `alert` / `confirm` 或重复造轮子。
 - 跨语言边界：前端用 `invoke` 调 Rust command，Rust 用 Emitter 发事件、前端用 `listen` 接收。
-
-## 禁止事项
-
-- 诊断与日志数据只存内存：禁止写日志文件、写 `localStorage` / `sessionStorage`、导出到文件；对外传递只走剪贴板，且必须先脱敏。细则见 `docs/diagnostics.md`。
-- 不得为诊断或 DevTools 能力添加按钮、菜单、设置项等用户可见入口，也不得在面向用户的文案中提示隐藏快捷键。
 
 ## 提交与验证
 
