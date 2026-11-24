@@ -124,6 +124,11 @@ export const useSettingsStore = defineStore("settings", () => {
     values.defaultConnectionMode === "quick" ? "quick" : "chat"
   );
 
+  /** 自定义文件下载目录（留空表示保存至系统默认下载文件夹） */
+  const downloadDirectory = computed<string>(() =>
+    typeof values.downloadDirectory === "string" ? values.downloadDirectory.trim() : ""
+  );
+
   const userAgentPreset = computed<UserAgentPresetKey>(() =>
     isValidUserAgentPreset(values.userAgentPreset)
       ? values.userAgentPreset
@@ -194,6 +199,7 @@ export const useSettingsStore = defineStore("settings", () => {
     historyEnabled,
     historyMaxCount,
     defaultConnectionMode,
+    downloadDirectory,
     userAgentPreset,
     customUserAgent,
     resolvedUserAgent,

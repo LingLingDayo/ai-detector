@@ -382,16 +382,43 @@ pub fn cancel_pelican_capture(window: WebviewWindow, request_id: String) -> Resu
     capture_registry().cancel(&request_id)
 }
 
+fn parse_custom_download_dir(custom_dir: Option<&str>) -> Result<Option<PathBuf>, String> {
+    let Some(raw) = custom_dir else {
+        return Ok(None);
+    };
+    let trimmed = raw.trim();
+    let unquoted = trimmed
+        .strip_prefix('"')
+        .and_then(|value| value.strip_suffix('"'))
+        .unwrap_or(trimmed)
+        .trim();
+    if unquoted.is_empty() {
+        return Ok(None);
+    }
+    if unquoted.len() > 512 || unquoted.contains('\0') {
+        return Err("自定义下载目录路径无效".to_string());
+    }
+    let path = PathBuf::from(unquoted);
+    if !path.is_absolute() {
+        return Err("自定义下载目录必须是绝对路径".to_string());
+    }
+    Ok(Some(path))
+}
+
 #[tauri::command]
 pub async fn save_pelican_download(
     app: AppHandle,
     file_name: String,
     data: Vec<u8>,
+    download_dir: Option<String>,
 ) -> Result<String, String> {
-    let download_dir = app
-        .path()
-        .download_dir()
-        .map_err(|error| format!("无法获取系统下载目录: {error}"))?;
+    let download_dir = match parse_custom_download_dir(download_dir.as_deref())? {
+        Some(custom) => custom,
+        None => app
+            .path()
+            .download_dir()
+            .map_err(|error| format!("无法获取系统下载目录: {error}"))?,
+    };
     tauri::async_runtime::spawn_blocking(move || {
         write_download_file(&download_dir, &file_name, &data)
     })
@@ -811,5 +838,18 @@ mod tests {
         {
         }
         assert_count_result(capture_pelican_frames);
+    }
+
+    #[test]
+    fn test_parse_custom_download_dir_handles_empty_quoted_and_relative_paths() {
+        assert_eq!(parse_custom_download_dir(None).unwrap(), None);
+        assert_eq!(parse_custom_download_dir(Some("   ")).unwrap(), None);
+        assert_eq!(parse_custom_download_dir(Some(" \"\" ")).unwrap(), None);
+        assert_eq!(
+            parse_custom_download_dir(Some(r#"  "C:\Users\测试\Pelican"  "#)).unwrap(),
+            Some(PathBuf::from(r"C:\Users\测试\Pelican"))
+        );
+        assert!(parse_custom_download_dir(Some("relative\\dir")).is_err());
+        assert!(parse_custom_download_dir(Some("C:\\bad\0path")).is_err());
     }
 }

@@ -1,10 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createPinia, setActivePinia } from "pinia";
 import { buildPelicanFileName, savePelicanFile } from "./pelicanFiles";
+import { useSettingsStore } from "../stores";
 
 const { invoke, desktop } = vi.hoisted(() => ({ invoke: vi.fn(), desktop: { value: true } }));
 vi.mock("./api", () => ({ isTauriApp: () => desktop.value, getTauriInvoke: () => invoke }));
 
-beforeEach(() => { invoke.mockReset(); desktop.value = true; vi.useFakeTimers(); });
+beforeEach(() => {
+  setActivePinia(createPinia());
+  invoke.mockReset();
+  desktop.value = true;
+  vi.useFakeTimers();
+});
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("鹈鹕下载文件", () => {
@@ -20,6 +27,23 @@ describe("鹈鹕下载文件", () => {
     expect(await savePelicanFile(blob, "图形.svg")).toEqual({ fileName: "图形.svg", path });
     expect(invoke).toHaveBeenCalledWith("save_pelican_download", {
       fileName: "图形.svg", data: Array.from(new TextEncoder().encode("<svg>中文</svg>")),
+    });
+  });
+
+  it("配置自定义下载目录时一并传给原生保存命令", async () => {
+    const store = useSettingsStore();
+    store.setValue("downloadDirectory", "  D:\\Exports\\pelican  ");
+    invoke.mockResolvedValue("D:\\Exports\\pelican\\图形.svg");
+    const blob = new Blob(["<svg></svg>"]);
+
+    expect(await savePelicanFile(blob, "图形.svg")).toEqual({
+      fileName: "图形.svg",
+      path: "D:\\Exports\\pelican\\图形.svg",
+    });
+    expect(invoke).toHaveBeenCalledWith("save_pelican_download", {
+      fileName: "图形.svg",
+      data: Array.from(new TextEncoder().encode("<svg></svg>")),
+      downloadDir: "D:\\Exports\\pelican",
     });
   });
 

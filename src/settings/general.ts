@@ -133,5 +133,23 @@ export const generalPage: SettingsPage = {
         },
       ],
     },
+    {
+      id: "download",
+      title: "文件下载",
+      description: "控制图形与动图文件的本地保存位置，留空时默认保存至系统“下载”文件夹。",
+      fields: [
+        {
+          key: "downloadDirectory",
+          type: "text",
+          label: "自定义下载目录",
+          description: "填写本地文件夹绝对路径，留空则使用系统“下载”文件夹",
+          defaultValue: "",
+          placeholder: "例如：D:\\Downloads\\pelican（留空使用系统下载目录）",
+          maxLength: 512,
+          monospace: true,
+          stacked: true,
+        },
+      ],
+    },
   ],
 };

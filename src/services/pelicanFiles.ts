@@ -1,5 +1,6 @@
 import { getTauriInvoke, isTauriApp } from "./api";
 import type { PelicanDownloadFormat, PelicanFileResult } from "./pelicanExportTypes";
+import { useSettingsStore } from "../stores";
 
 export function buildPelicanFileName(modelName: string, format: PelicanDownloadFormat, createdAt = Date.now()): string {
   const model = (modelName || "model").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80);
@@ -11,7 +12,12 @@ export async function savePelicanFile(blob: Blob, fileName: string): Promise<Pel
     const invoke = getTauriInvoke();
     if (!invoke) throw new Error("桌面下载接口尚未就绪");
     const data = Array.from(new Uint8Array(await blob.arrayBuffer()));
-    const path = await invoke<string>("save_pelican_download", { fileName, data });
+    const downloadDir = useSettingsStore().downloadDirectory;
+    const path = await invoke<string>("save_pelican_download", {
+      fileName,
+      data,
+      ...(downloadDir ? { downloadDir } : {}),
+    });
     if (!path) throw new Error("未能获取实际保存路径");
     return { fileName, path };
   }
