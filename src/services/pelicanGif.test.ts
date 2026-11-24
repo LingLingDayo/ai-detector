@@ -152,4 +152,36 @@ describe("现有预览静默采集", () => {
     expect(window.removeEventListener).toHaveBeenCalledWith("resize", expect.any(Function));
     expect(document.removeEventListener).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
   });
+
+  it("支持历史弹窗内嵌套预览容器，仅对覆盖在其上的外部弹窗报错", async () => {
+    const innerFrame = preview();
+    const wrapper = {
+      isConnected: true,
+      querySelector: vi.fn((selector: string) => (selector === "iframe" ? innerFrame : null)),
+      getBoundingClientRect: () => ({ left: 40, top: 120, width: 360, height: 270 }),
+    } as unknown as HTMLElement;
+    const hostDialog = { contains: vi.fn((target: unknown) => target === wrapper) } as unknown as Element;
+    const overlayDialog = { contains: vi.fn(() => false) } as unknown as Element;
+    const querySelectorAll = vi.fn(() => [hostDialog]);
+    vi.stubGlobal("document", {
+      hidden: false,
+      querySelector: vi.fn(() => hostDialog),
+      querySelectorAll,
+      elementFromPoint: vi.fn(() => wrapper),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    });
+    invoke.mockImplementation(async (command, options) => {
+      if (command === "capture_pelican_frames") {
+        options.onFrame.onmessage({ data: "AA==", timestampMs: 0 });
+        return 1;
+      }
+    });
+
+    await expect(recordPelicanGif(wrapper, { signal: new AbortController().signal })).resolves.toMatchObject({ type: "image/gif" });
+    expect(invoke).toHaveBeenCalledWith("capture_pelican_frames", expect.objectContaining({ durationMs: 2000 }));
+
+    querySelectorAll.mockReturnValue([hostDialog, overlayDialog]);
+    await expect(recordPelicanGif(wrapper, { signal: new AbortController().signal })).rejects.toThrow("遮挡");
+  });
 });

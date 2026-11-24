@@ -131,9 +131,10 @@ async function click(target: TestElement): Promise<void> {
   await nextTick();
 }
 
-function mountMenu(initialProps: { contentType?: "svg" | "html"; disabled?: boolean; gifAvailable?: boolean } = {}) {
+function mountMenu(initialProps: { contentType?: "svg" | "html"; disabled?: boolean; gifAvailable?: boolean; iconOnly?: boolean } = {}) {
   const downloads: string[] = [];
-  const props = reactive({ contentType: "svg" as "svg" | "html", disabled: false, gifAvailable: true, ...initialProps });
+  const openStates: boolean[] = [];
+  const props = reactive({ contentType: "svg" as "svg" | "html", disabled: false, gifAvailable: true, iconOnly: false, ...initialProps });
   const renderer = createRenderer<TestElement, TestElement>({
     createElement: (tag) => {
       const element = new TestElement(tag);
@@ -165,11 +166,12 @@ function mountMenu(initialProps: { contentType?: "svg" | "html"; disabled?: bool
   const app = renderer.createApp(defineComponent(() => () => h(PelicanDownloadMenu, {
     ...props,
     onDownload: (format: string) => downloads.push(format),
+    onOpenChange: (open: boolean) => openStates.push(open),
   })));
   app.mount(root);
   apps.push(app);
   const trigger = root.querySelector('[aria-haspopup="menu"]')!;
-  return { app, root, trigger, props, downloads };
+  return { app, root, trigger, props, downloads, openStates };
 }
 
 function getMenu(): TestElement | null {
@@ -329,6 +331,21 @@ describe("鹈鹕下载格式菜单", () => {
     props.disabled = true;
     await nextTick();
     expect(getMenu()).toBeNull();
+  });
+
+  it("纯图标模式隐藏文字并通知菜单开合状态，仍支持选择下载格式", async () => {
+    const { trigger, downloads, openStates } = mountMenu({ iconOnly: true, contentType: "html" });
+    expect(trigger.props.class).toContain("is-icon-only");
+    expect(trigger.querySelector("span")).toBeNull();
+    expect(trigger.props["aria-label"]).toBe("下载图片文件");
+
+    await click(trigger);
+    expect(openStates).toEqual([true]);
+    expect(menuItems().map((item) => item.props["data-format"])).toEqual(["html", "gif"]);
+
+    await click(menuItems()[1]);
+    expect(downloads).toEqual(["gif"]);
+    expect(openStates).toEqual([true, false]);
   });
 
   it("卸载后移除浮层和全部全局监听器", async () => {

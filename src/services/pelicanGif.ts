@@ -8,10 +8,20 @@ export function canExportPelicanGif(): boolean {
   return isTauriApp() && typeof navigator !== "undefined" && /Windows/i.test(navigator.userAgent);
 }
 
+function resolvePreviewFrame(element: HTMLElement): HTMLIFrameElement | null {
+  if (
+    typeof (element as HTMLIFrameElement).srcdoc === "string" ||
+    (element as HTMLIFrameElement).contentDocument
+  ) {
+    return element as HTMLIFrameElement;
+  }
+  return element.querySelector?.("iframe") ?? null;
+}
+
 function readAnimationPeriods(element: HTMLElement): number[] {
   const periods: number[] = [];
   try {
-    const preview = (element as HTMLIFrameElement).contentDocument;
+    const preview = resolvePreviewFrame(element)?.contentDocument;
     for (const animation of preview?.getAnimations?.() ?? []) {
       const timing = animation.effect?.getTiming();
       if (animation.playState !== "running" || !timing || timing.iterations !== Infinity || typeof timing.duration !== "number") continue;
@@ -54,7 +64,8 @@ export async function recordPelicanGif(element: HTMLElement, { signal }: { signa
     viewportWidth: window.innerWidth,
     viewportHeight: window.innerHeight,
   });
-  const initialSource = (element as HTMLIFrameElement).srcdoc;
+  const getSource = () => resolvePreviewFrame(element)?.srcdoc;
+  const initialSource = getSource();
   const durationMs = resolveGifDuration(readAnimationPeriods(element));
   const requestId = crypto.randomUUID();
   const worker = new Worker(new URL("./pelicanGif.worker.ts", import.meta.url), { type: "module" });
@@ -76,12 +87,19 @@ export async function recordPelicanGif(element: HTMLElement, { signal }: { signa
   const abort = () => fail(new DOMException("下载已取消", "AbortError"));
   const checkPreview = () => {
     const current = element.getBoundingClientRect();
-    if (!element.isConnected || (element as HTMLIFrameElement).srcdoc !== initialSource ||
+    if (!element.isConnected || getSource() !== initialSource ||
       Math.abs(current.width - initialWidth) > 1 || Math.abs(current.height - initialHeight) > 1) {
       fail(new Error("预览已改变，请重新下载 GIF"));
       return false;
     }
-    if (document.querySelector?.('[role="dialog"][aria-modal="true"]')) {
+    const dialogs = document.querySelectorAll?.('[role="dialog"][aria-modal="true"]');
+    const hasBlockingDialog = dialogs
+      ? Array.from(dialogs).some((dialog) => !dialog.contains?.(element))
+      : (() => {
+          const dialog = document.querySelector?.('[role="dialog"][aria-modal="true"]');
+          return Boolean(dialog && !dialog.contains?.(element));
+        })();
+    if (hasBlockingDialog) {
       fail(new Error("预览被弹窗遮挡，请关闭后重新下载 GIF"));
       return false;
     }

@@ -8,12 +8,14 @@ const props = withDefaults(
     contentType?: "svg" | "html";
     disabled?: boolean;
     gifAvailable?: boolean;
+    iconOnly?: boolean;
   }>(),
-  { contentType: "svg", disabled: false, gifAvailable: false }
+  { contentType: "svg", disabled: false, gifAvailable: false, iconOnly: false }
 );
 
 const emit = defineEmits<{
   (e: "download", format: PelicanDownloadFormat): void;
+  (e: "open-change", isOpen: boolean): void;
 }>();
 
 const triggerId = `pelican-download-${useId()}`;
@@ -149,6 +151,7 @@ function handleWindowBlur(): void {
 }
 
 watch(() => [props.disabled, props.contentType], () => closeMenu());
+watch(isOpen, (open) => emit("open-change", open));
 
 onMounted(() => {
   document.addEventListener("pointerdown", handlePointerDown, true);
@@ -176,11 +179,12 @@ onUnmounted(() => {
     ref="triggerRef"
     type="button"
     class="download-trigger"
-    :class="{ 'is-open': isOpen }"
+    :class="{ 'is-open': isOpen, 'is-icon-only': iconOnly }"
     :disabled="disabled"
     aria-haspopup="menu"
     :aria-expanded="isOpen"
     :aria-controls="isOpen ? menuId : undefined"
+    :aria-label="iconOnly ? (disabled ? '正在生成下载文件' : '下载图片文件') : undefined"
     :title="disabled ? '正在生成下载文件' : '选择下载格式'"
     @click="toggleMenu"
     @keydown="handleTriggerKeydown"
@@ -188,7 +192,7 @@ onUnmounted(() => {
   >
     <Loader2 v-if="disabled" :size="12" class="download-spinner" />
     <Download v-else :size="12" />
-    <span>下载</span>
+    <span v-if="!iconOnly">下载</span>
   </button>
   <Teleport to="body">
     <div
@@ -265,6 +269,32 @@ onUnmounted(() => {
   &:disabled {
     opacity: 0.55;
     cursor: wait;
+  }
+
+  &.is-icon-only {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: var(--pelican-footer-btn-bg);
+    border-color: var(--pelican-footer-btn-border);
+    color: var(--pelican-footer-btn-color);
+
+    &:hover:not(:disabled),
+    &.is-open:not(:disabled) {
+      background: var(--pelican-footer-btn-hover-bg);
+      border-color: var(--pelican-footer-btn-hover-border);
+      color: var(--pelican-footer-btn-hover-color);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0) scale(0.92);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: wait;
+    }
   }
 }
 
