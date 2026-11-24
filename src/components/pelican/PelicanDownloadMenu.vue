@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch, type CSSProperties } from "vue";
-import { ChevronDown, Download } from "@lucide/vue";
+import { Download } from "@lucide/vue";
 import type { PelicanDownloadFormat } from "../../services/pelicanExportTypes";
 
 const props = withDefaults(
@@ -188,7 +188,6 @@ onUnmounted(() => {
   >
     <Download :size="12" />
     <span>{{ disabled ? "生成中..." : "下载" }}</span>
-    <ChevronDown :size="10" />
   </button>
   <Teleport to="body">
     <div
