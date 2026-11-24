@@ -24,7 +24,10 @@ pub fn run() {
             open_devtools,
             generate_candy_challenges,
             generate_single_candy_challenge,
-            evaluate_candy_answer
+            evaluate_candy_answer,
+            capture_pelican_frames,
+            cancel_pelican_capture,
+            save_pelican_download
         ])
         .run(tauri::generate_context!())
         .expect("运行 Tauri 桌面应用时发生异常");
