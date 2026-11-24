@@ -23,8 +23,8 @@ const GIF_CAPTURE_WIDTH: f64 = 640.0;
 #[cfg(target_os = "windows")]
 const GIF_CAPTURE_HEIGHT: f64 = 480.0;
 const MAX_RENDER_HTML_BYTES: usize = 2 * 1024 * 1024;
-const MAX_CAPTURE_DURATION_MS: u64 = 5000;
-const MAX_CAPTURE_FRAMES: usize = 100;
+const MAX_CAPTURE_DURATION_MS: u64 = 12_000;
+const MAX_CAPTURE_FRAMES: usize = 200;
 #[cfg(any(target_os = "windows", test))]
 const MAX_FRAME_DATA_BYTES: usize = 16 * 1024 * 1024;
 const MAX_DOWNLOAD_BYTES: usize = 20 * 1024 * 1024;
@@ -84,14 +84,20 @@ fn sanitize_download_name(file_name: &str) -> Result<String, String> {
     Ok(format!("{stem}.{extension}"))
 }
 
+fn capture_frame_interval_ms(duration_ms: u64) -> u64 {
+    if duration_ms > 6000 {
+        60
+    } else {
+        FRAME_INTERVAL_MS
+    }
+}
+
 fn capture_frame_limit(duration_ms: u64) -> Result<usize, String> {
     if duration_ms == 0 || duration_ms > MAX_CAPTURE_DURATION_MS {
-        return Err("GIF 采集时长必须大于 0 且不超过 5 秒".to_string());
+        return Err("GIF 采集时长必须大于 0 且不超过 12 秒".to_string());
     }
-    Ok(
-        (((duration_ms + FRAME_INTERVAL_MS - 1) / FRAME_INTERVAL_MS) as usize)
-            .min(MAX_CAPTURE_FRAMES),
-    )
+    let interval_ms = capture_frame_interval_ms(duration_ms);
+    Ok((((duration_ms + interval_ms - 1) / interval_ms) as usize).min(MAX_CAPTURE_FRAMES))
 }
 
 #[cfg(any(target_os = "windows", test))]
@@ -562,6 +568,7 @@ pub async fn capture_pelican_frames(
         wait_render_ready(&render_window, &guard.state, ready_deadline).await?;
 
         let started = Instant::now();
+        let interval_ms = capture_frame_interval_ms(duration_ms);
         let recording_end = started + Duration::from_millis(duration_ms);
         let task_deadline = recording_end + Duration::from_millis(FRAME_TIMEOUT_MS);
         let mut next_frame = started;
@@ -580,7 +587,7 @@ pub async fn capture_pelican_frames(
                 .map_err(|error| format!("发送 GIF 帧失败: {error}"))?;
             frame_count += 1;
             // 慢截图跳过错过的采样点，避免补帧突发和超出目标帧率。
-            next_frame = next_capture_instant(started, Instant::now(), recording_end);
+            next_frame = next_capture_instant(started, Instant::now(), recording_end, interval_ms);
         }
         guard.state.ensure_running()?;
         completed_frame_count(frame_count)
@@ -694,9 +701,14 @@ fn display_download_path(path: &Path) -> String {
 }
 
 #[cfg(any(target_os = "windows", test))]
-fn next_capture_instant(started: Instant, now: Instant, recording_end: Instant) -> Instant {
-    let tick = now.saturating_duration_since(started).as_millis() as u64 / FRAME_INTERVAL_MS + 1;
-    (started + Duration::from_millis(tick * FRAME_INTERVAL_MS)).min(recording_end)
+fn next_capture_instant(
+    started: Instant,
+    now: Instant,
+    recording_end: Instant,
+    interval_ms: u64,
+) -> Instant {
+    let tick = now.saturating_duration_since(started).as_millis() as u64 / interval_ms + 1;
+    (started + Duration::from_millis(tick * interval_ms)).min(recording_end)
 }
 
 fn completed_frame_count(frame_count: usize) -> Result<usize, String> {
@@ -761,13 +773,15 @@ mod tests {
     }
 
     #[test]
-    fn test_capture_duration_has_twenty_fps_and_one_hundred_frame_limit() {
+    fn test_capture_duration_supports_twelve_seconds_and_adaptive_frame_limit() {
         assert_eq!(capture_frame_limit(1).unwrap(), 1);
         assert_eq!(capture_frame_limit(50).unwrap(), 1);
         assert_eq!(capture_frame_limit(51).unwrap(), 2);
-        assert_eq!(capture_frame_limit(5000).unwrap(), 100);
+        assert_eq!(capture_frame_limit(6000).unwrap(), 120);
+        assert_eq!(capture_frame_limit(8000).unwrap(), 134);
+        assert_eq!(capture_frame_limit(12000).unwrap(), 200);
         assert!(capture_frame_limit(0).is_err());
-        assert!(capture_frame_limit(5001).is_err());
+        assert!(capture_frame_limit(12001).is_err());
         assert!(capture_frame_limit(u64::MAX).is_err());
     }
 
@@ -995,11 +1009,15 @@ mod tests {
         let started = Instant::now();
         let end = started + Duration::from_secs(5);
         assert_eq!(
-            next_capture_instant(started, started + Duration::from_millis(121), end),
+            next_capture_instant(started, started + Duration::from_millis(121), end, 50),
             started + Duration::from_millis(150)
         );
         assert_eq!(
-            next_capture_instant(started, started + Duration::from_millis(6990), end),
+            next_capture_instant(started, started + Duration::from_millis(121), end, 60),
+            started + Duration::from_millis(180)
+        );
+        assert_eq!(
+            next_capture_instant(started, started + Duration::from_millis(6990), end, 50),
             end
         );
     }
@@ -1063,13 +1081,13 @@ mod tests {
     fn test_completed_capture_reports_actual_sent_frame_count() {
         assert_eq!(completed_frame_count(1).unwrap(), 1);
         assert_eq!(completed_frame_count(37).unwrap(), 37);
-        assert_eq!(completed_frame_count(100).unwrap(), 100);
+        assert_eq!(completed_frame_count(200).unwrap(), 200);
     }
 
     #[test]
     fn test_completed_capture_rejects_empty_or_excess_frames() {
         assert!(completed_frame_count(0).is_err());
-        assert!(completed_frame_count(101).is_err());
+        assert!(completed_frame_count(201).is_err());
     }
 
     #[test]

@@ -1,5 +1,10 @@
 import { applyPalette, GIFEncoder, quantize } from "gifenc";
-import { MAX_GIF_DURATION_MS, sampleGifTimeline } from "./gifTimeline";
+import {
+  MAX_GIF_DURATION_MS,
+  MAX_GIF_FRAMES,
+  resolveGifFrameIntervalMs,
+  sampleGifTimeline,
+} from "./gifTimeline";
 
 type CropRect = { x: number; y: number; width: number; height: number; viewportWidth: number; viewportHeight: number };
 type Settings = { type: "init"; width: number; height: number; durationMs: number; crop?: CropRect };
@@ -30,7 +35,7 @@ function validateCrop(crop: CropRect): void {
 }
 
 async function addFrame(message: Extract<Message, { type: "frame" }>): Promise<void> {
-  if (frames.length >= 100) throw new Error("GIF 采集帧数超出限制");
+  if (frames.length >= MAX_GIF_FRAMES) throw new Error("GIF 采集帧数超出限制");
   const raw = atob(message.data);
   const bytes = Uint8Array.from(raw, character => character.charCodeAt(0));
   const image = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
@@ -63,7 +68,12 @@ async function addFrame(message: Extract<Message, { type: "frame" }>): Promise<v
 }
 
 function finish(): void {
-  const timeline = sampleGifTimeline(frames.map(frame => frame.time), settings.durationMs);
+  const intervalMs = resolveGifFrameIntervalMs(settings.durationMs);
+  const timeline = sampleGifTimeline(
+    frames.map(frame => frame.time),
+    settings.durationMs,
+    1000 / intervalMs
+  );
   if (!timeline.length) throw new Error("未采集到可编码的预览画面");
   // 全动画共同取色，避免后续出现的新颜色丢失或逐帧调色板闪烁。
   const samples = new Uint8ClampedArray(frames.length * 32 * 24 * 4);

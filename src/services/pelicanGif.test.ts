@@ -126,6 +126,47 @@ describe("离屏渲染 GIF 采集", () => {
     expect(invoke).toHaveBeenCalledWith("capture_pelican_frames", expect.objectContaining({ durationMs: 2000 }));
   });
 
+  it("识别已播完的有限次动画与 SMIL begin+dur，且单个元素异常不中断其余解析", async () => {
+    const element = {
+      contentDocument: {
+        getAnimations: () => [
+          { playState: "finished", effect: { getTiming: () => ({ delay: 1000, duration: 4000, iterations: 1, direction: "normal" }) } },
+        ],
+        querySelectorAll: () => [
+          { getAttribute: () => null, getSimpleDuration: () => { throw new Error("NotSupportedError"); } },
+          { getAttribute: (name: string) => ({ dur: "2.5s", begin: "5s", repeatCount: "1" }[name] ?? null), getSimpleDuration: () => 2.5 },
+        ],
+      },
+    } as unknown as HTMLElement;
+    invoke.mockImplementation(async (command, options) => {
+      if (command === "capture_pelican_frames") {
+        options.onFrame.onmessage({ data: "AA==", timestampMs: 0 });
+        return 1;
+      }
+    });
+
+    await recordPelicanGif(gifSource({ previewElement: element }), { signal: new AbortController().signal });
+    expect(invoke).toHaveBeenCalledWith("capture_pelican_frames", expect.objectContaining({ durationMs: 7500 }));
+  });
+
+  it("无已挂载预览 DOM 时能从 SVG 源码兜底提取动画周期", async () => {
+    invoke.mockImplementation(async (command, options) => {
+      if (command === "capture_pelican_frames") {
+        options.onFrame.onmessage({ data: "AA==", timestampMs: 0 });
+        return 1;
+      }
+    });
+
+    await recordPelicanGif(
+      gifSource({
+        previewElement: null,
+        content: '<svg><animate dur="6s" repeatCount="indefinite" /><animateTransform begin="2s" dur="5000ms" /></svg>',
+      }),
+      { signal: new AbortController().signal }
+    );
+    expect(invoke).toHaveBeenCalledWith("capture_pelican_frames", expect.objectContaining({ durationMs: 7000 }));
+  });
+
   it("无帧明确失败，原生错误也清理Worker", async () => {
     invoke.mockResolvedValue(0);
     await expect(recordPelicanGif(gifSource(), { signal: new AbortController().signal })).rejects.toThrow("未采集到");

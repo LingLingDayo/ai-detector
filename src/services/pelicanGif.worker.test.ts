@@ -116,4 +116,29 @@ describe("静默采集的GIF编码", () => {
     expect(drawCalls[2].slice(1)).toEqual([40, 480, 1600, 800, 0, 0, 640, 320]);
     expect(drawCalls[3].slice(1)).toEqual([40, 480, 1600, 800, 0, 0, 32, 24]);
   });
+
+  it("超过6秒的长动画在Worker中按60ms帧间隔编码", async () => {
+    const postMessage = vi.fn();
+    const scope = { postMessage, onmessage: undefined as unknown as (event: { data: object }) => Promise<void> };
+    vi.stubGlobal("self", scope);
+    vi.stubGlobal("createImageBitmap", vi.fn(async () => ({ width: 2, height: 1, close: vi.fn() })));
+    vi.stubGlobal("OffscreenCanvas", class {
+      constructor(public width: number, public height: number) {}
+      getContext() {
+        return {
+          drawImage: vi.fn(),
+          getImageData: () => ({ data: new Uint8ClampedArray(this.width * this.height * 4) }),
+        };
+      }
+    });
+    await import("./pelicanGif.worker");
+    await scope.onmessage({ data: { type: "init", width: 2, height: 1, durationMs: 8000 } });
+    await scope.onmessage({ data: { type: "frame", data: "AA==", timestampMs: 0 } });
+    await scope.onmessage({ data: { type: "finish" } });
+    const done = postMessage.mock.calls.at(-1)![0];
+    const gif = inspectGif(new Uint8Array(done.bytes));
+    expect(gif.frameCount).toBe(134);
+    expect(gif.delays.slice(0, 3)).toEqual([60, 60, 60]);
+    expect(gif.delays.reduce((sum, delay) => sum + delay, 0)).toBe(8000);
+  });
 });
