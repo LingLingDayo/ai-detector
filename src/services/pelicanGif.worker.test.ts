@@ -103,7 +103,17 @@ describe("静默采集的GIF编码", () => {
       },
     });
     await scope.onmessage({ data: { type: "frame", data: "AA==", timestampMs: 0 } });
+    await scope.onmessage({
+      data: {
+        type: "frame",
+        data: "AQ==",
+        timestampMs: 50,
+        crop: { x: 20, y: 240, width: 800, height: 400, viewportWidth: 1000, viewportHeight: 900 },
+      },
+    });
     expect(drawCalls[0].slice(1)).toEqual([40, 200, 1600, 800, 0, 0, 640, 320]);
     expect(drawCalls[1].slice(1)).toEqual([40, 200, 1600, 800, 0, 0, 32, 24]);
+    expect(drawCalls[2].slice(1)).toEqual([40, 480, 1600, 800, 0, 0, 640, 320]);
+    expect(drawCalls[3].slice(1)).toEqual([40, 480, 1600, 800, 0, 0, 32, 24]);
   });
 });

@@ -313,14 +313,17 @@ describe("鹈鹕下载格式菜单", () => {
     expect(parseFloat(style.left)).toBeGreaterThanOrEqual(8);
   });
 
-  it("导出繁忙时禁止展开且繁忙状态变化会关闭已有菜单", async () => {
+  it("导出繁忙时保留下载文案并切换为加载图标，同时关闭已有菜单", async () => {
     const { trigger, props } = mountMenu({ disabled: true });
     await click(trigger);
     expect(getMenu()).toBeNull();
     expect(trigger.props.disabled).toBe(true);
+    expect(trigger.querySelector("span")?.text).toBe("下载");
+    expect(trigger.querySelector("svg")?.props.class).toContain("download-spinner");
 
     props.disabled = false;
     await nextTick();
+    expect(trigger.querySelector("svg")?.props.class ?? "").not.toContain("download-spinner");
     await click(trigger);
     expect(getMenu()).not.toBeNull();
     props.disabled = true;

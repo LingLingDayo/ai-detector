@@ -51,7 +51,31 @@ describe("现有预览静默采集", () => {
       durationMs: 2000,
       crop: { x: 20, y: 100, width: 800, height: 400, viewportWidth: 1000, viewportHeight: 900 },
     });
-    expect(workers[0].postMessage).toHaveBeenCalledWith({ type: "frame", data: "AA==", timestampMs: 100 });
+    expect(workers[0].postMessage).toHaveBeenCalledWith({
+      type: "frame",
+      data: "AA==",
+      timestampMs: 100,
+      crop: { x: 20, y: 100, width: 800, height: 400, viewportWidth: 1000, viewportHeight: 900 },
+    });
+  });
+
+  it("录制期间在视口内滚动页面不报错，并按每帧实时位置更新裁剪区域", async () => {
+    const element = preview();
+    let top = 100;
+    vi.spyOn(element, "getBoundingClientRect").mockImplementation(() => ({ left: 20, top, width: 800, height: 400 } as DOMRect));
+    invoke.mockImplementation(async (command, options) => {
+      if (command === "capture_pelican_frames") {
+        options.onFrame.onmessage({ data: "AA==", timestampMs: 0 });
+        top = 240;
+        options.onFrame.onmessage({ data: "AQ==", timestampMs: 50 });
+        return 2;
+      }
+    });
+
+    await expect(recordPelicanGif(element, { signal: new AbortController().signal })).resolves.toMatchObject({ type: "image/gif" });
+    const frames = workers[0].postMessage.mock.calls.map((call: any[]) => call[0]).filter((msg: { type: string }) => msg.type === "frame");
+    expect(frames[0].crop.y).toBe(100);
+    expect(frames[1].crop.y).toBe(240);
   });
 
   it("原生命令返回后等待异步IPC尾帧，不提前结束编码", async () => {

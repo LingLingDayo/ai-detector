@@ -43,15 +43,17 @@ export async function recordPelicanGif(element: HTMLElement, { signal }: { signa
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   if (viewportWidth < 1 || viewportHeight < 1) throw new Error("预览窗口尺寸无效，请稍后重试");
-  const scale = Math.min(1, 640 / bounds.width, 480 / bounds.height);
-  const crop = {
-    x: bounds.left,
-    y: bounds.top,
-    width: bounds.width,
-    height: bounds.height,
-    viewportWidth,
-    viewportHeight,
-  };
+  const initialWidth = bounds.width;
+  const initialHeight = bounds.height;
+  const scale = Math.min(1, 640 / initialWidth, 480 / initialHeight);
+  const readCrop = (rect: DOMRect) => ({
+    x: rect.left,
+    y: rect.top,
+    width: rect.width,
+    height: rect.height,
+    viewportWidth: window.innerWidth,
+    viewportHeight: window.innerHeight,
+  });
   const initialSource = (element as HTMLIFrameElement).srcdoc;
   const durationMs = resolveGifDuration(readAnimationPeriods(element));
   const requestId = crypto.randomUUID();
@@ -75,9 +77,7 @@ export async function recordPelicanGif(element: HTMLElement, { signal }: { signa
   const checkPreview = () => {
     const current = element.getBoundingClientRect();
     if (!element.isConnected || (element as HTMLIFrameElement).srcdoc !== initialSource ||
-      window.innerWidth !== viewportWidth || window.innerHeight !== viewportHeight ||
-      Math.abs(current.left - crop.x) > 1 || Math.abs(current.top - crop.y) > 1 ||
-      Math.abs(current.width - crop.width) > 1 || Math.abs(current.height - crop.height) > 1) {
+      Math.abs(current.width - initialWidth) > 1 || Math.abs(current.height - initialHeight) > 1) {
       fail(new Error("预览已改变，请重新下载 GIF"));
       return false;
     }
@@ -116,7 +116,7 @@ export async function recordPelicanGif(element: HTMLElement, { signal }: { signa
   channel.onmessage = frame => {
     if (captureError || signal.aborted || !checkPreview()) return;
     frameCount++;
-    worker.postMessage({ type: "frame", ...frame });
+    worker.postMessage({ type: "frame", ...frame, crop: readCrop(element.getBoundingClientRect()) });
     if (expectedFrameCount !== undefined && frameCount >= expectedFrameCount) resolveFrames();
   };
   worker.onmessage = event => {
@@ -131,8 +131,8 @@ export async function recordPelicanGif(element: HTMLElement, { signal }: { signa
 
   try {
     if (!checkPreview()) throw captureError;
-    worker.postMessage({ type: "init", width: Math.max(1, Math.round(bounds.width * scale)),
-      height: Math.max(1, Math.round(bounds.height * scale)), durationMs, crop });
+    worker.postMessage({ type: "init", width: Math.max(1, Math.round(initialWidth * scale)),
+      height: Math.max(1, Math.round(initialHeight * scale)), durationMs, crop: readCrop(bounds) });
     const count = await Promise.race([invoke<number>("capture_pelican_frames", { requestId, durationMs, onFrame: channel }), failure]);
     captureCompleted = true;
     if (captureError) throw captureError;

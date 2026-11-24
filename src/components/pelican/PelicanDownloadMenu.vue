@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch, type CSSProperties } from "vue";
-import { Download } from "@lucide/vue";
+import { Download, Loader2 } from "@lucide/vue";
 import type { PelicanDownloadFormat } from "../../services/pelicanExportTypes";
 
 const props = withDefaults(
@@ -186,8 +186,9 @@ onUnmounted(() => {
     @keydown="handleTriggerKeydown"
     @focusout="handleFocusOut"
   >
-    <Download :size="12" />
-    <span>{{ disabled ? "生成中..." : "下载" }}</span>
+    <Loader2 v-if="disabled" :size="12" class="download-spinner" />
+    <Download v-else :size="12" />
+    <span>下载</span>
   </button>
   <Teleport to="body">
     <div
@@ -239,6 +240,15 @@ onUnmounted(() => {
   font-family: inherit;
   cursor: pointer;
   transition: all var(--transition-fast);
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .download-spinner {
+    animation: spin 0.8s linear infinite;
+  }
 
   &:hover:not(:disabled),
   &.is-open {

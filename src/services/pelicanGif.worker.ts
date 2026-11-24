@@ -3,7 +3,7 @@ import { MAX_GIF_DURATION_MS, sampleGifTimeline } from "./gifTimeline";
 
 type CropRect = { x: number; y: number; width: number; height: number; viewportWidth: number; viewportHeight: number };
 type Settings = { type: "init"; width: number; height: number; durationMs: number; crop?: CropRect };
-type Message = Settings | { type: "frame"; data: string; timestampMs: number } | { type: "finish" };
+type Message = Settings | { type: "frame"; data: string; timestampMs: number; crop?: CropRect } | { type: "finish" };
 interface Frame { time: number; pixels: Uint8ClampedArray; sample: Uint8ClampedArray }
 
 const scope = self as unknown as {
@@ -18,14 +18,27 @@ let firstTimestamp: number | undefined;
 let failed = false;
 let queue = Promise.resolve();
 
+function validateCrop(crop: CropRect): void {
+  if (
+    !Number.isFinite(crop.x) || !Number.isFinite(crop.y) ||
+    !Number.isFinite(crop.width) || !Number.isFinite(crop.height) ||
+    !Number.isFinite(crop.viewportWidth) || !Number.isFinite(crop.viewportHeight) ||
+    crop.width <= 0 || crop.height <= 0 || crop.viewportWidth <= 0 || crop.viewportHeight <= 0
+  ) {
+    throw new Error("GIF 裁剪参数无效");
+  }
+}
+
 async function addFrame(message: Extract<Message, { type: "frame" }>): Promise<void> {
   if (frames.length >= 100) throw new Error("GIF 采集帧数超出限制");
   const raw = atob(message.data);
   const bytes = Uint8Array.from(raw, character => character.charCodeAt(0));
   const image = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
   try {
-    if (settings.crop) {
-      const { x, y, width, height, viewportWidth, viewportHeight } = settings.crop;
+    const crop = message.crop ?? settings.crop;
+    if (crop) {
+      validateCrop(crop);
+      const { x, y, width, height, viewportWidth, viewportHeight } = crop;
       const scaleX = image.width / viewportWidth;
       const scaleY = image.height / viewportHeight;
       const sx = Math.max(0, Math.min(image.width - 1, x * scaleX));
@@ -79,8 +92,8 @@ async function handle(message: Message): Promise<void> {
     if (!Number.isInteger(message.width) || !Number.isInteger(message.height) || message.width < 1 || message.height < 1 || message.width > 640 || message.height > 480 || message.durationMs < 10 || message.durationMs > MAX_GIF_DURATION_MS) {
       throw new Error("GIF 输出参数无效");
     }
-    if (message.crop && (!Number.isFinite(message.crop.x) || !Number.isFinite(message.crop.y) || !Number.isFinite(message.crop.width) || !Number.isFinite(message.crop.height) || !Number.isFinite(message.crop.viewportWidth) || !Number.isFinite(message.crop.viewportHeight) || message.crop.width <= 0 || message.crop.height <= 0 || message.crop.viewportWidth <= 0 || message.crop.viewportHeight <= 0)) {
-      throw new Error("GIF 裁剪参数无效");
+    if (message.crop) {
+      validateCrop(message.crop);
     }
     settings = message;
     context = new OffscreenCanvas(settings.width, settings.height).getContext("2d", { alpha: false, willReadFrequently: true })!;
