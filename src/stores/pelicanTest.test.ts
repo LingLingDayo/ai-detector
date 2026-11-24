@@ -97,6 +97,100 @@ describe("鹈鹕测试自定义提示词预设测试套件", () => {
     const store = newStore();
     expect(store.pelicanCustomPrompt).toBe(CUSTOM_PROMPT);
   });
+
+  it("回填历史自定义提示词不会覆盖当前自定义提示词且不持久化", () => {
+    storage.clear();
+    const store = newStore();
+    store.setPelicanPrompt(CUSTOM_PROMPT);
+
+    const historyPrompt = "Generate an SVG of a pelican riding a rocket.";
+    store.applyHistoryItem({
+      id: "hist_2",
+      createdAt: Date.now(),
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-***",
+      modelName: "test-model",
+      reasoningEffort: "high",
+      contentType: "svg",
+      content: "<svg></svg>",
+      prompt: historyPrompt,
+    });
+
+    expect(store.pelicanPrompt).toBe(historyPrompt);
+    expect(store.pelicanCustomPrompt).toBe(CUSTOM_PROMPT);
+    expect(storage.get(PELICAN_CUSTOM_PROMPT_STORAGE_KEY)).toBe(CUSTOM_PROMPT);
+    expect(storage.get(PELICAN_PROMPT_STORAGE_KEY)).toBe(CUSTOM_PROMPT);
+
+    const reloaded = newStore();
+    expect(reloaded.pelicanPrompt).toBe(CUSTOM_PROMPT);
+    expect(reloaded.pelicanCustomPrompt).toBe(CUSTOM_PROMPT);
+  });
+
+  it("当前无自定义提示词时回填历史非预设提示词不会写入自定义项或持久化", () => {
+    storage.clear();
+    const store = newStore();
+    const historyPrompt = "Generate an SVG of a pelican surfing.";
+
+    store.applyHistoryItem({
+      id: "hist_3",
+      createdAt: Date.now(),
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-***",
+      modelName: "test-model",
+      reasoningEffort: "high",
+      contentType: "svg",
+      content: "<svg></svg>",
+      prompt: historyPrompt,
+    });
+
+    expect(store.pelicanPrompt).toBe(historyPrompt);
+    expect(store.pelicanCustomPrompt).toBe("");
+    expect(storage.get(PELICAN_CUSTOM_PROMPT_STORAGE_KEY)).toBeUndefined();
+    expect(storage.get(PELICAN_PROMPT_STORAGE_KEY)).toBeUndefined();
+  });
+
+  it("回填历史提示词后开始生成会使用该临时提示词且不覆盖自定义项", async () => {
+    storage.clear();
+    const store = newStore();
+    store.setPelicanPrompt(CUSTOM_PROMPT);
+
+    const historyPrompt = "Generate an SVG of a pelican playing guitar.";
+    store.applyHistoryItem({
+      id: "hist_4",
+      createdAt: Date.now(),
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-***",
+      modelName: "test-model",
+      reasoningEffort: "high",
+      contentType: "svg",
+      content: "<svg></svg>",
+      prompt: historyPrompt,
+    });
+
+    const spy = vi.spyOn(api, "sendProbe").mockResolvedValue({
+      text: "<svg><circle cx='10' cy='10' r='5' /></svg>",
+      raw_status: 200,
+      duration_ms: 15,
+    });
+
+    await store.startPelicanTest({
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-test-123456",
+      apiFormat: "openai",
+      modelName: "test-model",
+      reasoningEffort: "high",
+      stream: false,
+    });
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: historyPrompt,
+      })
+    );
+    expect(store.pelicanCustomPrompt).toBe(CUSTOM_PROMPT);
+    expect(storage.get(PELICAN_CUSTOM_PROMPT_STORAGE_KEY)).toBe(CUSTOM_PROMPT);
+    expect(storage.get(PELICAN_PROMPT_STORAGE_KEY)).toBe(CUSTOM_PROMPT);
+  });
 });
 
 describe("鹈鹕测试流式输出进度测试套件", () => {
