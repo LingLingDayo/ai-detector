@@ -14,6 +14,15 @@ use tauri::{ipc::Channel, AppHandle, Manager, WebviewWindow};
 const FRAME_INTERVAL_MS: u64 = 50;
 #[cfg(target_os = "windows")]
 const FRAME_TIMEOUT_MS: u64 = 2000;
+#[cfg(target_os = "windows")]
+const RENDER_READY_TIMEOUT_MS: u64 = 8000;
+#[cfg(target_os = "windows")]
+const RENDER_READY_POLL_MS: u64 = 25;
+#[cfg(target_os = "windows")]
+const GIF_CAPTURE_WIDTH: f64 = 640.0;
+#[cfg(target_os = "windows")]
+const GIF_CAPTURE_HEIGHT: f64 = 480.0;
+const MAX_RENDER_HTML_BYTES: usize = 2 * 1024 * 1024;
 const MAX_CAPTURE_DURATION_MS: u64 = 5000;
 const MAX_CAPTURE_FRAMES: usize = 100;
 #[cfg(any(target_os = "windows", test))]
@@ -277,15 +286,58 @@ async fn wait_capture_result(
     }
 }
 
+fn validate_render_html(html: &str) -> Result<(), String> {
+    if html.trim().is_empty() || html.len() > MAX_RENDER_HTML_BYTES {
+        return Err("待渲染图形内容为空或超出大小限制".to_string());
+    }
+    Ok(())
+}
+
+fn sanitize_render_label(request_id: &str) -> String {
+    request_id
+        .chars()
+        .filter(|character| character.is_ascii_alphanumeric() || matches!(character, '-' | '_'))
+        .take(48)
+        .collect()
+}
+
+#[cfg(any(target_os = "windows", test))]
+fn is_render_ready_response(response: &str) -> bool {
+    #[derive(Deserialize)]
+    struct EvaluateValue {
+        value: Option<bool>,
+    }
+    #[derive(Deserialize)]
+    struct EvaluateResponse {
+        result: Option<EvaluateValue>,
+    }
+    serde_json::from_str::<EvaluateResponse>(response)
+        .ok()
+        .and_then(|parsed| parsed.result)
+        .and_then(|result| result.value)
+        == Some(true)
+}
+
 #[cfg(target_os = "windows")]
-async fn capture_png(
+struct RenderWindowGuard(WebviewWindow);
+
+#[cfg(target_os = "windows")]
+impl Drop for RenderWindowGuard {
+    fn drop(&mut self) {
+        let _ = self.0.destroy();
+    }
+}
+
+#[cfg(target_os = "windows")]
+async fn call_cdp_method(
     window: &WebviewWindow,
-    state: Arc<CaptureState>,
-    task_deadline: Instant,
+    method: &'static str,
+    parameters: String,
+    state: &Arc<CaptureState>,
+    deadline: Instant,
 ) -> Result<String, String> {
     use webview2_com::{CallDevToolsProtocolMethodCompletedHandler, CoTaskMemPWSTR};
 
-    let deadline = task_deadline.min(Instant::now() + Duration::from_millis(FRAME_TIMEOUT_MS));
     let (sender, mut receiver) = tokio::sync::mpsc::channel(1);
     let callback_state = state.clone();
     window
@@ -297,22 +349,20 @@ async fn capture_png(
                 return;
             }
             let result = (|| {
-                let parameters = screenshot_parameters();
                 let core = unsafe { webview.controller().CoreWebView2() }
-                    .map_err(|error| format!("获取主窗口 WebView2 失败: {error}"))?;
+                    .map_err(|error| format!("获取离屏渲染 WebView2 失败: {error}"))?;
                 let callback_sender = sender.clone();
                 let callback = CallDevToolsProtocolMethodCompletedHandler::create(Box::new(
                     move |status, response| {
                         let result = status
                             .map(|_| response)
-                            .map_err(|error| format!("采集作品截图失败: {error}"));
+                            .map_err(|error| format!("执行渲染指令失败: {error}"));
                         let _ = callback_sender.try_send(result);
                         Ok(())
                     },
                 ));
-                let method = CoTaskMemPWSTR::from("Page.captureScreenshot");
+                let method = CoTaskMemPWSTR::from(method);
                 let parameters = CoTaskMemPWSTR::from(parameters.as_str());
-                // WebView2 的 COM 操作必须留在 Tauri 调度的 UI 线程；交由前端 Worker 按预览区域裁剪。
                 unsafe {
                     core.CallDevToolsProtocolMethod(
                         *method.as_ref().as_pcwstr(),
@@ -320,31 +370,136 @@ async fn capture_png(
                         &callback,
                     )
                 }
-                .map_err(|error| format!("发起作品截图失败: {error}"))
+                .map_err(|error| format!("发起渲染指令失败: {error}"))
             })();
             if let Err(error) = result {
                 let _ = sender.try_send(Err(error));
             }
         })
-        .map_err(|error| format!("调度主窗口截图失败: {error}"))?;
-    let response = wait_capture_result(&mut receiver, &state, deadline).await?;
+        .map_err(|error| format!("调度离屏渲染窗口失败: {error}"))?;
+    wait_capture_result(&mut receiver, state, deadline).await
+}
+
+#[cfg(target_os = "windows")]
+async fn navigate_render_html(window: &WebviewWindow, html: String) -> Result<(), String> {
+    use webview2_com::CoTaskMemPWSTR;
+
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    window
+        .with_webview(move |webview| {
+            let result = (|| {
+                let core = unsafe { webview.controller().CoreWebView2() }
+                    .map_err(|error| format!("获取离屏渲染 WebView2 失败: {error}"))?;
+                let content = CoTaskMemPWSTR::from(html.as_str());
+                unsafe { core.NavigateToString(*content.as_ref().as_pcwstr()) }
+                    .map_err(|error| format!("载入图形渲染内容失败: {error}"))
+            })();
+            let _ = sender.send(result);
+        })
+        .map_err(|error| format!("调度离屏渲染载入失败: {error}"))?;
+    receiver
+        .await
+        .map_err(|_| "离屏渲染载入状态异常中断".to_string())?
+}
+
+#[cfg(target_os = "windows")]
+async fn wait_render_ready(
+    window: &WebviewWindow,
+    state: &Arc<CaptureState>,
+    deadline: Instant,
+) -> Result<(), String> {
+    let evaluate_params =
+        r#"{"expression":"window.__PELICAN_RENDER_READY === true","returnByValue":true}"#
+            .to_string();
+    loop {
+        state.ensure_running()?;
+        if Instant::now() >= deadline {
+            return Err("离屏渲染页面就绪超时".to_string());
+        }
+        let response = call_cdp_method(
+            window,
+            "Runtime.evaluate",
+            evaluate_params.clone(),
+            state,
+            deadline,
+        )
+        .await?;
+        if is_render_ready_response(&response) {
+            return Ok(());
+        }
+        tokio::time::sleep(Duration::from_millis(RENDER_READY_POLL_MS)).await;
+    }
+}
+
+#[cfg(target_os = "windows")]
+async fn capture_png(
+    window: &WebviewWindow,
+    state: &Arc<CaptureState>,
+    task_deadline: Instant,
+) -> Result<String, String> {
+    let deadline = task_deadline.min(Instant::now() + Duration::from_millis(FRAME_TIMEOUT_MS));
+    let response = call_cdp_method(
+        window,
+        "Page.captureScreenshot",
+        screenshot_parameters(),
+        state,
+        deadline,
+    )
+    .await?;
     parse_capture_frame(&response)
 }
 
 #[tauri::command]
 pub async fn capture_pelican_frames(
+    app: AppHandle,
     window: WebviewWindow,
     request_id: String,
+    html: String,
     duration_ms: u64,
     on_frame: Channel<CaptureFrame>,
 ) -> Result<usize, String> {
     ensure_main_window(window.label())?;
+    validate_render_html(&html)?;
     let frame_limit = capture_frame_limit(duration_ms)?;
     let guard = capture_registry().begin(&request_id)?;
     guard.state.ensure_running()?;
 
     #[cfg(target_os = "windows")]
     {
+        let renderer_data_dir = app
+            .path()
+            .app_cache_dir()
+            .map_err(|error| format!("获取离屏渲染缓存目录失败: {error}"))?
+            .join("pelican-gif-renderer");
+        let label = format!("pelican-gif-render-{}", sanitize_render_label(&request_id));
+        let about_blank = tauri::WebviewUrl::External(
+            "about:blank"
+                .parse()
+                .map_err(|_| "离屏渲染初始地址无效".to_string())?,
+        );
+        // 使用独立的离屏窗口并禁用原生遮挡与后台节流，确保导出过程不受主窗口尺寸、滚动或弹窗影响。
+        let render_window = tauri::WebviewWindowBuilder::new(&app, label, about_blank)
+            .title("Pelican GIF Renderer")
+            .inner_size(GIF_CAPTURE_WIDTH, GIF_CAPTURE_HEIGHT)
+            .position(-20000.0, -20000.0)
+            .decorations(false)
+            .shadow(false)
+            .resizable(false)
+            .skip_taskbar(true)
+            .focused(false)
+            .visible(true)
+            .data_directory(renderer_data_dir)
+            .additional_browser_args(
+                "--disable-features=CalculateNativeWinOcclusion --disable-background-timer-throttling --disable-renderer-backgrounding",
+            )
+            .build()
+            .map_err(|error| format!("创建离屏渲染窗口失败: {error}"))?;
+        let _render_guard = RenderWindowGuard(render_window.clone());
+
+        navigate_render_html(&render_window, html).await?;
+        let ready_deadline = Instant::now() + Duration::from_millis(RENDER_READY_TIMEOUT_MS);
+        wait_render_ready(&render_window, &guard.state, ready_deadline).await?;
+
         let started = Instant::now();
         let recording_end = started + Duration::from_millis(duration_ms);
         let task_deadline = recording_end + Duration::from_millis(FRAME_TIMEOUT_MS);
@@ -357,7 +512,7 @@ pub async fn capture_pelican_frames(
                 break;
             }
             let timestamp_ms = started.elapsed().as_secs_f64() * 1000.0;
-            let data = capture_png(&window, guard.state.clone(), task_deadline).await?;
+            let data = capture_png(&render_window, &guard.state, task_deadline).await?;
             guard.state.ensure_running()?;
             on_frame
                 .send(CaptureFrame { data, timestamp_ms })
@@ -371,7 +526,7 @@ pub async fn capture_pelican_frames(
     }
     #[cfg(not(target_os = "windows"))]
     {
-        let _ = (guard, frame_limit, on_frame);
+        let _ = (app, guard, frame_limit, on_frame);
         Err("当前平台暂不支持原生 GIF 采集".to_string())
     }
 }
@@ -861,7 +1016,9 @@ mod tests {
         fn assert_count_result<Command, ResultFuture>(_command: Command)
         where
             Command: FnOnce(
+                AppHandle,
                 WebviewWindow,
+                String,
                 String,
                 u64,
                 Channel<CaptureFrame>,
@@ -870,6 +1027,18 @@ mod tests {
         {
         }
         assert_count_result(capture_pelican_frames);
+    }
+
+    #[test]
+    fn test_render_html_validation_and_ready_response_parsing() {
+        assert!(validate_render_html("").is_err());
+        assert!(validate_render_html("   ").is_err());
+        assert!(validate_render_html("<!DOCTYPE html><html></html>").is_ok());
+        assert!(validate_render_html(&"a".repeat(MAX_RENDER_HTML_BYTES + 1)).is_err());
+        assert_eq!(sanitize_render_label("abc-123_XYZ!@#"), "abc-123_XYZ");
+        assert!(is_render_ready_response(r#"{"result":{"type":"boolean","value":true}}"#));
+        assert!(!is_render_ready_response(r#"{"result":{"type":"boolean","value":false}}"#));
+        assert!(!is_render_ready_response("invalid"));
     }
 
     #[test]

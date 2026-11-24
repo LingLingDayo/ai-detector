@@ -19,10 +19,13 @@ export const usePelicanExportStore = defineStore("pelicanExport", () => {
       if (format !== "gif" && format !== source.contentType) throw new Error("下载格式与原始内容不一致");
       let blob: Blob;
       if (format === "gif") {
-        const preview = source.getPreviewElement?.();
-        if (!preview) throw new Error("预览尚未就绪，请稍后重试");
         toastStore.hideToast();
-        blob = await recordPelicanGif(preview, { signal: controller.signal });
+        blob = await recordPelicanGif({
+          content: source.content,
+          contentType: source.contentType,
+          bgTheme: source.bgTheme,
+          previewElement: source.getPreviewElement?.() ?? null,
+        }, { signal: controller.signal });
       } else {
         blob = new Blob([source.content], { type: format === "html" ? "text/html;charset=utf-8" : "image/svg+xml;charset=utf-8" });
       }

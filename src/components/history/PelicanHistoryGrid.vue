@@ -35,7 +35,6 @@ const pelicanStore = usePelicanTestStore();
 const pelicanExportStore = usePelicanExportStore();
 const gifAvailable = canExportPelicanGif();
 const openMenuId = ref<string | null>(null);
-const recordingItemId = ref<string | null>(null);
 const popoverPlacementMap = ref<Record<string, "top" | "bottom">>({});
 
 const gridContainerRef = ref<HTMLElement | null>(null);
@@ -140,27 +139,19 @@ function handleMenuOpenChange(id: string, isOpen: boolean): void {
 async function handleDownloadPelican(item: PelicanHistoryItem, format: PelicanDownloadFormat): Promise<void> {
   if (pelicanExportStore.isExporting) return;
   const contentType = resolvePelicanContentType(item.contentType, item.content);
-  if (format === "gif") {
-    recordingItemId.value = item.id;
-  }
-  try {
-    await pelicanExportStore.exportFile({
-      content: item.content,
-      contentType,
-      modelName: item.modelName,
-      createdAt: item.createdAt,
-      getPreviewElement: () => {
-        const card = Array.from(
-          gridContainerRef.value?.querySelectorAll<HTMLElement>("[data-history-id]") ?? []
-        ).find((el) => el.dataset.historyId === item.id);
-        return card?.querySelector<HTMLElement>(".image-stage") ?? null;
-      },
-    }, format);
-  } finally {
-    if (recordingItemId.value === item.id) {
-      recordingItemId.value = null;
-    }
-  }
+  await pelicanExportStore.exportFile({
+    content: item.content,
+    contentType,
+    modelName: item.modelName,
+    bgTheme: pelicanStore.bgTheme,
+    createdAt: item.createdAt,
+    getPreviewElement: () => {
+      const card = Array.from(
+        gridContainerRef.value?.querySelectorAll<HTMLElement>("[data-history-id]") ?? []
+      ).find((el) => el.dataset.historyId === item.id);
+      return card?.querySelector<HTMLElement>(".image-stage") ?? null;
+    },
+  }, format);
 }
 
 async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
@@ -197,7 +188,6 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
         :class="{
           'is-pinned-card': pinnedId === item.id,
           'is-menu-open': openMenuId === item.id,
-          'is-recording': recordingItemId === item.id,
         }"
       >
         <!-- 1. 图片展示区域（纯原生矢量 SVG 等比居中展示，HTML 按 800x600 等比缩放微缩展示） -->
@@ -582,17 +572,5 @@ async function handleCopyPelican(item: PelicanHistoryItem): Promise<void> {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
-}
-
-/* 录制历史卡片 GIF 时隐藏角标与底栏覆盖层，避免遮挡画面或进入动图 */
-.pelican-card-item.is-recording {
-  .model-tag,
-  .info-icon-wrapper,
-  .card-footer {
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-    transition: none !important;
-  }
 }
 </style>

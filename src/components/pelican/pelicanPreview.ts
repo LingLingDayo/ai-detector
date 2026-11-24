@@ -449,6 +449,88 @@ ${createFitViewportScript(fitMode, false)}
 }
 
 /**
+ * 构建用于离屏 GIF 采集的独立 HTML 文档：
+ * 内嵌与主舞台一致的径向背景和沙箱预览 iframe，彻底脱离主窗口视口尺寸、滚动和遮挡限制。
+ */
+export function buildPelicanGifDocument(
+  item: {
+    contentType?: string;
+    content: string;
+  },
+  colorScheme: "dark" | "light" = "dark"
+): string {
+  const previewDoc = buildPelicanPreviewDocument(item, colorScheme, "contain");
+  const escapedSrcdoc = previewDoc
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  let background =
+    colorScheme === "light"
+      ? "radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%)"
+      : "radial-gradient(circle at center, #161f30 0%, #0d121c 100%)";
+  if (colorScheme !== "light" && typeof document !== "undefined" && typeof getComputedStyle === "function") {
+    const cssVar = getComputedStyle(document.documentElement)
+      .getPropertyValue("--pelican-canvas-radial")
+      .trim();
+    if (cssVar) {
+      background = cssVar;
+    }
+  }
+
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: ${background};
+    }
+    body {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      background: transparent;
+    }
+  </style>
+  <script>
+    window.__PELICAN_RENDER_READY = false;
+    (function() {
+      function markReady() {
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            window.__PELICAN_RENDER_READY = true;
+          });
+        });
+      }
+      if (document.readyState === "complete") {
+        markReady();
+      } else {
+        window.addEventListener("load", markReady, { once: true });
+      }
+    })();
+  </script>
+</head>
+<body>
+  <iframe sandbox="allow-scripts allow-same-origin" scrolling="no" srcdoc="${escapedSrcdoc}"></iframe>
+</body>
+</html>`;
+}
+
+/**
  * 根据项目类型生成对应的预览 HTML
  */
 export function buildPelicanPreviewDocument(

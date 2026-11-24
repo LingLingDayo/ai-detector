@@ -52,10 +52,12 @@ describe("一键下载任务", () => {
     expect(useToastStore().toastState).toMatchObject({ title: "已交给浏览器下载", filePath: "" });
   });
 
-  it("没有预览的GIF明确失败，不进行保存", async () => {
+  it("未提供预览DOM时仍可通过离屏渲染正常导出 GIF", async () => {
+    record.mockResolvedValue(new Blob(["GIF89a"], { type: "image/gif" }));
+    save.mockResolvedValue({ fileName: "qa.gif", path: "C:\\Downloads\\qa.gif" });
     await usePelicanExportStore().exportFile({ ...source, getPreviewElement: undefined }, "gif");
-    expect(record).not.toHaveBeenCalled();
-    expect(save).not.toHaveBeenCalled();
-    expect(useToastStore().toastState.type).toBe("error");
+    expect(record).toHaveBeenCalledOnce();
+    expect(save).toHaveBeenCalledOnce();
+    expect(useToastStore().toastState).toMatchObject({ type: "success", title: "下载完成" });
   });
 });

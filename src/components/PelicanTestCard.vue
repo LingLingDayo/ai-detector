@@ -138,6 +138,7 @@ async function handleDownloadContent(format: PelicanDownloadFormat): Promise<voi
     content: displayContent.value,
     contentType: props.contentType,
     modelName: props.modelName,
+    bgTheme: pelicanStore.bgTheme,
     getPreviewElement: () => stageRootRef.value?.querySelector<HTMLElement>(".render-frame") ?? null,
   }, format);
 }

@@ -6,6 +6,7 @@ export interface PelicanExportSource {
   content: string;
   contentType: PelicanContentType;
   modelName: string;
+  bgTheme?: "dark" | "light";
   createdAt?: number;
   getPreviewElement?: () => HTMLElement | null;
 }
