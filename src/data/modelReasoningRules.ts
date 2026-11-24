@@ -141,6 +141,12 @@ export const SERIES_REASONING_RULES: readonly SeriesReasoningRule[] = [
     supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
     defaultEffort: "medium",
   },
+  {
+    vendor: "OpenAI GPT-6.2",
+    series: "GPT-6.2",
+    supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "medium",
+  },
 
   // ==================== Zhipu GLM ====================
   {
