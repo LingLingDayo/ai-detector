@@ -1,30 +1,11 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import { FolderPlus, List, Plus, X } from "@lucide/vue";
-
-const props = withDefaults(
-  defineProps<{
-    configCount?: number;
-    groupCount?: number;
-  }>(),
-  {
-    configCount: 0,
-    groupCount: 0,
-  }
-);
 
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "openCreate"): void;
   (e: "openCreateGroup"): void;
 }>();
-
-const summaryText = computed(() => {
-  if (props.groupCount > 0) {
-    return `${props.configCount} 项配置 · ${props.groupCount} 个分组`;
-  }
-  return `${props.configCount} 项配置`;
-});
 </script>
 
 <template>
@@ -33,10 +14,7 @@ const summaryText = computed(() => {
       <div class="title-icon">
         <List :size="18" />
       </div>
-      <div class="title-wrap">
-        <h3>配置列表</h3>
-        <span class="count-pill">{{ summaryText }}</span>
-      </div>
+      <h3>配置列表</h3>
     </div>
 
     <div class="header-actions">
@@ -100,33 +78,11 @@ const summaryText = computed(() => {
       flex-shrink: 0;
     }
 
-    .title-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      flex-wrap: wrap;
-    }
-
     h3 {
       font-size: 15px;
       font-weight: 600;
       color: var(--text-strong);
       margin: 0;
-    }
-
-    .count-pill {
-      display: inline-flex;
-      align-items: center;
-      height: 20px;
-      padding: 0 8px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      background: var(--bg-control);
-      border: 1px solid var(--border-subtle);
-      white-space: nowrap;
     }
   }
 

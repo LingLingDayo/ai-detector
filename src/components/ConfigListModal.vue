@@ -299,8 +299,6 @@ function handleQuickApply(item: ConfigItem): void {
       <div class="config-modal-dialog list-dialog" role="dialog" aria-modal="true">
         <!-- 弹窗顶栏 -->
         <ConfigModalHeader
-          :config-count="configs.length"
-          :group-count="groups.length"
           @open-create="emit('openCreate')"
           @open-create-group="openCreateGroupInput"
           @close="emit('close')"
