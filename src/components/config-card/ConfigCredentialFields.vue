@@ -36,11 +36,11 @@ function handleApiKeyInput(event: Event): void {
           id="base-url"
           :value="baseUrl"
           :disabled="disabled"
-          placeholder="https://api.openai.com"
+          placeholder="https://lingai.linglingdayo.top"
           required
           autocomplete="off"
           spellcheck="false"
-          title="API 接口根路径，例如 https://api.openai.com 或中转域名"
+          title="API 接口根路径，例如 https://lingai.linglingdayo.top 或中转域名"
           @input="handleBaseUrlInput"
           @blur="emit('fetch-models')"
           @keydown.enter="emit('fetch-models')"

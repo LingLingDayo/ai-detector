@@ -284,7 +284,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
                   type="url"
                   id="cfg-base-url"
                   v-model="formData.baseUrl"
-                  placeholder="https://api.openai.com"
+                  placeholder="https://lingai.linglingdayo.top"
                   required
                   autocomplete="off"
                   spellcheck="false"
