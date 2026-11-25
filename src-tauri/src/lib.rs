@@ -1,5 +1,7 @@
 pub mod commands;
 pub mod diagnostics;
+pub mod error;
+pub mod infra;
 pub mod parser;
 pub mod types;
 pub mod utils;
