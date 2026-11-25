@@ -208,6 +208,10 @@ function handleDrop(event: DragEvent): void {
     background var(--transition-fast);
   overflow: visible;
 
+  &:not(.is-collapsed):not(.is-drop-target):not(.is-dragging-hint) {
+    transition: none;
+  }
+
   &.is-active {
     border-color: rgba(16, 185, 129, 0.4);
     background: rgba(16, 185, 129, 0.04);
