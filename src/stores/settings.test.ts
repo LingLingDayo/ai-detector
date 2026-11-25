@@ -284,3 +284,22 @@ describe("settings store 自定义下载目录", () => {
     expect(useSettingsStore().downloadDirectory).toBe("D:\\Downloads\\pelican");
   });
 });
+
+describe("settings store 批量导入", () => {
+  it("importSettings 仅应用合法设置项并自动纠正越界值", () => {
+    storage.clear();
+    const store = newStore();
+    const count = store.importSettings({
+      theme: "midnight",
+      requestRetryCount: "99",
+      streamTimeoutSeconds: 2,
+      unknownKey: "ignored",
+    });
+
+    expect(count).toBe(3);
+    expect(store.theme).toBe("midnight");
+    expect(store.requestRetryCount).toBe(3);
+    expect(store.streamTimeoutSeconds).toBe(10);
+    expect(store.getValue("unknownKey")).toBeUndefined();
+  });
+});

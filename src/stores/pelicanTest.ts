@@ -364,6 +364,45 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     }
   }
 
+  function importPelicanHistory(
+    items: PelicanHistoryItem[],
+    mode: "merge" | "overwrite"
+  ): { added: number; skipped: number } {
+    const incoming = Array.isArray(items) ? items : [];
+    if (mode === "overwrite") {
+      const seen = new Set<string>();
+      const next: PelicanHistoryItem[] = [];
+      for (const item of incoming) {
+        if (!item || typeof item.id !== "string" || seen.has(item.id)) continue;
+        seen.add(item.id);
+        next.push(item);
+      }
+      next.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      pelicanHistoryList.value = next;
+      persistPelicanHistory(next);
+      return { added: next.length, skipped: 0 };
+    }
+
+    const existingIds = new Set(pelicanHistoryList.value.map((item) => item.id));
+    const addedItems: PelicanHistoryItem[] = [];
+    let skipped = 0;
+    for (const item of incoming) {
+      if (!item || typeof item.id !== "string") continue;
+      if (existingIds.has(item.id)) {
+        skipped += 1;
+        continue;
+      }
+      existingIds.add(item.id);
+      addedItems.push(item);
+    }
+    const next = [...addedItems, ...pelicanHistoryList.value].sort(
+      (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
+    );
+    pelicanHistoryList.value = next;
+    persistPelicanHistory(next);
+    return { added: addedItems.length, skipped };
+  }
+
   function setPelicanPrompt(newPrompt: string): void {
     const trimmed = newPrompt.trim();
     const finalPrompt = trimmed || DEFAULT_PELICAN_PROMPT;
@@ -697,6 +736,7 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     resetPelicanTest,
     deletePelicanHistoryItem,
     clearPelicanHistory,
+    importPelicanHistory,
     applyHistoryItem,
   };
 });

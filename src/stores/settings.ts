@@ -170,6 +170,50 @@ export const useSettingsStore = defineStore("settings", () => {
     persist();
   }
 
+  function importSettings(incoming: Record<string, SettingsValue>): number {
+    if (!incoming || typeof incoming !== "object") return 0;
+    let applied = 0;
+    for (const key of Object.keys(defaults)) {
+      if (!(key in incoming)) continue;
+      const val = incoming[key];
+      if (typeof val !== typeof defaults[key]) continue;
+      values[key] = val;
+      applied += 1;
+    }
+
+    if (values.theme === "dark") {
+      values.theme = "default";
+    } else if (
+      values.theme !== "default" &&
+      values.theme !== "light" &&
+      values.theme !== "midnight"
+    ) {
+      values.theme = defaults.theme;
+    }
+    if (!VALID_RETRY_COUNTS.has(values.requestRetryCount)) {
+      values.requestRetryCount = "3";
+    }
+    if (!isValidUserAgentPreset(values.userAgentPreset)) {
+      values.userAgentPreset = DEFAULT_USER_AGENT_PRESET;
+    }
+    if (
+      values.defaultTestMode !== "probe" &&
+      values.defaultTestMode !== "pelican" &&
+      values.defaultTestMode !== "candy" &&
+      values.defaultTestMode !== "connection"
+    ) {
+      values.defaultTestMode = "probe";
+    }
+    if (values.defaultConnectionMode !== "chat" && values.defaultConnectionMode !== "quick") {
+      values.defaultConnectionMode = "chat";
+    }
+    values.streamTimeoutSeconds = clampTimeout(values.streamTimeoutSeconds, 90, 600);
+    values.syncTimeoutSeconds = clampTimeout(values.syncTimeoutSeconds, 240, 900);
+
+    persist();
+    return applied;
+  }
+
   function persist(): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
@@ -208,5 +252,6 @@ export const useSettingsStore = defineStore("settings", () => {
     appendHistoryEntry,
     getValue,
     setValue,
+    importSettings,
   };
 });

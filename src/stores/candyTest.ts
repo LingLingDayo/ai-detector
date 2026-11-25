@@ -95,6 +95,45 @@ export const useCandyTestStore = defineStore("candyTest", () => {
     clearCandyHistoryStorage();
   }
 
+  function importCandyHistory(
+    items: CandyHistoryItem[],
+    mode: "merge" | "overwrite"
+  ): { added: number; skipped: number } {
+    const incoming = Array.isArray(items) ? items : [];
+    if (mode === "overwrite") {
+      const seen = new Set<string>();
+      const next: CandyHistoryItem[] = [];
+      for (const item of incoming) {
+        if (!item || typeof item.id !== "string" || seen.has(item.id)) continue;
+        seen.add(item.id);
+        next.push(item);
+      }
+      next.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      candyHistoryList.value = next;
+      persistCandyHistory(next);
+      return { added: next.length, skipped: 0 };
+    }
+
+    const existingIds = new Set(candyHistoryList.value.map((item) => item.id));
+    const addedItems: CandyHistoryItem[] = [];
+    let skipped = 0;
+    for (const item of incoming) {
+      if (!item || typeof item.id !== "string") continue;
+      if (existingIds.has(item.id)) {
+        skipped += 1;
+        continue;
+      }
+      existingIds.add(item.id);
+      addedItems.push(item);
+    }
+    const next = [...addedItems, ...candyHistoryList.value].sort(
+      (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
+    );
+    candyHistoryList.value = next;
+    persistCandyHistory(next);
+    return { added: addedItems.length, skipped };
+  }
+
   const currentChallenges = ref<CandyChallenge[]>(generateCandyChallengesSync(totalCount));
 
   let sessionId = 0;
@@ -626,6 +665,7 @@ export const useCandyTestStore = defineStore("candyTest", () => {
     retrySingleQuestion,
     deleteCandyHistoryItem,
     clearCandyHistory,
+    importCandyHistory,
     applyHistoryItem,
   };
 });

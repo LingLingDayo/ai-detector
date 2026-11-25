@@ -481,6 +481,46 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
     }
   }
 
+  function importConnectionHistory(
+    items: ConnectionHistoryItem[],
+    mode: "merge" | "overwrite"
+  ): { added: number; skipped: number } {
+    const incoming = Array.isArray(items) ? items : [];
+    const sortByTimeDesc = (a: ConnectionHistoryItem, b: ConnectionHistoryItem) =>
+      (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
+
+    if (mode === "overwrite") {
+      const seen = new Set<string>();
+      const next: ConnectionHistoryItem[] = [];
+      for (const item of incoming) {
+        if (!item || typeof item.id !== "string" || seen.has(item.id)) continue;
+        seen.add(item.id);
+        next.push(item);
+      }
+      next.sort(sortByTimeDesc);
+      connectionHistoryList.value = next;
+      persistConnectionHistory(next);
+      return { added: next.length, skipped: 0 };
+    }
+
+    const existingIds = new Set(connectionHistoryList.value.map((item) => item.id));
+    const addedItems: ConnectionHistoryItem[] = [];
+    let skipped = 0;
+    for (const item of incoming) {
+      if (!item || typeof item.id !== "string") continue;
+      if (existingIds.has(item.id)) {
+        skipped += 1;
+        continue;
+      }
+      existingIds.add(item.id);
+      addedItems.push(item);
+    }
+    const next = [...addedItems, ...connectionHistoryList.value].sort(sortByTimeDesc);
+    connectionHistoryList.value = next;
+    persistConnectionHistory(next);
+    return { added: addedItems.length, skipped };
+  }
+
   onScopeDispose(() => {
     currentRunId += 1;
     abortController?.abort();
@@ -512,5 +552,6 @@ export const useConnectionTestStore = defineStore("connectionTest", () => {
     clearConnectionContext,
     deleteConnectionHistoryItem,
     clearConnectionHistory,
+    importConnectionHistory,
   };
 });

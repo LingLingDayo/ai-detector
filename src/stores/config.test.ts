@@ -851,6 +851,75 @@ describe("配置分组管理、拖拽归组与级联删除测试套件", () => {
     freshStore.loadConfig();
     expect(freshStore.configGroups.map((g) => g.id)).toEqual([g1.id, g4.id, g2.id, g3.id]);
   });
+
+  it("importConfigs 支持合并去重（按 ID/同名复用分组）与覆盖替换", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    store.loadConfig();
+
+    const g1 = store.createConfigGroup("主力")!;
+    store.handleSaveConfigItem({
+      name: "账号A",
+      baseUrl: "https://api.a.com",
+      apiKey: "sk-a",
+      modelName: "gpt-4o",
+      groupId: g1.id,
+    });
+
+    // 合并：同名分组复用，重复账号跳过，新账号导入并映射到已有分组
+    const mergeRes = store.importConfigs(
+      {
+        groups: [
+          { id: "ext_g1", name: "主力" },
+          { id: "ext_g2", name: "备用" },
+        ],
+        items: [
+          {
+            id: "dup_item",
+            name: "账号A",
+            baseUrl: "https://api.a.com",
+            apiKey: "sk-a",
+            modelName: "gpt-4o",
+            groupId: "ext_g1",
+          },
+          {
+            id: "new_item",
+            name: "账号B",
+            baseUrl: "https://api.b.com",
+            apiKey: "sk-b",
+            modelName: "claude-3-7-sonnet",
+            groupId: "ext_g2",
+          },
+        ],
+      },
+      "merge"
+    );
+
+    expect(mergeRes).toEqual({ addedGroups: 1, addedItems: 1, skippedItems: 1 });
+    expect(store.configGroups.map((g) => g.name)).toEqual(["主力", "备用"]);
+    expect(store.configList).toHaveLength(2);
+
+    // 覆盖：完全替换分组与账号
+    const overwriteRes = store.importConfigs(
+      {
+        groups: [{ id: "only_g", name: "全新分组" }],
+        items: [
+          {
+            id: "only_i",
+            name: "全新账号",
+            baseUrl: "https://api.new.com",
+            apiKey: "sk-new",
+            groupId: "only_g",
+          },
+        ],
+      },
+      "overwrite"
+    );
+    expect(overwriteRes).toEqual({ addedGroups: 1, addedItems: 1, skippedItems: 0 });
+    expect(store.configGroups.map((g) => g.name)).toEqual(["全新分组"]);
+    expect(store.configList.map((c) => c.name)).toEqual(["全新账号"]);
+  });
 });
 
 

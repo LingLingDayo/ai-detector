@@ -656,6 +656,185 @@ export const useConfigStore = defineStore("config", () => {
     return true;
   }
 
+  function normalizeImportedApiFormat(apiFormat?: string): string {
+    if (
+      apiFormat === "responses" ||
+      apiFormat === "openai_responses" ||
+      apiFormat === "openai_native"
+    ) {
+      return "responses";
+    }
+    if (apiFormat === "anthropic") {
+      return "anthropic";
+    }
+    return "chat_completions";
+  }
+
+  function importConfigs(
+    payload: { groups: ConfigGroup[]; items: ConfigItem[] },
+    mode: "merge" | "overwrite"
+  ): { addedGroups: number; addedItems: number; skippedItems: number } {
+    const now = Date.now();
+    const incomingGroups = Array.isArray(payload.groups) ? payload.groups : [];
+    const incomingItems = Array.isArray(payload.items) ? payload.items : [];
+
+    let addedGroups = 0;
+    let addedItems = 0;
+    let skippedItems = 0;
+
+    if (mode === "overwrite") {
+      const nextGroups: ConfigGroup[] = [];
+      const groupIdMap = new Map<string, string>();
+      for (const grp of incomingGroups) {
+        if (!grp || typeof grp.name !== "string" || !grp.name.trim()) continue;
+        const id = typeof grp.id === "string" && grp.id.trim() ? grp.id.trim() : generateGroupId();
+        if (groupIdMap.has(id)) continue;
+        groupIdMap.set(id, id);
+        nextGroups.push({
+          id,
+          name: grp.name.trim(),
+          collapsed: Boolean(grp.collapsed),
+          createdAt: typeof grp.createdAt === "number" ? grp.createdAt : now,
+          updatedAt: typeof grp.updatedAt === "number" ? grp.updatedAt : now,
+        });
+        addedGroups += 1;
+      }
+
+      const validGroupIds = new Set(nextGroups.map((g) => g.id));
+      const nextItems: ConfigItem[] = [];
+      const usedItemIds = new Set<string>();
+      for (const item of incomingItems) {
+        if (!item || typeof item.baseUrl !== "string" || typeof item.apiKey !== "string") continue;
+        let id = typeof item.id === "string" && item.id.trim() ? item.id.trim() : generateConfigId();
+        if (usedItemIds.has(id)) {
+          id = generateConfigId();
+        }
+        usedItemIds.add(id);
+        const mappedGroupId =
+          item.groupId && validGroupIds.has(item.groupId) ? item.groupId : undefined;
+        const sanitized: ConfigItem = {
+          id,
+          name: (item.name || "未命名配置").trim(),
+          baseUrl: item.baseUrl.trim(),
+          apiKey: item.apiKey.trim(),
+          apiFormat: normalizeImportedApiFormat(item.apiFormat),
+          modelName: (item.modelName || "").trim(),
+          reasoningEffort: resolveValidReasoningEffort(item.modelName, item.reasoningEffort || "high"),
+          stream: item.stream !== false,
+          isCustomModel: item.isCustomModel === true,
+          ...(mappedGroupId ? { groupId: mappedGroupId } : {}),
+          createdAt: typeof item.createdAt === "number" ? item.createdAt : now,
+          updatedAt: typeof item.updatedAt === "number" ? item.updatedAt : now,
+        };
+        nextItems.push(sanitized);
+        addedItems += 1;
+      }
+
+      configGroups.value = nextGroups;
+      configList.value = nextItems;
+      if (activeConfigId.value && !nextItems.some((item) => item.id === activeConfigId.value)) {
+        activeConfigId.value = null;
+      }
+      if (
+        lastActiveConfigId.value &&
+        !nextItems.some((item) => item.id === lastActiveConfigId.value)
+      ) {
+        lastActiveConfigId.value = null;
+      }
+      saveConfigListToStorage();
+      return { addedGroups, addedItems, skippedItems };
+    }
+
+    const nextGroups = [...configGroups.value];
+    const groupIdMap = new Map<string, string>();
+    for (const grp of incomingGroups) {
+      if (!grp || typeof grp.name !== "string" || !grp.name.trim()) continue;
+      const trimmedName = grp.name.trim();
+      const rawId = typeof grp.id === "string" ? grp.id.trim() : "";
+      const existingById = rawId ? nextGroups.find((g) => g.id === rawId) : undefined;
+      if (existingById) {
+        groupIdMap.set(rawId, existingById.id);
+        continue;
+      }
+      const existingByName = nextGroups.find((g) => g.name.trim() === trimmedName);
+      if (existingByName) {
+        if (rawId) groupIdMap.set(rawId, existingByName.id);
+        continue;
+      }
+      const newGroupId = rawId || generateGroupId();
+      if (rawId) groupIdMap.set(rawId, newGroupId);
+      nextGroups.push({
+        id: newGroupId,
+        name: trimmedName,
+        collapsed: grp.collapsed ?? true,
+        createdAt: typeof grp.createdAt === "number" ? grp.createdAt : now,
+        updatedAt: typeof grp.updatedAt === "number" ? grp.updatedAt : now,
+      });
+      addedGroups += 1;
+    }
+
+    const validGroupIds = new Set(nextGroups.map((g) => g.id));
+    const nextItems = [...configList.value];
+    const existingItemIds = new Set(nextItems.map((i) => i.id));
+
+    for (const item of incomingItems) {
+      if (!item || typeof item.baseUrl !== "string" || typeof item.apiKey !== "string") continue;
+      const normalizedName = (item.name || "未命名配置").trim();
+      const mappedGroupId = item.groupId
+        ? groupIdMap.get(item.groupId) ?? (validGroupIds.has(item.groupId) ? item.groupId : undefined)
+        : undefined;
+
+      const candidate: ConfigItem = {
+        id: typeof item.id === "string" && item.id.trim() ? item.id.trim() : generateConfigId(),
+        name: normalizedName,
+        baseUrl: item.baseUrl.trim(),
+        apiKey: item.apiKey.trim(),
+        apiFormat: normalizeImportedApiFormat(item.apiFormat),
+        modelName: (item.modelName || "").trim(),
+        reasoningEffort: resolveValidReasoningEffort(item.modelName, item.reasoningEffort || "high"),
+        stream: item.stream !== false,
+        isCustomModel: item.isCustomModel === true,
+        ...(mappedGroupId ? { groupId: mappedGroupId } : {}),
+        createdAt: typeof item.createdAt === "number" ? item.createdAt : now,
+        updatedAt: typeof item.updatedAt === "number" ? item.updatedAt : now,
+      };
+
+      const duplicate = nextItems.some((existing) => {
+        const samePayload =
+          existing.name.trim() === candidate.name &&
+          isConfigEqual(
+            {
+              baseUrl: candidate.baseUrl,
+              apiKey: candidate.apiKey,
+              apiFormat: candidate.apiFormat || "chat_completions",
+              modelName: candidate.modelName || "",
+              reasoningEffort: candidate.reasoningEffort || "high",
+              stream: candidate.stream !== false,
+            },
+            existing
+          );
+        return samePayload && (existing.groupId || undefined) === (candidate.groupId || undefined);
+      });
+
+      if (duplicate) {
+        skippedItems += 1;
+        continue;
+      }
+
+      if (existingItemIds.has(candidate.id)) {
+        candidate.id = generateConfigId();
+      }
+      existingItemIds.add(candidate.id);
+      nextItems.push(candidate);
+      addedItems += 1;
+    }
+
+    configGroups.value = nextGroups;
+    configList.value = nextItems;
+    saveConfigListToStorage();
+    return { addedGroups, addedItems, skippedItems };
+  }
+
   function loadConfig(): void {
     try {
       // 1. 读取保存的配置分组
@@ -1035,5 +1214,6 @@ export const useConfigStore = defineStore("config", () => {
     moveConfigToGroup,
     moveConfigGroup,
     deleteConfigGroup,
+    importConfigs,
   };
 });
