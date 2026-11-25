@@ -1,5 +1,6 @@
 pub mod candy;
 pub mod chat;
+pub mod data;
 pub mod events;
 pub mod models;
 pub mod pelican;
@@ -37,7 +38,9 @@ pub fn run(services: AppServices, capture_registry: CaptureRegistry) {
             pelican::capture_pelican_frames,
             pelican::cancel_pelican_capture,
             pelican::save_pelican_download,
-            pelican::pick_download_directory
+            pelican::pick_download_directory,
+            data::save_data_export,
+            data::pick_data_import_file
         ])
         .run(tauri::generate_context!())
         .expect("运行 Tauri 桌面应用时发生异常");

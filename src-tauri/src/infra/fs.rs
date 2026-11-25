@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use crate::error::{AppError, AppResult};
 
 pub const MAX_DOWNLOAD_BYTES: usize = 20 * 1024 * 1024;
+pub const MAX_DATA_FILE_BYTES: usize = 50 * 1024 * 1024;
 pub const MAX_FILE_COLLISIONS: usize = 1000;
 
 pub fn sanitize_download_name(file_name: &str) -> AppResult<String> {
@@ -147,6 +148,49 @@ pub fn write_download_file(
     Err(AppError::Conflict(
         "下载目录中同名文件过多，请修改作品名称后重试".to_string(),
     ))
+}
+
+pub fn write_data_file(path: &Path, data: &[u8]) -> AppResult<PathBuf> {
+    if data.is_empty() || data.len() > MAX_DATA_FILE_BYTES {
+        return Err(AppError::InvalidInput(
+            "导出数据不能为空且不能超过 50 MiB".to_string(),
+        ));
+    }
+    if !path.is_absolute() {
+        return Err(AppError::InvalidInput(
+            "导出文件路径必须是绝对路径".to_string(),
+        ));
+    }
+    let parent = path
+        .parent()
+        .ok_or_else(|| AppError::InvalidInput("导出文件路径无效".to_string()))?;
+    fs::create_dir_all(parent)
+        .map_err(|error| AppError::Io(format!("创建导出目录失败: {error}")))?;
+    let mut file = fs::File::create(path)
+        .map_err(|error| AppError::Io(format!("创建导出文件失败: {error}")))?;
+    file.write_all(data)
+        .and_then(|_| file.sync_all())
+        .map_err(|error| AppError::Io(format!("写入导出文件失败: {error}")))?;
+    Ok(path.canonicalize().unwrap_or_else(|_| path.to_path_buf()))
+}
+
+pub fn read_data_file(path: &Path) -> AppResult<Vec<u8>> {
+    if !path.is_absolute() {
+        return Err(AppError::InvalidInput(
+            "导入文件路径必须是绝对路径".to_string(),
+        ));
+    }
+    let meta = fs::metadata(path)
+        .map_err(|error| AppError::Io(format!("读取导入文件信息失败: {error}")))?;
+    if !meta.is_file() {
+        return Err(AppError::InvalidInput("所选路径不是有效文件".to_string()));
+    }
+    if meta.len() == 0 || meta.len() > MAX_DATA_FILE_BYTES as u64 {
+        return Err(AppError::InvalidInput(
+            "导入文件不能为空且不能超过 50 MiB".to_string(),
+        ));
+    }
+    fs::read(path).map_err(|error| AppError::Io(format!("读取导入文件失败: {error}")))
 }
 
 #[cfg(test)]
@@ -299,5 +343,29 @@ mod tests {
         );
         assert!(parse_custom_download_dir(Some("relative\\dir")).is_err());
         assert!(parse_custom_download_dir(Some("C:\\bad\0path")).is_err());
+    }
+
+    #[test]
+    fn test_write_and_read_data_file_roundtrip() {
+        let directory = test_download_dir("data-file");
+        let target = directory.join("nested").join("backup.json");
+        let payload = br#"{"hello":"world"}"#;
+        let saved = write_data_file(&target, payload).unwrap();
+        assert!(saved.is_absolute());
+        assert_eq!(read_data_file(&saved).unwrap(), payload);
+    }
+
+    #[test]
+    fn test_write_and_read_data_file_rejects_invalid_inputs() {
+        let directory = test_download_dir("data-file-invalid");
+        assert!(write_data_file(&directory.join("empty.json"), b"").is_err());
+        assert!(write_data_file(Path::new("relative.json"), b"ok").is_err());
+        assert!(write_data_file(
+            &directory.join("huge.bin"),
+            &vec![0; MAX_DATA_FILE_BYTES + 1]
+        )
+        .is_err());
+        assert!(read_data_file(&directory.join("missing.json")).is_err());
+        assert!(read_data_file(Path::new("relative.json")).is_err());
     }
 }

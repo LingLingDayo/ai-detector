@@ -1,5 +1,6 @@
 pub mod candy;
 pub mod chat;
+pub mod data_transfer;
 pub mod download;
 pub mod models;
 pub mod probe;
@@ -10,6 +11,7 @@ use crate::infra::http::HttpClient;
 
 use candy::CandyService;
 use chat::ChatService;
+use data_transfer::DataTransferService;
 use download::DownloadService;
 use models::ModelsService;
 use probe::ProbeService;
@@ -22,6 +24,7 @@ pub struct AppServices {
     pub models: ModelsService,
     pub candy: CandyService,
     pub download: DownloadService,
+    pub data_transfer: DataTransferService,
 }
 
 impl AppServices {
@@ -38,6 +41,7 @@ impl AppServices {
             models: ModelsService::new(http),
             candy: CandyService::new(),
             download: DownloadService::new(),
+            data_transfer: DataTransferService::new(),
         }
     }
 }
