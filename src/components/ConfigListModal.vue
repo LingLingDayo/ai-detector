@@ -146,6 +146,7 @@ function handleDragStart(e: DragEvent, id: string): void {
 
 function handleDragOverItem(e: DragEvent, id: string, position: "before" | "after"): void {
   e.preventDefault();
+  e.stopPropagation();
   if (!draggedId.value || draggedId.value === id) {
     if (dropTarget.value?.type === "item" && dropTarget.value.id === id) {
       dropTarget.value = null;
@@ -160,6 +161,7 @@ function handleDragOverItem(e: DragEvent, id: string, position: "before" | "afte
 
 function handleDragEnterItem(e: DragEvent, id: string, position: "before" | "after"): void {
   e.preventDefault();
+  e.stopPropagation();
   if (!draggedId.value || draggedId.value === id) return;
   dropTarget.value = { type: "item", id, position };
 }
@@ -177,6 +179,7 @@ function handleDragLeaveItem(e: DragEvent, id: string): void {
 
 function handleDropOnItem(e: DragEvent, targetId: string, position: "before" | "after"): void {
   e.preventDefault();
+  e.stopPropagation();
   const sourceId = draggedId.value || e.dataTransfer?.getData("text/plain");
   const targetPos =
     position ||
@@ -400,10 +403,18 @@ function handleQuickApply(item: ConfigItem): void {
               />
             </ConfigGroupSection>
 
-            <!-- 无分组概念时：直接平铺展示卡片 -->
+            <!-- 无分组配置：直接平铺展示在根目录下（存在分组时也支持拖入以移出分组） -->
             <div
-              v-if="!hasGroups && viewModel.ungroupedItems.length > 0"
+              v-if="viewModel.ungroupedItems.length > 0"
               class="config-cards-container"
+              :class="{
+                'is-drop-target':
+                  hasGroups && isDraggingGroupedConfig && dropTarget?.type === 'ungrouped',
+              }"
+              @dragover="hasGroups && isDraggingGroupedConfig ? handleDragOverUngrouped($event) : undefined"
+              @dragenter="hasGroups && isDraggingGroupedConfig ? handleDragEnterUngrouped($event) : undefined"
+              @dragleave="hasGroups && isDraggingGroupedConfig ? handleDragLeaveUngrouped($event) : undefined"
+              @drop="hasGroups && isDraggingGroupedConfig ? handleDropOnUngrouped($event) : undefined"
             >
               <ConfigCardItem
                 v-for="item in viewModel.ungroupedItems"
@@ -431,55 +442,7 @@ function handleQuickApply(item: ConfigItem): void {
               />
             </div>
 
-            <!-- 存在分组时的未分组区域（支持拖出分组） -->
-            <section
-              v-else-if="hasGroups && viewModel.ungroupedItems.length > 0"
-              class="ungrouped-section"
-              :class="{ 'is-drop-target': dropTarget?.type === 'ungrouped' }"
-              @dragover="handleDragOverUngrouped"
-              @dragenter="handleDragEnterUngrouped"
-              @dragleave="handleDragLeaveUngrouped"
-              @drop="handleDropOnUngrouped"
-            >
-              <div class="ungrouped-header">
-                <div class="ungrouped-title-wrap">
-                  <Inbox :size="14" class="ungrouped-icon" />
-                  <span class="ungrouped-title">未分组</span>
-                  <span class="ungrouped-count">{{ viewModel.ungroupedItems.length }}</span>
-                </div>
-                <span v-if="dropTarget?.type === 'ungrouped'" class="drop-out-pill">
-                  释放以移出分组
-                </span>
-              </div>
-              <div class="ungrouped-body">
-                <ConfigCardItem
-                  v-for="item in viewModel.ungroupedItems"
-                  :key="item.id"
-                  :item="item"
-                  :is-active="item.id === activeConfigId"
-                  :is-switch-disabled="isTestRunning"
-                  :is-dragging="draggedId === item.id"
-                  :drag-over-position="
-                    dropTarget?.type === 'item' && dropTarget.id === item.id
-                      ? dropTarget.position
-                      : null
-                  "
-                  @apply="handleApplyItem"
-                  @quick-apply="handleQuickApply"
-                  @switch-blocked="showSwitchBlockedTip"
-                  @open-edit="emit('openEdit', $event)"
-                  @delete="emit('delete', $event)"
-                  @dragstart="handleDragStart"
-                  @dragover="handleDragOverItem"
-                  @dragenter="handleDragEnterItem"
-                  @dragleave="handleDragLeaveItem"
-                  @drop="handleDropOnItem"
-                  @dragend="cleanupDrag"
-                />
-              </div>
-            </section>
-
-            <!-- 当存在分组且当前无未分组配置，但正在拖动组内配置时，显现底部的移出拖放区 -->
+            <!-- 当存在分组且当前根目录无配置，但正在拖动组内配置时，显现底部的移出拖放区 -->
             <div
               v-if="hasGroups && viewModel.ungroupedItems.length === 0 && isDraggingGroupedConfig"
               class="ungrouped-dropzone"
@@ -490,7 +453,7 @@ function handleQuickApply(item: ConfigItem): void {
               @drop="handleDropOnUngrouped"
             >
               <Inbox :size="15" />
-              <span>拖放到此处移出分组（未分组）</span>
+              <span>拖放到此处移出分组</span>
             </div>
           </div>
 
@@ -643,77 +606,12 @@ function handleQuickApply(item: ConfigItem): void {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.ungrouped-section {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  transition: border-color var(--transition-fast), background var(--transition-fast),
-    box-shadow var(--transition-fast);
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
 
   &.is-drop-target {
-    border-color: var(--accent-primary);
     background: rgba(var(--accent-rgb), 0.08);
     box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.3);
-  }
-
-  .ungrouped-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-
-    .ungrouped-title-wrap {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-
-      .ungrouped-icon {
-        color: var(--text-muted);
-      }
-
-      .ungrouped-title {
-        font-size: 12.5px;
-        font-weight: 600;
-        color: var(--text-secondary);
-      }
-
-      .ungrouped-count {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 20px;
-        height: 18px;
-        padding: 0 6px;
-        border-radius: 9999px;
-        font-size: 11px;
-        font-weight: 600;
-        color: var(--text-muted);
-        background: var(--bg-control);
-        border: 1px solid var(--border-subtle);
-      }
-    }
-
-    .drop-out-pill {
-      display: inline-flex;
-      align-items: center;
-      height: 22px;
-      padding: 0 8px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--accent-text);
-      background: rgba(var(--accent-rgb), 0.16);
-      border: 1px solid rgba(var(--accent-rgb), 0.45);
-    }
-  }
-
-  .ungrouped-body {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 2px 10px 10px;
   }
 }
 
