@@ -410,9 +410,13 @@ function maskApiKey(key?: string): string {
           border-color: var(--border-subtle);
 
           &:hover {
-            background: var(--bg-control-hover);
-            color: var(--text-primary);
-            border-color: rgba(var(--accent-rgb), 0.35);
+            background: var(--bg-surface-control-hover);
+            color: var(--accent-text);
+            border-color: var(--border-surface-control-hover);
+          }
+
+          &:active {
+            background: var(--bg-surface-control-active);
           }
         }
 

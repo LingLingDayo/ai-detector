@@ -254,11 +254,26 @@ onUnmounted(() => {
     animation: spin 0.8s linear infinite;
   }
 
-  &:hover:not(:disabled),
+  &:hover:not(:disabled) {
+    background: var(--bg-surface-control-hover);
+    color: var(--accent-text);
+    border-color: var(--border-surface-control-hover);
+  }
+
+  &:active:not(:disabled) {
+    background: var(--bg-surface-control-active);
+  }
+
   &.is-open {
-    background: var(--bg-control-hover);
-    color: var(--text-strong);
-    border-color: rgba(var(--accent-rgb), 0.4);
+    background: rgba(var(--accent-rgb), 0.16);
+    border-color: var(--accent-primary);
+    color: var(--accent-text);
+
+    &:hover:not(:disabled) {
+      background: var(--bg-surface-control-active);
+      border-color: var(--accent-primary);
+      color: var(--accent-text);
+    }
   }
 
   &:focus-visible {

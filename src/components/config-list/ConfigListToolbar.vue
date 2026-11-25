@@ -183,12 +183,12 @@ const emit = defineEmits<{
 
     &:hover {
       color: var(--accent-text);
-      background: rgba(var(--accent-rgb), 0.08);
-      border-color: rgba(var(--accent-rgb), 0.45);
+      background: var(--bg-surface-control-hover);
+      border-color: var(--border-surface-control-hover);
     }
 
     &:active {
-      background: rgba(var(--accent-rgb), 0.14);
+      background: var(--bg-surface-control-active);
     }
   }
 

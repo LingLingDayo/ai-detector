@@ -336,15 +336,25 @@ function toggleBgTheme(): void {
     }
 
     &:hover {
-      background: var(--bg-control-hover);
-      color: var(--text-strong);
-      border-color: rgba(var(--accent-rgb), 0.4);
+      background: var(--bg-surface-control-hover);
+      color: var(--accent-text);
+      border-color: var(--border-surface-control-hover);
+    }
+
+    &:active {
+      background: var(--bg-surface-control-active);
     }
 
     &.active {
       background: rgba(var(--accent-rgb), 0.16);
       border-color: var(--accent-primary);
       color: var(--accent-text);
+
+      &:hover {
+        background: var(--bg-surface-control-active);
+        border-color: var(--accent-primary);
+        color: var(--accent-text);
+      }
     }
   }
 }

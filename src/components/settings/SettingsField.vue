@@ -305,9 +305,13 @@ async function handlePickDirectory(): Promise<void> {
   }
 
   &:hover:not(:disabled) {
-    background: var(--bg-control-hover);
-    color: var(--text-strong);
-    border-color: rgba(var(--accent-rgb), 0.4);
+    background: var(--bg-surface-control-hover);
+    color: var(--accent-text);
+    border-color: var(--border-surface-control-hover);
+  }
+
+  &:active:not(:disabled) {
+    background: var(--bg-surface-control-active);
   }
 
   &:disabled {

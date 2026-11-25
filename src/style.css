@@ -32,6 +32,9 @@
   --text-segment-active: #ffffff;
   --shadow-segment-active: 0 1px 6px rgba(99, 102, 241, 0.2);
   --bg-surface-control: rgba(30, 41, 59, 0.5);
+  --bg-surface-control-hover: rgba(99, 102, 241, 0.14);
+  --bg-surface-control-active: rgba(99, 102, 241, 0.22);
+  --border-surface-control-hover: rgba(99, 102, 241, 0.45);
   --bg-popover: rgba(15, 23, 42, 0.97);
   --bg-pelican-stage: radial-gradient(circle at center, #162035 0%, #090e1a 100%);
   --pelican-footer-bg: linear-gradient(
@@ -182,6 +185,9 @@
   --text-segment-active: #4f46e5;
   --shadow-segment-active: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(99, 102, 241, 0.06);
   --bg-surface-control: #ffffff;
+  --bg-surface-control-hover: rgba(99, 102, 241, 0.08);
+  --bg-surface-control-active: rgba(99, 102, 241, 0.14);
+  --border-surface-control-hover: rgba(99, 102, 241, 0.42);
   --bg-popover: rgba(255, 255, 255, 0.98);
   --bg-pelican-stage: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
   --pelican-footer-bg: linear-gradient(
@@ -296,6 +302,9 @@
   --text-segment-active: #ffffff;
   --shadow-segment-active: 0 1px 2px rgba(0, 0, 0, 0.4);
   --bg-surface-control: #333333;
+  --bg-surface-control-hover: #424242;
+  --bg-surface-control-active: #4d4d4d;
+  --border-surface-control-hover: rgba(255, 255, 255, 0.32);
   --bg-popover: #282828;
   --bg-pelican-stage: radial-gradient(circle at center, #2c2c2c 0%, #101010 100%);
   --pelican-footer-bg: linear-gradient(

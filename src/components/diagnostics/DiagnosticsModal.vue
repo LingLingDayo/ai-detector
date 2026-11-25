@@ -449,14 +449,20 @@ onUnmounted(() => {
     padding: 7px 12px;
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
-    background: var(--bg-control);
+    background: var(--bg-surface-control);
     color: var(--text-secondary);
     font-size: 12px;
     cursor: pointer;
+    transition: all var(--transition-fast);
 
     &:hover:not(:disabled) {
-      background: var(--bg-control-hover);
-      color: var(--text-strong);
+      background: var(--bg-surface-control-hover);
+      color: var(--accent-text);
+      border-color: var(--border-surface-control-hover);
+    }
+
+    &:active:not(:disabled) {
+      background: var(--bg-surface-control-active);
     }
 
     &:disabled {
@@ -465,9 +471,15 @@ onUnmounted(() => {
     }
 
     &.primary {
-      border-color: rgba(99, 102, 241, 0.5);
-      background: rgba(99, 102, 241, 0.2);
+      border-color: rgba(var(--accent-rgb), 0.5);
+      background: rgba(var(--accent-rgb), 0.2);
       color: var(--accent-text-contrast);
+
+      &:hover:not(:disabled) {
+        background: rgba(var(--accent-rgb), 0.28);
+        border-color: var(--accent-icon);
+        color: var(--accent-text-contrast);
+      }
     }
   }
 }
