@@ -99,20 +99,26 @@ mod tests {
 
     #[test]
     fn test_capture_command_returns_frame_count_metadata() {
-        fn assert_count_result<'a, Command, ResultFuture>(_command: Command)
+        fn assert_count_future<F>(_future: F)
         where
-            Command: FnOnce(
-                AppHandle,
-                WebviewWindow,
-                State<'a, CaptureRegistry>,
-                String,
-                String,
-                u64,
-                Channel<CaptureFrame>,
-            ) -> ResultFuture,
-            ResultFuture: std::future::Future<Output = Result<usize, String>> + Send + 'a,
+            F: std::future::Future<Output = Result<usize, String>> + Send,
         {
         }
-        assert_count_result(capture_pelican_frames);
+
+        fn check_signature(
+            app: AppHandle,
+            window: WebviewWindow,
+            registry: State<'_, CaptureRegistry>,
+            request_id: String,
+            html: String,
+            duration_ms: u64,
+            on_frame: Channel<CaptureFrame>,
+        ) {
+            assert_count_future(capture_pelican_frames(
+                app, window, registry, request_id, html, duration_ms, on_frame,
+            ));
+        }
+
+        let _ = check_signature;
     }
 }
