@@ -152,6 +152,7 @@ function handleDrop(event: DragEvent): void {
 <template>
   <section
     class="config-group-section"
+    :data-group-id="group.id"
     :class="{
       'is-collapsed': collapsed,
       'is-active': collapsed && hasActiveConfig,

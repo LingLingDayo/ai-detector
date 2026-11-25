@@ -76,6 +76,7 @@ type DropTarget =
 const draggedId = ref<string | null>(null);
 const draggedGroupId = ref<string | null>(null);
 const dropTarget = ref<DropTarget | null>(null);
+const listBodyRef = ref<HTMLElement | null>(null);
 
 const draggedItem = computed(() => {
   if (!draggedId.value) return undefined;
@@ -218,6 +219,28 @@ function handleDropOnItem(e: DragEvent, targetId: string, position: "before" | "
   cleanupDrag();
 }
 
+function resolveGroupReorderTargetFromPoint(
+  clientY: number
+): { groupId: string; position: "before" | "after" } | null {
+  const container = listBodyRef.value;
+  if (!container) return null;
+  const groupEls = Array.from(container.querySelectorAll<HTMLElement>("[data-group-id]"));
+  if (groupEls.length === 0) return null;
+
+  for (const el of groupEls) {
+    const rect = el.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    if (clientY < midY && el.dataset.groupId) {
+      return { groupId: el.dataset.groupId, position: "before" };
+    }
+  }
+
+  const lastEl = groupEls[groupEls.length - 1];
+  return lastEl?.dataset.groupId
+    ? { groupId: lastEl.dataset.groupId, position: "after" }
+    : null;
+}
+
 function handleDragOverGroup(
   e: DragEvent,
   groupId: string,
@@ -225,6 +248,7 @@ function handleDragOverGroup(
 ): void {
   e.preventDefault();
   if (draggedGroupId.value) {
+    e.stopPropagation();
     if (draggedGroupId.value === groupId) {
       if (dropTarget.value?.type === "group-reorder" && dropTarget.value.groupId === groupId) {
         dropTarget.value = null;
@@ -251,6 +275,7 @@ function handleDragEnterGroup(
 ): void {
   e.preventDefault();
   if (draggedGroupId.value) {
+    e.stopPropagation();
     if (draggedGroupId.value === groupId) return;
     dropTarget.value = { type: "group-reorder", groupId, position };
     return;
@@ -263,6 +288,14 @@ function handleDragLeaveGroup(e: DragEvent, groupId: string): void {
   const currentTarget = e.currentTarget as HTMLElement | null;
   const relatedTarget = e.relatedTarget as Node | null;
   if (currentTarget && relatedTarget && currentTarget.contains(relatedTarget)) {
+    return;
+  }
+  if (
+    draggedGroupId.value &&
+    listBodyRef.value &&
+    relatedTarget &&
+    listBodyRef.value.contains(relatedTarget)
+  ) {
     return;
   }
   if (
@@ -280,6 +313,7 @@ function handleDropOnGroup(
 ): void {
   e.preventDefault();
   if (draggedGroupId.value) {
+    e.stopPropagation();
     if (draggedGroupId.value !== groupId) {
       emit("reorderGroup", { sourceId: draggedGroupId.value, targetId: groupId, position });
     }
@@ -293,6 +327,49 @@ function handleDropOnGroup(
     if (targetGroup?.collapsed) {
       emit("setGroupCollapsed", { groupId, collapsed: false });
     }
+  }
+  cleanupDrag();
+}
+
+function handleDragOverListBody(e: DragEvent): void {
+  if (!draggedGroupId.value) return;
+  e.preventDefault();
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = "move";
+  }
+  const target = resolveGroupReorderTargetFromPoint(e.clientY);
+  if (target && target.groupId !== draggedGroupId.value) {
+    dropTarget.value = { type: "group-reorder", groupId: target.groupId, position: target.position };
+  } else if (dropTarget.value?.type === "group-reorder") {
+    dropTarget.value = null;
+  }
+}
+
+function handleDragLeaveListBody(e: DragEvent): void {
+  if (!draggedGroupId.value) return;
+  const currentTarget = e.currentTarget as HTMLElement | null;
+  const relatedTarget = e.relatedTarget as Node | null;
+  if (currentTarget && relatedTarget && currentTarget.contains(relatedTarget)) {
+    return;
+  }
+  if (dropTarget.value?.type === "group-reorder") {
+    dropTarget.value = null;
+  }
+}
+
+function handleDropOnListBody(e: DragEvent): void {
+  if (!draggedGroupId.value) return;
+  e.preventDefault();
+  const target =
+    dropTarget.value?.type === "group-reorder"
+      ? { groupId: dropTarget.value.groupId, position: dropTarget.value.position }
+      : resolveGroupReorderTargetFromPoint(e.clientY);
+  if (target && target.groupId !== draggedGroupId.value) {
+    emit("reorderGroup", {
+      sourceId: draggedGroupId.value,
+      targetId: target.groupId,
+      position: target.position,
+    });
   }
   cleanupDrag();
 }
@@ -390,7 +467,13 @@ function handleQuickApply(item: ConfigItem): void {
         />
 
         <!-- 弹窗可滚动主体 -->
-        <div class="modal-body list-body">
+        <div
+          ref="listBodyRef"
+          class="modal-body list-body"
+          @dragover="handleDragOverListBody"
+          @dragleave="handleDragLeaveListBody"
+          @drop="handleDropOnListBody"
+        >
           <!-- 内联新建分组条 -->
           <div v-if="isCreatingGroup" class="create-group-inline-card">
             <div class="create-group-icon">
