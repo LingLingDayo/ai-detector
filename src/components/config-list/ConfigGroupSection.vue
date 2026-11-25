@@ -241,10 +241,6 @@ function handleDrop(event: DragEvent): void {
     box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.3),
       0 6px 18px rgba(var(--accent-rgb), 0.14);
   }
-
-  &:hover .group-header .group-header-left .group-count-badge {
-    opacity: 1;
-  }
 }
 
 .group-header {
@@ -259,6 +255,10 @@ function handleDrop(event: DragEvent): void {
 
   &:hover,
   &:focus-within {
+    .group-header-left .group-count-badge {
+      opacity: 1;
+    }
+
     .group-header-right .btn-group-action {
       opacity: 1;
       pointer-events: auto;
