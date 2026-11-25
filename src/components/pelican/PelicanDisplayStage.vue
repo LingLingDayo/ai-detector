@@ -49,7 +49,7 @@ const previewDocument = computed(() => {
       <div class="radar-spinner"></div>
       <div class="loading-text">
         <p class="loading-title">正在调用模型生成...</p>
-        <p class="loading-desc">生成通常耗时 20 ~ 90 秒，请稍候</p>
+        <p class="loading-desc">生成通常耗时 30 ~ 90 秒，请稍候</p>
       </div>
     </div>
 
