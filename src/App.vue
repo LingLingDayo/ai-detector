@@ -322,6 +322,7 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
       @set-group-collapsed="({ groupId, collapsed }) => configStore.setConfigGroupCollapsed(groupId, collapsed)"
       @toggle-all-groups="configStore.setAllConfigGroupsCollapsed"
       @move-to-group="({ configId, groupId }) => configStore.moveConfigToGroup(configId, groupId)"
+      @reorder-group="({ sourceId, targetId, position }) => configStore.moveConfigGroup(sourceId, targetId, position)"
     />
 
     <!-- 添加 / 编辑 / 保存当前配置弹窗 -->

@@ -21,12 +21,18 @@ const props = withDefaults(
     isDropTarget?: boolean;
     isFiltering?: boolean;
     isDraggingConfig?: boolean;
+    isDragging?: boolean;
+    isDraggingGroup?: boolean;
+    dragOverPosition?: "before" | "after" | null;
   }>(),
   {
     hasActiveConfig: false,
     isDropTarget: false,
     isFiltering: false,
     isDraggingConfig: false,
+    isDragging: false,
+    isDraggingGroup: false,
+    dragOverPosition: null,
   }
 );
 
@@ -34,11 +40,15 @@ const emit = defineEmits<{
   (e: "toggle"): void;
   (e: "rename", groupId: string, newName: string): void;
   (e: "delete", groupId: string): void;
-  (e: "dragoverGroup", event: DragEvent, groupId: string): void;
-  (e: "dragenterGroup", event: DragEvent, groupId: string): void;
+  (e: "dragstartGroup", event: DragEvent, groupId: string): void;
+  (e: "dragendGroup"): void;
+  (e: "dragoverGroup", event: DragEvent, groupId: string, position: "before" | "after"): void;
+  (e: "dragenterGroup", event: DragEvent, groupId: string, position: "before" | "after"): void;
   (e: "dragleaveGroup", event: DragEvent, groupId: string): void;
-  (e: "dropGroup", event: DragEvent, groupId: string): void;
+  (e: "dropGroup", event: DragEvent, groupId: string, position: "before" | "after"): void;
 }>();
+
+let isDragHappening = false;
 
 const isRenaming = ref(false);
 const renameInputValue = ref("");
@@ -88,18 +98,44 @@ function handleRenameBlur(): void {
 }
 
 function handleHeaderClick(): void {
-  if (isRenaming.value) return;
+  if (isRenaming.value || isDragHappening || props.isDragging) return;
   emit("toggle");
+}
+
+function calculatePosition(event: DragEvent): "before" | "after" {
+  const target = event.currentTarget as HTMLElement | null;
+  if (!target) return "before";
+  const rect = target.getBoundingClientRect();
+  const offsetY = event.clientY - rect.top;
+  return offsetY < rect.height / 2 ? "before" : "after";
+}
+
+function handleGroupDragStart(event: DragEvent): void {
+  if (isRenaming.value) {
+    event.preventDefault();
+    return;
+  }
+  isDragHappening = true;
+  emit("dragstartGroup", event, props.group.id);
+}
+
+function handleGroupDragEnd(): void {
+  emit("dragendGroup");
+  setTimeout(() => {
+    isDragHappening = false;
+  }, 100);
 }
 
 function handleDragOver(event: DragEvent): void {
   event.preventDefault();
-  emit("dragoverGroup", event, props.group.id);
+  const position = calculatePosition(event);
+  emit("dragoverGroup", event, props.group.id, position);
 }
 
 function handleDragEnter(event: DragEvent): void {
   event.preventDefault();
-  emit("dragenterGroup", event, props.group.id);
+  const position = calculatePosition(event);
+  emit("dragenterGroup", event, props.group.id, position);
 }
 
 function handleDragLeave(event: DragEvent): void {
@@ -108,7 +144,8 @@ function handleDragLeave(event: DragEvent): void {
 
 function handleDrop(event: DragEvent): void {
   event.preventDefault();
-  emit("dropGroup", event, props.group.id);
+  const position = calculatePosition(event);
+  emit("dropGroup", event, props.group.id, position);
 }
 </script>
 
@@ -120,6 +157,10 @@ function handleDrop(event: DragEvent): void {
       'is-active': collapsed && hasActiveConfig,
       'is-drop-target': isDropTarget,
       'is-dragging-hint': isDraggingConfig && !isDropTarget,
+      'is-dragging': isDragging,
+      'is-dragging-group': isDraggingGroup,
+      'is-insert-before': dragOverPosition === 'before',
+      'is-insert-after': dragOverPosition === 'after',
     }"
     @dragover="handleDragOver"
     @dragenter="handleDragEnter"
@@ -128,8 +169,17 @@ function handleDrop(event: DragEvent): void {
   >
     <div
       class="group-header"
-      :title="isRenaming ? undefined : collapsed ? '点击展开分组' : '点击折叠分组'"
+      :draggable="!isRenaming"
+      :title="
+        isRenaming
+          ? undefined
+          : collapsed
+            ? '点击展开分组 · 拖动可调整顺序'
+            : '点击折叠分组 · 拖动可调整顺序'
+      "
       @click="handleHeaderClick"
+      @dragstart="handleGroupDragStart"
+      @dragend="handleGroupDragEnd"
     >
       <div class="group-header-left">
         <ChevronRight
@@ -140,7 +190,13 @@ function handleDrop(event: DragEvent): void {
         <FolderOpen v-if="!collapsed" class="folder-icon" :size="15" />
         <Folder v-else class="folder-icon" :size="15" />
 
-        <div v-if="isRenaming" class="rename-input-box" @click.stop>
+        <div
+          v-if="isRenaming"
+          class="rename-input-box"
+          draggable="false"
+          @click.stop
+          @dragstart.stop.prevent
+        >
           <input
             ref="renameInputRef"
             v-model="renameInputValue"
@@ -166,6 +222,8 @@ function handleDrop(event: DragEvent): void {
             type="button"
             class="btn-group-action btn-confirm"
             title="保存分组名称 (Enter)"
+            draggable="false"
+            @dragstart.stop.prevent
             @mousedown.prevent
             @click="confirmRename"
           >
@@ -175,6 +233,8 @@ function handleDrop(event: DragEvent): void {
             type="button"
             class="btn-group-action btn-cancel"
             title="取消重命名 (Esc)"
+            draggable="false"
+            @dragstart.stop.prevent
             @mousedown.prevent
             @click="cancelRename"
           >
@@ -187,6 +247,8 @@ function handleDrop(event: DragEvent): void {
             type="button"
             class="btn-group-action btn-rename"
             title="重命名分组"
+            draggable="false"
+            @dragstart.stop.prevent
             @click="startRename"
           >
             <Pencil :size="14" />
@@ -195,6 +257,8 @@ function handleDrop(event: DragEvent): void {
             type="button"
             class="btn-group-action btn-delete"
             title="删除分组（会同时删除组内所有配置）"
+            draggable="false"
+            @dragstart.stop.prevent
             @click="emit('delete', group.id)"
           >
             <Trash2 :size="14" />
@@ -214,6 +278,7 @@ function handleDrop(event: DragEvent): void {
 
 <style lang="scss" scoped>
 .config-group-section {
+  position: relative;
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -221,7 +286,7 @@ function handleDrop(event: DragEvent): void {
     background var(--transition-fast);
   overflow: visible;
 
-  &:not(.is-collapsed):not(.is-drop-target):not(.is-dragging-hint) {
+  &:not(.is-collapsed):not(.is-drop-target):not(.is-dragging-hint):not(.is-dragging):not(.is-insert-before):not(.is-insert-after) {
     transition: none;
   }
 
@@ -235,11 +300,74 @@ function handleDrop(event: DragEvent): void {
     border-color: rgba(var(--accent-rgb), 0.25);
   }
 
+  &.is-dragging {
+    opacity: 0.35;
+    border-style: dashed;
+    border-color: rgba(var(--accent-rgb), 0.6);
+    cursor: grabbing;
+  }
+
+  &.is-dragging-group .group-body {
+    pointer-events: none;
+  }
+
   &.is-drop-target {
     border-color: var(--accent-primary);
     background: rgba(var(--accent-rgb), 0.08);
     box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.3),
       0 6px 18px rgba(var(--accent-rgb), 0.14);
+  }
+
+  &.is-insert-before,
+  &.is-insert-after {
+    &::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-icon) 0%, var(--accent-primary) 50%, rgba(var(--accent-rgb), 0.4) 100%);
+      box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.95), 0 0 2px #ffffff;
+      border-radius: 9999px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: -4px;
+      width: 8px;
+      height: 8px;
+      background: #ffffff;
+      border: 2px solid var(--accent-primary, #6366f1);
+      box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.95);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 11;
+    }
+  }
+
+  &.is-insert-before {
+    border-top-color: rgba(var(--accent-rgb), 0.65);
+
+    &::before {
+      top: -7px;
+    }
+    &::after {
+      top: -10px;
+    }
+  }
+
+  &.is-insert-after {
+    border-bottom-color: rgba(var(--accent-rgb), 0.65);
+
+    &::before {
+      bottom: -7px;
+    }
+    &::after {
+      bottom: -10px;
+    }
   }
 }
 

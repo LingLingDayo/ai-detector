@@ -43,6 +43,7 @@ const emit = defineEmits<{
   (e: "setGroupCollapsed", payload: { groupId: string; collapsed: boolean }): void;
   (e: "toggleAllGroups", collapsed: boolean): void;
   (e: "moveToGroup", payload: { configId: string; groupId: string | null }): void;
+  (e: "reorderGroup", payload: { sourceId: string; targetId: string; position: "before" | "after" }): void;
 }>();
 
 const { showToast } = useToast();
@@ -69,9 +70,11 @@ const newGroupInputRef = ref<HTMLInputElement | null>(null);
 type DropTarget =
   | { type: "item"; id: string; position: "before" | "after" }
   | { type: "group"; groupId: string }
+  | { type: "group-reorder"; groupId: string; position: "before" | "after" }
   | { type: "ungrouped" };
 
 const draggedId = ref<string | null>(null);
+const draggedGroupId = ref<string | null>(null);
 const dropTarget = ref<DropTarget | null>(null);
 
 const draggedItem = computed(() => {
@@ -147,10 +150,20 @@ function handleToggleAllGroups(): void {
 }
 
 function handleDragStart(e: DragEvent, id: string): void {
+  draggedGroupId.value = null;
   draggedId.value = id;
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", id);
+  }
+}
+
+function handleDragStartGroup(e: DragEvent, groupId: string): void {
+  draggedId.value = null;
+  draggedGroupId.value = groupId;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("application/x-group-id", groupId);
   }
 }
 
@@ -190,6 +203,10 @@ function handleDragLeaveItem(e: DragEvent, id: string): void {
 function handleDropOnItem(e: DragEvent, targetId: string, position: "before" | "after"): void {
   e.preventDefault();
   e.stopPropagation();
+  if (draggedGroupId.value) {
+    cleanupDrag();
+    return;
+  }
   const sourceId = draggedId.value || e.dataTransfer?.getData("text/plain");
   const targetPos =
     position ||
@@ -201,8 +218,25 @@ function handleDropOnItem(e: DragEvent, targetId: string, position: "before" | "
   cleanupDrag();
 }
 
-function handleDragOverGroup(e: DragEvent, groupId: string): void {
+function handleDragOverGroup(
+  e: DragEvent,
+  groupId: string,
+  position: "before" | "after"
+): void {
   e.preventDefault();
+  if (draggedGroupId.value) {
+    if (draggedGroupId.value === groupId) {
+      if (dropTarget.value?.type === "group-reorder" && dropTarget.value.groupId === groupId) {
+        dropTarget.value = null;
+      }
+      return;
+    }
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = "move";
+    }
+    dropTarget.value = { type: "group-reorder", groupId, position };
+    return;
+  }
   if (!draggedId.value) return;
   if (e.dataTransfer) {
     e.dataTransfer.dropEffect = "move";
@@ -210,8 +244,17 @@ function handleDragOverGroup(e: DragEvent, groupId: string): void {
   dropTarget.value = { type: "group", groupId };
 }
 
-function handleDragEnterGroup(e: DragEvent, groupId: string): void {
+function handleDragEnterGroup(
+  e: DragEvent,
+  groupId: string,
+  position: "before" | "after"
+): void {
   e.preventDefault();
+  if (draggedGroupId.value) {
+    if (draggedGroupId.value === groupId) return;
+    dropTarget.value = { type: "group-reorder", groupId, position };
+    return;
+  }
   if (!draggedId.value) return;
   dropTarget.value = { type: "group", groupId };
 }
@@ -222,13 +265,27 @@ function handleDragLeaveGroup(e: DragEvent, groupId: string): void {
   if (currentTarget && relatedTarget && currentTarget.contains(relatedTarget)) {
     return;
   }
-  if (dropTarget.value?.type === "group" && dropTarget.value.groupId === groupId) {
+  if (
+    (dropTarget.value?.type === "group" || dropTarget.value?.type === "group-reorder") &&
+    dropTarget.value.groupId === groupId
+  ) {
     dropTarget.value = null;
   }
 }
 
-function handleDropOnGroup(e: DragEvent, groupId: string): void {
+function handleDropOnGroup(
+  e: DragEvent,
+  groupId: string,
+  position: "before" | "after"
+): void {
   e.preventDefault();
+  if (draggedGroupId.value) {
+    if (draggedGroupId.value !== groupId) {
+      emit("reorderGroup", { sourceId: draggedGroupId.value, targetId: groupId, position });
+    }
+    cleanupDrag();
+    return;
+  }
   const sourceId = draggedId.value || e.dataTransfer?.getData("text/plain");
   if (sourceId) {
     emit("moveToGroup", { configId: sourceId, groupId });
@@ -268,6 +325,10 @@ function handleDragLeaveUngrouped(e: DragEvent): void {
 
 function handleDropOnUngrouped(e: DragEvent): void {
   e.preventDefault();
+  if (draggedGroupId.value) {
+    cleanupDrag();
+    return;
+  }
   const sourceId = draggedId.value || e.dataTransfer?.getData("text/plain");
   if (sourceId) {
     emit("moveToGroup", { configId: sourceId, groupId: null });
@@ -277,6 +338,7 @@ function handleDropOnUngrouped(e: DragEvent): void {
 
 function cleanupDrag(): void {
   draggedId.value = null;
+  draggedGroupId.value = null;
   dropTarget.value = null;
 }
 
@@ -381,9 +443,18 @@ function handleQuickApply(item: ConfigItem): void {
               :is-drop-target="dropTarget?.type === 'group' && dropTarget.groupId === section.group.id"
               :is-filtering="viewModel.isFiltering"
               :is-dragging-config="Boolean(draggedId)"
+              :is-dragging="draggedGroupId === section.group.id"
+              :is-dragging-group="Boolean(draggedGroupId)"
+              :drag-over-position="
+                dropTarget?.type === 'group-reorder' && dropTarget.groupId === section.group.id
+                  ? dropTarget.position
+                  : null
+              "
               @toggle="emit('toggleGroup', section.group.id)"
               @rename="(groupId, name) => emit('renameGroup', { groupId, name })"
               @delete="emit('deleteGroup', $event)"
+              @dragstart-group="handleDragStartGroup"
+              @dragend-group="cleanupDrag"
               @dragover-group="handleDragOverGroup"
               @dragenter-group="handleDragEnterGroup"
               @dragleave-group="handleDragLeaveGroup"

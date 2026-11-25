@@ -594,6 +594,29 @@ export const useConfigStore = defineStore("config", () => {
     return true;
   }
 
+  function moveConfigGroup(
+    sourceGroupId: string,
+    targetGroupId: string,
+    position: "before" | "after" = "before"
+  ): boolean {
+    if (!sourceGroupId || !targetGroupId || sourceGroupId === targetGroupId) return false;
+    const sourceIdx = configGroups.value.findIndex((g) => g.id === sourceGroupId);
+    const targetIdx = configGroups.value.findIndex((g) => g.id === targetGroupId);
+    if (sourceIdx === -1 || targetIdx === -1) return false;
+
+    const nextGroups = [...configGroups.value];
+    const [movedGroup] = nextGroups.splice(sourceIdx, 1);
+    const newTargetIdx = nextGroups.findIndex((g) => g.id === targetGroupId);
+    if (newTargetIdx === -1) return false;
+
+    const insertIdx = position === "before" ? newTargetIdx : newTargetIdx + 1;
+    nextGroups.splice(insertIdx, 0, movedGroup);
+
+    configGroups.value = nextGroups;
+    saveConfigGroupsToStorage();
+    return true;
+  }
+
   async function deleteConfigGroup(groupId: string): Promise<boolean> {
     const targetGroup = configGroups.value.find((g) => g.id === groupId);
     if (!targetGroup) return false;
@@ -1010,6 +1033,7 @@ export const useConfigStore = defineStore("config", () => {
     toggleConfigGroupCollapsed,
     setAllConfigGroupsCollapsed,
     moveConfigToGroup,
+    moveConfigGroup,
     deleteConfigGroup,
   };
 });

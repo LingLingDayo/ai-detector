@@ -808,6 +808,49 @@ describe("配置分组管理、拖拽归组与级联删除测试套件", () => {
     expect(store.configList[0].groupId).toBe("g_valid");
     expect(store.configList[1].groupId).toBeUndefined();
   });
+
+  it("moveConfigGroup 支持向前/向后拖动排序、边界校验与持久化恢复", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    store.loadConfig();
+
+    const g1 = store.createConfigGroup("分组1")!;
+    const g2 = store.createConfigGroup("分组2")!;
+    const g3 = store.createConfigGroup("分组3")!;
+    const g4 = store.createConfigGroup("分组4")!;
+
+    expect(store.configGroups.map((g) => g.id)).toEqual([g1.id, g2.id, g3.id, g4.id]);
+
+    // 拖动自身或无效 ID 时返回 false 且顺序不变
+    expect(store.moveConfigGroup(g1.id, g1.id, "before")).toBe(false);
+    expect(store.moveConfigGroup("", g1.id, "before")).toBe(false);
+    expect(store.moveConfigGroup(g1.id, "not_exist", "after")).toBe(false);
+    expect(store.moveConfigGroup("not_exist", g1.id, "before")).toBe(false);
+    expect(store.configGroups.map((g) => g.id)).toEqual([g1.id, g2.id, g3.id, g4.id]);
+
+    // 向前拖动插入：将 g4 插入到 g2 之前 (before) -> [g1, g4, g2, g3]
+    expect(store.moveConfigGroup(g4.id, g2.id, "before")).toBe(true);
+    expect(store.configGroups.map((g) => g.id)).toEqual([g1.id, g4.id, g2.id, g3.id]);
+
+    // 向前拖动插入：将 g3 插入到 g1 之后 (after) -> [g1, g3, g4, g2]
+    expect(store.moveConfigGroup(g3.id, g1.id, "after")).toBe(true);
+    expect(store.configGroups.map((g) => g.id)).toEqual([g1.id, g3.id, g4.id, g2.id]);
+
+    // 向后拖动插入：将 g1 插入到 g4 之前 (before) -> [g3, g1, g4, g2]
+    expect(store.moveConfigGroup(g1.id, g4.id, "before")).toBe(true);
+    expect(store.configGroups.map((g) => g.id)).toEqual([g3.id, g1.id, g4.id, g2.id]);
+
+    // 向后拖动插入：将 g3 插入到 g2 之后 (after) -> [g1, g4, g2, g3]
+    expect(store.moveConfigGroup(g3.id, g2.id, "after")).toBe(true);
+    expect(store.configGroups.map((g) => g.id)).toEqual([g1.id, g4.id, g2.id, g3.id]);
+
+    // 持久化恢复验证
+    setActivePinia(createPinia());
+    const freshStore = useConfigStore();
+    freshStore.loadConfig();
+    expect(freshStore.configGroups.map((g) => g.id)).toEqual([g1.id, g4.id, g2.id, g3.id]);
+  });
 });
 
 
