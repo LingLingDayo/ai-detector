@@ -3,7 +3,9 @@ pub mod diagnostics;
 pub mod error;
 pub mod infra;
 pub mod parser;
+pub mod platform;
 pub mod provider;
+pub mod services;
 pub mod types;
 pub mod utils;
 
