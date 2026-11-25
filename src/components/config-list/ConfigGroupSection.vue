@@ -77,6 +77,16 @@ function cancelRename(): void {
   renameInputValue.value = "";
 }
 
+function handleRenameBlur(): void {
+  if (!isRenaming.value) return;
+  const trimmed = renameInputValue.value.trim();
+  if (!trimmed) {
+    cancelRename();
+    return;
+  }
+  confirmRename();
+}
+
 function handleHeaderClick(): void {
   if (isRenaming.value) return;
   emit("toggle");
@@ -138,6 +148,7 @@ function handleDrop(event: DragEvent): void {
             class="rename-input"
             placeholder="输入分组名称..."
             maxlength="40"
+            @blur="handleRenameBlur"
             @keydown.enter.prevent="confirmRename"
             @keydown.esc.stop.prevent="cancelRename"
           />
@@ -155,6 +166,7 @@ function handleDrop(event: DragEvent): void {
             type="button"
             class="btn-group-action btn-confirm"
             title="保存分组名称 (Enter)"
+            @mousedown.prevent
             @click="confirmRename"
           >
             <Check :size="14" />
@@ -163,6 +175,7 @@ function handleDrop(event: DragEvent): void {
             type="button"
             class="btn-group-action btn-cancel"
             title="取消重命名 (Esc)"
+            @mousedown.prevent
             @click="cancelRename"
           >
             <X :size="14" />

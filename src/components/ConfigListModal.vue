@@ -132,6 +132,16 @@ function cancelCreateGroup(): void {
   newGroupName.value = "";
 }
 
+function handleCreateGroupBlur(): void {
+  if (!isCreatingGroup.value) return;
+  const trimmed = newGroupName.value.trim();
+  if (!trimmed) {
+    cancelCreateGroup();
+    return;
+  }
+  confirmCreateGroup();
+}
+
 function handleToggleAllGroups(): void {
   emit("toggleAllGroups", !allCollapsed.value);
 }
@@ -331,6 +341,7 @@ function handleQuickApply(item: ConfigItem): void {
               class="create-group-input"
               placeholder="输入新分组名称，按 Enter 创建..."
               maxlength="40"
+              @blur="handleCreateGroupBlur"
               @keydown.enter.prevent="confirmCreateGroup"
               @keydown.esc.stop.prevent="cancelCreateGroup"
             />
@@ -339,18 +350,19 @@ function handleQuickApply(item: ConfigItem): void {
                 type="button"
                 class="btn-inline btn-confirm"
                 title="确认创建 (Enter)"
+                @mousedown.prevent
                 @click="confirmCreateGroup"
               >
-                <Check :size="13" />
-                <span>创建</span>
+                <Check :size="14" />
               </button>
               <button
                 type="button"
                 class="btn-inline btn-cancel"
                 title="取消 (Esc)"
+                @mousedown.prevent
                 @click="cancelCreateGroup"
               >
-                <X :size="13" />
+                <X :size="14" />
               </button>
             </div>
           </div>
@@ -553,36 +565,37 @@ function handleQuickApply(item: ConfigItem): void {
   .create-group-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     flex-shrink: 0;
 
     .btn-inline {
+      width: 24px;
+      height: 24px;
+      padding: 0;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      height: 28px;
-      padding: 0 10px;
-      font-size: 12px;
-      font-weight: 500;
-      font-family: inherit;
       border-radius: var(--radius-sm);
       cursor: pointer;
       transition: all var(--transition-fast);
       border: 1px solid transparent;
 
+      svg {
+        display: block;
+        flex-shrink: 0;
+      }
+
       &.btn-confirm {
-        background: var(--accent-primary);
-        border-color: var(--accent-primary);
-        color: var(--accent-contrast);
+        color: var(--success-text);
+        background: var(--success-bg);
+        border-color: var(--success-border);
 
         &:hover {
-          background: var(--accent-primary-hover);
+          background: rgba(16, 185, 129, 0.22);
         }
       }
 
       &.btn-cancel {
-        padding: 0 7px;
         background: var(--bg-control);
         border-color: var(--border-subtle);
         color: var(--text-secondary);
