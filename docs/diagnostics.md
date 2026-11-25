@@ -50,9 +50,9 @@ Rust log::Log / panic hook  →  emit("diagnostics://log")  →  services/diagno
 ```
 
 - 事件名 `diagnostics://log`，payload：`timestamp_ms`、`level`、`target`、`message`。
-- 命令 `open_devtools`（`src-tauri/src/commands/system.rs`）：取 `main` 窗口调用 `WebviewWindow::open_devtools()`。
+- 命令 `open_devtools`（`src-tauri/src/transport/tauri/system.rs`）：取 `main` 窗口调用 `WebviewWindow::open_devtools()`。
 - `src-tauri/Cargo.toml` 为 `tauri` 启用了 `devtools` feature；已用 `cargo check --release` 验证正式包中该 API 仍可用。
-- `src-tauri/src/diagnostics.rs` 的 MemoryLogger 带 `thread_local` 防递归保护，panic hook 会把崩溃信息发往同一通道（会替换默认 stderr hook）。
+- `src-tauri/src/infra/logging.rs` 的 MemoryLogger 带 `thread_local` 防递归保护，panic hook 会把崩溃信息发往同一通道（会替换默认 stderr hook），由 `src-tauri/src/transport/tauri/mod.rs` 注入 `diagnostics://log` 事件发送器。
 
 ## 改动前必读的约束
 
