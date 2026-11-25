@@ -508,7 +508,7 @@ export const useConfigStore = defineStore("config", () => {
     const newGroup: ConfigGroup = {
       id: generateGroupId(),
       name: trimmed,
-      collapsed: false,
+      collapsed: true,
       createdAt: now,
       updatedAt: now,
     };
@@ -552,10 +552,21 @@ export const useConfigStore = defineStore("config", () => {
 
   function setAllConfigGroupsCollapsed(collapsed: boolean): void {
     if (configGroups.value.length === 0) return;
-    configGroups.value = configGroups.value.map((g) => ({
-      ...g,
-      collapsed,
-    }));
+    if (collapsed) {
+      configGroups.value = configGroups.value.map((g) => ({
+        ...g,
+        collapsed: true,
+      }));
+    } else {
+      const nonEmptyGroupIds = new Set(
+        configList.value
+          .map((item) => item.groupId)
+          .filter((id): id is string => Boolean(id))
+      );
+      configGroups.value = configGroups.value.map((g) =>
+        nonEmptyGroupIds.has(g.id) ? { ...g, collapsed: false } : g
+      );
+    }
     saveConfigGroupsToStorage();
   }
 

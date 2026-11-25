@@ -673,7 +673,7 @@ describe("配置分组管理、拖拽归组与级联删除测试套件", () => {
     const group = store.createConfigGroup("  生产环境  ");
     expect(group).not.toBeNull();
     expect(group!.name).toBe("生产环境");
-    expect(group!.collapsed).toBe(false);
+    expect(group!.collapsed).toBe(true);
     expect(store.configGroups).toHaveLength(1);
 
     expect(store.renameConfigGroup(group!.id, "  ")).toBe(false);
@@ -681,18 +681,31 @@ describe("配置分组管理、拖拽归组与级联删除测试套件", () => {
     expect(store.configGroups[0].name).toBe("正式环境");
 
     store.toggleConfigGroupCollapsed(group!.id);
+    expect(store.configGroups[0].collapsed).toBe(false);
+
+    store.setAllConfigGroupsCollapsed(true);
     expect(store.configGroups[0].collapsed).toBe(true);
 
+    // 新建空分组后，展开全部仅展开含配置的分组
+    const emptyGroup = store.createConfigGroup("空分组")!;
+    const cfg = createMockConfig("cfg1", "配置A");
+    store.configList = [cfg];
+    store.moveConfigToGroup(cfg.id, group!.id);
+
     store.setAllConfigGroupsCollapsed(false);
-    expect(store.configGroups[0].collapsed).toBe(false);
+    expect(store.configGroups.find((g) => g.id === group!.id)?.collapsed).toBe(false);
+    expect(store.configGroups.find((g) => g.id === emptyGroup.id)?.collapsed).toBe(true);
+
+    store.setAllConfigGroupsCollapsed(true);
+    expect(store.configGroups[0].collapsed).toBe(true);
 
     // 重新创建 store 从 localStorage 恢复
     setActivePinia(createPinia());
     const freshStore = useConfigStore();
     freshStore.loadConfig();
-    expect(freshStore.configGroups).toHaveLength(1);
+    expect(freshStore.configGroups).toHaveLength(2);
     expect(freshStore.configGroups[0].name).toBe("正式环境");
-    expect(freshStore.configGroups[0].collapsed).toBe(false);
+    expect(freshStore.configGroups[0].collapsed).toBe(true);
   });
 
   it("支持将配置移入分组与移出至未分组", () => {

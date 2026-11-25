@@ -144,7 +144,7 @@ function handleDrop(event: DragEvent): void {
         </div>
         <span v-else class="group-name" :title="group.name">{{ group.name }}</span>
 
-        <span class="group-count-badge">{{ countBadgeText }}</span>
+        <span v-if="totalCount > 0" class="group-count-badge">{{ countBadgeText }}</span>
       </div>
 
       <div class="group-header-right" @click.stop @mousedown.stop>
@@ -239,13 +239,12 @@ function handleDrop(event: DragEvent): void {
   cursor: pointer;
   user-select: none;
   border-radius: var(--radius-md);
-  transition: background var(--transition-fast);
 
-  &:hover {
-    background: var(--overlay-weak);
-
+  &:hover,
+  &:focus-within {
     .group-header-right .btn-group-action {
       opacity: 1;
+      pointer-events: auto;
     }
   }
 
@@ -350,6 +349,8 @@ function handleDrop(event: DragEvent): void {
       background: transparent;
       color: var(--text-muted);
       cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
       transition: all var(--transition-fast);
 
       svg {
@@ -370,6 +371,8 @@ function handleDrop(event: DragEvent): void {
       }
 
       &.btn-confirm {
+        opacity: 1;
+        pointer-events: auto;
         color: var(--success-text);
         background: var(--success-bg);
         border-color: var(--success-border);
@@ -380,6 +383,8 @@ function handleDrop(event: DragEvent): void {
       }
 
       &.btn-cancel {
+        opacity: 1;
+        pointer-events: auto;
         color: var(--text-secondary);
         background: var(--bg-control);
         border-color: var(--border-subtle);
