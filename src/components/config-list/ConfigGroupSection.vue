@@ -107,6 +107,7 @@ function handleDrop(event: DragEvent): void {
     class="config-group-section"
     :class="{
       'is-collapsed': collapsed,
+      'is-active': collapsed && hasActiveConfig,
       'is-drop-target': isDropTarget,
       'is-dragging-hint': isDraggingConfig && !isDropTarget,
     }"
@@ -144,15 +145,6 @@ function handleDrop(event: DragEvent): void {
         <span v-else class="group-name" :title="group.name">{{ group.name }}</span>
 
         <span class="group-count-badge">{{ countBadgeText }}</span>
-
-        <span
-          v-if="collapsed && hasActiveConfig"
-          class="group-active-pill"
-          title="该分组内包含当前正在使用的配置"
-        >
-          <span class="active-dot" />
-          <span>含当前配置</span>
-        </span>
       </div>
 
       <div class="group-header-right" @click.stop @mousedown.stop>
@@ -165,7 +157,7 @@ function handleDrop(event: DragEvent): void {
             title="保存分组名称 (Enter)"
             @click="confirmRename"
           >
-            <Check :size="13" />
+            <Check :size="14" />
           </button>
           <button
             type="button"
@@ -173,7 +165,7 @@ function handleDrop(event: DragEvent): void {
             title="取消重命名 (Esc)"
             @click="cancelRename"
           >
-            <X :size="13" />
+            <X :size="14" />
           </button>
         </template>
 
@@ -184,7 +176,7 @@ function handleDrop(event: DragEvent): void {
             title="重命名分组"
             @click="startRename"
           >
-            <Pencil :size="12" />
+            <Pencil :size="14" />
           </button>
           <button
             type="button"
@@ -192,7 +184,7 @@ function handleDrop(event: DragEvent): void {
             title="删除分组（会同时删除组内所有配置）"
             @click="emit('delete', group.id)"
           >
-            <Trash2 :size="12" />
+            <Trash2 :size="14" />
           </button>
         </template>
       </div>
@@ -215,6 +207,12 @@ function handleDrop(event: DragEvent): void {
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
     background var(--transition-fast);
   overflow: visible;
+
+  &.is-active {
+    border-color: rgba(16, 185, 129, 0.4);
+    background: rgba(16, 185, 129, 0.04);
+    box-shadow: inset 3px 0 0 var(--success), 0 0 12px rgba(16, 185, 129, 0.06);
+  }
 
   &.is-dragging-hint {
     border-color: rgba(var(--accent-rgb), 0.25);
@@ -313,28 +311,6 @@ function handleDrop(event: DragEvent): void {
       background: var(--bg-control);
       border: 1px solid var(--border-subtle);
       flex-shrink: 0;
-    }
-
-    .group-active-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      height: 18px;
-      padding: 0 7px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--success-text);
-      background: var(--success-bg);
-      border: 1px solid var(--success-border);
-      flex-shrink: 0;
-
-      .active-dot {
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background: var(--success);
-      }
     }
   }
 

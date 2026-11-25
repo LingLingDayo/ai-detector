@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ConfigItem } from "../../types";
-import { Check, Pencil, Trash2 } from "@lucide/vue";
+import { Pencil, Trash2 } from "@lucide/vue";
 
 const props = withDefaults(
   defineProps<{
@@ -142,17 +142,12 @@ function maskApiKey(key?: string): string {
     <div class="card-main-row">
       <div class="card-title-group">
         <span class="item-name">{{ item.name }}</span>
-        <!-- 激活状态标记 -->
-        <span v-if="isActive" class="status-badge badge-active">
-          <Check :size="11" :stroke-width="2.5" />
-          <span>已应用</span>
-        </span>
         <!-- 未激活且当前选中的测试进行中时的悬浮提示 -->
-        <span v-else-if="isSwitchDisabled" class="status-badge badge-disabled">
+        <span v-if="!isActive && isSwitchDisabled" class="status-badge badge-disabled">
           <span>测试中不可切换</span>
         </span>
         <!-- 未激活时的悬浮切换提示 -->
-        <span v-else class="status-badge badge-hint">
+        <span v-else-if="!isActive" class="status-badge badge-hint">
           <span>点击切换</span>
         </span>
       </div>
@@ -381,12 +376,6 @@ function maskApiKey(key?: string): string {
         flex-shrink: 0;
         transition: all var(--transition-fast);
         pointer-events: none;
-      }
-
-      .badge-active {
-        color: var(--success);
-        background: rgba(16, 185, 129, 0.12);
-        border: 1px solid rgba(16, 185, 129, 0.3);
       }
 
       .badge-hint {
