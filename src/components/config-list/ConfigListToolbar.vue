@@ -169,7 +169,7 @@ const emit = defineEmits<{
     line-height: 1;
     font-family: inherit;
     color: var(--text-secondary);
-    background: var(--bg-control);
+    background: var(--bg-surface-control);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     cursor: pointer;
@@ -182,9 +182,13 @@ const emit = defineEmits<{
     }
 
     &:hover {
-      color: var(--text-primary);
-      background: var(--bg-control-hover);
-      border-color: rgba(var(--accent-rgb), 0.35);
+      color: var(--accent-text);
+      background: rgba(var(--accent-rgb), 0.08);
+      border-color: rgba(var(--accent-rgb), 0.45);
+    }
+
+    &:active {
+      background: rgba(var(--accent-rgb), 0.14);
     }
   }
 
