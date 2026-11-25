@@ -19,7 +19,7 @@ export interface UserAgentPresetItem {
 }
 
 export const CODEX_USER_AGENT =
-  "Codex Desktop/0.169.0 (Windows 10.0.26200; x86_64) unknown (codex_exec; 0.169.0)";
+  "Codex Desktop/0.171.0-alpha.13 (Windows 10.0.26300; x86_64) unknown (Codex Desktop; 26.1117.41037)";
 export const CLAUDE_CODE_USER_AGENT = "claude-cli/2.1.76 (external, cli)";
 export const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
@@ -38,7 +38,7 @@ export const USER_AGENT_PRESETS: readonly UserAgentPresetItem[] = [
   {
     key: "codex",
     label: "Codex",
-    description: "OpenAI Codex CLI",
+    description: "OpenAI Codex Desktop",
     userAgent: CODEX_USER_AGENT,
   },
   {

@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::error::{AppError, AppResult};
 
 pub const DEFAULT_USER_AGENT: &str =
-    "Codex Desktop/0.169.0 (Windows 10.0.26200; x86_64) unknown (codex_exec; 0.169.0)";
+    "Codex Desktop/0.171.0-alpha.13 (Windows 10.0.26300; x86_64) unknown (Codex Desktop; 26.1117.41037)";
 
 pub const MODEL_FETCH_USER_AGENT: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";

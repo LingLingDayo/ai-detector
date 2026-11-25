@@ -47,7 +47,9 @@ describe("userAgentPresets 客户端标识预设", () => {
   });
 
   it("所有内置预设的 User-Agent 均符合对应客户端规范格式", () => {
-    expect(CODEX_USER_AGENT).toMatch(/^Codex Desktop\/0\.169\.0 .*codex_exec; 0\.169\.0\)$/);
+    expect(CODEX_USER_AGENT).toMatch(
+      /^Codex Desktop\/0\.171\.0-alpha\.13 .*Codex Desktop; 26\.1117\.41037\)$/,
+    );
     expect(CLAUDE_CODE_USER_AGENT).toMatch(/^claude-cli\/\d+\.\d+\.\d+ \(external, cli\)$/);
     expect(OPENCODE_USER_AGENT).toMatch(/^opencode\/\d+\.\d+\.\d+$/);
     expect(GEMINI_CLI_USER_AGENT).toMatch(/^GeminiCLI\/\d+\.\d+\.\d+ .*google-api-nodejs-client\//);
