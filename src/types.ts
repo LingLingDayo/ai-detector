@@ -13,6 +13,14 @@ export interface ClientConfig {
   isCustomModel?: boolean;
 }
 
+export interface ConfigGroup {
+  id: string;
+  name: string;
+  collapsed?: boolean;
+  createdAt?: number;
+  updatedAt?: number;
+}
+
 export interface ConfigItem {
   id: string;
   name: string;
@@ -24,6 +32,8 @@ export interface ConfigItem {
   stream?: boolean;
   /** 随预设持久化，保证保存后重新加载仍能识别手动输入的模型 */
   isCustomModel?: boolean;
+  /** 所属分组 ID；为空或未定义表示未分组 */
+  groupId?: string | null;
   createdAt?: number;
   updatedAt?: number;
 }

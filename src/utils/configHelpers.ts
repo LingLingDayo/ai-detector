@@ -11,6 +11,16 @@ export function generateConfigId(): string {
 }
 
 /**
+ * 生成配置分组的唯一 ID
+ */
+export function generateGroupId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `grp_${crypto.randomUUID()}`;
+  }
+  return `grp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/**
  * 判断两个配置凭据（Base URL 与 API Key）是否属于同一身份
  */
 export function isSameConfigIdentity(

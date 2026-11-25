@@ -3,7 +3,55 @@ use std::hash::{BuildHasher, Hasher};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::types::{CandyChallenge, CandyEvaluationResult};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CandyChallenge {
+    pub id: String,
+    pub circle_apple: u32,
+    pub circle_peach: u32,
+    pub circle_watermelon: u32,
+    pub star_apple: u32,
+    pub star_peach: u32,
+    pub star_watermelon: u32,
+    pub expected_answer: u32,
+    pub optimal_circle: u32,
+    pub optimal_star: u32,
+    pub prompt: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CandyEvaluationResult {
+    pub extracted_answer: Option<u32>,
+    pub is_correct: bool,
+}
+
+#[derive(Clone, Default)]
+pub struct CandyService;
+
+impl CandyService {
+    pub fn new() -> Self {
+        Self
+    }
+
+    pub fn generate_challenges(&self, count: Option<usize>) -> Vec<CandyChallenge> {
+        generate_candy_challenges(count)
+    }
+
+    pub fn generate_single(
+        &self,
+        index: usize,
+        exclude_answers: Option<Vec<u32>>,
+    ) -> CandyChallenge {
+        generate_single_candy_challenge(index, exclude_answers)
+    }
+
+    pub fn evaluate(&self, response_text: &str, expected_answer: u32) -> CandyEvaluationResult {
+        evaluate_candy_answer(response_text, expected_answer)
+    }
+}
 
 static RNG_COUNTER: AtomicU64 = AtomicU64::new(1);
 
@@ -148,11 +196,8 @@ fn parse_first_u32_after(s: &str) -> Option<u32> {
             started = true;
         } else if started {
             break;
-        } else if ch == '\n' || ch == '\r' {
-            // 跨行未见数字则停止
-            if !digits.is_empty() {
-                break;
-            }
+        } else if (ch == '\n' || ch == '\r') && !digits.is_empty() {
+            break;
         }
     }
 
@@ -169,7 +214,6 @@ pub fn extract_candy_answer(response_text: &str) -> Option<u32> {
         return None;
     }
 
-    // 1. 优先匹配 LaTeX \boxed{X}（取最后一次出现）
     if let Some(idx) = trimmed.rfind("\\boxed{") {
         let after = &trimmed[idx + 7..];
         if let Some(end_idx) = after.find('}') {
@@ -179,7 +223,6 @@ pub fn extract_candy_answer(response_text: &str) -> Option<u32> {
         }
     }
 
-    // 2. 匹配明确的最终答案标记（从后往前找最后一次出现）
     let explicit_markers = [
         "最终答案",
         "正确答案",
@@ -211,7 +254,6 @@ pub fn extract_candy_answer(response_text: &str) -> Option<u32> {
         return Some(num);
     }
 
-    // 3. 检查最后几行是否有独立数字行或结论句式
     let non_empty_lines: Vec<&str> = trimmed
         .lines()
         .map(|l| l.trim())
@@ -238,7 +280,6 @@ pub fn extract_candy_answer(response_text: &str) -> Option<u32> {
         }
     }
 
-    // 4. 在尾部文本中匹配“最少取出 X 个/颗”、“至少需要 X 个/颗”等结论表达
     let conclusion_markers = [
         "最少取出",
         "最少需要取出",
@@ -273,7 +314,6 @@ pub fn extract_candy_answer(response_text: &str) -> Option<u32> {
         return Some(num);
     }
 
-    // 5. 兜底：从最后 3 行非空文本中提取最后一个合理范围的整数 (1..=500)
     let tail_lines = if non_empty_lines.len() > 3 {
         &non_empty_lines[non_empty_lines.len() - 3..]
     } else {
@@ -307,7 +347,6 @@ pub fn extract_candy_answer(response_text: &str) -> Option<u32> {
     last_valid_num
 }
 
-#[tauri::command]
 pub fn generate_single_candy_challenge(
     index: usize,
     exclude_answers: Option<Vec<u32>>,
@@ -326,7 +365,6 @@ pub fn generate_single_candy_challenge(
         let max_c = circle_apple.max(circle_peach);
         let max_s = star_apple.max(star_peach);
 
-        // 确保两种形状的极值存在差异，使最优解唯一且不退化为简单对称题
         if max_c == max_s {
             continue;
         }
@@ -343,12 +381,10 @@ pub fn generate_single_candy_challenge(
             star_watermelon,
         );
 
-        // 避开已排除的答案数值，同时避开经典固定题的 21（除非无其他选择），防止死记硬背模型蒙混过关
         if excluded.contains(&expected_answer) {
             continue;
         }
 
-        // 确保盲摸极值与手感策略极值不同
         let total_circle = circle_apple + circle_peach + circle_watermelon;
         let total_star = star_apple + star_peach + star_watermelon;
         let blind_worst_1 = total_circle + star_watermelon + 1;
@@ -382,7 +418,6 @@ pub fn generate_single_candy_challenge(
         };
     }
 
-    // 兜底生成
     log::warn!(
         "糖果题生成: 随机尝试 80 次仍未找到满足约束的题目, index={}, 使用兜底参数",
         index
@@ -390,7 +425,6 @@ pub fn generate_single_candy_challenge(
     build_candy_challenge(index, 8, 10, 7, 6, 8, 5)
 }
 
-#[tauri::command]
 pub fn generate_candy_challenges(count: Option<usize>) -> Vec<CandyChallenge> {
     let total = count.unwrap_or(3).clamp(1, 10);
     let mut challenges = Vec::with_capacity(total);
@@ -405,9 +439,8 @@ pub fn generate_candy_challenges(count: Option<usize>) -> Vec<CandyChallenge> {
     challenges
 }
 
-#[tauri::command]
-pub fn evaluate_candy_answer(response_text: String, expected_answer: u32) -> CandyEvaluationResult {
-    let extracted_answer = extract_candy_answer(&response_text);
+pub fn evaluate_candy_answer(response_text: &str, expected_answer: u32) -> CandyEvaluationResult {
+    let extracted_answer = extract_candy_answer(response_text);
     if extracted_answer.is_none() {
         log::warn!(
             "糖果题评测: 未能从模型输出中解析出数字答案, expected={}, 响应长度={}",
@@ -428,7 +461,6 @@ mod tests {
 
     #[test]
     fn test_classic_candy_problem_solution() {
-        // 经典原题：圆形(苹果7, 桃子9, 西瓜8)，五角星(苹果7, 桃子6, 西瓜4) -> 答案 21 (圆9, 星12)
         let (ans, opt_c, opt_s) = solve_candy_counts(7, 9, 8, 7, 6, 4);
         assert_eq!(ans, 21);
         assert_eq!(opt_c, 9);
@@ -437,7 +469,6 @@ mod tests {
 
     #[test]
     fn test_symmetric_candy_problem_solution() {
-        // 对称反转：圆形(苹果7, 桃子6, 西瓜4)，五角星(苹果7, 桃子9, 西瓜8) -> 答案 21 (圆12, 星9)
         let (ans, opt_c, opt_s) = solve_candy_counts(7, 6, 4, 7, 9, 8);
         assert_eq!(ans, 21);
         assert_eq!(opt_c, 12);
@@ -448,7 +479,6 @@ mod tests {
     fn test_generate_three_distinct_challenges() {
         let list = generate_candy_challenges(Some(3));
         assert_eq!(list.len(), 3);
-        // 校验每题答案等于求解器结果，且三题答案互不相同
         for ch in &list {
             let (ans, c, s) = solve_candy_counts(
                 ch.circle_apple,
@@ -490,11 +520,11 @@ mod tests {
 
     #[test]
     fn test_evaluate_candy_answer() {
-        let res_ok = evaluate_candy_answer("推理过程...\n最终答案：21".to_string(), 21);
+        let res_ok = evaluate_candy_answer("推理过程...\n最终答案：21", 21);
         assert!(res_ok.is_correct);
         assert_eq!(res_ok.extracted_answer, Some(21));
 
-        let res_wrong = evaluate_candy_answer("推理过程...\n最终答案：29".to_string(), 21);
+        let res_wrong = evaluate_candy_answer("推理过程...\n最终答案：29", 21);
         assert!(!res_wrong.is_correct);
         assert_eq!(res_wrong.extracted_answer, Some(29));
     }

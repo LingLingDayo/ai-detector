@@ -1,58 +1,97 @@
 <script setup lang="ts">
-import { Search, X, Save } from "@lucide/vue";
+import { Search, X, Save, ChevronsUpDown, ChevronsDownUp } from "@lucide/vue";
 
-defineProps<{
-  modelValue: string;
-  canSaveCurrent?: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    modelValue: string;
+    canSaveCurrent?: boolean;
+    hasGroups?: boolean;
+    allCollapsed?: boolean;
+  }>(),
+  {
+    canSaveCurrent: false,
+    hasGroups: false,
+    allCollapsed: false,
+  }
+);
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
   (e: "openSaveCurrent"): void;
+  (e: "toggleAllGroups"): void;
 }>();
 </script>
 
 <template>
-  <div class="list-toolbar">
-    <div class="search-input-wrapper">
-      <Search class="search-icon" :size="14" />
-      <input
-        type="text"
-        :value="modelValue"
-        placeholder="搜索配置名称、URL、模型..."
-        class="search-input"
-        @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-      />
+  <div class="list-toolbar-wrapper">
+    <div class="list-toolbar">
+      <div class="search-input-wrapper">
+        <Search class="search-icon" :size="14" />
+        <input
+          type="text"
+          :value="modelValue"
+          placeholder="搜索配置名称、分组、URL、模型..."
+          class="search-input"
+          @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+        />
+        <button
+          v-if="modelValue"
+          type="button"
+          class="btn-clear-search"
+          title="清空搜索"
+          @click="emit('update:modelValue', '')"
+        >
+          <X :size="12" :stroke-width="2.5" />
+        </button>
+      </div>
+
       <button
-        v-if="modelValue"
+        v-if="hasGroups"
         type="button"
-        class="btn-clear-search"
-        title="清空搜索"
-        @click="emit('update:modelValue', '')"
+        class="btn-collapse-all"
+        :title="allCollapsed ? '展开全部分组' : '折叠全部分组'"
+        @click="emit('toggleAllGroups')"
       >
-        <X :size="12" :stroke-width="2.5" />
+        <ChevronsUpDown v-if="allCollapsed" :size="14" />
+        <ChevronsDownUp v-else :size="14" />
+        <span>{{ allCollapsed ? "展开全部" : "折叠全部" }}</span>
+      </button>
+
+      <button
+        v-if="canSaveCurrent"
+        type="button"
+        class="btn-save-current"
+        @click="emit('openSaveCurrent')"
+        title="将主界面当前输入的参数保存为一条新配置"
+      >
+        <Save :size="14" />
+        <span>保存为新配置</span>
       </button>
     </div>
 
-    <button
-      v-if="canSaveCurrent"
-      type="button"
-      class="btn-save-current"
-      @click="emit('openSaveCurrent')"
-      title="将主界面当前输入的参数保存为一条新配置"
-    >
-      <Save :size="14" />
-      保存为新配置
-    </button>
+    <!-- 为后续复杂多维筛选预留的独立扩展槽 -->
+    <div v-if="$slots.filters" class="toolbar-filters-row">
+      <slot name="filters" />
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
+.list-toolbar-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-panel-strong);
+  flex-shrink: 0;
+}
+
 .list-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 
   .search-input-wrapper {
@@ -64,7 +103,7 @@ const emit = defineEmits<{
 
     .search-icon {
       position: absolute;
-      left: 9px;
+      left: 10px;
       color: var(--text-muted);
       pointer-events: none;
     }
@@ -72,7 +111,7 @@ const emit = defineEmits<{
     .search-input {
       width: 100%;
       height: 32px;
-      padding: 0 28px;
+      padding: 0 28px 0 30px;
       font-size: 12px;
       background: var(--bg-input);
       border: 1px solid var(--border-subtle);
@@ -118,6 +157,41 @@ const emit = defineEmits<{
     }
   }
 
+  .btn-collapse-all {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    font-family: inherit;
+    color: var(--text-secondary);
+    background: var(--bg-surface-control);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+
+    svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      color: var(--accent-text);
+      background: rgba(var(--accent-rgb), 0.08);
+      border-color: rgba(var(--accent-rgb), 0.45);
+    }
+
+    &:active {
+      background: rgba(var(--accent-rgb), 0.14);
+    }
+  }
+
   .btn-save-current {
     display: inline-flex;
     align-items: center;
@@ -128,6 +202,7 @@ const emit = defineEmits<{
     font-size: 12px;
     font-weight: 500;
     line-height: 1;
+    font-family: inherit;
     color: var(--info-text);
     background: rgba(var(--info-rgb), 0.12);
     border: 1px solid rgba(var(--info-rgb), 0.28);
@@ -147,5 +222,13 @@ const emit = defineEmits<{
       color: var(--info-text-soft);
     }
   }
+}
+
+.toolbar-filters-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
 }
 </style>

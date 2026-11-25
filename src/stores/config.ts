@@ -3,13 +3,15 @@ import { ref, reactive, computed, watch } from "vue";
 import {
   STORAGE_KEY,
   CONFIG_LIST_STORAGE_KEY,
+  CONFIG_GROUPS_STORAGE_KEY,
   ACTIVE_CONFIG_ID_KEY,
   resolveValidReasoningEffort,
 } from "../constants";
-import type { ActiveTestMode, ClientConfig, ConfigItem } from "../types";
+import type { ActiveTestMode, ClientConfig, ConfigGroup, ConfigItem } from "../types";
 import { useConfirm } from "../composables/useConfirm";
 import {
   generateConfigId,
+  generateGroupId,
   isSameConfigIdentity,
   isConfigEqual,
 } from "../utils/configHelpers";
@@ -140,6 +142,7 @@ export const useConfigStore = defineStore("config", () => {
   });
 
   const configList = ref<ConfigItem[]>([]);
+  const configGroups = ref<ConfigGroup[]>([]);
   const activeConfigId = ref<string | null>(null);
   const lastActiveConfigId = ref<string | null>(null);
 
@@ -262,6 +265,7 @@ export const useConfigStore = defineStore("config", () => {
       reasoningEffort: config.reasoningEffort,
       stream: config.stream !== false,
       isCustomModel: config.isCustomModel === true,
+      groupId: activeConfigId.value ? matched?.groupId : undefined,
     };
     isConfigEditModalOpen.value = true;
   }
@@ -283,9 +287,18 @@ export const useConfigStore = defineStore("config", () => {
     editingConfigItem.value = null;
   }
 
+  function saveConfigGroupsToStorage(): void {
+    try {
+      localStorage.setItem(CONFIG_GROUPS_STORAGE_KEY, JSON.stringify(configGroups.value));
+    } catch (err) {
+      console.warn("保存配置分组到本地存储失败:", err);
+    }
+  }
+
   function saveConfigListToStorage(): void {
     try {
       localStorage.setItem(CONFIG_LIST_STORAGE_KEY, JSON.stringify(configList.value));
+      saveConfigGroupsToStorage();
       if (activeConfigId.value) {
         localStorage.setItem(ACTIVE_CONFIG_ID_KEY, activeConfigId.value);
       } else {
@@ -378,10 +391,15 @@ export const useConfigStore = defineStore("config", () => {
     applyImmediately: boolean = false
   ): void {
     const now = Date.now();
-    const sanitizedData = {
+    const sanitizedData: Omit<ConfigItem, "id" | "createdAt" | "updatedAt"> = {
       ...data,
       reasoningEffort: resolveValidReasoningEffort(data.modelName, data.reasoningEffort),
     };
+    if (sanitizedData.groupId) {
+      sanitizedData.groupId = sanitizedData.groupId;
+    } else {
+      delete sanitizedData.groupId;
+    }
 
     if (id) {
       // 编辑已有项
@@ -392,6 +410,9 @@ export const useConfigStore = defineStore("config", () => {
           ...sanitizedData,
           updatedAt: now,
         };
+        if (!sanitizedData.groupId) {
+          delete updatedItem.groupId;
+        }
         configList.value.splice(index, 1, updatedItem);
         if (activeConfigId.value === id || applyImmediately) {
           applyConfig(updatedItem);
@@ -455,8 +476,16 @@ export const useConfigStore = defineStore("config", () => {
     const targetIdx = configList.value.findIndex((c) => c.id === targetId);
     if (sourceIdx === -1 || targetIdx === -1) return;
 
+    const targetGroupId = configList.value[targetIdx].groupId || undefined;
     const nextList = [...configList.value];
-    const [movedItem] = nextList.splice(sourceIdx, 1);
+    const [rawMovedItem] = nextList.splice(sourceIdx, 1);
+    const movedItem: ConfigItem = { ...rawMovedItem };
+    if (targetGroupId) {
+      movedItem.groupId = targetGroupId;
+    } else {
+      delete movedItem.groupId;
+    }
+
     const newTargetIdx = nextList.findIndex((c) => c.id === targetId);
     if (newTargetIdx === -1) return;
 
@@ -471,14 +500,176 @@ export const useConfigStore = defineStore("config", () => {
     moveConfigItem(sourceId, targetId, "before");
   }
 
+  function createConfigGroup(name: string): ConfigGroup | null {
+    const trimmed = name.trim();
+    if (!trimmed) return null;
+
+    const now = Date.now();
+    const newGroup: ConfigGroup = {
+      id: generateGroupId(),
+      name: trimmed,
+      collapsed: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    configGroups.value.push(newGroup);
+    saveConfigGroupsToStorage();
+    return newGroup;
+  }
+
+  function renameConfigGroup(groupId: string, name: string): boolean {
+    const trimmed = name.trim();
+    if (!trimmed) return false;
+    const index = configGroups.value.findIndex((g) => g.id === groupId);
+    if (index === -1) return false;
+
+    configGroups.value.splice(index, 1, {
+      ...configGroups.value[index],
+      name: trimmed,
+      updatedAt: Date.now(),
+    });
+    saveConfigGroupsToStorage();
+    return true;
+  }
+
+  function setConfigGroupCollapsed(groupId: string, collapsed: boolean): void {
+    const index = configGroups.value.findIndex((g) => g.id === groupId);
+    if (index === -1) return;
+    if (Boolean(configGroups.value[index].collapsed) === collapsed) return;
+
+    configGroups.value.splice(index, 1, {
+      ...configGroups.value[index],
+      collapsed,
+    });
+    saveConfigGroupsToStorage();
+  }
+
+  function toggleConfigGroupCollapsed(groupId: string): void {
+    const target = configGroups.value.find((g) => g.id === groupId);
+    if (!target) return;
+    setConfigGroupCollapsed(groupId, !target.collapsed);
+  }
+
+  function setAllConfigGroupsCollapsed(collapsed: boolean): void {
+    if (configGroups.value.length === 0) return;
+    if (collapsed) {
+      configGroups.value = configGroups.value.map((g) => ({
+        ...g,
+        collapsed: true,
+      }));
+    } else {
+      const nonEmptyGroupIds = new Set(
+        configList.value
+          .map((item) => item.groupId)
+          .filter((id): id is string => Boolean(id))
+      );
+      configGroups.value = configGroups.value.map((g) =>
+        nonEmptyGroupIds.has(g.id) ? { ...g, collapsed: false } : g
+      );
+    }
+    saveConfigGroupsToStorage();
+  }
+
+  function moveConfigToGroup(configId: string, groupId: string | null): boolean {
+    const index = configList.value.findIndex((c) => c.id === configId);
+    if (index === -1) return false;
+
+    if (groupId) {
+      const groupExists = configGroups.value.some((g) => g.id === groupId);
+      if (!groupExists) return false;
+    }
+
+    const updatedItem: ConfigItem = {
+      ...configList.value[index],
+      updatedAt: Date.now(),
+    };
+    if (groupId) {
+      updatedItem.groupId = groupId;
+    } else {
+      delete updatedItem.groupId;
+    }
+
+    configList.value.splice(index, 1, updatedItem);
+    saveConfigListToStorage();
+    return true;
+  }
+
+  async function deleteConfigGroup(groupId: string): Promise<boolean> {
+    const targetGroup = configGroups.value.find((g) => g.id === groupId);
+    if (!targetGroup) return false;
+
+    const groupItems = configList.value.filter((item) => item.groupId === groupId);
+    const count = groupItems.length;
+
+    const confirmed = await confirm({
+      type: "danger",
+      styleVariant: "spotlight",
+      highlightTag: count > 0 ? `含 ${count} 项配置` : undefined,
+      title: "确认删除分组？",
+      message:
+        count > 0
+          ? `确定要删除分组「${targetGroup.name}」吗？该分组内的 ${count} 条配置预设也将一并永久删除，且无法恢复。`
+          : `确定要删除空分组「${targetGroup.name}」吗？删除后将无法恢复。`,
+      confirmText: "确认删除",
+      cancelText: "取消",
+    });
+
+    if (!confirmed) {
+      return false;
+    }
+
+    const removedIds = new Set(groupItems.map((item) => item.id));
+    configGroups.value = configGroups.value.filter((g) => g.id !== groupId);
+    configList.value = configList.value.filter((item) => item.groupId !== groupId);
+
+    if (activeConfigId.value && removedIds.has(activeConfigId.value)) {
+      activeConfigId.value = null;
+    }
+    if (lastActiveConfigId.value && removedIds.has(lastActiveConfigId.value)) {
+      lastActiveConfigId.value = null;
+    }
+
+    saveConfigListToStorage();
+    return true;
+  }
+
   function loadConfig(): void {
     try {
-      // 1. 读取保存的配置列表
+      // 1. 读取保存的配置分组
+      const rawGroups = localStorage.getItem(CONFIG_GROUPS_STORAGE_KEY);
+      let loadedGroups: ConfigGroup[] = [];
+      if (rawGroups) {
+        try {
+          const parsedGroups = JSON.parse(rawGroups);
+          if (Array.isArray(parsedGroups)) {
+            loadedGroups = parsedGroups.filter(
+              (g): g is ConfigGroup =>
+                Boolean(g && typeof g.id === "string" && typeof g.name === "string")
+            );
+          }
+        } catch {
+          loadedGroups = [];
+        }
+      }
+      configGroups.value = loadedGroups;
+      const validGroupIds = new Set(loadedGroups.map((g) => g.id));
+
+      // 2. 读取保存的配置列表
       const rawList = localStorage.getItem(CONFIG_LIST_STORAGE_KEY);
       let loadedList: ConfigItem[] = [];
       if (rawList) {
         try {
-          loadedList = JSON.parse(rawList);
+          const parsedList = JSON.parse(rawList);
+          if (Array.isArray(parsedList)) {
+            loadedList = parsedList.map((item: ConfigItem) => {
+              if (item.groupId && !validGroupIds.has(item.groupId)) {
+                const cleaned = { ...item };
+                delete cleaned.groupId;
+                return cleaned;
+              }
+              return item;
+            });
+          }
         } catch {
           loadedList = [];
         }
@@ -779,6 +970,7 @@ export const useConfigStore = defineStore("config", () => {
     candyConfig,
     connectionConfig,
     configList,
+    configGroups,
     activeConfigId,
     activeConfig,
     activeConfigName,
@@ -812,5 +1004,12 @@ export const useConfigStore = defineStore("config", () => {
     deleteConfigItem,
     moveConfigItem,
     swapConfigItems,
+    createConfigGroup,
+    renameConfigGroup,
+    setConfigGroupCollapsed,
+    toggleConfigGroupCollapsed,
+    setAllConfigGroupsCollapsed,
+    moveConfigToGroup,
+    deleteConfigGroup,
   };
 });

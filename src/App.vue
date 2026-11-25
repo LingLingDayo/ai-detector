@@ -289,6 +289,7 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
     <ConfigListModal
       :is-open="configStore.isConfigListModalOpen"
       :configs="configStore.configList"
+      :groups="configStore.configGroups"
       :active-config-id="configStore.activeConfigId"
       :can-save-current="configStore.canSaveCurrent"
       :is-current-running="appStore.isCurrentRunning"
@@ -314,6 +315,13 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
       @open-save-current="configStore.openSaveCurrentModal"
       @delete="configStore.deleteConfigItem"
       @reorder="({ sourceId, targetId, position }) => configStore.moveConfigItem(sourceId, targetId, position)"
+      @create-group="configStore.createConfigGroup"
+      @rename-group="({ groupId, name }) => configStore.renameConfigGroup(groupId, name)"
+      @delete-group="configStore.deleteConfigGroup"
+      @toggle-group="configStore.toggleConfigGroupCollapsed"
+      @set-group-collapsed="({ groupId, collapsed }) => configStore.setConfigGroupCollapsed(groupId, collapsed)"
+      @toggle-all-groups="configStore.setAllConfigGroupsCollapsed"
+      @move-to-group="({ configId, groupId }) => configStore.moveConfigToGroup(configId, groupId)"
     />
 
     <!-- 添加 / 编辑 / 保存当前配置弹窗 -->
@@ -321,6 +329,7 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
       :is-open="configStore.isConfigEditModalOpen"
       :mode="configStore.configEditModalMode"
       :initial-data="configStore.editingConfigItem"
+      :groups="configStore.configGroups"
       @close="configStore.closeConfigEditModal"
       @save="configStore.handleSaveConfigItem"
     />

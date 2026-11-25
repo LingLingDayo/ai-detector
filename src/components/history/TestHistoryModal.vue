@@ -211,7 +211,7 @@ async function handleDeleteConnection(id: string): Promise<void> {
             <div class="header-icon-box">
               <History :size="18" />
             </div>
-            <h3 id="test-history-title">测试历史记录</h3>
+            <h3 id="test-history-title">历史记录</h3>
 
             <!-- 扩展性 Tab 切换菜单：模型测试在左边，鹈鹕测试在右边 -->
             <nav class="history-tabs-nav" role="tablist" aria-label="测试类型切换">

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { List, Plus, X } from "@lucide/vue";
+import { FolderPlus, List, Plus, X } from "@lucide/vue";
 
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "openCreate"): void;
+  (e: "openCreateGroup"): void;
 }>();
 </script>
 
@@ -19,12 +20,21 @@ const emit = defineEmits<{
     <div class="header-actions">
       <button
         type="button"
+        class="btn-secondary-action"
+        @click="emit('openCreateGroup')"
+        title="新建一个配置分组"
+      >
+        <FolderPlus :size="14" />
+        <span>新建分组</span>
+      </button>
+      <button
+        type="button"
         class="btn btn-primary btn-sm"
         @click="emit('openCreate')"
         title="添加一条新的配置"
       >
         <Plus :size="14" />
-        添加配置
+        <span>添加配置</span>
       </button>
       <button
         type="button"
@@ -43,14 +53,17 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 12px 18px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-header);
+  flex-shrink: 0;
 
   .header-left {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    min-width: 0;
 
     .title-icon {
       width: 30px;
@@ -69,6 +82,7 @@ const emit = defineEmits<{
       font-size: 15px;
       font-weight: 600;
       color: var(--text-strong);
+      margin: 0;
     }
   }
 
@@ -76,6 +90,43 @@ const emit = defineEmits<{
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-shrink: 0;
+
+    .btn-secondary-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      height: 32px;
+      padding: 0 11px;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1;
+      font-family: inherit;
+      color: var(--text-primary);
+      background: var(--bg-surface-control);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+
+      svg {
+        display: block;
+        flex-shrink: 0;
+        color: var(--accent-icon);
+      }
+
+      &:hover {
+        color: var(--accent-text);
+        background: rgba(var(--accent-rgb), 0.08);
+        border-color: rgba(var(--accent-rgb), 0.45);
+      }
+
+      &:active {
+        background: rgba(var(--accent-rgb), 0.14);
+      }
+    }
 
     .btn-sm {
       display: inline-flex;
@@ -86,6 +137,7 @@ const emit = defineEmits<{
       padding: 0 12px;
       font-size: 12px;
       line-height: 1;
+      white-space: nowrap;
 
       svg {
         display: block;

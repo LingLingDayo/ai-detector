@@ -1,27 +1,28 @@
 use std::cell::Cell;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+
+pub type LogSink = Arc<dyn Fn(LogEntry) + Send + Sync + 'static>;
 
 static LOGGER: MemoryLogger = MemoryLogger;
-static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
+static LOG_SINK: OnceLock<LogSink> = OnceLock::new();
 
 thread_local! {
-    // emit 期间置位；重入的日志调用直接丢弃，避免 log -> emit -> log 无限递归
-    static EMITTING: Cell<bool> = Cell::new(false);
+    // sink 回调期间置位；重入的日志调用直接丢弃，避免 log -> sink -> log 无限递归
+    static EMITTING: Cell<bool> = const { Cell::new(false) };
 }
 
-#[derive(Serialize, Clone)]
-struct LogPayload {
-    timestamp_ms: u64,
-    level: String,
-    target: String,
-    message: String,
+#[derive(Debug, Clone, Serialize)]
+pub struct LogEntry {
+    pub timestamp_ms: u64,
+    pub level: String,
+    pub target: String,
+    pub message: String,
 }
 
-// RAII 复位标志，即使 emit 过程中发生 panic 也不会让重入保护永久卡住
+// RAII 复位标志，即使回调过程中发生 panic 也不会让重入保护永久卡住
 struct ReentryGuard;
 
 impl ReentryGuard {
@@ -59,7 +60,7 @@ impl log::Log for MemoryLogger {
             None => return,
         };
 
-        let payload = LogPayload {
+        let entry = LogEntry {
             timestamp_ms: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_millis() as u64)
@@ -69,17 +70,19 @@ impl log::Log for MemoryLogger {
             message: record.args().to_string(),
         };
 
-        if let Some(app) = APP_HANDLE.get() {
-            // emit 失败直接忽略，不能再写日志以免递归
-            let _ = app.emit("diagnostics://log", payload);
+        if let Some(sink) = LOG_SINK.get() {
+            sink(entry);
         }
     }
 
     fn flush(&self) {}
 }
 
-pub fn init(app: AppHandle) {
-    let _ = APP_HANDLE.set(app);
+pub fn init_with_sink<F>(sink: F)
+where
+    F: Fn(LogEntry) + Send + Sync + 'static,
+{
+    let _ = LOG_SINK.set(Arc::new(sink));
 
     // set_logger 全局只能成功一次；重复调用返回 Err，忽略即可，不能 panic
     if log::set_logger(&LOGGER).is_ok() {

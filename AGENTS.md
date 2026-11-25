@@ -11,8 +11,12 @@
 | `src/composables/` | 复用逻辑（toast / confirm / clipboard） |
 | `src/utils/`、`src/data/` | 纯函数工具、题库与预设数据 |
 | `src/settings/`、`src/types.ts`、`src/constants.ts`、`src/style.css` | 设置项定义、类型与常量、主题 CSS 变量 |
-| `src-tauri/src/commands/` | Rust 命令：probe / chat / models / candy / system |
-| `src-tauri/src/diagnostics.rs`、`lib.rs` | 内存日志桥与 Tauri 入口 |
+| `src-tauri/src/error.rs`、`infra/` | 统一结构化错误模型、HTTP 连接池、请求取消注册表、安全文件写入与内存日志桥（零 Tauri 依赖） |
+| `src-tauri/src/provider/` | 强类型多协议上游适配层（Chat Completions / Responses / Anthropic）、增量 SSE 解码与流式执行引擎（零 Tauri 依赖） |
+| `src-tauri/src/services/` | 核心应用服务容器 `AppServices`（probe / chat / models / candy / download，零 Tauri 依赖） |
+| `src-tauri/src/platform/` | 桌面与操作系统适配层（跨平台打开外部链接、Windows 离屏 WebView2 GIF 采集） |
+| `src-tauri/src/transport/tauri/` | Tauri 命令薄封装与事件桥接；未来新增对外 HTTP/SSE API 时可同级新增 `transport/http/` |
+| `src-tauri/src/lib.rs` | 后端组装根（构建 `AppServices` 与 `CaptureRegistry` 并交由传输层启动） |
 | `scripts/`、`docs/` | 构建发布脚本、开发者文档与图片 |
 
 ## 技术栈
@@ -25,12 +29,9 @@
 ## 项目约定
 
 - 组件按功能域放进 `src/components/<功能域>/`，通用组件集中在 `src/components/common/`。
+- 新增弹窗、表单控件或调用交互能力（如确认框、Toast 提示、剪贴板操作等）时，必须优先复用 `src/components/common/` 下的已有组件与 `src/composables/`、`src/stores/` 中的现成封装，并在布局、动效与视觉细节上与现有弹窗/组件风格保持一致，禁止使用原生 `alert` / `confirm` 或重复造轮子。
 - 跨语言边界：前端用 `invoke` 调 Rust command，Rust 用 Emitter 发事件、前端用 `listen` 接收。
-
-## 禁止事项
-
-- 诊断与日志数据只存内存：禁止写日志文件、写 `localStorage` / `sessionStorage`、导出到文件；对外传递只走剪贴板，且必须先脱敏。细则见 `docs/diagnostics.md`。
-- 不得为诊断或 DevTools 能力添加按钮、菜单、设置项等用户可见入口，也不得在面向用户的文案中提示隐藏快捷键。
+- 后端分层边界：`src-tauri/src/error.rs`、`infra/`、`provider/`、`services/` 严禁引用 `tauri` crate，仅由 `platform/` 与 `transport/tauri/` 适配桌面运行时。
 
 ## 提交与验证
 

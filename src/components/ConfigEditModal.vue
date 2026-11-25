@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, nextTick } from "vue";
-import type { ConfigItem } from "../types";
+import type { ConfigGroup, ConfigItem } from "../types";
 import {
   findModelReasoningRule,
   getReasoningOptionsForModel,
@@ -26,6 +26,7 @@ const props = defineProps<{
   isOpen: boolean;
   mode: "create" | "edit" | "save-current";
   initialData?: Partial<ConfigItem> | null;
+  groups?: ConfigGroup[];
 }>();
 
 const emit = defineEmits<{
@@ -54,6 +55,7 @@ function handleCopyKey(): void {
 
 const formData = reactive({
   name: "",
+  groupId: "",
   baseUrl: "",
   apiKey: "",
   apiFormat: "chat_completions",
@@ -61,6 +63,16 @@ const formData = reactive({
   reasoningEffort: "high",
   stream: true,
   isCustomModel: false,
+});
+
+const groupSelectOptions = computed<SelectOption[]>(() => {
+  return [
+    { value: "", label: "未分组" },
+    ...(props.groups || []).map((g) => ({
+      value: g.id,
+      label: g.name,
+    })),
+  ];
 });
 
 const matchedRule = computed(() => findModelReasoningRule(formData.modelName));
@@ -89,6 +101,7 @@ function initForm(): void {
   modalComboboxRef.value?.resetModelList();
   if (props.initialData) {
     formData.name = props.initialData.name || "";
+    formData.groupId = props.initialData.groupId || "";
     formData.baseUrl = props.initialData.baseUrl || "";
     formData.apiKey = props.initialData.apiKey || "";
     formData.apiFormat = props.initialData.apiFormat || "chat_completions";
@@ -107,6 +120,7 @@ function initForm(): void {
     }
   } else {
     formData.name = "";
+    formData.groupId = "";
     formData.baseUrl = "";
     formData.apiKey = "";
     formData.apiFormat = "chat_completions";
@@ -152,6 +166,7 @@ function handleSubmit(applyImmediately: boolean = false): void {
     "save",
     {
       name: trimmedName,
+      groupId: formData.groupId || undefined,
       baseUrl: trimmedBaseUrl,
       apiKey: trimmedApiKey,
       apiFormat: formData.apiFormat,
@@ -246,6 +261,16 @@ function handleSubmit(applyImmediately: boolean = false): void {
                 spellcheck="false"
               />
             </div>
+          </div>
+
+          <!-- 所属分组（存在分组时展示） -->
+          <div v-if="groups && groups.length > 0" class="form-group">
+            <label for="cfg-group">所属分组</label>
+            <CustomSelect
+              id="cfg-group"
+              v-model="formData.groupId"
+              :options="groupSelectOptions"
+            />
           </div>
 
           <!-- Base URL 与 API Key -->

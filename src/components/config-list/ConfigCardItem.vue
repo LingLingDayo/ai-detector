@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ConfigItem } from "../../types";
-import { Check, Pencil, Trash2 } from "@lucide/vue";
+import { Pencil, Trash2 } from "@lucide/vue";
 
 const props = withDefaults(
   defineProps<{
@@ -68,6 +68,7 @@ function handleDragEnd() {
 
 function handleDragOver(event: DragEvent) {
   event.preventDefault();
+  event.stopPropagation();
   if (isDragHappening || props.isDragging) return;
   const position = calculatePosition(event);
   emit("dragover", event, props.item.id, position);
@@ -75,6 +76,7 @@ function handleDragOver(event: DragEvent) {
 
 function handleDragEnter(event: DragEvent) {
   event.preventDefault();
+  event.stopPropagation();
   if (isDragHappening || props.isDragging) return;
   const position = calculatePosition(event);
   emit("dragenter", event, props.item.id, position);
@@ -82,6 +84,7 @@ function handleDragEnter(event: DragEvent) {
 
 function handleDrop(event: DragEvent) {
   event.preventDefault();
+  event.stopPropagation();
   if (isDragHappening || props.isDragging) return;
   const position = calculatePosition(event);
   emit("drop", event, props.item.id, position);
@@ -139,17 +142,12 @@ function maskApiKey(key?: string): string {
     <div class="card-main-row">
       <div class="card-title-group">
         <span class="item-name">{{ item.name }}</span>
-        <!-- 激活状态标记 -->
-        <span v-if="isActive" class="status-badge badge-active">
-          <Check :size="11" :stroke-width="2.5" />
-          <span>已应用</span>
-        </span>
         <!-- 未激活且当前选中的测试进行中时的悬浮提示 -->
-        <span v-else-if="isSwitchDisabled" class="status-badge badge-disabled">
+        <span v-if="!isActive && isSwitchDisabled" class="status-badge badge-disabled">
           <span>测试中不可切换</span>
         </span>
         <!-- 未激活时的悬浮切换提示 -->
-        <span v-else class="status-badge badge-hint">
+        <span v-else-if="!isActive" class="status-badge badge-hint">
           <span>点击切换</span>
         </span>
       </div>
@@ -181,7 +179,7 @@ function maskApiKey(key?: string): string {
       </div>
     </div>
 
-    <!-- 简洁的 URL 与 KEY 信息行 -->
+    <!-- 简洁的 URL、KEY 与模型信息行 -->
     <div class="card-meta-row">
       <div class="meta-item meta-url" :title="item.baseUrl || '未设置 URL'">
         <span class="meta-label">URL</span>
@@ -192,6 +190,13 @@ function maskApiKey(key?: string): string {
         <span class="meta-label">KEY</span>
         <span class="meta-value">{{ maskApiKey(item.apiKey) }}</span>
       </div>
+      <template v-if="item.modelName">
+        <span class="meta-separator">•</span>
+        <div class="meta-item meta-model" :title="item.modelName">
+          <span class="meta-label">MODEL</span>
+          <span class="meta-value">{{ item.modelName }}</span>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -373,12 +378,6 @@ function maskApiKey(key?: string): string {
         pointer-events: none;
       }
 
-      .badge-active {
-        color: var(--success);
-        background: rgba(16, 185, 129, 0.12);
-        border: 1px solid rgba(16, 185, 129, 0.3);
-      }
-
       .badge-hint {
         color: var(--accent-text);
         background: rgba(var(--accent-rgb), 0.14);
@@ -453,7 +452,7 @@ function maskApiKey(key?: string): string {
   .card-meta-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     font-size: 12px;
     min-width: 0;
 
@@ -486,7 +485,8 @@ function maskApiKey(key?: string): string {
       }
 
       &.meta-url {
-        max-width: 320px;
+        flex: 0 1 auto;
+        max-width: 280px;
 
         .meta-value {
           color: var(--info-text);
@@ -498,6 +498,15 @@ function maskApiKey(key?: string): string {
 
         .meta-value {
           color: var(--text-secondary);
+        }
+      }
+
+      &.meta-model {
+        flex: 0 1 auto;
+        max-width: 180px;
+
+        .meta-value {
+          color: var(--accent-text);
         }
       }
     }
