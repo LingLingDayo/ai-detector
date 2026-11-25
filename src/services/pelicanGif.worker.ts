@@ -1,70 +1,127 @@
-import { GIFEncoder, quantize, applyPalette } from "gifenc";
-import { sampleGifTimeline } from "./gifTimeline";
+import { applyPalette, GIFEncoder, quantize } from "gifenc";
+import {
+  MAX_GIF_DURATION_MS,
+  MAX_GIF_FRAMES,
+  resolveGifFrameIntervalMs,
+  sampleGifTimeline,
+} from "./gifTimeline";
 
-interface Frame { data: string; time: number }
-interface Settings { width: number; height: number; durationMs: number;
-  crop: { x: number; y: number; width: number; height: number } }
+type CropRect = { x: number; y: number; width: number; height: number; viewportWidth: number; viewportHeight: number };
+type Settings = { type: "init"; width: number; height: number; durationMs: number; crop?: CropRect };
+type Message = Settings | { type: "frame"; data: string; timestampMs: number; crop?: CropRect } | { type: "finish" };
+interface Frame { time: number; pixels: Uint8ClampedArray; sample: Uint8ClampedArray }
+
+const scope = self as unknown as {
+  onmessage: (event: MessageEvent<Message>) => Promise<void>;
+  postMessage: (message: object, transfer?: Transferable[]) => void;
+};
 const frames: Frame[] = [];
 let settings: Settings;
+let context: OffscreenCanvasRenderingContext2D;
+let sampleContext: OffscreenCanvasRenderingContext2D;
+let firstTimestamp: number | undefined;
+let failed = false;
+let queue = Promise.resolve();
 
-async function bitmap(frame: Frame): Promise<ImageBitmap> {
-  const raw = atob(frame.data);
-  const bytes = new Uint8Array(raw.length);
-  for (let index = 0; index < raw.length; index++) bytes[index] = raw.charCodeAt(index);
-  return createImageBitmap(new Blob([bytes], { type: "image/png" }));
-}
-
-function draw(context: OffscreenCanvasRenderingContext2D, image: ImageBitmap, width: number, height: number) {
-  const { crop } = settings;
-  context.drawImage(image, crop.x * image.width, crop.y * image.height,
-    crop.width * image.width, crop.height * image.height, 0, 0, width, height);
-}
-
-async function finish() {
-  const timeline = sampleGifTimeline(frames.map(frame => frame.time), settings.durationMs);
-  if (!timeline.length) throw new Error("没有可编码的动画帧");
-  const sources = [...new Set(timeline.map(item => item.source))];
-  // One palette for the entire animation: include colors that first appear in later frames.
-  const thumbnail = new OffscreenCanvas(32, 24);
-  const smallContext = thumbnail.getContext("2d", { alpha: false, willReadFrequently: true })!;
-  const samples = new Uint8ClampedArray(sources.length * 32 * 24 * 4);
-  for (let index = 0; index < sources.length; index++) {
-    const image = await bitmap(frames[sources[index]]);
-    try { draw(smallContext, image, 32, 24); }
-    finally { image.close(); }
-    samples.set(smallContext.getImageData(0, 0, 32, 24).data, index * 32 * 24 * 4);
-    self.postMessage({ type: "progress", percent: Math.round((index + 1) / sources.length * 25) });
+function validateCrop(crop: CropRect): void {
+  if (
+    !Number.isFinite(crop.x) || !Number.isFinite(crop.y) ||
+    !Number.isFinite(crop.width) || !Number.isFinite(crop.height) ||
+    !Number.isFinite(crop.viewportWidth) || !Number.isFinite(crop.viewportHeight) ||
+    crop.width <= 0 || crop.height <= 0 || crop.viewportWidth <= 0 || crop.viewportHeight <= 0
+  ) {
+    throw new Error("GIF 裁剪参数无效");
   }
+}
+
+async function addFrame(message: Extract<Message, { type: "frame" }>): Promise<void> {
+  if (frames.length >= MAX_GIF_FRAMES) throw new Error("GIF 采集帧数超出限制");
+  const raw = atob(message.data);
+  const bytes = Uint8Array.from(raw, character => character.charCodeAt(0));
+  const image = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
+  try {
+    const crop = message.crop ?? settings.crop;
+    if (crop) {
+      validateCrop(crop);
+      const { x, y, width, height, viewportWidth, viewportHeight } = crop;
+      const scaleX = image.width / viewportWidth;
+      const scaleY = image.height / viewportHeight;
+      const sx = Math.max(0, Math.min(image.width - 1, x * scaleX));
+      const sy = Math.max(0, Math.min(image.height - 1, y * scaleY));
+      const sw = Math.max(1, Math.min(image.width - sx, width * scaleX));
+      const sh = Math.max(1, Math.min(image.height - sy, height * scaleY));
+      context.drawImage(image, sx, sy, sw, sh, 0, 0, settings.width, settings.height);
+      sampleContext.drawImage(image, sx, sy, sw, sh, 0, 0, 32, 24);
+    } else {
+      context.drawImage(image, 0, 0, settings.width, settings.height);
+      sampleContext.drawImage(image, 0, 0, 32, 24);
+    }
+    firstTimestamp ??= message.timestampMs;
+    frames.push({
+      time: message.timestampMs - firstTimestamp,
+      pixels: context.getImageData(0, 0, settings.width, settings.height).data,
+      sample: sampleContext.getImageData(0, 0, 32, 24).data,
+    });
+  } finally {
+    image.close();
+  }
+}
+
+function finish(): void {
+  const intervalMs = resolveGifFrameIntervalMs(settings.durationMs);
+  const timeline = sampleGifTimeline(
+    frames.map(frame => frame.time),
+    settings.durationMs,
+    1000 / intervalMs
+  );
+  if (!timeline.length) throw new Error("未采集到可编码的预览画面");
+  // 全动画共同取色，避免后续出现的新颜色丢失或逐帧调色板闪烁。
+  const samples = new Uint8ClampedArray(frames.length * 32 * 24 * 4);
+  frames.forEach((frame, index) => samples.set(frame.sample, index * 32 * 24 * 4));
   const palette = quantize(samples, 256);
   const encoder = GIFEncoder();
-  const { width, height } = settings;
-  const canvas = new OffscreenCanvas(width, height);
-  const context = canvas.getContext("2d", { alpha: false, willReadFrequently: true })!;
   let previousSource = -1;
   let indexed: Uint8Array = new Uint8Array(0);
-  for (let index = 0; index < timeline.length; index++) {
-    const item = timeline[index];
+  timeline.forEach((item, index) => {
     if (item.source !== previousSource) {
-      const image = await bitmap(frames[item.source]);
-      try { draw(context, image, width, height); }
-      finally { image.close(); }
-      indexed = applyPalette(context.getImageData(0, 0, width, height).data, palette);
+      indexed = applyPalette(frames[item.source].pixels, palette);
       previousSource = item.source;
     }
-    encoder.writeFrame(indexed, width, height, { palette, delay: item.delay, repeat: 0 });
-    self.postMessage({ type: "progress", percent: 25 + Math.round((index + 1) / timeline.length * 75) });
-  }
+    encoder.writeFrame(indexed, settings.width, settings.height, {
+      ...(index === 0 ? { palette, repeat: 0 } : {}), delay: item.delay,
+    });
+  });
   encoder.finish();
-  const bytes = encoder.bytes();
-  self.postMessage({ type: "done", bytes: bytes.buffer }, { transfer: [bytes.buffer] });
+  const bytes = Uint8Array.from(encoder.bytes());
+  frames.length = 0;
+  scope.postMessage({ type: "done", bytes: bytes.buffer }, [bytes.buffer]);
 }
 
-self.onmessage = async (event: MessageEvent) => {
-  try {
-    if (event.data.type === "init") settings = event.data;
-    else if (event.data.type === "frame") frames.push(event.data);
-    else if (event.data.type === "finish") await finish();
-  } catch (error) {
-    self.postMessage({ type: "error", message: error instanceof Error ? error.message : String(error) });
+async function handle(message: Message): Promise<void> {
+  if (message.type === "init") {
+    if (!Number.isInteger(message.width) || !Number.isInteger(message.height) || message.width < 1 || message.height < 1 || message.width > 640 || message.height > 480 || message.durationMs < 10 || message.durationMs > MAX_GIF_DURATION_MS) {
+      throw new Error("GIF 输出参数无效");
+    }
+    if (message.crop) {
+      validateCrop(message.crop);
+    }
+    settings = message;
+    context = new OffscreenCanvas(settings.width, settings.height).getContext("2d", { alpha: false, willReadFrequently: true })!;
+    sampleContext = new OffscreenCanvas(32, 24).getContext("2d", { alpha: false, willReadFrequently: true })!;
+    if (!context || !sampleContext) throw new Error("GIF 图像编码不可用");
+  } else {
+    if (!settings) throw new Error("GIF 编码尚未初始化");
+    if (message.type === "frame") await addFrame(message);
+    else finish();
   }
+}
+
+scope.onmessage = event => {
+  // PNG解码是异步的；按输入顺序处理，避免finish越过尚未解码的帧。
+  queue = queue.then(() => { if (!failed) return handle(event.data); }).catch(error => {
+    failed = true;
+    frames.length = 0;
+    scope.postMessage({ type: "error", message: error instanceof Error ? error.message : String(error) });
+  });
+  return queue;
 };

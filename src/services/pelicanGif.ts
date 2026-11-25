@@ -1,102 +1,255 @@
 import { Channel } from "@tauri-apps/api/core";
 import { getTauriInvoke, isTauriApp } from "./api";
+import { MAX_GIF_FRAMES, resolveGifDuration } from "./gifTimeline";
+import { buildPelicanGifDocument, type PelicanContentType } from "../components/pelican/pelicanPreview";
+
+interface CaptureFrame { data: string; timestampMs: number }
+
+const GIF_RENDER_WIDTH = 640;
+const GIF_RENDER_HEIGHT = 480;
+
+export interface RecordPelicanGifSource {
+  content: string;
+  contentType: PelicanContentType;
+  bgTheme?: "dark" | "light";
+  previewElement?: HTMLElement | null;
+}
 
 export function canExportPelicanGif(): boolean {
-  return isTauriApp() && /Windows/i.test(navigator.userAgent);
+  return isTauriApp() && typeof navigator !== "undefined" && /Windows/i.test(navigator.userAgent);
 }
 
-export interface PelicanRecordingFrame {
-  data: string;
-  metadata: { timestamp: number; deviceWidth: number; deviceHeight: number };
-}
-
-export async function recordPelicanGif(element: HTMLElement, options: {
-  durationSeconds: number;
-  signal: AbortSignal;
-  onProgress?: (percent: number) => void;
-  onPhase?: (phase: "recording" | "encoding") => void;
-}): Promise<Blob> {
-  const invoke = getTauriInvoke();
-  if (!canExportPelicanGif() || !invoke) throw new Error("GIF 导出需要 Windows 桌面版");
-  const { signal } = options;
-  const checkAbort = () => { if (signal.aborted) throw new DOMException("录制已取消", "AbortError"); };
-  checkAbort();
-  const bounds = element.getBoundingClientRect();
-  if (bounds.width < 1 || bounds.height < 1) throw new Error("预览画面尚未就绪");
-  if (bounds.left < 0 || bounds.top < 0 || bounds.right > innerWidth + 1 || bounds.bottom > innerHeight + 1) {
-    throw new Error("预览画面不完整，请保持录制窗口大小后重试");
+function resolvePreviewFrame(element: HTMLElement | null | undefined): HTMLIFrameElement | null {
+  if (!element) return null;
+  if (
+    typeof (element as HTMLIFrameElement).srcdoc === "string" ||
+    (element as HTMLIFrameElement).contentDocument
+  ) {
+    return element as HTMLIFrameElement;
   }
-  const viewport = { width: innerWidth, height: innerHeight };
-  const scale = Math.min(1, 640 / bounds.width, 480 / bounds.height);
-  const worker = new Worker(new URL("./pelicanGif.worker.ts", import.meta.url), { type: "module" });
+  return element.querySelector?.("iframe") ?? null;
+}
+
+export function parseSvgClockMs(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const value = raw.trim().toLowerCase();
+  if (!value || value === "indefinite" || value === "media") return null;
+  if (value.endsWith("ms")) {
+    const ms = Number.parseFloat(value.slice(0, -2));
+    return Number.isFinite(ms) && ms > 0 ? ms : null;
+  }
+  if (value.endsWith("min")) {
+    const minutes = Number.parseFloat(value.slice(0, -3));
+    return Number.isFinite(minutes) && minutes > 0 ? minutes * 60_000 : null;
+  }
+  if (value.endsWith("h")) {
+    const hours = Number.parseFloat(value.slice(0, -1));
+    return Number.isFinite(hours) && hours > 0 ? hours * 3_600_000 : null;
+  }
+  if (value.endsWith("s")) {
+    const seconds = Number.parseFloat(value.slice(0, -1));
+    return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : null;
+  }
+  if (value.includes(":")) {
+    const parts = value.split(":").map(part => Number.parseFloat(part));
+    if (parts.some(part => !Number.isFinite(part) || part < 0)) return null;
+    if (parts.length === 2) return (parts[0] * 60 + parts[1]) * 1000 || null;
+    if (parts.length === 3) return (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000 || null;
+    return null;
+  }
+  const plainSeconds = Number.parseFloat(value);
+  return Number.isFinite(plainSeconds) && plainSeconds > 0 ? plainSeconds * 1000 : null;
+}
+
+function parseSvgBeginMs(raw: string | null | undefined): number {
+  if (!raw) return 0;
+  let maxBegin = 0;
+  for (const token of raw.split(";")) {
+    const ms = parseSvgClockMs(token);
+    if (ms !== null && ms > maxBegin) maxBegin = ms;
+  }
+  return maxBegin;
+}
+
+function collectSmilTagTiming(
+  durAttr: string | null | undefined,
+  beginAttr: string | null | undefined,
+  repeatAttr: string | null | undefined,
+  loopPeriods: number[],
+  finiteDurations: number[],
+  fallbackDurationMs?: () => number
+): void {
+  let durMs = parseSvgClockMs(durAttr);
+  if (durMs === null && fallbackDurationMs) {
+    try {
+      const simple = fallbackDurationMs();
+      if (Number.isFinite(simple) && simple > 0) durMs = simple;
+    } catch {
+      // 部分 SVG 节点在无有效 dur 时调用 getSimpleDuration() 会抛 NotSupportedError。
+    }
+  }
+  if (durMs === null || durMs <= 0) return;
+
+  const repeat = repeatAttr?.trim().toLowerCase();
+  if (repeat === "indefinite") {
+    loopPeriods.push(durMs);
+    return;
+  }
+  const beginMs = parseSvgBeginMs(beginAttr);
+  const repeatCount = repeat ? Number.parseFloat(repeat) : 1;
+  const count = Number.isFinite(repeatCount) && repeatCount > 0 ? repeatCount : 1;
+  finiteDurations.push(beginMs + durMs * count);
+}
+
+function readAnimationTiming(
+  element: HTMLElement | null | undefined,
+  content: string
+): { loopPeriods: number[]; finiteDurations: number[] } {
+  const loopPeriods: number[] = [];
+  const finiteDurations: number[] = [];
+  const preview = resolvePreviewFrame(element)?.contentDocument;
+
+  if (preview) {
+    try {
+      for (const animation of preview.getAnimations?.() ?? []) {
+        try {
+          const timing = animation.effect?.getTiming();
+          if (!timing || typeof timing.duration !== "number" || !Number.isFinite(timing.duration) || timing.duration <= 0) {
+            continue;
+          }
+          if (timing.iterations === Infinity) {
+            loopPeriods.push(timing.duration * (timing.direction?.startsWith("alternate") ? 2 : 1));
+          } else if (typeof timing.iterations === "number" && Number.isFinite(timing.iterations) && timing.iterations > 0) {
+            const delay = typeof timing.delay === "number" && Number.isFinite(timing.delay) && timing.delay > 0 ? timing.delay : 0;
+            finiteDurations.push(delay + timing.duration * timing.iterations);
+          }
+        } catch {
+          // 忽略单个异常动画，继续读取其余动画。
+        }
+      }
+    } catch {
+      // 忽略 getAnimations 不可用情况。
+    }
+
+    try {
+      for (const animation of preview.querySelectorAll<SVGAnimationElement>("animate, animateTransform, animateMotion, set") ?? []) {
+        try {
+          collectSmilTagTiming(
+            animation.getAttribute?.("dur"),
+            animation.getAttribute?.("begin"),
+            animation.getAttribute?.("repeatCount"),
+            loopPeriods,
+            finiteDurations,
+            () => animation.getSimpleDuration() * 1000
+          );
+        } catch {
+          // 单个 SMIL 元素异常不影响其余动画周期采集。
+        }
+      }
+    } catch {
+      // 忽略 querySelectorAll 异常。
+    }
+  } else {
+    // 无已挂载预览 DOM 时，直接从源码静态提取 SMIL 动画周期作为兜底。
+    const smilTagRegex = /<(?:animate|animateTransform|animateMotion|set)\b([^>]*)>/gi;
+    const attrValue = (attrs: string, name: string) => {
+      const match = new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, "i").exec(attrs);
+      return match ? (match[1] ?? match[2]) : null;
+    };
+    let match: RegExpExecArray | null;
+    while ((match = smilTagRegex.exec(content)) !== null) {
+      const attrs = match[1] ?? "";
+      collectSmilTagTiming(
+        attrValue(attrs, "dur"),
+        attrValue(attrs, "begin"),
+        attrValue(attrs, "repeatCount"),
+        loopPeriods,
+        finiteDurations
+      );
+    }
+  }
+
+  return { loopPeriods, finiteDurations };
+}
+
+export async function recordPelicanGif(
+  source: RecordPelicanGifSource,
+  { signal }: { signal: AbortSignal }
+): Promise<Blob> {
+  if (signal.aborted) throw new DOMException("下载已取消", "AbortError");
+  const invoke = getTauriInvoke();
+  if (!canExportPelicanGif() || !invoke) throw new Error("GIF 下载需要 Windows 桌面版");
+  if (!source.content.trim()) throw new Error("没有可导出的图形内容");
+
+  const html = buildPelicanGifDocument(
+    { contentType: source.contentType, content: source.content },
+    source.bgTheme ?? "dark"
+  );
+  const timing = readAnimationTiming(source.previewElement, source.content);
+  const durationMs = resolveGifDuration(timing.loopPeriods, timing.finiteDurations);
   const requestId = crypto.randomUUID();
-  const durationMs = options.durationSeconds * 1000;
-  let firstTime: number | undefined;
-  let recording = true;
+  const worker = new Worker(new URL("./pelicanGif.worker.ts", import.meta.url), { type: "module" });
+  let captureCompleted = false;
   let captureError: Error | undefined;
+  let frameCount = 0;
+  let expectedFrameCount: number | undefined;
+  let resolveFrames!: () => void;
+  const framesDelivered = new Promise<void>(resolve => { resolveFrames = resolve; });
+  let rejectFailure!: (error: Error) => void;
   let resolveOutput!: (bytes: ArrayBuffer) => void;
   let rejectOutput!: (error: Error) => void;
+  const failure = new Promise<never>((_, reject) => { rejectFailure = reject; });
   const output = new Promise<ArrayBuffer>((resolve, reject) => { resolveOutput = resolve; rejectOutput = reject; });
-  // The worker can fail while the native recording is still running.
+  void failure.catch(() => undefined);
   void output.catch(() => undefined);
-  const stop = () => { void invoke("stop_pelican_recording", { requestId }).catch(() => undefined); };
-  const abort = () => { stop(); rejectOutput(new DOMException("录制已取消", "AbortError")); };
-  const failCapture = (message: string) => { captureError = new Error(message); stop(); };
-  const checkViewport = () => {
-    if (innerWidth !== viewport.width || innerHeight !== viewport.height) failCapture("窗口尺寸已改变，请重新录制");
-    if (document.hidden) failCapture("录制已中断，请保持预览窗口可见后重试");
+  const stop = () => { void invoke("cancel_pelican_capture", { requestId }).catch(() => undefined); };
+  const fail = (error: Error) => { captureError ??= error; stop(); rejectFailure(captureError); rejectOutput(captureError); };
+  const abort = () => fail(new DOMException("下载已取消", "AbortError"));
+
+  const channel = new Channel<CaptureFrame>();
+  channel.onmessage = frame => {
+    if (captureError || signal.aborted) return;
+    frameCount++;
+    worker.postMessage({ type: "frame", ...frame });
+    if (expectedFrameCount !== undefined && frameCount >= expectedFrameCount) resolveFrames();
   };
-  const channel = new Channel<number>();
-  channel.onmessage = (timestamp) => {
-    if (!recording || signal.aborted || captureError) return;
-    checkViewport();
-    if (captureError) return;
-    firstTime ??= timestamp;
-    const time = (timestamp - firstTime) * 1000;
-    if (time > durationMs) return;
-    options.onProgress?.(Math.min(99, Math.round(time / durationMs * 100)));
+  worker.onmessage = event => {
+    if (event.data.type === "done") resolveOutput(event.data.bytes);
+    else if (event.data.type === "error") fail(new Error(event.data.message));
   };
-  worker.onmessage = (event) => {
-    if (event.data.type === "error") { captureError = new Error(event.data.message); stop(); rejectOutput(captureError); }
-    else if (event.data.type === "progress") options.onProgress?.(event.data.percent);
-    else if (event.data.type === "done") resolveOutput(event.data.bytes);
-  };
-  worker.onerror = event => { captureError = new Error(event.message || "GIF 编码失败"); stop(); rejectOutput(captureError); };
+  worker.onerror = event => fail(new Error(event.message || "GIF 编码失败"));
   signal.addEventListener("abort", abort, { once: true });
-  window.addEventListener("resize", checkViewport);
-  document.addEventListener("visibilitychange", checkViewport);
+  const timer = setTimeout(() => fail(new Error("GIF 生成超时，请重试")), 40_000);
 
   try {
-    options.onPhase?.("recording");
-    worker.postMessage({ type: "init", width: Math.max(1, Math.round(bounds.width * scale)),
-      height: Math.max(1, Math.round(bounds.height * scale)), durationMs,
-      crop: { x: bounds.left / viewport.width, y: bounds.top / viewport.height,
-        width: bounds.width / viewport.width, height: bounds.height / viewport.height },
+    worker.postMessage({
+      type: "init",
+      width: GIF_RENDER_WIDTH,
+      height: GIF_RENDER_HEIGHT,
+      durationMs,
     });
-    const frames = await invoke<PelicanRecordingFrame[]>("record_pelican_frames", { requestId, durationMs, onProgress: channel }).catch(error => {
-      if (captureError) throw captureError;
-      checkAbort();
-      throw error;
-    });
-    recording = false;
-    checkAbort();
+    const count = await Promise.race([
+      invoke<number>("capture_pelican_frames", { requestId, html, durationMs, onFrame: channel }),
+      failure,
+    ]);
+    captureCompleted = true;
     if (captureError) throw captureError;
-    if (!frames.length) throw new Error("没有采集到画面，请保持预览窗口可见后重试");
-    options.onPhase?.("encoding");
-    options.onProgress?.(0);
-    const start = frames[0].metadata.timestamp;
-    for (const frame of frames) {
-      worker.postMessage({ type: "frame", data: frame.data, time: (frame.metadata.timestamp - start) * 1000 });
-    }
+    if (!Number.isInteger(count) || count < 1 || count > MAX_GIF_FRAMES) throw new Error("未采集到有效画面，请稍后重试");
+    expectedFrameCount = count;
+    if (frameCount >= count) resolveFrames();
+    // 大PNG通过异步IPC传输，原生命令返回不代表尾帧已经交付。
+    await Promise.race([framesDelivered, failure]);
     worker.postMessage({ type: "finish" });
-    const bytes = await output;
-    checkAbort();
+    const bytes = await Promise.race([output, failure]);
+    if (signal.aborted) throw new DOMException("下载已取消", "AbortError");
     return new Blob([bytes], { type: "image/gif" });
   } finally {
-    recording = false;
+    if (!captureCompleted) stop();
+    clearTimeout(timer);
     signal.removeEventListener("abort", abort);
-    window.removeEventListener("resize", checkViewport);
-    document.removeEventListener("visibilitychange", checkViewport);
+    channel.onmessage = () => undefined;
+    worker.onmessage = null;
+    worker.onerror = null;
     worker.terminate();
   }
 }

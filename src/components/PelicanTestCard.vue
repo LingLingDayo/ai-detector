@@ -2,7 +2,9 @@
 import { ref, computed, watch, nextTick } from "vue";
 import { AlertCircle } from "@lucide/vue";
 import { useClipboard } from "../composables/useClipboard";
-import { useToast } from "../composables/useToast";
+import { usePelicanExportStore } from "../stores/pelicanExport";
+import type { PelicanDownloadFormat } from "../services/pelicanExportTypes";
+import { canExportPelicanGif } from "../services/pelicanGif";
 import { DEFAULT_PELICAN_PROMPT, type PelicanContentType, hasExtraneousText } from "../stores/pelicanTest";
 import PelicanHeader from "./pelican/PelicanHeader.vue";
 import PelicanPromptBox from "./pelican/PelicanPromptBox.vue";
@@ -10,12 +12,6 @@ import PelicanStatusBar from "./pelican/PelicanStatusBar.vue";
 import PelicanDisplayStage from "./pelican/PelicanDisplayStage.vue";
 import PelicanCodeViewer from "./pelican/PelicanCodeViewer.vue";
 import PelicanRawResponse from "./pelican/PelicanRawResponse.vue";
-import PelicanGifExport from "./pelican/PelicanGifExport.vue";
-import { canExportPelicanGif } from "../services/pelicanGif";
-import { savePelicanFile } from "../services/saveFile";
-
-const gifExportOpen = ref(false);
-const gifExportAvailable = canExportPelicanGif();
 
 const props = withDefaults(
   defineProps<{
@@ -59,7 +55,9 @@ import { usePelicanTestStore } from "../stores";
 
 const pelicanStore = usePelicanTestStore();
 const { copied: svgCopied, copy: copySvg } = useClipboard();
-const { showToast } = useToast();
+const pelicanExportStore = usePelicanExportStore();
+const stageRootRef = ref<HTMLElement | null>(null);
+const gifAvailable = canExportPelicanGif();
 
 watch(
   () => pelicanStore.showCode,
@@ -134,26 +132,20 @@ function handleCopyContent(): void {
   }
 }
 
-async function handleDownloadContent(): Promise<void> {
-  if (!displayContent.value) return;
-  const isHtml = props.contentType === "html";
-  const mimeType = isHtml ? "text/html;charset=utf-8" : "image/svg+xml;charset=utf-8";
-  const ext = isHtml ? "html" : "svg";
-  const blob = new Blob([displayContent.value], { type: mimeType });
-  const cleanModel = (props.modelName || "model").replace(/[^a-zA-Z0-9_-]/g, "_");
-  const fileName = `pelican-${cleanModel}-${Date.now()}.${ext}`;
-  try {
-    const savedPath = await savePelicanFile(blob, fileName);
-    if (!savedPath) return;
-    showToast({ type: "success", title: "保存完成", message: savedPath, duration: 3000 });
-  } catch (error) {
-    showToast({ type: "error", title: "保存失败", message: error instanceof Error ? error.message : String(error), duration: 5000 });
-  }
+async function handleDownloadContent(format: PelicanDownloadFormat): Promise<void> {
+  if (!displayContent.value || props.isRunning || pelicanExportStore.isExporting) return;
+  await pelicanExportStore.exportFile({
+    content: displayContent.value,
+    contentType: props.contentType,
+    modelName: props.modelName,
+    bgTheme: pelicanStore.bgTheme,
+    getPreviewElement: () => stageRootRef.value?.querySelector<HTMLElement>(".render-frame") ?? null,
+  }, format);
 }
 </script>
 
 <template>
-  <section class="card pelican-card" id="pelican-section">
+  <section ref="stageRootRef" class="card pelican-card" id="pelican-section">
     <!-- 卡片顶部标头 -->
     <PelicanHeader />
 
@@ -183,24 +175,15 @@ async function handleDownloadContent(): Promise<void> {
       :bg-theme="pelicanStore.bgTheme"
       :show-code="pelicanStore.showCode"
       :svg-copied="svgCopied"
-      :can-export-gif="gifExportAvailable"
+      :disabled="pelicanExportStore.isExporting"
+      :gif-available="gifAvailable"
       @update:bg-theme="pelicanStore.setBgTheme"
       @update:show-code="pelicanStore.setShowCode"
       @copy-svg="handleCopyContent"
-      @download-svg="handleDownloadContent"
-      @export-gif="gifExportOpen = true"
+      @download="handleDownloadContent"
     />
 
     <!-- 错误警告提示 -->
-    <PelicanGifExport
-      v-if="gifExportOpen"
-      :content="displayContent"
-      :content-type="contentType"
-      :model-name="modelName"
-      :bg-theme="pelicanStore.bgTheme"
-      @close="gifExportOpen = false"
-    />
-
     <div v-if="errorMessage && !isRunning" class="alert-box error">
       <AlertCircle :size="16" class="alert-icon" />
       <div class="alert-content">

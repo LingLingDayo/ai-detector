@@ -152,6 +152,19 @@ describe("modelReasoningRules", () => {
     expect(gpt61FutureRule?.allowDisableReasoning).toBe(false);
     expect(gpt61FutureRule?.defaultEffort).toBe("medium");
 
+    const gpt62SolRule = findModelReasoningRule("gpt-6.2-sol");
+    expect(gpt62SolRule?.series).toBe("GPT-6.2");
+    expect(gpt62SolRule?.isOverride).toBe(false);
+    expect(gpt62SolRule?.allowDisableReasoning).toBe(false);
+    expect(gpt62SolRule?.defaultEffort).toBe("medium");
+    expect(gpt62SolRule?.supportedEfforts).toEqual(["low", "medium", "high", "xhigh", "max"]);
+
+    const gpt62AstraRule = findModelReasoningRule("openai/gpt-6.2-astra");
+    expect(gpt62AstraRule?.series).toBe("GPT-6.2");
+    expect(gpt62AstraRule?.allowDisableReasoning).toBe(false);
+    expect(resolveValidReasoningEffort("gpt-6.2-sol", "none")).toBe("medium");
+    expect(resolveValidReasoningEffort("gpt-6.2-sol", "minimal")).toBe("medium");
+
     // Grok 系列测试
     const grokRule = findModelReasoningRule("grok-4.6");
     expect(grokRule?.series).toBe("Grok 4.6");

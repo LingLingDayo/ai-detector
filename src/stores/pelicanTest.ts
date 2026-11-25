@@ -397,8 +397,10 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     durationMs.value = item.durationMs || 0;
     thinkingMs.value = 0;
     retryAttempt.value = 0;
-    if (item.prompt?.trim()) {
-      setPelicanPrompt(item.prompt);
+    const historyPrompt = item.prompt?.trim();
+    if (historyPrompt) {
+      // 历史记录回填的提示词仅作为当前会话的临时提示词，不持久化，也不覆盖用户的「自定义」提示词
+      pelicanPrompt.value = historyPrompt;
     }
     hasTested.value = true;
     hasResult.value = true;

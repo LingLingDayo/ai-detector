@@ -11,6 +11,7 @@ pub use types::*;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             diagnostics::init(app.handle().clone());
             Ok(())
@@ -26,8 +27,10 @@ pub fn run() {
             generate_candy_challenges,
             generate_single_candy_challenge,
             evaluate_candy_answer,
-            record_pelican_frames,
-            stop_pelican_recording,
+            capture_pelican_frames,
+            cancel_pelican_capture,
+            save_pelican_download,
+            pick_download_directory,
             save_pelican_file
         ])
         .run(tauri::generate_context!())

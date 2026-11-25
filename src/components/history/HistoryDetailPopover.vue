@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, watch } from "vue";
 import type {
   CandyHistoryItem,
   PelicanHistoryItem,
@@ -9,6 +10,8 @@ import {
   formatHistoryTime,
 } from "../../utils/pelicanFormatters";
 import { formatDurationMs } from "../../utils/connectionMetrics";
+import { useClipboard } from "../../composables/useClipboard";
+import { useToast } from "../../composables/useToast";
 
 const props = withDefaults(
   defineProps<{
@@ -43,6 +46,38 @@ function isPelicanItem(
 function formatProb(prob: number | undefined): string {
   if (prob === undefined || isNaN(prob)) return "0.0%";
   return `${(prob * 100).toFixed(1)}%`;
+}
+
+const {
+  copied: promptCopied,
+  copy: copyPromptText,
+  reset: resetPromptCopy,
+} = useClipboard();
+const { showToast } = useToast();
+
+const pelicanPrompt = computed(() =>
+  isPelicanItem(props.item) && props.item.prompt?.trim()
+    ? props.item.prompt
+    : ""
+);
+
+watch(pelicanPrompt, () => {
+  resetPromptCopy();
+});
+
+async function handleCopyPrompt(prompt: string): Promise<void> {
+  if (!prompt) return;
+  const copied = await copyPromptText(prompt);
+  showToast(
+    copied
+      ? { type: "success", title: "已复制提示词", duration: 2000 }
+      : {
+          type: "error",
+          title: "复制失败",
+          message: "请检查剪贴板权限后重试",
+          duration: 3000,
+        }
+  );
 }
 </script>
 
@@ -100,17 +135,19 @@ function formatProb(prob: number | undefined): string {
       </div>
 
       <!-- 鹈鹕测试特有字段：提示词 -->
-      <div
-        v-if="isPelicanItem(item) && item.prompt?.trim()"
-        class="popover-item"
-      >
+      <div v-if="pelicanPrompt" class="popover-item">
         <span class="item-label">提示词</span>
-        <span
-          class="item-value single-line selectable"
-          :title="item.prompt"
+        <button
+          type="button"
+          class="item-value single-line copyable-value"
+          :class="{ 'is-copied': promptCopied }"
+          :title="`点击复制完整提示词：${pelicanPrompt}`"
+          aria-label="复制完整提示词"
+          @mousedown.prevent
+          @click.stop="handleCopyPrompt(pelicanPrompt)"
         >
-          {{ item.prompt }}
-        </span>
+          {{ pelicanPrompt }}
+        </button>
       </div>
 
       <!-- 探测模式特有字段：判定模型 -->
@@ -331,6 +368,37 @@ function formatProb(prob: number | undefined): string {
         text-overflow: ellipsis;
         white-space: nowrap;
         word-break: normal;
+      }
+
+      &.copyable-value {
+        display: block;
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+        border: none;
+        background: transparent;
+        font: inherit;
+        line-height: inherit;
+        user-select: none;
+        cursor: pointer;
+        transition: color var(--transition-fast);
+
+        &:hover {
+          color: var(--accent-text);
+          text-decoration: underline;
+          text-decoration-style: dotted;
+          text-underline-offset: 2px;
+        }
+
+        &.is-copied {
+          color: var(--success-text);
+        }
+
+        &:focus-visible {
+          outline: 2px solid var(--border-focus);
+          outline-offset: 2px;
+          border-radius: 3px;
+        }
       }
 
       &.text-muted {

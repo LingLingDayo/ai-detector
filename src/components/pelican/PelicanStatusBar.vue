@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { Copy, Check, Download, Code, Sun, Moon } from "@lucide/vue";
+import { Copy, Check, Code, Sun, Moon } from "@lucide/vue";
+import PelicanDownloadMenu from "./PelicanDownloadMenu.vue";
+import type { PelicanDownloadFormat } from "../../services/pelicanExportTypes";
 import type { PelicanContentType } from "../../stores/pelicanTest";
 import { DEFAULT_REQUEST_RETRY_COUNT } from "../../constants";
 
@@ -21,7 +23,8 @@ const props = withDefaults(
     bgTheme?: "dark" | "light";
     showCode: boolean;
     svgCopied: boolean;
-    canExportGif?: boolean;
+    disabled?: boolean;
+    gifAvailable?: boolean;
   }>(),
   {
     isGenerating: false,
@@ -33,6 +36,8 @@ const props = withDefaults(
     thinkingMs: 0,
     retryAttempt: 0,
     bgTheme: "dark",
+    disabled: false,
+    gifAvailable: false,
   }
 );
 
@@ -40,8 +45,7 @@ const emit = defineEmits<{
   (e: "update:bgTheme", value: "dark" | "light"): void;
   (e: "update:showCode", value: boolean): void;
   (e: "copy-svg"): void;
-  (e: "download-svg"): void;
-  (e: "export-gif"): void;
+  (e: "download", format: PelicanDownloadFormat): void;
 }>();
 
 const displayContent = computed(() => props.content || props.svg || "");
@@ -134,19 +138,12 @@ function toggleBgTheme(): void {
         <span>{{ svgCopied ? "已复制" : "复制" }}</span>
       </button>
 
-      <button
-        type="button"
-        class="ctrl-btn"
-        :title="`下载 ${typeUpper} 文件`"
-        @click="emit('download-svg')"
-      >
-        <Download :size="12" />
-        <span>下载</span>
-      </button>
-
-      <button v-if="canExportGif" type="button" class="ctrl-btn" title="录制并下载循环播放的 GIF 动图" @click="emit('export-gif')">
-        <Download :size="12" /><span>导出 GIF</span>
-      </button>
+      <PelicanDownloadMenu
+        :content-type="contentType"
+        :disabled="disabled"
+        :gif-available="gifAvailable"
+        @download="emit('download', $event)"
+      />
 
       <button
         type="button"

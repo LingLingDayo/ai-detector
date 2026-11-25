@@ -15,6 +15,8 @@ interface SettingsFieldBase {
   key: string;
   label: string;
   description?: string | ((ctx: SettingsContext) => string);
+  /** 描述文案是否限制单行显示并在超出时省略（悬停展示完整内容） */
+  descriptionSingleLine?: boolean;
   defaultValue: SettingsValue;
   /** 依据当前设置值决定是否展示（显隐联动） */
   visible?: (ctx: SettingsContext) => boolean;
@@ -63,12 +65,19 @@ export interface TextSettingsField extends SettingsFieldBase {
   stacked?: boolean;
 }
 
+export interface DirectorySettingsField extends SettingsFieldBase {
+  type: "directory";
+  defaultValue: string;
+  placeholder?: string;
+}
+
 export type SettingsField =
   | SegmentedSettingsField
   | ToggleSettingsField
   | NumberSettingsField
   | SelectSettingsField
-  | TextSettingsField;
+  | TextSettingsField
+  | DirectorySettingsField;
 
 export interface SettingsSection {
   id: string;

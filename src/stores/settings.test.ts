@@ -265,3 +265,17 @@ describe("settings store 请求客户端标识", () => {
     expect(JSON.parse(storage.get(SETTINGS_STORAGE_KEY) ?? "{}").userAgentPreset).toBe("codex");
   });
 });
+
+describe("settings store 自定义下载目录", () => {
+  it("默认留空表示使用系统下载目录，填写后自动裁剪空白并持久化", () => {
+    storage.clear();
+    const store = newStore();
+    expect(store.downloadDirectory).toBe("");
+
+    store.setValue("downloadDirectory", "  D:\\Downloads\\pelican  ");
+    expect(store.downloadDirectory).toBe("D:\\Downloads\\pelican");
+
+    setActivePinia(createPinia());
+    expect(useSettingsStore().downloadDirectory).toBe("D:\\Downloads\\pelican");
+  });
+});

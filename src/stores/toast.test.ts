@@ -107,4 +107,124 @@ describe("公共顶部提示", () => {
 
     expect(store.toastState.isOpen).toBe(true);
   });
+
+  it("下载提示单独保存真实路径且不覆盖原有消息", () => {
+    const store = useToastStore();
+    const filePath = "C:\\Users\\admin\\Downloads\\pelican-model.gif";
+
+    store.showToast({
+      type: "success",
+      title: "下载完成",
+      message: "pelican-model.gif",
+      filePath,
+    });
+
+    expect(store.toastState.filePath).toBe(filePath);
+    expect(store.toastState.message).toBe("pelican-model.gif");
+  });
+
+  it("无路径的新提示不会保留上一条下载路径", () => {
+    const store = useToastStore();
+
+    store.showToast({ title: "下载完成", filePath: "D:\\下载\\pelican.gif" });
+    store.showToast({ title: "已复制图形代码" });
+
+    expect(store.toastState.filePath).toBe("");
+  });
+
+  it("重置提示时清空下载路径", () => {
+    const store = useToastStore();
+
+    store.showToast({ title: "下载完成", filePath: "D:\\下载\\pelican.gif" });
+    store.resetToast();
+
+    expect(store.toastState.filePath).toBe("");
+    expect(store.toastState.isOpen).toBe(false);
+  });
+
+  it("键盘焦点进入时暂停并按剩余时长恢复", () => {
+    const store = useToastStore();
+
+    store.showToast({ title: "下载完成", duration: 3000 });
+    vi.advanceTimersByTime(1000);
+    store.pauseToast("focus");
+    vi.advanceTimersByTime(10_000);
+
+    expect(store.toastState.isOpen).toBe(true);
+
+    store.resumeToast("focus");
+    vi.advanceTimersByTime(1999);
+    expect(store.toastState.isOpen).toBe(true);
+    vi.advanceTimersByTime(1);
+    expect(store.toastState.isOpen).toBe(false);
+  });
+
+  it("悬停移出后键盘焦点仍可阻止提示消失", () => {
+    const store = useToastStore();
+
+    store.showToast({ title: "下载完成", duration: 2000 });
+    vi.advanceTimersByTime(500);
+    store.pauseToast("pointer");
+    store.pauseToast("focus");
+    store.resumeToast("pointer");
+    vi.advanceTimersByTime(10_000);
+
+    expect(store.toastState.isOpen).toBe(true);
+
+    store.resumeToast("focus");
+    vi.advanceTimersByTime(1499);
+    expect(store.toastState.isOpen).toBe(true);
+    vi.advanceTimersByTime(1);
+    expect(store.toastState.isOpen).toBe(false);
+  });
+
+  it("焦点离开后悬停仍可阻止提示消失", () => {
+    const store = useToastStore();
+
+    store.showToast({ title: "下载完成", duration: 1000 });
+    store.pauseToast("focus");
+    store.pauseToast("pointer");
+    store.resumeToast("focus");
+    vi.advanceTimersByTime(5000);
+
+    expect(store.toastState.isOpen).toBe(true);
+
+    store.resumeToast("pointer");
+    vi.advanceTimersByTime(1000);
+    expect(store.toastState.isOpen).toBe(false);
+  });
+
+  it("重复暂停同一原因不会使提示永久暂停", () => {
+    const store = useToastStore();
+
+    store.showToast({ title: "下载完成", duration: 1000 });
+    store.pauseToast("focus");
+    store.pauseToast("focus");
+    store.resumeToast("focus");
+    vi.advanceTimersByTime(1000);
+
+    expect(store.toastState.isOpen).toBe(false);
+  });
+
+  it("暂停中替换下载提示时保留全部暂停原因", () => {
+    const store = useToastStore();
+
+    store.showToast({ title: "正在生成", duration: 2000 });
+    store.pauseToast("pointer");
+    store.pauseToast("focus");
+    store.showToast({
+      title: "下载完成",
+      filePath: "D:\\下载\\pelican.gif",
+      duration: 1000,
+    });
+    store.resumeToast("pointer");
+    vi.advanceTimersByTime(5000);
+
+    expect(store.toastState.isOpen).toBe(true);
+    expect(store.toastState.filePath).toBe("D:\\下载\\pelican.gif");
+
+    store.resumeToast("focus");
+    vi.advanceTimersByTime(1000);
+    expect(store.toastState.isOpen).toBe(false);
+  });
 });

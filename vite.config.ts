@@ -6,6 +6,7 @@ import vue from "@vitejs/plugin-vue";
 export default defineConfig({
   plugins: [vue()],
   clearScreen: false,
+  optimizeDeps: { include: ["gifenc"] },
   server: {
     port: 5400,
     strictPort: true,

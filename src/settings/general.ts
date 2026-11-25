@@ -70,6 +70,7 @@ export const generalPage: SettingsPage = {
           label: "请求客户端标识",
           description: (ctx) =>
             `当前生效：${resolveUserAgent(ctx.values.userAgentPreset, ctx.values.customUserAgent)}`,
+          descriptionSingleLine: true,
           defaultValue: DEFAULT_USER_AGENT_PRESET,
           options: USER_AGENT_SELECT_OPTIONS,
         },
@@ -129,6 +130,21 @@ export const generalPage: SettingsPage = {
             { value: "chat", label: "对话" },
             { value: "quick", label: "精简" },
           ],
+        },
+      ],
+    },
+    {
+      id: "download",
+      title: "文件下载",
+      description: "控制图形与动图文件的本地保存位置，留空时默认保存至系统“下载”文件夹。",
+      fields: [
+        {
+          key: "downloadDirectory",
+          type: "directory",
+          label: "自定义下载目录",
+          description: "选择本地文件夹作为默认保存位置，未设置时保存到系统“下载”文件夹",
+          defaultValue: "",
+          placeholder: "系统默认“下载”文件夹",
         },
       ],
     },

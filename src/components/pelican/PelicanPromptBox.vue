@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from "vue";
-import { Terminal, RotateCcw, Check, SquarePen, Copy, Sparkles, ChevronDown } from "@lucide/vue";
+import { Terminal, RotateCcw, Check, SquarePen, Copy, Sparkles } from "@lucide/vue";
 import { useClipboard } from "../../composables/useClipboard";
 import { DEFAULT_PELICAN_PROMPT } from "../../stores/pelicanTest";
 import { PELICAN_PRESETS, type PelicanPreset } from "../../data/pelicanPresets";
@@ -267,11 +267,6 @@ watch(
             >
               <Sparkles :size="12" />
               <span>预设</span>
-              <ChevronDown
-                :size="10"
-                class="preset-chevron"
-                :class="{ 'is-open': isPresetDropdownOpen }"
-              />
             </button>
 
             <!-- 预设下拉浮层：Teleport 至 body，避免被卡片层叠上下文裁剪 -->
@@ -443,35 +438,16 @@ watch(
       flex-shrink: 0;
     }
 
-    .preset-chevron {
-      color: var(--text-muted);
-      transition: transform var(--transition-fast), color var(--transition-fast);
-      flex-shrink: 0;
-
-      &.is-open {
-        transform: rotate(180deg);
-        color: var(--text-strong);
-      }
-    }
-
     &:hover:not(:disabled) {
       background: var(--bg-control-hover);
       color: var(--text-strong);
       border-color: rgba(var(--accent-rgb), 0.4);
-
-      .preset-chevron {
-        color: var(--text-strong);
-      }
     }
 
     &.active {
       background: rgba(var(--accent-rgb), 0.16);
       border-color: var(--accent-primary);
       color: var(--accent-text);
-
-      .preset-chevron {
-        color: var(--accent-text);
-      }
     }
 
     &:disabled {
