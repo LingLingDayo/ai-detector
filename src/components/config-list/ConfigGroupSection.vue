@@ -228,6 +228,10 @@ function handleDrop(event: DragEvent): void {
     box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.3),
       0 6px 18px rgba(var(--accent-rgb), 0.14);
   }
+
+  &:hover .group-header .group-header-left .group-count-badge {
+    opacity: 1;
+  }
 }
 
 .group-header {
@@ -314,6 +318,8 @@ function handleDrop(event: DragEvent): void {
       background: var(--bg-control);
       border: 1px solid var(--border-subtle);
       flex-shrink: 0;
+      opacity: 0;
+      transition: opacity var(--transition-fast);
     }
   }
 
