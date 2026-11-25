@@ -56,7 +56,7 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
-  // 旧版本用 dark 表示默认深色，升级后归一为 default，避免与新暗色皮肤混淆
+  // 旧版本用 dark 表示经典深色，升级后归一为 default，避免与新暗色皮肤混淆
   if (values.theme === "dark") {
     values.theme = "default";
     persist();
@@ -88,9 +88,9 @@ export const useSettingsStore = defineStore("settings", () => {
   }
 
   const theme = computed<AppTheme>(() => {
-    if (values.theme === "light") return "light";
+    if (values.theme === "default") return "default";
     if (values.theme === "midnight") return "midnight";
-    return "default";
+    return "light";
   });
 
   const defaultTestMode = computed<ActiveTestMode>(() => {

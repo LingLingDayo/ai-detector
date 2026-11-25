@@ -16,9 +16,9 @@ export const appearancePage: SettingsPage = {
           type: "segmented",
           label: "界面风格",
           description: "适用于整个应用界面",
-          defaultValue: "default",
+          defaultValue: "light",
           options: [
-            { value: "default", label: "默认", icon: Monitor, title: "经典深蓝配色" },
+            { value: "default", label: "经典", icon: Monitor, title: "经典深蓝配色" },
             { value: "light", label: "亮色", icon: Sun, title: "浅色配色" },
             { value: "midnight", label: "暗色", icon: Moon, title: "中性灰阶暗色" },
           ],

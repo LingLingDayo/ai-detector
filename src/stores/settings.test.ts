@@ -164,32 +164,37 @@ describe("settings store 通用设置", () => {
 });
 
 describe("settings store 界面风格", () => {
-  it("外观设置提供默认、亮色、暗色三种风格", () => {
+  it("外观设置提供经典、亮色、暗色三种风格且默认选中亮色", () => {
     const field = appearancePage.sections
       .flatMap((section) => section.fields)
       .find((item) => item.key === "theme");
     expect(field?.type).toBe("segmented");
-    expect(field?.defaultValue).toBe("default");
+    expect(field?.defaultValue).toBe("light");
     if (field?.type === "segmented") {
       expect(field.options.map((option) => option.value)).toEqual([
         "default",
         "light",
         "midnight",
       ]);
+      expect(field.options.map((option) => option.label)).toEqual([
+        "经典",
+        "亮色",
+        "暗色",
+      ]);
     }
   });
 
-  it("默认风格为 default，非法值回退且三态可切换", () => {
+  it("默认风格为 light，非法值回退且三态可切换", () => {
     storage.clear();
     const store = newStore();
-    expect(store.theme).toBe("default");
+    expect(store.theme).toBe("light");
 
     store.setValue("theme", "midnight");
     expect(store.theme).toBe("midnight");
-    store.setValue("theme", "light");
-    expect(store.theme).toBe("light");
-    store.setValue("theme", "unknown");
+    store.setValue("theme", "default");
     expect(store.theme).toBe("default");
+    store.setValue("theme", "unknown");
+    expect(store.theme).toBe("light");
   });
 
   it("旧版 dark 偏好迁移为 default 并写回本地存储", () => {

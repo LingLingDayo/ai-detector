@@ -388,15 +388,15 @@ describe("鹈鹕测试背景亮暗色跟随主题与自定义覆盖测试套件"
     const settingsStore = useSettingsStore();
     const pelicanStore = usePelicanTestStore();
 
+    expect(pelicanStore.bgTheme).toBe("light");
+
+    settingsStore.setValue("theme", "default");
+    await nextTick();
     expect(pelicanStore.bgTheme).toBe("dark");
 
     settingsStore.setValue("theme", "light");
     await nextTick();
     expect(pelicanStore.bgTheme).toBe("light");
-
-    settingsStore.setValue("theme", "dark");
-    await nextTick();
-    expect(pelicanStore.bgTheme).toBe("dark");
   });
 
   it("当前主题下用户手动修改后优先使用用户的设置，但全局主题切换时依然自动变化", async () => {
@@ -406,31 +406,31 @@ describe("鹈鹕测试背景亮暗色跟随主题与自定义覆盖测试套件"
     const settingsStore = useSettingsStore();
     const pelicanStore = usePelicanTestStore();
 
-    // 1. 全局为 dark，初始为 dark
-    expect(pelicanStore.bgTheme).toBe("dark");
-
-    // 2. 用户在 dark 下手动修改为 light
-    pelicanStore.setBgTheme("light");
+    // 1. 全局默认为 light，初始为 light
     expect(pelicanStore.bgTheme).toBe("light");
 
-    // 3. 用户切换全局主题风格为 light -> 触发自动切换到 light（虽然之前也是 light）
-    settingsStore.setValue("theme", "light");
-    await nextTick();
-    expect(pelicanStore.bgTheme).toBe("light");
-
-    // 4. 用户在 light 下手动修改为 dark
+    // 2. 用户在 light 下手动修改为 dark
     pelicanStore.setBgTheme("dark");
     expect(pelicanStore.bgTheme).toBe("dark");
 
-    // 5. 再次切换全局主题风格为 dark -> 触发自动变化，切换为 dark
-    settingsStore.setValue("theme", "dark");
+    // 3. 用户切换全局主题风格为 default -> 触发自动切换到 dark
+    settingsStore.setValue("theme", "default");
     await nextTick();
     expect(pelicanStore.bgTheme).toBe("dark");
 
-    // 6. 再次切换全局主题风格为 light -> 触发自动变化，切换为 light
+    // 4. 用户在 default 下手动修改为 light
+    pelicanStore.setBgTheme("light");
+    expect(pelicanStore.bgTheme).toBe("light");
+
+    // 5. 再次切换全局主题风格为 light -> 触发自动变化，切换为 light
     settingsStore.setValue("theme", "light");
     await nextTick();
     expect(pelicanStore.bgTheme).toBe("light");
+
+    // 6. 再次切换全局主题风格为 default -> 触发自动变化，切换为 dark
+    settingsStore.setValue("theme", "default");
+    await nextTick();
+    expect(pelicanStore.bgTheme).toBe("dark");
   });
 
   it("新增的暗色皮肤归入深色画布，切回亮色仍正常联动", async () => {
@@ -440,7 +440,7 @@ describe("鹈鹕测试背景亮暗色跟随主题与自定义覆盖测试套件"
     const settingsStore = useSettingsStore();
     const pelicanStore = usePelicanTestStore();
 
-    expect(pelicanStore.bgTheme).toBe("dark");
+    expect(pelicanStore.bgTheme).toBe("light");
 
     settingsStore.setValue("theme", "midnight");
     await nextTick();
