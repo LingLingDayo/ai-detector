@@ -33,6 +33,7 @@ import {
   performCandyFinalEvaluation,
 } from "../utils/candyEvaluation";
 import { computeProgress, computeRunningStatusDesc } from "../utils/probeEvaluation";
+import { importHistoryItems } from "../utils/historyImport";
 
 const CANDY_INTRO_DESC =
   "通过 3 道动态糖果组合逻辑题，检验模型长逻辑链推理能力并判断是否存在降智（答对 ≥ 2 题即判定通过）";
@@ -95,43 +96,10 @@ export const useCandyTestStore = defineStore("candyTest", () => {
     clearCandyHistoryStorage();
   }
 
-  function importCandyHistory(
-    items: CandyHistoryItem[],
-    mode: "merge" | "overwrite"
-  ): { added: number; skipped: number } {
-    const incoming = Array.isArray(items) ? items : [];
-    if (mode === "overwrite") {
-      const seen = new Set<string>();
-      const next: CandyHistoryItem[] = [];
-      for (const item of incoming) {
-        if (!item || typeof item.id !== "string" || seen.has(item.id)) continue;
-        seen.add(item.id);
-        next.push(item);
-      }
-      next.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      candyHistoryList.value = next;
-      persistCandyHistory(next);
-      return { added: next.length, skipped: 0 };
-    }
-
-    const existingIds = new Set(candyHistoryList.value.map((item) => item.id));
-    const addedItems: CandyHistoryItem[] = [];
-    let skipped = 0;
-    for (const item of incoming) {
-      if (!item || typeof item.id !== "string") continue;
-      if (existingIds.has(item.id)) {
-        skipped += 1;
-        continue;
-      }
-      existingIds.add(item.id);
-      addedItems.push(item);
-    }
-    const next = [...addedItems, ...candyHistoryList.value].sort(
-      (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
-    );
+  function importCandyHistory(items: CandyHistoryItem[], mode: "merge" | "overwrite") {
+    const { next, added, skipped } = importHistoryItems(candyHistoryList.value, items, mode, persistCandyHistory);
     candyHistoryList.value = next;
-    persistCandyHistory(next);
-    return { added: addedItems.length, skipped };
+    return { added, skipped };
   }
 
   const currentChallenges = ref<CandyChallenge[]>(generateCandyChallengesSync(totalCount));

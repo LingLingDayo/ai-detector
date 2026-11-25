@@ -91,4 +91,6 @@ export interface SettingsPage {
   label: string;
   icon: Component;
   sections: SettingsSection[];
+  /** 自定义整页组件（如「数据」导入导出页），存在时替代常规 sections 渲染 */
+  component?: Component;
 }

@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted } from "vue";
 import { Settings, X } from "@lucide/vue";
 import { settingsPages } from "../../settings";
 import { useSettingsStore } from "../../stores";
+import { useConfirm } from "../../composables/useConfirm";
 import SettingsField from "./SettingsField.vue";
 import type { SettingsSection } from "../../settings/types";
 
@@ -15,6 +16,7 @@ const emit = defineEmits<{
 }>();
 
 const settingsStore = useSettingsStore();
+const { confirmState } = useConfirm();
 
 const activeTab = ref(settingsPages[0]?.id ?? "");
 const activePage = computed(
@@ -28,7 +30,7 @@ function getVisibleFields(section: SettingsSection) {
 }
 
 function handleDocumentKeydown(e: KeyboardEvent): void {
-  if (e.key === "Escape" && props.isOpen) {
+  if (e.key === "Escape" && props.isOpen && !confirmState.isOpen) {
     emit("close");
   }
 }
@@ -97,29 +99,36 @@ onUnmounted(() => {
 
           <section
             class="settings-content"
+            :class="{ 'is-custom-panel': Boolean(activePage.component) }"
             role="tabpanel"
           >
-            <div
-              v-for="section in activePage.sections"
-              :key="section.id"
-              class="settings-section"
-            >
-              <header
-                v-if="section.title || section.description"
-                class="section-head"
+            <component
+              :is="activePage.component"
+              v-if="activePage.component"
+            />
+            <template v-else>
+              <div
+                v-for="section in activePage.sections"
+                :key="section.id"
+                class="settings-section"
               >
-                <h4 v-if="section.title">{{ section.title }}</h4>
-                <p v-if="section.description">{{ section.description }}</p>
-              </header>
+                <header
+                  v-if="section.title || section.description"
+                  class="section-head"
+                >
+                  <h4 v-if="section.title">{{ section.title }}</h4>
+                  <p v-if="section.description">{{ section.description }}</p>
+                </header>
 
-              <div class="settings-fields">
-                <SettingsField
-                  v-for="field in getVisibleFields(section)"
-                  :key="field.key"
-                  :field="field"
-                />
+                <div class="settings-fields">
+                  <SettingsField
+                    v-for="field in getVisibleFields(section)"
+                    :key="field.key"
+                    :field="field"
+                  />
+                </div>
               </div>
-            </div>
+            </template>
           </section>
         </div>
       </div>
@@ -276,6 +285,13 @@ onUnmounted(() => {
   min-width: 0;
   padding: 16px 18px;
   overflow-y: auto;
+
+  &.is-custom-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 14px 18px;
+  }
 }
 
 .settings-section + .settings-section {

@@ -7,6 +7,7 @@ import type { ClientConfig, ProbeStepItem, StatusAlertInfo, ProbeHistoryItem } f
 import { useConfigStore } from "./config";
 import { useSettingsStore } from "./settings";
 import { loadInitialProbeHistory, persistProbeHistory, createProbeHistoryRecord, clearProbeHistoryStorage } from "../utils/probeHistory";
+import { importHistoryItems } from "../utils/historyImport";
 import { executeSingleProbe } from "../services/probeRunner";
 import { createInitialSteps, formatProbeStepResult, createFailedStep, createCancelledSteps, computeProgress, computeRunningStatusDesc, collectStepErrors, performFinalEvaluation } from "../utils/probeEvaluation";
 import { loadActiveUnifiedBank, getPersistedUpdateStatus, setPersistedUpdateStatus, checkFingerprintUpdate, executeFingerprintUpdate } from "../services/fingerprintSync";
@@ -67,44 +68,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     clearProbeHistoryStorage();
   }
 
-  function importProbeHistory(
-    items: ProbeHistoryItem[],
-    mode: "merge" | "overwrite"
-  ): { added: number; skipped: number } {
-    const incoming = Array.isArray(items) ? items : [];
-    if (mode === "overwrite") {
-      const seen = new Set<string>();
-      const next: ProbeHistoryItem[] = [];
-      for (const item of incoming) {
-        if (!item || typeof item.id !== "string" || seen.has(item.id)) continue;
-        seen.add(item.id);
-        next.push(item);
-      }
-      next.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      probeHistoryList.value = next;
-      persistProbeHistory(next);
-      return { added: next.length, skipped: 0 };
-    }
-
-    const existingIds = new Set(probeHistoryList.value.map((item) => item.id));
-    const addedItems: ProbeHistoryItem[] = [];
-    let skipped = 0;
-    for (const item of incoming) {
-      if (!item || typeof item.id !== "string") continue;
-      if (existingIds.has(item.id)) {
-        skipped += 1;
-        continue;
-      }
-      existingIds.add(item.id);
-      addedItems.push(item);
-    }
-    const next = [...addedItems, ...probeHistoryList.value].sort(
-      (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
-    );
-    probeHistoryList.value = next;
-    persistProbeHistory(next);
-    return { added: addedItems.length, skipped };
-  }
+  function importProbeHistory(items: ProbeHistoryItem[], mode: "merge" | "overwrite") { const { next, added, skipped } = importHistoryItems(probeHistoryList.value, items, mode, persistProbeHistory); probeHistoryList.value = next; return { added, skipped }; }
 
   function applyHistoryItem(item: ProbeHistoryItem): void {
     if (item.fullAnalysis) {
@@ -222,14 +186,7 @@ export const useProbeTestStore = defineStore("probeTest", () => {
     steps.value = createInitialSteps(currentChallenges.value);
   }
 
-  function finalizeTestEvaluation(params: {
-    baseUrl: string;
-    apiKey: string;
-    model: string;
-    reasoningEffort?: string;
-    configName?: string;
-    sessionId: number;
-  }): void {
+  function finalizeTestEvaluation(params: { baseUrl: string; apiKey: string; model: string; reasoningEffort?: string; configName?: string; sessionId: number }): void {
     const { baseUrl, apiKey, model, reasoningEffort, configName, sessionId: evalSessionId } = params;
     if (evalSessionId !== sessionId) return;
 
