@@ -5,7 +5,7 @@
 | 路径 | 职责 |
 | --- | --- |
 | `src/App.vue` | 主界面编排、测试模式切换、全局快捷键与弹窗挂载 |
-| `src/components/` | 按功能域分目录的 UI 组件（common / config-* / connection / history / settings / probe-detail / pelican / diagnostics 等） |
+| `src/components/` | 按功能域分目录的 UI 组件（common / config-* / connection / history / settings / probe-detail / pelican / diagnostics / updater 等） |
 | `src/stores/` | Pinia 状态：配置、四类测试、app、settings、toast、confirm |
 | `src/services/` | API 调用、流式 runner、指纹同步、诊断采集 |
 | `src/composables/` | 复用逻辑（toast / confirm / clipboard） |
@@ -14,7 +14,7 @@
 | `src-tauri/src/error.rs`、`infra/` | 统一结构化错误模型、HTTP 连接池、请求取消注册表、安全文件写入与内存日志桥（零 Tauri 依赖） |
 | `src-tauri/src/provider/` | 强类型多协议上游适配层（Chat Completions / Responses / Anthropic）、增量 SSE 解码与流式执行引擎（零 Tauri 依赖） |
 | `src-tauri/src/services/` | 核心应用服务容器 `AppServices`（probe / chat / models / candy / download，零 Tauri 依赖） |
-| `src-tauri/src/platform/` | 桌面与操作系统适配层（跨平台打开外部链接、Windows 离屏 WebView2 GIF 采集） |
+| `src-tauri/src/platform/` | 桌面与操作系统适配层（跨平台打开外部链接、Windows 离屏 WebView2 GIF 采集、应用自动更新（安装类型识别与便携版自替换）） |
 | `src-tauri/src/transport/tauri/` | Tauri 命令薄封装与事件桥接；未来新增对外 HTTP/SSE API 时可同级新增 `transport/http/` |
 | `src-tauri/src/lib.rs` | 后端组装根（构建 `AppServices` 与 `CaptureRegistry` 并交由传输层启动） |
 | `scripts/`、`docs/` | 构建发布脚本、开发者文档与图片 |
