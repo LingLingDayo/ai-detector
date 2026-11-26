@@ -86,11 +86,9 @@ function collectRangeLeafIds(
 }
 
 /**
- * Windows 文件资源管理器 / 列表风格的行体点击多选逻辑：
- * - 普通点击：单选目标行（清空其他），更新 anchorRowId；
- * - Ctrl/Cmd + 点击：反选目标行（不影响其他），更新 anchorRowId；
- * - Shift + 点击：从 anchorRowId 到目标行的连续区间替换当前选中（保持 anchorRowId 不变）；
- * - Ctrl/Cmd + Shift + 点击：将区间追加到当前选中（保持 anchorRowId 不变）。
+ * 常规多选列表的行体点击逻辑（与复选框点击行为一致，不做互斥单选）：
+ * - 普通点击（含 Ctrl/Cmd + 点击）：独立切换目标行勾选状态（不影响其他已选项），并更新 anchorRowId；
+ * - Shift + 点击：按目标行切换后的状态批量设置 [anchorRowId..targetRowId] 区间（保留区间外其他已选项）。
  */
 export function applyRowClick(
   rows: readonly TreeRowItem[],
@@ -98,68 +96,15 @@ export function applyRowClick(
   targetRowId: string,
   modifiers: ClickModifiers = {}
 ): SelectionState {
-  const targetIndex = rows.findIndex((r) => r.id === targetRowId);
-  if (targetIndex === -1) return state;
-
-  const targetRow = rows[targetIndex];
-  if (targetRow.disabled) return state;
-
-  const isCtrl = Boolean(modifiers.ctrlKey || modifiers.metaKey);
-  const isShift = Boolean(modifiers.shiftKey);
-
-  if (isShift) {
-    const anchorIndex = state.anchorRowId
-      ? rows.findIndex((r) => r.id === state.anchorRowId)
-      : -1;
-    const effectiveAnchorIdx = anchorIndex !== -1 ? anchorIndex : targetIndex;
-    const effectiveAnchorId = rows[effectiveAnchorIdx].id;
-
-    let rangeLeaves = collectRangeLeafIds(rows, effectiveAnchorIdx, targetIndex);
-    // 若起止范围仅包含一个已展开的容器行本身，则选中该容器全部叶子
-    if (rangeLeaves.length === 0 && effectiveAnchorIdx === targetIndex) {
-      rangeLeaves = [...targetRow.leafIds];
-    }
-
-    const nextSelected = isCtrl ? new Set(state.selectedLeafIds) : new Set<string>();
-    for (const id of rangeLeaves) {
-      nextSelected.add(id);
-    }
-
-    return {
-      selectedLeafIds: nextSelected,
-      anchorRowId: effectiveAnchorId,
-      focusedRowId: targetRowId,
-    };
-  }
-
-  if (isCtrl) {
-    const nextSelected = new Set(state.selectedLeafIds);
-    const shouldUncheck = isRowChecked(targetRow, nextSelected);
-    for (const id of targetRow.leafIds) {
-      if (shouldUncheck) {
-        nextSelected.delete(id);
-      } else {
-        nextSelected.add(id);
-      }
-    }
-    return {
-      selectedLeafIds: nextSelected,
-      anchorRowId: targetRowId,
-      focusedRowId: targetRowId,
-    };
-  }
-
-  return {
-    selectedLeafIds: new Set(targetRow.leafIds),
-    anchorRowId: targetRowId,
-    focusedRowId: targetRowId,
-  };
+  return applyCheckboxClick(rows, state, targetRowId, {
+    shiftKey: modifiers.shiftKey,
+  });
 }
 
 /**
- * 直接点击复选框的多选逻辑：
- * - 普通点击复选框：独立切换该行勾选状态（不影响其他已选项），并记录 anchorRowId；
- * - Shift + 点击复选框：按目标行切换后的状态批量设置 [anchorRowId..targetRowId] 区间。
+ * 复选框 / 列表项多选逻辑：
+ * - 普通点击：独立切换该行勾选状态（不影响其他已选项），并记录 anchorRowId；
+ * - Shift + 点击：按目标行切换后的状态批量设置 [anchorRowId..targetRowId] 区间。
  */
 export function applyCheckboxClick(
   rows: readonly TreeRowItem[],
@@ -214,7 +159,9 @@ export function applyCheckboxClick(
 }
 
 /**
- * 键盘上下方向键导航（支持 Shift+↑ / Shift+↓ 连续扩选）。
+ * 键盘上下方向键导航：
+ * - 普通方向键：仅移动焦点与锚点，不改变已有勾选；
+ * - Shift + 方向键：将 [anchorRowId..目标行] 区间追加勾选到当前选区。
  */
 export function applyArrowNavigation(
   rows: readonly TreeRowItem[],
@@ -236,7 +183,34 @@ export function applyArrowNavigation(
       : Math.max(0, Math.min(enabledRows.length - 1, currentIdx + delta));
 
   const nextRow = enabledRows[nextIdx];
-  return applyRowClick(rows, state, nextRow.id, { shiftKey });
+  if (!shiftKey) {
+    return {
+      ...state,
+      anchorRowId: nextRow.id,
+      focusedRowId: nextRow.id,
+    };
+  }
+
+  const anchorRowId = state.anchorRowId ?? state.focusedRowId ?? nextRow.id;
+  const anchorIndex = rows.findIndex((r) => r.id === anchorRowId);
+  const targetIndex = rows.findIndex((r) => r.id === nextRow.id);
+  const nextSelected = new Set(state.selectedLeafIds);
+
+  if (anchorIndex !== -1 && targetIndex !== -1) {
+    let rangeLeaves = collectRangeLeafIds(rows, anchorIndex, targetIndex);
+    if (rangeLeaves.length === 0 && anchorIndex === targetIndex) {
+      rangeLeaves = [...nextRow.leafIds];
+    }
+    for (const id of rangeLeaves) {
+      nextSelected.add(id);
+    }
+  }
+
+  return {
+    selectedLeafIds: nextSelected,
+    anchorRowId,
+    focusedRowId: nextRow.id,
+  };
 }
 
 export function applySelectAll(

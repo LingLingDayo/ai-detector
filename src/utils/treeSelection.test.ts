@@ -26,8 +26,8 @@ function buildRows(groupExpanded = true): TreeRowItem[] {
   ];
 }
 
-describe("treeSelection Windows 风格多选引擎", () => {
-  it("普通点击单选目标项并记录锚点，Ctrl+点击反选不影响其他项", () => {
+describe("treeSelection 常规多选引擎", () => {
+  it("普通点击独立切换当前项勾选状态（不清空其他项）并记录锚点", () => {
     const rows = buildRows();
     let state = createSelectionState();
 
@@ -35,43 +35,51 @@ describe("treeSelection Windows 风格多选引擎", () => {
     expect(Array.from(state.selectedLeafIds)).toEqual(["a1"]);
     expect(state.anchorRowId).toBe("acc:a1");
 
-    state = applyRowClick(rows, state, "hist:probe", { ctrlKey: true });
+    // 直接点击另一项时追加选中，不互斥清空已有选区
+    state = applyRowClick(rows, state, "hist:probe");
     expect(Array.from(state.selectedLeafIds).sort()).toEqual(["a1", "h:probe"]);
     expect(state.anchorRowId).toBe("hist:probe");
 
-    // 再次 Ctrl+点击取消选中 a1
-    state = applyRowClick(rows, state, "acc:a1", { ctrlKey: true });
+    // 再次点击 a1 取消选中，保留 h:probe
+    state = applyRowClick(rows, state, "acc:a1");
     expect(Array.from(state.selectedLeafIds)).toEqual(["h:probe"]);
+    expect(state.anchorRowId).toBe("acc:a1");
   });
 
-  it("Shift+点击按锚点到目标的区间替换选区，且保留原始锚点", () => {
+  it("Shift+点击按锚点到目标的区间批量勾选/取消，且保留区间外已有选区", () => {
     const rows = buildRows();
     let state = createSelectionState(["h:pelican"]);
 
     state = applyRowClick(rows, state, "acc:a1");
     expect(state.anchorRowId).toBe("acc:a1");
 
-    // Shift 到 a3：经过 a1, a2, 空分组 g2, a3
+    // Shift 到 a3：经过 a1, a2, 空分组 g2, a3，同时保留 h:pelican
     state = applyRowClick(rows, state, "acc:a3", { shiftKey: true });
-    expect(Array.from(state.selectedLeafIds).sort()).toEqual(["a1", "a2", "a3", "empty:g2"]);
+    expect(Array.from(state.selectedLeafIds).sort()).toEqual([
+      "a1",
+      "a2",
+      "a3",
+      "empty:g2",
+      "h:pelican",
+    ]);
     expect(state.anchorRowId).toBe("acc:a1");
 
-    // 锚点未变，继续 Shift 到 a2 会收缩选区
+    // 锚点未变，继续 Shift 到已选中的 a2 会取消 [a1..a2] 区间，保留 a3 与 h:pelican
     state = applyRowClick(rows, state, "acc:a2", { shiftKey: true });
-    expect(Array.from(state.selectedLeafIds).sort()).toEqual(["a1", "a2"]);
+    expect(Array.from(state.selectedLeafIds).sort()).toEqual(["a3", "empty:g2", "h:pelican"]);
     expect(state.anchorRowId).toBe("acc:a1");
   });
 
-  it("Shift 跨过已展开分组标题行时，不误选区间外的子账号", () => {
+  it("Shift 跨过已展开分组标题行时，不误影响区间外的子账号", () => {
     const rows = buildRows(true);
     let state = createSelectionState();
 
     state = applyRowClick(rows, state, "grp:g1");
     expect(Array.from(state.selectedLeafIds).sort()).toEqual(["a1", "a2"]);
 
-    // 从 grp:g1 Shift 到 acc:a1，不应把区间外的 a2 也选上
+    // 从 grp:g1 Shift 点击已选中的 acc:a1，只取消区间内的 a1，保留 a2
     state = applyRowClick(rows, state, "acc:a1", { shiftKey: true });
-    expect(Array.from(state.selectedLeafIds)).toEqual(["a1"]);
+    expect(Array.from(state.selectedLeafIds)).toEqual(["a2"]);
   });
 
   it("Shift 跨过已折叠分组时，选中该折叠分组内的全部账号", () => {
@@ -83,7 +91,7 @@ describe("treeSelection Windows 风格多选引擎", () => {
     expect(Array.from(state.selectedLeafIds).sort()).toEqual(["a1", "a2", "a3", "empty:g2"]);
   });
 
-  it("Ctrl+Shift+点击将区间追加到既有选区", () => {
+  it("Ctrl+点击与普通点击一样独立切换，Ctrl+Shift+点击同样保留已有选区", () => {
     const rows = buildRows();
     let state = createSelectionState(["h:pelican"]);
 
@@ -115,6 +123,11 @@ describe("treeSelection Windows 风格多选引擎", () => {
     let state = createSelectionState();
     state = applyRowClick(rows, state, "acc:a1");
     state = applyArrowNavigation(rows, state, 1, true);
+    expect(Array.from(state.selectedLeafIds).sort()).toEqual(["a1", "a2"]);
+
+    // 普通方向键仅移动焦点，不清除已有勾选
+    state = applyArrowNavigation(rows, state, 1, false);
+    expect(state.focusedRowId).toBe("grp:g2");
     expect(Array.from(state.selectedLeafIds).sort()).toEqual(["a1", "a2"]);
 
     state = applySelectAll(rows, state);

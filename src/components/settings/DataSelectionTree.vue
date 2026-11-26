@@ -536,8 +536,8 @@ function resolveRowIcon(iconName: RenderedRow["iconName"], expanded?: boolean) {
       </div>
 
       <div class="toolbar-right">
-        <span class="shortcut-hint" title="支持单击、Ctrl 复选、Shift 连选及方向键操作">
-          Ctrl / Shift 多选
+        <span class="shortcut-hint" title="支持单击切换多选、Shift 区间连选及方向键操作">
+          支持 Shift 连选
         </span>
         <button
           type="button"
