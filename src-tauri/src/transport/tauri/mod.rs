@@ -6,6 +6,7 @@ pub mod models;
 pub mod pelican;
 pub mod probe;
 pub mod system;
+pub mod updater;
 
 use tauri::Emitter;
 
@@ -15,13 +16,16 @@ use crate::services::AppServices;
 pub fn run(services: AppServices, capture_registry: CaptureRegistry) {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(services)
         .manage(capture_registry)
+        .manage(updater::UpdaterState::default())
         .setup(|app| {
             let handle = app.handle().clone();
             crate::infra::logging::init_with_sink(move |entry| {
                 let _ = handle.emit(events::DIAGNOSTICS_LOG, entry);
             });
+            crate::platform::updater::spawn_startup_cleanup();
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -40,7 +44,10 @@ pub fn run(services: AppServices, capture_registry: CaptureRegistry) {
             pelican::save_pelican_download,
             pelican::pick_download_directory,
             data::save_data_export,
-            data::pick_data_import_file
+            data::pick_data_import_file,
+            updater::get_app_install_info,
+            updater::check_app_update,
+            updater::install_app_update
         ])
         .run(tauri::generate_context!())
         .expect("运行 Tauri 桌面应用时发生异常");
