@@ -145,7 +145,7 @@ const emit = defineEmits<{
     align-items: center;
     justify-content: center;
     gap: 5px;
-    height: 24px;
+    height: 25px;
     padding: 0 8px;
     font-size: 12px;
     font-weight: 500;
@@ -158,7 +158,7 @@ const emit = defineEmits<{
     border: 1px solid var(--border-subtle);
     color: var(--text-secondary);
 
-    svg {
+    :deep(svg) {
       display: block;
       flex-shrink: 0;
     }
