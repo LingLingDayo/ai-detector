@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:update-server": "node scripts/dev-update-server.js",
     "build": "vue-tsc --noEmit && vite build",
     "build:app": "npm run tauri build",
     "build:debug": "npm run tauri -- build --debug",
