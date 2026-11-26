@@ -689,6 +689,7 @@ function resolveRowIcon(iconName: RenderedRow["iconName"], expanded?: boolean) {
 .expand-all-btn {
   width: 24px;
   height: 24px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -762,6 +763,7 @@ function resolveRowIcon(iconName: RenderedRow["iconName"], expanded?: boolean) {
 .expand-btn {
   width: 18px;
   height: 18px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -787,6 +789,8 @@ function resolveRowIcon(iconName: RenderedRow["iconName"], expanded?: boolean) {
 .checkbox-box {
   width: 16px;
   height: 16px;
+  padding: 0;
+  line-height: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -797,6 +801,11 @@ function resolveRowIcon(iconName: RenderedRow["iconName"], expanded?: boolean) {
   color: var(--accent-contrast);
   cursor: pointer;
   transition: all var(--transition-fast);
+
+  :deep(svg) {
+    display: block;
+    flex-shrink: 0;
+  }
 
   &.state-checked,
   &.state-indeterminate {
