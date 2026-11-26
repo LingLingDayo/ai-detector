@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import {
   AlertTriangle,
   Check,
@@ -42,6 +42,7 @@ import {
   type ParsedImportArchive,
 } from "../../services/dataTransfer";
 import { DataVaultError, generateRandomVaultKey } from "../../utils/dataVault";
+import { loadExportVaultPrefs, saveExportVaultPrefs } from "../../utils/exportVaultPrefs";
 import { formatHistoryTime } from "../../utils/pelicanFormatters";
 
 type PanelMode = "export" | "import";
@@ -97,12 +98,22 @@ const exportSnapshot = computed<DataSnapshot>(() => ({
   settings: { ...settingsStore.values },
 }));
 
+const initialVaultPrefs = loadExportVaultPrefs();
 const exportSelection = ref<DataSelectionScope>(createDefaultScope(exportSnapshot.value));
-const encryptExport = ref(false);
-const exportUserKey = ref("");
+const encryptExport = ref(initialVaultPrefs.encryptExport);
+const rememberExportKey = ref(initialVaultPrefs.rememberKey);
+const exportUserKey = ref(initialVaultPrefs.rememberKey ? initialVaultPrefs.savedKey : "");
 const isExportKeyVisible = ref(false);
 const isExporting = ref(false);
 const copiedKey = ref(false);
+
+watch([encryptExport, rememberExportKey, exportUserKey], ([encrypt, remember, key]) => {
+  saveExportVaultPrefs({
+    encryptExport: encrypt,
+    rememberKey: remember,
+    savedKey: remember ? key : "",
+  });
+});
 
 const exportSelectedStats = computed(() => {
   const s = exportSelection.value;
@@ -474,6 +485,21 @@ async function handleExecuteImport(): Promise<void> {
                 </button>
               </div>
             </div>
+
+            <button
+              type="button"
+              class="remember-key-btn"
+              :class="{ 'is-checked': rememberExportKey }"
+              role="checkbox"
+              :aria-checked="rememberExportKey"
+              title="将导出密钥保存在本机浏览器存储中，不会随应用设置导出"
+              @click="rememberExportKey = !rememberExportKey"
+            >
+              <span class="remember-checkbox">
+                <Check v-if="rememberExportKey" :size="11" :stroke-width="3" />
+              </span>
+              <span>记住密钥</span>
+            </button>
           </div>
         </div>
 
@@ -722,6 +748,63 @@ async function handleExecuteImport(): Promise<void> {
 .key-row {
   display: flex;
   align-items: center;
+  gap: 10px;
+}
+
+.remember-key-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--transition-fast);
+
+  &:hover {
+    color: var(--text-primary);
+
+    .remember-checkbox {
+      border-color: var(--accent-primary);
+    }
+  }
+
+  &.is-checked {
+    color: var(--text-primary);
+
+    .remember-checkbox {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+    }
+  }
+}
+
+.remember-checkbox {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  line-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 4px;
+  border: 1.5px solid var(--border-subtle);
+  background: var(--bg-input);
+  color: var(--accent-contrast);
+  transition: all var(--transition-fast);
+
+  :deep(svg) {
+    display: block;
+    flex-shrink: 0;
+  }
 }
 
 .key-input-wrap {
