@@ -129,6 +129,8 @@ export const useSettingsStore = defineStore("settings", () => {
     typeof values.downloadDirectory === "string" ? values.downloadDirectory.trim() : ""
   );
 
+  const autoCheckUpdate = computed<boolean>(() => values.autoCheckUpdate !== false);
+
   const userAgentPreset = computed<UserAgentPresetKey>(() =>
     isValidUserAgentPreset(values.userAgentPreset)
       ? values.userAgentPreset
@@ -244,6 +246,7 @@ export const useSettingsStore = defineStore("settings", () => {
     historyMaxCount,
     defaultConnectionMode,
     downloadDirectory,
+    autoCheckUpdate,
     userAgentPreset,
     customUserAgent,
     resolvedUserAgent,

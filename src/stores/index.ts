@@ -8,4 +8,5 @@ export { useSettingsStore } from "./settings";
 export { useModelsStore } from "./models";
 export { useConfirmStore } from "./confirm";
 export { useToastStore } from "./toast";
+export { useUpdaterStore } from "./updater";
 

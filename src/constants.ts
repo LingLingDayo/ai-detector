@@ -2,6 +2,7 @@ import pkg from "../package.json" with { type: "json" };
 
 export const APP_VERSION = `v${pkg.version}`;
 export const GITHUB_REPO_URL = "https://github.com/LingLingDayo/ai-detector";
+export const GITHUB_RELEASES_URL = `${GITHUB_REPO_URL}/releases`;
 
 export const STORAGE_KEY = "modeltrace_client_config";
 export const CONFIG_LIST_STORAGE_KEY = "modeltrace_config_list";
@@ -14,6 +15,8 @@ export const PROBE_HISTORY_STORAGE_KEY = "modeltrace_probe_history";
 export const CANDY_HISTORY_STORAGE_KEY = "modeltrace_candy_history";
 export const CONNECTION_HISTORY_STORAGE_KEY = "modeltrace_connection_history";
 export const CONNECTION_MODE_STORAGE_KEY = "modeltrace_connection_mode";
+export const UPDATE_LAST_CHECK_STORAGE_KEY = "modeltrace_update_last_check";
+export const UPDATE_SKIPPED_VERSION_STORAGE_KEY = "modeltrace_update_skipped_version";
 export {
   FINGERPRINT_UPDATE_AVAILABLE_KEY,
   CUSTOM_UNIFIED_BANK_KEY,

@@ -8,6 +8,7 @@ import {
   useConnectionTestStore,
   useAppStore,
   useSettingsStore,
+  useUpdaterStore,
 } from "./stores";
 import AppHeader from "./components/AppHeader.vue";
 import ConfigCard from "./components/ConfigCard.vue";
@@ -23,6 +24,7 @@ import ConnectionTestCard from "./components/connection/ConnectionTestCard.vue";
 import TestHistoryModal from "./components/history/TestHistoryModal.vue";
 import SettingsModal from "./components/settings/SettingsModal.vue";
 import DiagnosticsModal from "./components/diagnostics/DiagnosticsModal.vue";
+import UpdateDialog from "./components/updater/UpdateDialog.vue";
 import { APP_VERSION, GITHUB_REPO_URL } from "./constants";
 import { openExternalUrl } from "./services/api";
 import { useToast } from "./composables/useToast";
@@ -33,6 +35,7 @@ const pelicanStore = usePelicanTestStore();
 const candyStore = useCandyTestStore();
 const connectionStore = useConnectionTestStore();
 const appStore = useAppStore();
+const updaterStore = useUpdaterStore();
 const { showToast } = useToast();
 useSettingsStore();
 
@@ -40,6 +43,7 @@ onMounted(() => {
   configStore.loadConfig();
   probeStore.initStartupFingerprintCheck();
   void candyStore.initCandyChallenges();
+  updaterStore.initAutoCheck();
   document.addEventListener("keydown", handleGlobalKeydown);
 });
 
@@ -161,6 +165,7 @@ watch(
 
 onUnmounted(() => {
   cancelScroll();
+  updaterStore.disposeAutoCheck();
   document.removeEventListener("keydown", handleGlobalKeydown);
 });
 
@@ -366,6 +371,9 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
       :is-open="appStore.isSettingsModalOpen"
       @close="appStore.closeSettingsModal"
     />
+
+    <!-- 应用更新弹窗 -->
+    <UpdateDialog />
 
     <!-- 开发者诊断弹窗：仅由隐藏快捷键唤起，日志只存内存 -->
     <DiagnosticsModal
