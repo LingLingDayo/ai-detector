@@ -5,6 +5,7 @@ import PelicanDownloadMenu from "./PelicanDownloadMenu.vue";
 import type { PelicanDownloadFormat } from "../../services/pelicanExportTypes";
 import type { PelicanContentType } from "../../stores/pelicanTest";
 import { DEFAULT_REQUEST_RETRY_COUNT } from "../../constants";
+import { formatThinkingDuration } from "../../utils/pelicanFormatters";
 
 const props = withDefaults(
   defineProps<{
@@ -51,7 +52,7 @@ const emit = defineEmits<{
 const displayContent = computed(() => props.content || props.svg || "");
 const typeUpper = computed(() => (props.contentType === "html" ? "HTML" : "SVG"));
 const durationSeconds = computed(() => Math.floor(props.durationMs / 1000));
-const thinkingSeconds = computed(() => Math.floor(props.thinkingMs / 1000));
+const thinkingLabel = computed(() => formatThinkingDuration(props.thinkingMs));
 // 重试请求发出后、模型尚未响应前才显示重试进度；模型一旦响应就回到正常的思考/生成文案
 const runningLabel = computed(() => {
   if (props.isGenerating) {
@@ -61,12 +62,12 @@ const runningLabel = computed(() => {
     ? `正在重试中 ${props.retryAttempt}/${DEFAULT_REQUEST_RETRY_COUNT}`
     : "等待响应...";
 });
-// 进入思考阶段后即显示思考计时（从 0s 开始），等待首包期间隐藏避免误导
 const isAwaitingFirstText = computed(
   () => props.isRunning && props.isGenerating && props.streamedCharCount === 0
 );
+// 思考耗时为 0 或等待首包/重试间隔期间不显示，避免误导
 const showThinking = computed(
-  () => isAwaitingFirstText.value || (props.thinkingMs > 0 && (!props.isRunning || props.isGenerating))
+  () => Boolean(thinkingLabel.value) && (!props.isRunning || props.isGenerating)
 );
 const streamTail = computed(() => {
   const compact = props.streamedTextTail.replace(/\s+/g, " ").trim();
@@ -105,7 +106,7 @@ function toggleBgTheme(): void {
         耗时: <strong>{{ durationSeconds }}s</strong>
       </span>
       <span v-if="showThinking" class="meta-item" title="从模型开始流式响应到输出首个正文字符的时间">
-        思考: <strong>{{ thinkingSeconds }}s</strong>
+        思考: <strong>{{ thinkingLabel }}</strong>
       </span>
     </div>
 

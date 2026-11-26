@@ -47,3 +47,14 @@ export function formatHistoryTime(timestamp?: number): string {
   const min = pad(date.getMinutes());
   return `${y}.${m}.${d} ${h}:${min}`;
 }
+
+/**
+ * 格式化思考耗时：为 0 或无效时返回空字符串，小于 1 秒显示 ms，其余显示整秒
+ */
+export function formatThinkingDuration(thinkingMs?: number): string {
+  if (!thinkingMs || !Number.isFinite(thinkingMs)) return "";
+  const ms = Math.floor(thinkingMs);
+  if (ms <= 0) return "";
+  if (ms < 1000) return `${ms}ms`;
+  return `${Math.floor(ms / 1000)}s`;
+}
