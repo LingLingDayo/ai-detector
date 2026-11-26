@@ -412,13 +412,6 @@ async function handleExecuteImport(): Promise<void> {
         class="mode-switch"
         :options="modeOptions"
       />
-      <span class="mode-caption">
-        {{
-          activeMode === "export"
-            ? "勾选需要备份的账号分组、测试历史或应用设置"
-            : "导入 JSON、ZIP（含鹈鹕图形）或软件加密备份"
-        }}
-      </span>
     </div>
 
     <!-- ==================== 导出视图 ==================== -->
@@ -663,22 +656,12 @@ async function handleExecuteImport(): Promise<void> {
 .panel-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   flex-shrink: 0;
 }
 
 .mode-switch {
   width: 196px;
   flex-shrink: 0;
-}
-
-.mode-caption {
-  font-size: 12px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .panel-footer {

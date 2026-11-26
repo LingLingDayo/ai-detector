@@ -5,8 +5,6 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  ChevronsDownUp,
-  ChevronsUpDown,
   Folder,
   FolderOpen,
   History,
@@ -49,7 +47,6 @@ interface RenderedRow extends TreeRowItem {
   label: string;
   subLabel?: string;
   countText?: string;
-  tag?: string;
   depth: 0 | 1 | 2;
   iconName:
     | "configs"
@@ -299,7 +296,6 @@ const rows = computed<RenderedRow[]>(() => {
     label: string;
     count: number;
     icon: "probe" | "pelican" | "candy" | "connection";
-    tag?: string;
   }> = [
     { key: "probe", label: "模型测试历史", count: probeHistory.length, icon: "probe" },
     {
@@ -307,7 +303,6 @@ const rows = computed<RenderedRow[]>(() => {
       label: "鹈鹕测试历史",
       count: pelicanHistory.length,
       icon: "pelican",
-      tag: "ZIP / SVG",
     },
     { key: "candy", label: "糖果测试历史", count: candyHistory.length, icon: "candy" },
     {
@@ -347,7 +342,6 @@ const rows = computed<RenderedRow[]>(() => {
           id: `hist:${def.key}`,
           kind: "history",
           label: def.label,
-          tag: def.tag,
           countText: def.count > 0 ? `${def.count} 条` : "暂无",
           leafIds: def.count > 0 ? [`${LEAF_HISTORY_PREFIX}${def.key}`] : [],
           disabled: def.count === 0,
@@ -377,22 +371,6 @@ const rows = computed<RenderedRow[]>(() => {
   return list;
 });
 
-const allGroupKeys = computed(() => {
-  const keys = ["cat:configs", "cat:histories"];
-  for (const grp of props.snapshot.configGroups) {
-    keys.push(`grp:${grp.id}`);
-  }
-  keys.push("grp:__ungrouped__");
-  return keys;
-});
-
-const hasAnyExpandedGroup = computed(() => {
-  for (const grp of props.snapshot.configGroups) {
-    if (expandedKeys.value.has(`grp:${grp.id}`)) return true;
-  }
-  return expandedKeys.value.has("grp:__ungrouped__");
-});
-
 function commitSelection(nextState: SelectionState): void {
   selectionState.value = nextState;
   emit("update:modelValue", toScope(nextState.selectedLeafIds));
@@ -405,23 +383,6 @@ function toggleExpand(key?: string): void {
     next.delete(key);
   } else {
     next.add(key);
-  }
-  expandedKeys.value = next;
-}
-
-function toggleExpandAllGroups(): void {
-  const next = new Set(expandedKeys.value);
-  next.add("cat:configs");
-  next.add("cat:histories");
-  if (hasAnyExpandedGroup.value) {
-    for (const grp of props.snapshot.configGroups) {
-      next.delete(`grp:${grp.id}`);
-    }
-    next.delete("grp:__ungrouped__");
-  } else {
-    for (const key of allGroupKeys.value) {
-      next.add(key);
-    }
   }
   expandedKeys.value = next;
 }
@@ -470,33 +431,6 @@ function handleTreeKeydown(event: KeyboardEvent): void {
   }
 }
 
-function selectAll(): void {
-  commitSelection(applySelectAll(rows.value, selectionState.value));
-}
-
-function selectOnlyConfigs(): void {
-  const cfgRow = rows.value.find((r) => r.id === "cat:configs");
-  commitSelection({
-    ...selectionState.value,
-    selectedLeafIds: new Set(cfgRow?.leafIds ?? []),
-  });
-}
-
-function selectOnlyHistories(): void {
-  const histRow = rows.value.find((r) => r.id === "cat:histories");
-  commitSelection({
-    ...selectionState.value,
-    selectedLeafIds: new Set(histRow?.leafIds ?? []),
-  });
-}
-
-function clearSelection(): void {
-  commitSelection({
-    ...selectionState.value,
-    selectedLeafIds: new Set(),
-  });
-}
-
 function rowCheckState(row: RenderedRow): CheckState {
   return getCheckState(row.leafIds, selectionState.value.selectedLeafIds);
 }
@@ -527,30 +461,6 @@ function resolveRowIcon(iconName: RenderedRow["iconName"], expanded?: boolean) {
 
 <template>
   <div class="selection-tree-shell">
-    <div class="tree-toolbar">
-      <div class="quick-actions">
-        <button type="button" class="quick-btn" @click="selectAll">全选</button>
-        <button type="button" class="quick-btn" @click="selectOnlyConfigs">仅账号</button>
-        <button type="button" class="quick-btn" @click="selectOnlyHistories">仅历史</button>
-        <button type="button" class="quick-btn" @click="clearSelection">清空</button>
-      </div>
-
-      <div class="toolbar-right">
-        <span class="shortcut-hint" title="支持单击切换多选、Shift 区间连选及方向键操作">
-          支持 Shift 连选
-        </span>
-        <button
-          type="button"
-          class="expand-all-btn"
-          :title="hasAnyExpandedGroup ? '折叠全部分组' : '展开全部分组'"
-          @click="toggleExpandAllGroups"
-        >
-          <ChevronsDownUp v-if="hasAnyExpandedGroup" :size="13" />
-          <ChevronsUpDown v-else :size="13" />
-        </button>
-      </div>
-    </div>
-
     <div
       class="tree-list"
       tabindex="0"
@@ -612,8 +522,6 @@ function resolveRowIcon(iconName: RenderedRow["iconName"], expanded?: boolean) {
           {{ row.subLabel }}
         </span>
 
-        <span v-if="row.tag" class="row-tag">{{ row.tag }}</span>
-
         <span v-if="row.countText" class="row-count">{{ row.countText }}</span>
       </div>
 
@@ -634,76 +542,6 @@ function resolveRowIcon(iconName: RenderedRow["iconName"], expanded?: boolean) {
   border-radius: var(--radius-md);
   background: var(--bg-inset);
   overflow: hidden;
-}
-
-.tree-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-elevated);
-  flex-shrink: 0;
-}
-
-.quick-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.quick-btn {
-  height: 22px;
-  padding: 0 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface-control);
-  color: var(--text-secondary);
-  font-family: inherit;
-  font-size: 11.5px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-
-  &:hover {
-    background: var(--bg-surface-control-hover);
-    border-color: var(--border-surface-control-hover);
-    color: var(--accent-text);
-  }
-}
-
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.shortcut-hint {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.expand-all-btn {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-
-  &:hover {
-    background: var(--overlay-medium);
-    color: var(--text-primary);
-  }
 }
 
 .tree-list {
@@ -845,18 +683,6 @@ function resolveRowIcon(iconName: RenderedRow["iconName"], expanded?: boolean) {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 140px;
-}
-
-.row-tag {
-  margin-left: 2px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: rgba(var(--accent-rgb), 0.14);
-  border: 1px solid rgba(var(--accent-rgb), 0.28);
-  color: var(--accent-text);
-  font-size: 10.5px;
-  font-weight: 600;
-  flex-shrink: 0;
 }
 
 .row-count {
