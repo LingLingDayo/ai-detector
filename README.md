@@ -77,9 +77,9 @@
 | :---: | :---: |
 | <img src="./docs/images/model-test-setup.png" alt="模型测试配置" width="380" /> | <img src="./docs/images/pelican-result.png" alt="鹈鹕 SVG 测试结果" width="380" /> |
 
-| 鹈鹕历史记录 | 鹈鹕历史记录（降智时） |
+| 鹈鹕历史记录 | 鹈鹕历史记录(自定义) |
 | :---: | :---: |
-| <img src="./docs/images/pelican-history-1.png" alt="鹈鹕测试历史记录" width="380" /> | <img src="./docs/images/pelican-history-2.png" alt="鹈鹕测试历史记录（降智时）" width="380" /> |
+| <img src="./docs/images/pelican-history-1.png" alt="鹈鹕测试历史记录" width="380" /> | <img src="./docs/images/pelican-history-2.png" alt="鹈鹕测试历史记录(自定义)" width="380" /> |
 
 </details>
 
