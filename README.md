@@ -68,7 +68,7 @@
 
 ## 🖼️ 界面预览
 
-<details>
+<details open>
 <summary>展开查看更多界面截图</summary>
 
 <br />
