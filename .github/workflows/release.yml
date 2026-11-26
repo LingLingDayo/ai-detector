@@ -26,6 +26,48 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify Release Tag & Version
+        id: verify_version
+        shell: pwsh
+        run: |
+          $targetTag = "${{ github.event.inputs.tag_name }}".Trim()
+          if ([string]::IsNullOrWhiteSpace($targetTag)) {
+            $targetTag = "${{ github.ref_name }}".Trim()
+          }
+
+          if ($targetTag -notmatch '^v\d+\.\d+\.\d+([-.+][0-9A-Za-z.-]+)?$') {
+            Write-Error "无效的发布 Tag: '$targetTag'（应为类似 v1.3.0 的语义化版本标签）"
+            exit 1
+          }
+
+          $appVersion = $targetTag -replace '^v', ''
+
+          $pkgVersion = (Get-Content "package.json" -Raw | ConvertFrom-Json).version
+          $tauriVersion = (Get-Content "src-tauri/tauri.conf.json" -Raw | ConvertFrom-Json).version
+          $cargoToml = (Get-Content "src-tauri/Cargo.toml" -Raw) -replace "`r`n", "`n"
+          $cargoMatch = [regex]::Match($cargoToml, '(?ms)^\[package\]\n(?:(?!^\[).)*?^version\s*=\s*"([^"]+)"')
+          $cargoVersion = if ($cargoMatch.Success) { $cargoMatch.Groups[1].Value } else { "" }
+
+          $mismatch = $false
+          foreach ($item in @(
+            @{ Name = "package.json"; Value = $pkgVersion },
+            @{ Name = "src-tauri/tauri.conf.json"; Value = $tauriVersion },
+            @{ Name = "src-tauri/Cargo.toml"; Value = $cargoVersion }
+          )) {
+            if ([string]::IsNullOrWhiteSpace($item.Value) -or $item.Value -ne $appVersion) {
+              Write-Host "::error::$($item.Name) 版本号 ('$($item.Value)') 与目标发布版本 '$appVersion' 不一致"
+              $mismatch = $true
+            }
+          }
+
+          if ($mismatch) {
+            exit 1
+          }
+
+          Write-Host "版本一致性校验通过: tag=$targetTag, version=$appVersion"
+          "tag=$targetTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "version=$appVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -52,10 +94,7 @@ jobs:
         id: extract_changelog
         shell: pwsh
         run: |
-          $targetTag = "${{ github.event.inputs.tag_name }}"
-          if ([string]::IsNullOrWhiteSpace($targetTag)) {
-            $targetTag = "${{ github.ref_name }}"
-          }
+          $targetTag = "${{ steps.verify_version.outputs.tag }}"
           Write-Host "Extracting changelog for tag: $targetTag"
           node scripts/extract-changelog.js CHANGELOG.md RELEASE_NOTES.md $targetTag
 
@@ -109,18 +148,16 @@ jobs:
           }
 
           # 5. 为便携版生成更新签名
+          $targetTag = "${{ steps.verify_version.outputs.tag }}"
+          $appVersion = "${{ steps.verify_version.outputs.version }}"
           if (Test-Path "dist-release/AI-Detector.exe") {
-            npx tauri signer sign "dist-release/AI-Detector.exe"
+            npx tauri signer sign "dist-release/AI-Detector.exe" --app-version $appVersion
             if ($LASTEXITCODE -ne 0) {
               throw "便携版可执行文件签名失败"
             }
           }
 
           # 6. 生成自动更新清单 latest.json
-          $targetTag = "${{ github.event.inputs.tag_name }}"
-          if ([string]::IsNullOrWhiteSpace($targetTag)) {
-            $targetTag = "${{ github.ref_name }}"
-          }
           node scripts/generate-update-manifest.js --dir dist-release --tag $targetTag --notes RELEASE_NOTES.md --repo "${{ github.repository }}"
           if ($LASTEXITCODE -ne 0) {
             throw "生成自动更新清单 latest.json 失败"
