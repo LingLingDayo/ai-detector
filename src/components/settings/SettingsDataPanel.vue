@@ -498,7 +498,7 @@ async function handleExecuteImport(): Promise<void> {
               <span class="remember-checkbox">
                 <Check v-if="rememberExportKey" :size="11" :stroke-width="3" />
               </span>
-              <span>记住密钥</span>
+              <span class="remember-label">记住密钥</span>
             </button>
           </div>
         </div>
@@ -762,11 +762,16 @@ async function handleExecuteImport(): Promise<void> {
   color: var(--text-secondary);
   font-family: inherit;
   font-size: 12px;
+  line-height: 1;
   white-space: nowrap;
   flex-shrink: 0;
   cursor: pointer;
   user-select: none;
   transition: color var(--transition-fast);
+
+  .remember-label {
+    line-height: 1;
+  }
 
   &:hover {
     color: var(--text-primary);
