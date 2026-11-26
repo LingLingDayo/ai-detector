@@ -496,7 +496,7 @@ async function handleExecuteImport(): Promise<void> {
               @click="rememberExportKey = !rememberExportKey"
             >
               <span class="remember-checkbox">
-                <Check v-if="rememberExportKey" :size="11" :stroke-width="3" />
+                <Check v-if="rememberExportKey" :size="10" :stroke-width="3" />
               </span>
               <span class="remember-label">记住密钥</span>
             </button>
@@ -792,8 +792,8 @@ async function handleExecuteImport(): Promise<void> {
 }
 
 .remember-checkbox {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   padding: 0;
   line-height: 0;
   display: inline-flex;
