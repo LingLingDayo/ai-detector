@@ -1,21 +1,37 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import {
   AlertTriangle,
   CheckCircle2,
+  Download,
   ExternalLink,
+  Eye,
+  Radio,
   RefreshCw,
+  RotateCcw,
   Sparkles,
 } from "@lucide/vue";
+import SegmentedControl from "../common/SegmentedControl.vue";
 import SettingsField from "./SettingsField.vue";
 import { aboutPage } from "../../settings/about";
 import { useUpdaterStore } from "../../stores";
 import { APP_VERSION, GITHUB_RELEASES_URL, GITHUB_REPO_URL } from "../../constants";
-import { openExternalUrl } from "../../services/api";
+import { isTauriApp, openExternalUrl } from "../../services/api";
 import { formatHistoryTime } from "../../utils/pelicanFormatters";
+import { DEFAULT_DEV_UPDATE_ENDPOINT } from "../../utils/updaterDevMock";
 import type { AppInstallKind } from "../../services/updater";
 
 const updaterStore = useUpdaterStore();
+const isDev = import.meta.env.DEV;
+const isDesktop = isTauriApp();
+const devInstallKind = ref<AppInstallKind>("portable");
+const devEndpoint = ref(DEFAULT_DEV_UPDATE_ENDPOINT);
+
+const devKindOptions = [
+  { value: "nsis", label: "安装版" },
+  { value: "portable", label: "便携版" },
+  { value: "dev", label: "开发环境" },
+];
 
 const INSTALL_KIND_LABELS: Record<AppInstallKind, string> = {
   nsis: "安装版",
@@ -41,6 +57,18 @@ function handleCheckUpdate(): void {
 
 function handleOpenLink(url: string): void {
   void openExternalUrl(url);
+}
+
+function handleDevRealCheck(): void {
+  const endpoint = devEndpoint.value.trim();
+  if (!endpoint || !isDesktop) return;
+  void updaterStore.checkForUpdate({
+    silent: false,
+    devOverride: {
+      endpoint,
+      installKind: devInstallKind.value,
+    },
+  });
 }
 
 onMounted(() => {
@@ -187,6 +215,82 @@ onMounted(() => {
           <span>问题反馈</span>
         </button>
       </div>
+    </section>
+
+    <!-- 开发调试（仅 Dev 环境可见） -->
+    <section v-if="isDev" class="about-section dev-section">
+      <header class="section-head dev-head">
+        <h4>开发调试</h4>
+        <span class="dev-badge">Dev</span>
+      </header>
+
+      <div class="dev-row">
+        <span class="dev-label">安装类型</span>
+        <SegmentedControl
+          v-model="devInstallKind"
+          class="dev-kind-control"
+          :options="devKindOptions"
+        />
+      </div>
+
+      <div class="links-row">
+        <button
+          type="button"
+          class="link-btn"
+          :disabled="updaterStore.isBusy"
+          @click="updaterStore.openDevMockDialog(devInstallKind)"
+        >
+          <Eye :size="12" />
+          <span>预览弹窗</span>
+        </button>
+        <button
+          type="button"
+          class="link-btn"
+          :disabled="updaterStore.isBusy"
+          @click="updaterStore.triggerDevMockDownload(devInstallKind)"
+        >
+          <Download :size="12" />
+          <span>模拟下载</span>
+        </button>
+        <button
+          type="button"
+          class="link-btn"
+          :disabled="updaterStore.isBusy"
+          @click="updaterStore.triggerDevMockError(devInstallKind)"
+        >
+          <AlertTriangle :size="12" />
+          <span>模拟失败</span>
+        </button>
+        <button
+          type="button"
+          class="link-btn"
+          @click="updaterStore.resetDevUpdaterState()"
+        >
+          <RotateCcw :size="12" />
+          <span>重置状态</span>
+        </button>
+      </div>
+
+      <div class="dev-endpoint-row">
+        <input
+          v-model="devEndpoint"
+          type="text"
+          class="dev-endpoint-input"
+          placeholder="http://127.0.0.1:4199/latest.json"
+          spellcheck="false"
+        />
+        <button
+          type="button"
+          class="link-btn dev-fetch-btn"
+          :disabled="!isDesktop || updaterStore.isBusy || !devEndpoint.trim()"
+          :title="isDesktop ? '从本地更新源真实拉取并验签' : '仅桌面端 (npm run tauri dev) 可用'"
+          @click="handleDevRealCheck"
+        >
+          <Radio :size="12" />
+          <span>真实拉取</span>
+        </button>
+      </div>
+      <p class="dev-hint">桌面端配合 npm run dev:update-server 可测试真实下载、进度与签名校验</p>
     </section>
   </div>
 </template>
@@ -429,5 +533,89 @@ onMounted(() => {
   &:active {
     background: var(--bg-surface-control-active);
   }
+}
+
+.dev-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dev-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.dev-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 17px;
+  padding: 0 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accent-text);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.dev-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dev-label {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.dev-kind-control {
+  width: 212px;
+  flex-shrink: 0;
+}
+
+.dev-endpoint-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dev-endpoint-input {
+  flex: 1;
+  min-width: 0;
+  height: 29px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
+  outline: none;
+
+  &:focus {
+    border-color: var(--accent-primary);
+  }
+}
+
+.dev-fetch-btn {
+  flex-shrink: 0;
+}
+
+.link-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dev-hint {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 </style>

@@ -36,3 +36,13 @@
 2. `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`：私钥密码文件（`%USERPROFILE%\.tauri\ai-detector.key.password`）的内容。
 
 > ⚠️ **密钥备份警告**：`src-tauri/tauri.conf.json` 中内置了对应的公钥。请务必妥善备份私钥与密码文件；一旦丢失，已发布版本的客户端将无法验证新生成密钥签名的更新包。
+
+## 开发环境测试与联调
+
+1. **UI 与交互快速模拟**（`npm run dev` 与 `npm run tauri dev` 均可用）：
+   打开 **设置 → 关于 → 开发调试**（仅 `import.meta.env.DEV` 可见），可切换安装类型（安装版 / 便携版 / 开发环境），一键预览更新弹窗样式、模拟下载进度条、模拟失败提示与重置本地状态。
+2. **本地真实端到端联调**（桌面端 `npm run tauri dev`）：
+   - 终端 1 运行 `npm run dev:update-server`，使用本机私钥为测试载荷真实签名并在 `http://127.0.0.1:4199/latest.json` 提供限速下载服务（日志自动从 `CHANGELOG.md` 提取）。
+   - 终端 2 运行 `npm run tauri dev`，在 **设置 → 关于 → 开发调试** 点击 **真实拉取**（也可在启动时设置环境变量 `AI_DETECTOR_DEV_UPDATE_ENDPOINT` 与 `AI_DETECTOR_DEV_INSTALL_KIND`）。
+   - 仅在 `#[cfg(debug_assertions)]` 下允许连接本地 HTTP 更新源，完整走通 `tauri-plugin-updater` 检查、Channel 进度推送与 minisign 公钥验签；下载验签完成后仅落地至 `.temp/dev-update-downloaded/`（便携版对副本演练自替换），不会覆盖开发进程或触发真实安装重启。
+

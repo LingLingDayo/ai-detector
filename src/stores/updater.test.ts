@@ -26,6 +26,7 @@ vi.mock("../services/updater", () => ({
 }));
 
 import { useUpdaterStore } from "./updater";
+import { useToastStore } from "./toast";
 
 const sampleUpdate = {
   version: "1.4.0",
@@ -106,5 +107,55 @@ describe("updater store", () => {
 
     expect(store.status).toBe("available");
     expect(store.installError).toBe("当前目录无写入权限");
+  });
+
+  it("openDevMockDialog 与 triggerDevMockError 能打开模拟弹窗并注入错误提示", () => {
+    const store = useUpdaterStore();
+    store.openDevMockDialog("portable");
+    expect(store.isDialogOpen).toBe(true);
+    expect(store.isMockPreview).toBe(true);
+    expect(store.updateInfo?.installKind).toBe("portable");
+
+    store.triggerDevMockError("nsis");
+    expect(store.installError).toContain("模拟网络中断");
+  });
+
+  it("installUpdate 在后端返回 dryRun 时弹出提示并保持 available 状态", async () => {
+    mockCheckAppUpdate.mockResolvedValue(sampleUpdate);
+    mockInstallAppUpdate.mockResolvedValue({
+      dryRun: true,
+      savedPath: ".temp/dev-update-downloaded/AI-Detector-dev-mock.exe",
+      message: "开发演练完成：已通过签名校验",
+    });
+
+    const store = useUpdaterStore();
+    await store.checkForUpdate({ silent: false });
+    await store.installUpdate();
+
+    expect(store.status).toBe("available");
+    expect(useToastStore().toastState).toMatchObject({
+      isOpen: true,
+      type: "success",
+      title: "开发联调下载与验签通过",
+      filePath: ".temp/dev-update-downloaded/AI-Detector-dev-mock.exe",
+    });
+  });
+
+  it("resetDevUpdaterState 重置内存状态并清除本地存储", async () => {
+    storage.set(UPDATE_LAST_CHECK_STORAGE_KEY, "123456");
+    storage.set(UPDATE_SKIPPED_VERSION_STORAGE_KEY, "1.4.0");
+    const store = useUpdaterStore();
+    store.openDevMockDialog("nsis");
+
+    store.resetDevUpdaterState();
+
+    expect(store.status).toBe("idle");
+    expect(store.updateInfo).toBeNull();
+    expect(store.isDialogOpen).toBe(false);
+    expect(store.isMockPreview).toBe(false);
+    expect(store.lastCheckedAt).toBeNull();
+    expect(store.skippedVersion).toBeNull();
+    expect(storage.has(UPDATE_LAST_CHECK_STORAGE_KEY)).toBe(false);
+    expect(storage.has(UPDATE_SKIPPED_VERSION_STORAGE_KEY)).toBe(false);
   });
 });
