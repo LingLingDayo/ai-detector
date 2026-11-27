@@ -92,6 +92,15 @@ export function selectDefaultModel(models: readonly string[]): string | null {
   return bestModel;
 }
 
+/**
+ * 按关键词对模型列表进行大小写不敏感的子串过滤
+ */
+export function filterModelsByQuery(models: readonly string[], query: string): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [...models];
+  return models.filter((m) => m.toLowerCase().includes(q));
+}
+
 export function resolveModelAfterCredentialChange(
   currentModel: string,
   models: string[],

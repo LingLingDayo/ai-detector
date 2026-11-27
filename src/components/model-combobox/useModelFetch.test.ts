@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { resolveModelAfterCredentialChange, selectDefaultModel } from "./useModelFetch";
+import {
+  filterModelsByQuery,
+  resolveModelAfterCredentialChange,
+  selectDefaultModel,
+} from "./useModelFetch";
+
+describe("filterModelsByQuery", () => {
+  const sampleModels = ["gpt-5.6-sol", "gpt-6-astra", "claude-opus-5-5", "codex-auto-review"];
+
+  it("空关键词或仅空白时返回完整模型列表", () => {
+    expect(filterModelsByQuery(sampleModels, "")).toEqual(sampleModels);
+    expect(filterModelsByQuery(sampleModels, "   ")).toEqual(sampleModels);
+  });
+
+  it("支持忽略大小写与首尾空白的子串过滤", () => {
+    expect(filterModelsByQuery(sampleModels, "  GPT-6  ")).toEqual(["gpt-6-astra"]);
+    expect(filterModelsByQuery(sampleModels, "sol")).toEqual(["gpt-5.6-sol"]);
+  });
+
+  it("无任何匹配模型时返回空数组", () => {
+    expect(filterModelsByQuery(sampleModels, "gemini-4")).toEqual([]);
+  });
+});
 
 describe("selectDefaultModel", () => {
   it("空列表返回 null", () => {

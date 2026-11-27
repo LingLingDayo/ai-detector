@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { RotateCw, ChevronDown } from "@lucide/vue";
 import ModelDropdownMenu from "./model-combobox/ModelDropdownMenu.vue";
-import { useModelFetch } from "./model-combobox/useModelFetch";
+import { useModelFetch, filterModelsByQuery } from "./model-combobox/useModelFetch";
 import { isValidBaseUrl, isValidApiKey } from "./model-combobox/modelStorage";
 
 const props = withDefaults(
@@ -40,14 +40,14 @@ const emit = defineEmits<{
 
 const comboboxRef = ref<HTMLDivElement | null>(null);
 const isOpen = ref(false);
+const isFiltering = ref(false);
+const filterQuery = ref("");
 const placement = ref<"bottom" | "top">("bottom");
 
 const {
   availableModels,
   isFetchedFromApi,
   isFetching,
-  statusBarText,
-  statusColor,
   fetchModels,
   checkAndTriggerAutoFetch,
   selectModel,
@@ -57,13 +57,24 @@ const {
   emit,
 });
 
+const displayedModels = computed(() => {
+  return isFiltering.value
+    ? filterModelsByQuery(availableModels.value, filterQuery.value)
+    : availableModels.value;
+});
+
+// 输入筛选无匹配项时不显示下拉列表；手动点击下拉或刷新按钮时仍显示完整列表或空态提示
+const isDropdownVisible = computed(() => {
+  return isOpen.value && (!isFiltering.value || displayedModels.value.length > 0);
+});
+
 function calculatePlacement(): void {
   if (!comboboxRef.value) return;
   const rect = comboboxRef.value.getBoundingClientRect();
   const spaceBelow = window.innerHeight - rect.bottom;
   const spaceAbove = rect.top;
 
-  if (spaceBelow < 280 && spaceAbove > spaceBelow) {
+  if (spaceBelow < 230 && spaceAbove > spaceBelow) {
     placement.value = "top";
   } else {
     placement.value = "bottom";
@@ -78,18 +89,32 @@ function openDropdown(): void {
 
 function closeDropdown(): void {
   isOpen.value = false;
+  isFiltering.value = false;
+  filterQuery.value = "";
 }
 
 function toggleDropdown(): void {
   if (props.disabled) return;
-  if (isOpen.value) {
+  if (isDropdownVisible.value) {
     closeDropdown();
   } else {
+    isFiltering.value = false;
+    filterQuery.value = "";
     openDropdown();
     if (!isFetchedFromApi.value && isValidBaseUrl(props.baseUrl) && isValidApiKey(props.apiKey)) {
       void fetchModels({ autoSelectFirst: false });
     }
   }
+}
+
+function handleManualFetch(): void {
+  if (props.disabled) return;
+  isFiltering.value = false;
+  filterQuery.value = "";
+  if (!isOpen.value) {
+    openDropdown();
+  }
+  void fetchModels({ autoSelectFirst: false });
 }
 
 function handleSelect(model: string): void {
@@ -99,8 +124,27 @@ function handleSelect(model: string): void {
 
 function handleInput(e: Event): void {
   const target = e.target as HTMLInputElement;
-  emit("update:modelValue", target.value);
+  const value = target.value;
+  filterQuery.value = value;
+  isFiltering.value = true;
+  emit("update:modelValue", value);
   emit("update:isCustomModel", true);
+
+  if (filterModelsByQuery(availableModels.value, value).length > 0) {
+    openDropdown();
+  } else {
+    isOpen.value = false;
+  }
+}
+
+function handleInputKeydown(e: KeyboardEvent): void {
+  if (!isDropdownVisible.value) return;
+  if (e.key === "Escape") {
+    e.stopPropagation();
+    closeDropdown();
+  } else if (e.key === "Tab") {
+    closeDropdown();
+  }
 }
 
 function handleDocumentClick(e: MouseEvent): void {
@@ -132,7 +176,7 @@ defineExpose({
   <div
     ref="comboboxRef"
     class="model-combobox-wrapper"
-    :class="{ 'combobox-open': isOpen, 'is-disabled': disabled }"
+    :class="{ 'combobox-open': isDropdownVisible, 'is-disabled': disabled }"
   >
     <input
       type="text"
@@ -145,6 +189,7 @@ defineExpose({
       :placeholder="placeholder"
       :title="title"
       @input="handleInput"
+      @keydown="handleInputKeydown"
     />
     <div class="combobox-actions">
       <button
@@ -153,7 +198,7 @@ defineExpose({
         :id="id ? `${id}-btn-fetch` : 'btn-fetch-models'"
         title="获取当前 key 允许的模型列表"
         :disabled="disabled || isFetching"
-        @click.stop="() => { if (disabled) return; if (!isOpen) openDropdown(); void fetchModels({ autoSelectFirst: false }); }"
+        @click.stop="handleManualFetch"
       >
         <RotateCw
           class="refresh-icon"
@@ -178,14 +223,13 @@ defineExpose({
 
     <!-- 下拉菜单 -->
     <ModelDropdownMenu
-      :is-open="isOpen"
+      :is-open="isDropdownVisible"
       :placement="placement"
       :id="id"
       :model-value="modelValue"
-      :available-models="availableModels"
+      :models="displayedModels"
       :is-fetched-from-api="isFetchedFromApi"
-      :status-bar-text="statusBarText"
-      :status-color="statusColor"
+      :is-fetching="isFetching"
       @select="handleSelect"
     />
   </div>

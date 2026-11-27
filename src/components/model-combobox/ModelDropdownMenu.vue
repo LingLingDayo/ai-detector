@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from "vue";
-
 const props = withDefaults(
   defineProps<{
     isOpen: boolean;
     placement: "bottom" | "top";
     id?: string;
     modelValue: string;
-    availableModels: string[];
+    models: string[];
     isFetchedFromApi: boolean;
-    statusBarText: string;
-    statusColor?: string;
+    isFetching?: boolean;
   }>(),
   {
-    statusColor: "",
+    isFetching: false,
   }
 );
 
@@ -21,36 +18,9 @@ const emit = defineEmits<{
   (e: "select", model: string): void;
 }>();
 
-const searchInputRef = ref<HTMLInputElement | null>(null);
-const searchQuery = ref("");
-
-const filteredModels = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return props.availableModels;
-  return props.availableModels.filter((m) => m.toLowerCase().includes(q));
-});
-
-watch(
-  () => props.isOpen,
-  (open) => {
-    if (open) {
-      searchQuery.value = "";
-      nextTick(() => {
-        searchInputRef.value?.focus();
-      });
-    }
-  }
-);
-
 function handleSelect(model: string): void {
   emit("select", model);
 }
-
-defineExpose({
-  focusSearch: () => {
-    searchInputRef.value?.focus();
-  },
-});
 </script>
 
 <template>
@@ -59,25 +29,12 @@ defineExpose({
     :class="{ hidden: !isOpen, 'is-top': placement === 'top', 'is-bottom': placement === 'bottom' }"
     :id="id ? `${id}-dropdown` : 'model-dropdown'"
   >
-    <div class="dropdown-search-wrap">
-      <input
-        ref="searchInputRef"
-        v-model="searchQuery"
-        type="text"
-        :id="id ? `${id}-dropdown-search` : 'dropdown-search'"
-        placeholder="搜索模型过滤..."
-        autocomplete="off"
-        spellcheck="false"
-        title="输入关键词实时过滤模型"
-        @click.stop
-      />
-    </div>
-    <div class="dropdown-status-bar" :id="id ? `${id}-dropdown-status-bar` : 'dropdown-status-bar'">
-      <span :style="{ color: statusColor }">{{ statusBarText }}</span>
-    </div>
     <ul class="dropdown-list" :id="id ? `${id}-dropdown-list` : 'dropdown-list'">
-      <template v-if="availableModels.length === 0">
-        <li v-if="isFetchedFromApi" class="dropdown-empty">
+      <template v-if="models.length === 0">
+        <li v-if="isFetching" class="dropdown-empty">
+          正在拉取模型列表...
+        </li>
+        <li v-else-if="isFetchedFromApi" class="dropdown-empty">
           上游未返回可用模型，可直接在上方手动输入测试模型 ID
         </li>
         <li v-else class="dropdown-empty">
@@ -87,14 +44,9 @@ defineExpose({
           </div>
         </li>
       </template>
-      <template v-else-if="filteredModels.length === 0">
-        <li class="dropdown-empty">
-          未匹配到“{{ searchQuery }}”，支持直接在上方输入
-        </li>
-      </template>
       <template v-else>
         <li
-          v-for="m in filteredModels"
+          v-for="m in models"
           :key="m"
           class="dropdown-item"
           :class="{ selected: m === modelValue }"
@@ -118,7 +70,7 @@ defineExpose({
   border: 1px solid rgba(var(--accent-rgb), 0.35);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-popover);
-  max-height: 280px;
+  max-height: 230px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -134,30 +86,11 @@ defineExpose({
     top: auto;
   }
 
-  .dropdown-search-wrap {
-    padding: 6px 8px;
-    border-bottom: 1px solid var(--border-subtle);
-    background: var(--bg-solid-soft);
-
-    input {
-      padding: 5px 8px;
-      font-size: 12px;
-    }
-  }
-
-  .dropdown-status-bar {
-    padding: 4px 10px;
-    font-size: 11px;
-    color: var(--text-muted);
-    background: var(--bg-inset);
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
   .dropdown-list {
     list-style: none;
     overflow-y: auto;
-    max-height: 190px;
-    padding: 3px 0;
+    max-height: 220px;
+    padding: 4px 0;
     scrollbar-width: thin;
     scrollbar-color: rgba(var(--accent-rgb), 0.28) transparent;
 
