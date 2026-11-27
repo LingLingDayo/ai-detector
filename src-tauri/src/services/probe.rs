@@ -36,34 +36,40 @@ pub struct ProbeResponse {
     pub text: String,
     pub raw_status: u16,
     pub duration_ms: u64,
+    #[serde(default)]
+    pub thinking_ms: Option<u64>,
 }
 
 pub trait ProbeStreamSink: Send {
-    fn on_start(&mut self);
-    fn on_progress(&mut self, text: &str);
+    fn on_start(&mut self, has_text: bool, has_reasoning: bool);
+    fn on_progress(&mut self, text: &str, thinking_ms: Option<u64>);
 }
 
 pub struct NoopProbeStreamSink;
 
 impl ProbeStreamSink for NoopProbeStreamSink {
-    fn on_start(&mut self) {}
-    fn on_progress(&mut self, _text: &str) {}
+    fn on_start(&mut self, _has_text: bool, _has_reasoning: bool) {}
+    fn on_progress(&mut self, _text: &str, _thinking_ms: Option<u64>) {}
 }
 
 struct ProbeObserverAdapter<'a> {
     sink: &'a mut dyn ProbeStreamSink,
     last_len: usize,
+    last_thinking_ms: Option<u64>,
 }
 
 impl CompletionStreamObserver for ProbeObserverAdapter<'_> {
-    fn on_start(&mut self) {
-        self.sink.on_start();
+    fn on_start(&mut self, state: &StreamParseState) {
+        self.sink
+            .on_start(!state.text.trim().is_empty(), state.has_reasoning);
     }
 
-    fn on_progress(&mut self, state: &StreamParseState) {
-        if state.text.len() > self.last_len {
+    fn on_progress(&mut self, state: &StreamParseState, thinking_ms: Option<u64>) {
+        let thinking_changed = thinking_ms != self.last_thinking_ms;
+        if state.text.len() > self.last_len || thinking_changed {
             self.last_len = state.text.len();
-            self.sink.on_progress(&state.text);
+            self.last_thinking_ms = thinking_ms;
+            self.sink.on_progress(&state.text, thinking_ms);
         }
     }
 }
@@ -120,7 +126,11 @@ impl ProbeService {
             responses_text_style: ResponsesTextStyle::StructuredParts,
         };
 
-        let mut observer = ProbeObserverAdapter { sink, last_len: 0 };
+        let mut observer = ProbeObserverAdapter {
+            sink,
+            last_len: 0,
+            last_thinking_ms: None,
+        };
         let output = execute_completion(
             &self.http,
             &completion_req,
@@ -134,6 +144,7 @@ impl ProbeService {
             text: output.text,
             raw_status: output.raw_status,
             duration_ms: output.duration_ms,
+            thinking_ms: output.thinking_ms,
         })
     }
 

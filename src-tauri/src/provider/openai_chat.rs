@@ -74,6 +74,35 @@ fn extract_delta_text(val: &Value) -> Option<String> {
     None
 }
 
+fn has_reasoning_output(value: &Value) -> bool {
+    let Some(choice) = value
+        .get("choices")
+        .and_then(|c| c.as_array())
+        .and_then(|c| c.get(0))
+    else {
+        return false;
+    };
+    if let Some(delta) = choice.get("delta") {
+        if non_empty_str(delta.get("reasoning_content"))
+            || non_empty_str(delta.get("reasoning"))
+            || non_empty_str(delta.get("thinking"))
+            || has_non_empty_text_array(delta.get("reasoning_details"))
+        {
+            return true;
+        }
+    }
+    if let Some(message) = choice.get("message") {
+        if non_empty_str(message.get("reasoning_content"))
+            || non_empty_str(message.get("reasoning"))
+            || non_empty_str(message.get("thinking"))
+            || has_non_empty_text_array(message.get("reasoning_details"))
+        {
+            return true;
+        }
+    }
+    false
+}
+
 fn has_semantic_output(value: &Value) -> bool {
     let Some(choice) = value
         .get("choices")
@@ -247,6 +276,9 @@ impl LlmProtocol for OpenAiChatProtocol {
         if !state.has_semantic_output && has_semantic_output(value) {
             state.has_semantic_output = true;
         }
+        if !state.has_reasoning && has_reasoning_output(value) {
+            state.has_reasoning = true;
+        }
         if let Some(delta) = extract_delta_text(value) {
             if !delta.is_empty() {
                 state.has_semantic_output = true;
@@ -313,6 +345,7 @@ impl LlmProtocol for OpenAiChatProtocol {
 
             return Ok(StreamParseState {
                 has_semantic_output: !text.is_empty(),
+                has_reasoning: false,
                 text,
                 response_model: extract_response_model(value),
                 usage: extract_usage(value),
@@ -335,6 +368,7 @@ impl LlmProtocol for OpenAiChatProtocol {
             .unwrap_or_default();
         Ok(StreamParseState {
             has_semantic_output: !text.is_empty(),
+            has_reasoning: false,
             text,
             response_model: extract_response_model(value),
             usage: extract_usage(value),
@@ -467,12 +501,28 @@ mod tests {
         let empty_role = "data: {\"choices\":[{\"delta\":{\"role\":\"assistant\",\"content\":\"\"}}]}\n\n";
         let state_empty = scan_sse_str(empty_role, &OpenAiChatProtocol, ParseMode::LenientChat);
         assert!(!state_empty.has_semantic_output);
+        assert!(!state_empty.has_reasoning);
         assert!(state_empty.text.is_empty());
+
+        let pure_text = "data: {\"choices\":[{\"delta\":{\"content\":\"<svg>\"}}]}\n\n";
+        let state_text = scan_sse_str(pure_text, &OpenAiChatProtocol, ParseMode::StrictProbe);
+        assert!(state_text.has_semantic_output);
+        assert!(!state_text.has_reasoning);
 
         let reasoning_sse = "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"think...\"}}]}\n\n";
         let state_reasoning =
             scan_sse_str(reasoning_sse, &OpenAiChatProtocol, ParseMode::LenientChat);
         assert!(state_reasoning.has_semantic_output);
+        assert!(state_reasoning.has_reasoning);
         assert!(state_reasoning.text.is_empty());
+
+        let reasoning_alt = "data: {\"choices\":[{\"delta\":{\"reasoning\":\"step\"}}]}\n\n";
+        assert!(scan_sse_str(reasoning_alt, &OpenAiChatProtocol, ParseMode::StrictProbe).has_reasoning);
+
+        let thinking_alt = "data: {\"choices\":[{\"delta\":{\"thinking\":\"step\"}}]}\n\n";
+        assert!(scan_sse_str(thinking_alt, &OpenAiChatProtocol, ParseMode::StrictProbe).has_reasoning);
+
+        let details_alt = "data: {\"choices\":[{\"delta\":{\"reasoning_details\":[{\"text\":\"step\"}]}}]}\n\n";
+        assert!(scan_sse_str(details_alt, &OpenAiChatProtocol, ParseMode::StrictProbe).has_reasoning);
     }
 }

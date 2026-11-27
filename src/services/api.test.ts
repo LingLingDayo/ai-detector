@@ -213,4 +213,66 @@ describe("api 服务模块取消与中断测试套件", () => {
       })
     );
   });
+
+  it("Web 回退模式下首包直接含正文时标记 hasText 且不产生伪思考耗时", async () => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        storage.set(key, String(value));
+      },
+      removeItem: (key: string) => {
+        storage.delete(key);
+      },
+      clear: () => storage.clear(),
+    });
+    setActivePinia(createPinia());
+
+    const encoder = new TextEncoder();
+    const chunks = [
+      encoder.encode('data: {"choices":[{"delta":{"content":"<svg>"}}]}\n\n'),
+      encoder.encode('data: {"choices":[{"delta":{"content":"</svg>"}}]}\n\ndata: [DONE]\n\n'),
+    ];
+    let index = 0;
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (index < chunks.length) {
+              return { value: chunks[index++], done: false };
+            }
+            return { value: undefined, done: true };
+          },
+        }),
+      },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("window", {});
+    await initTauri();
+
+    const startMetaList: Array<{ hasText?: boolean; hasReasoning?: boolean } | undefined> = [];
+    const progressList: Array<{ text: string; thinkingMs?: number | null }> = [];
+
+    const res = await sendProbe({
+      baseUrl: "https://api.test.com",
+      apiKey: "sk-test",
+      model: "gpt-4o",
+      prompt: "hello",
+      apiFormat: "openai",
+      stream: true,
+      onStreamStart: (meta) => {
+        startMetaList.push(meta);
+      },
+      onStreamProgress: (text, meta) => {
+        progressList.push({ text, thinkingMs: meta?.thinkingMs });
+      },
+    });
+
+    expect(startMetaList).toEqual([{ hasText: true, hasReasoning: false }]);
+    expect(progressList[0]).toEqual({ text: "<svg>", thinkingMs: null });
+    expect(res.text).toBe("<svg></svg>");
+    expect(res.thinking_ms).toBeNull();
+  });
 });

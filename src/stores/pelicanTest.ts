@@ -242,6 +242,7 @@ function loadInitialPelicanCustomPrompt(currentPrompt: string): string {
 }
 
 const STREAM_TEXT_TAIL_LENGTH = 160;
+const IMPLICIT_THINKING_MIN_MS = 500;
 
 function loadInitialPelicanHistory(): PelicanHistoryItem[] {
   try {
@@ -419,12 +420,24 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
   let testStartTime = 0;
   // 非 0 表示当前请求仍在等待首个正文字符，由计时器实时刷新 thinkingMs
   let thinkingStartTime = 0;
+  let hasExplicitReasoning = false;
+  let hasBackendThinkingResult = false;
+
+  function resolveFrontendThinkingMs(elapsedMs: number): number {
+    if (elapsedMs <= 0) return 0;
+    return hasExplicitReasoning || elapsedMs >= IMPLICIT_THINKING_MIN_MS ? elapsedMs : 0;
+  }
 
   // 请求结束时若模型已开始响应但从未吐出正文，思考耗时记到结束为止；
   // 从未收到响应（含非流式请求）则没有可区分的思考阶段，归零隐藏。
   function settleThinking(): void {
-    if (thinkingStartTime === 0) return;
-    thinkingMs.value = isPelicanGenerating.value ? Date.now() - thinkingStartTime : 0;
+    if (thinkingStartTime === 0 || hasBackendThinkingResult) {
+      thinkingStartTime = 0;
+      return;
+    }
+    thinkingMs.value = isPelicanGenerating.value
+      ? resolveFrontendThinkingMs(Date.now() - thinkingStartTime)
+      : 0;
     thinkingStartTime = 0;
   }
 
@@ -487,6 +500,8 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     thinkingMs.value = 0;
     retryAttempt.value = 0;
     thinkingStartTime = 0;
+    hasExplicitReasoning = false;
+    hasBackendThinkingResult = false;
 
     isPelicanRunning.value = true;
     isPelicanGenerating.value = false;
@@ -504,8 +519,11 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     timerId = setInterval(() => {
       const now = Date.now();
       durationMs.value = now - testStartTime;
-      if (thinkingStartTime > 0) {
-        thinkingMs.value = now - thinkingStartTime;
+      if (thinkingStartTime > 0 && !hasBackendThinkingResult) {
+        const elapsed = now - thinkingStartTime;
+        if (hasExplicitReasoning || elapsed >= IMPLICIT_THINKING_MIN_MS) {
+          thinkingMs.value = elapsed;
+        }
       }
     }, 50);
 
@@ -527,6 +545,8 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
         retryAttempt.value = attempt - 1;
         thinkingMs.value = 0;
         thinkingStartTime = 0;
+        hasExplicitReasoning = false;
+        hasBackendThinkingResult = false;
 
         try {
           const res = await sendProbe({
@@ -539,20 +559,35 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
             stream: isStream,
             timeoutSeconds,
             signal: abortController?.signal,
-            onStreamStart: () => {
+            onStreamStart: (meta) => {
               if (runId === currentRunId && !abortController?.signal.aborted) {
                 isPelicanGenerating.value = true;
-                if (thinkingStartTime === 0) {
+                if (meta?.hasText) {
+                  thinkingStartTime = 0;
+                  thinkingMs.value = 0;
+                  hasBackendThinkingResult = true;
+                  return;
+                }
+                if (meta?.hasReasoning) {
+                  hasExplicitReasoning = true;
+                }
+                if (thinkingStartTime === 0 && !hasBackendThinkingResult) {
                   thinkingMs.value = 0;
                   thinkingStartTime = Date.now();
                 }
               }
             },
-            onStreamProgress: (text) => {
+            onStreamProgress: (text, meta) => {
               if (runId === currentRunId && !abortController?.signal.aborted) {
-                if (text.length > 0 && thinkingStartTime > 0) {
-                  thinkingMs.value = Date.now() - thinkingStartTime;
-                  thinkingStartTime = 0;
+                if (text.trim().length > 0) {
+                  if (meta && meta.thinkingMs !== undefined) {
+                    thinkingMs.value = meta.thinkingMs ?? 0;
+                    thinkingStartTime = 0;
+                    hasBackendThinkingResult = true;
+                  } else if (thinkingStartTime > 0) {
+                    thinkingMs.value = resolveFrontendThinkingMs(Date.now() - thinkingStartTime);
+                    thinkingStartTime = 0;
+                  }
                 }
                 streamedCharCount.value = text.length;
                 streamedTextTail.value = text.slice(-STREAM_TEXT_TAIL_LENGTH);
@@ -561,6 +596,12 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
           });
 
           if (runId !== currentRunId || abortController?.signal.aborted) return;
+
+          if (res.thinking_ms !== undefined) {
+            thinkingMs.value = res.thinking_ms ?? 0;
+            thinkingStartTime = 0;
+            hasBackendThinkingResult = true;
+          }
 
           lastResponseText = res.text || "";
           // 含此前失败的请求与重试间隔的端到端累计值；后端 duration_ms 仅覆盖本次请求，直接采用会让已显示的计时倒退
@@ -663,6 +704,8 @@ export const usePelicanTestStore = defineStore("pelicanTest", () => {
     thinkingMs.value = 0;
     retryAttempt.value = 0;
     thinkingStartTime = 0;
+    hasExplicitReasoning = false;
+    hasBackendThinkingResult = false;
     testStartTime = 0;
     testedModel.value = "";
     errorMsg.value = null;

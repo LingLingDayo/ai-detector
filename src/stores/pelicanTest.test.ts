@@ -306,6 +306,100 @@ describe("鹈鹕测试思考耗时与重试计时测试套件", () => {
     expect(store.thinkingMs).toBe(0);
     expect(store.retryAttempt).toBe(0);
   });
+
+  it("首包已含正文时不再产生 1ms 伪思考耗时", async () => {
+    vi.useFakeTimers();
+    storage.clear();
+    const store = newStore();
+
+    vi.spyOn(api, "sendProbe").mockImplementation(async (options) => {
+      options.onStreamStart?.({ hasText: true, hasReasoning: false });
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      options.onStreamProgress?.("<svg>", { thinkingMs: null });
+      return {
+        text: "<svg></svg>",
+        raw_status: 200,
+        duration_ms: 15,
+        thinking_ms: null,
+      };
+    });
+
+    const run = store.startPelicanTest(config);
+    await vi.advanceTimersByTimeAsync(1);
+    await run;
+
+    expect(store.thinkingMs).toBe(0);
+  });
+
+  it("优先采用后端精确返回的 thinkingMs", async () => {
+    vi.useFakeTimers();
+    storage.clear();
+    const store = newStore();
+
+    vi.spyOn(api, "sendProbe").mockImplementation(async (options) => {
+      options.onStreamStart?.({ hasText: false, hasReasoning: true });
+      await new Promise((resolve) => setTimeout(resolve, 3600));
+      options.onStreamProgress?.("<svg>", { thinkingMs: 3456 });
+      return {
+        text: "<svg></svg>",
+        raw_status: 200,
+        duration_ms: 4000,
+        thinking_ms: 3456,
+      };
+    });
+
+    const run = store.startPelicanTest(config);
+    await vi.advanceTimersByTimeAsync(3600);
+    await run;
+
+    expect(store.thinkingMs).toBe(3456);
+  });
+
+  it("无显式思考的空首包在短于 500ms 内输出正文时过滤为 0", async () => {
+    vi.useFakeTimers();
+    storage.clear();
+    const store = newStore();
+
+    vi.spyOn(api, "sendProbe").mockImplementation(async (options) => {
+      options.onStreamStart?.({ hasText: false, hasReasoning: false });
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      options.onStreamProgress?.("<svg>");
+      return {
+        text: "<svg></svg>",
+        raw_status: 200,
+        duration_ms: 50,
+      };
+    });
+
+    const run = store.startPelicanTest(config);
+    await vi.advanceTimersByTimeAsync(40);
+    await run;
+
+    expect(store.thinkingMs).toBe(0);
+  });
+
+  it("显式思考即使仅 200ms 也保留真实思考耗时", async () => {
+    vi.useFakeTimers();
+    storage.clear();
+    const store = newStore();
+
+    vi.spyOn(api, "sendProbe").mockImplementation(async (options) => {
+      options.onStreamStart?.({ hasText: false, hasReasoning: true });
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      options.onStreamProgress?.("<svg>");
+      return {
+        text: "<svg></svg>",
+        raw_status: 200,
+        duration_ms: 250,
+      };
+    });
+
+    const run = store.startPelicanTest(config);
+    await vi.advanceTimersByTimeAsync(200);
+    await run;
+
+    expect(store.thinkingMs).toBe(200);
+  });
 });
 
 describe("鹈鹕测试原始响应额外文本判断测试套件 (hasExtraneousText)", () => {

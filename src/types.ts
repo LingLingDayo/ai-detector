@@ -39,6 +39,15 @@ export interface ConfigItem {
 }
 
 
+export interface ProbeStreamStartMeta {
+  hasText?: boolean;
+  hasReasoning?: boolean;
+}
+
+export interface ProbeStreamProgressMeta {
+  thinkingMs?: number | null;
+}
+
 export interface SendProbeOptions {
   baseUrl: string;
   apiKey: string;
@@ -50,15 +59,16 @@ export interface SendProbeOptions {
   timeoutSeconds?: number;
   userAgent?: string;
   signal?: AbortSignal;
-  onStreamStart?: () => void;
+  onStreamStart?: (meta?: ProbeStreamStartMeta) => void;
   /** 流式输出过程中回调当前累计的模型文本 */
-  onStreamProgress?: (text: string) => void;
+  onStreamProgress?: (text: string, meta?: ProbeStreamProgressMeta) => void;
 }
 
 export interface ProbeResponse {
   text: string;
   raw_status: number;
   duration_ms: number;
+  thinking_ms?: number | null;
 }
 
 export type TauriInvokeFn = <T = unknown>(

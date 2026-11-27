@@ -87,6 +87,26 @@ fn extract_delta_text(val: &Value) -> Option<String> {
     None
 }
 
+fn has_reasoning_output(value: &Value) -> bool {
+    match value.get("type").and_then(|t| t.as_str()).unwrap_or("") {
+        "content_block_start" => matches!(
+            value.pointer("/content_block/type").and_then(|t| t.as_str()),
+            Some("thinking" | "redacted_thinking")
+        ),
+        "content_block_delta" => {
+            let Some(delta) = value.get("delta") else {
+                return false;
+            };
+            match delta.get("type").and_then(|t| t.as_str()).unwrap_or("") {
+                "thinking_delta" => non_empty_str(delta.get("thinking")),
+                "signature_delta" => true,
+                _ => false,
+            }
+        }
+        _ => false,
+    }
+}
+
 fn has_semantic_output(value: &Value) -> bool {
     if value.get("type").and_then(|t| t.as_str()) == Some("content_block_delta") {
         let Some(delta) = value.get("delta") else {
@@ -231,6 +251,9 @@ impl LlmProtocol for AnthropicProtocol {
         if !state.has_semantic_output && has_semantic_output(value) {
             state.has_semantic_output = true;
         }
+        if !state.has_reasoning && has_reasoning_output(value) {
+            state.has_reasoning = true;
+        }
         if let Some(delta) = extract_delta_text(value) {
             if !delta.is_empty() {
                 state.has_semantic_output = true;
@@ -261,6 +284,7 @@ impl LlmProtocol for AnthropicProtocol {
             }
             return Ok(StreamParseState {
                 has_semantic_output: !full.is_empty(),
+                has_reasoning: false,
                 text: full,
                 response_model: extract_response_model(value),
                 usage: extract_usage(value),
@@ -279,6 +303,7 @@ impl LlmProtocol for AnthropicProtocol {
             .unwrap_or_default();
         Ok(StreamParseState {
             has_semantic_output: !text.is_empty(),
+            has_reasoning: false,
             text,
             response_model: extract_response_model(value),
             usage: extract_usage(value),
@@ -374,12 +399,22 @@ mod tests {
 
     #[test]
     fn test_scan_chat_stream_detects_anthropic_thinking() {
+        let msg_start = "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-sonnet-4-5\"}}\n\n";
+        assert!(!scan_sse_str(msg_start, &AnthropicProtocol, ParseMode::StrictProbe).has_reasoning);
+
+        let text_delta = "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"<svg>\"}}\n\n";
+        assert!(!scan_sse_str(text_delta, &AnthropicProtocol, ParseMode::StrictProbe).has_reasoning);
+
         let anthropic_thinking = concat!(
             "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\n",
             "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"step 1\"}}\n\n"
         );
         let state = scan_sse_str(anthropic_thinking, &AnthropicProtocol, ParseMode::LenientChat);
         assert!(state.has_semantic_output);
+        assert!(state.has_reasoning);
         assert!(state.text.is_empty());
+
+        let redacted = "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"redacted_thinking\"}}\n\n";
+        assert!(scan_sse_str(redacted, &AnthropicProtocol, ParseMode::StrictProbe).has_reasoning);
     }
 }

@@ -13,17 +13,96 @@ use super::{protocol_for, LlmProtocol};
 
 const STREAM_CHUNK_IDLE_TIMEOUT_SECS: u64 = 90;
 const PROGRESS_THROTTLE_MS: u64 = 100;
+/// 无显式思考事件时，首包到首字间隔小于该阈值视为普通分包/网关缓冲抖动
+const IMPLICIT_THINKING_MIN_MS: u64 = 500;
+
+/// 基于单调时钟精准追踪流式响应中的思考耗时：
+/// - 首包即包含非空白正文时直接定格为 `None`，不产生 1ms 伪耗时
+/// - 出现显式思考信号时从首个思考分片计时到首个非空白正文分片
+/// - 无显式思考信号时仅当空首包到首字间隔 >= 500ms 才计为思考耗时
+#[derive(Debug)]
+pub(crate) struct StreamThinkingTracker {
+    stream_started_at: Instant,
+    first_reasoning_at: Option<Instant>,
+    first_text_at: Option<Instant>,
+    resolved_thinking_ms: Option<Option<u64>>,
+}
+
+impl StreamThinkingTracker {
+    pub(crate) fn new(stream_started_at: Instant) -> Self {
+        Self {
+            stream_started_at,
+            first_reasoning_at: None,
+            first_text_at: None,
+            resolved_thinking_ms: None,
+        }
+    }
+
+    pub(crate) fn record_chunk(
+        &mut self,
+        at: Instant,
+        has_reasoning: bool,
+        has_non_ws_text: bool,
+    ) -> bool {
+        if self.first_reasoning_at.is_none() && has_reasoning {
+            self.first_reasoning_at = Some(at);
+        }
+        if self.first_text_at.is_none() && has_non_ws_text {
+            self.first_text_at = Some(at);
+            self.resolved_thinking_ms = Some(Self::compute_thinking_ms(
+                self.stream_started_at,
+                self.first_reasoning_at,
+                at,
+            ));
+            return true;
+        }
+        false
+    }
+
+    pub(crate) fn settled_thinking_ms(&self) -> Option<u64> {
+        self.resolved_thinking_ms.flatten()
+    }
+
+    pub(crate) fn finalize(&self, ended_at: Instant) -> Option<u64> {
+        if let Some(resolved) = self.resolved_thinking_ms {
+            return resolved;
+        }
+        Self::compute_thinking_ms(self.stream_started_at, self.first_reasoning_at, ended_at)
+    }
+
+    fn compute_thinking_ms(
+        stream_started_at: Instant,
+        first_reasoning_at: Option<Instant>,
+        end_at: Instant,
+    ) -> Option<u64> {
+        if let Some(t_reason) = first_reasoning_at {
+            let ms = end_at.saturating_duration_since(t_reason).as_millis() as u64;
+            if ms > 0 {
+                Some(ms)
+            } else {
+                None
+            }
+        } else {
+            let ms = end_at.saturating_duration_since(stream_started_at).as_millis() as u64;
+            if ms >= IMPLICIT_THINKING_MIN_MS {
+                Some(ms)
+            } else {
+                None
+            }
+        }
+    }
+}
 
 pub trait CompletionStreamObserver: Send {
-    fn on_start(&mut self);
-    fn on_progress(&mut self, state: &StreamParseState);
+    fn on_start(&mut self, state: &StreamParseState);
+    fn on_progress(&mut self, state: &StreamParseState, thinking_ms: Option<u64>);
 }
 
 pub struct NoopStreamObserver;
 
 impl CompletionStreamObserver for NoopStreamObserver {
-    fn on_start(&mut self) {}
-    fn on_progress(&mut self, _state: &StreamParseState) {}
+    fn on_start(&mut self, _state: &StreamParseState) {}
+    fn on_progress(&mut self, _state: &StreamParseState, _thinking_ms: Option<u64>) {}
 }
 
 pub async fn execute_completion(
@@ -160,12 +239,12 @@ async fn execute_streaming(
         }
     };
 
-    observer.on_start();
-
+    let first_chunk_at = Instant::now();
     let mut decoder = SseLineDecoder::new();
     let mut state = StreamParseState::default();
     let mut fallback_raw = Vec::new();
     let mut first_token_ms: Option<u64> = None;
+    let mut thinking_tracker = StreamThinkingTracker::new(first_chunk_at);
 
     process_chunk(
         &first_chunk,
@@ -178,7 +257,14 @@ async fn execute_streaming(
     if first_token_ms.is_none() && state.has_semantic_output {
         first_token_ms = Some(start_time.elapsed().as_millis() as u64);
     }
-    observer.on_progress(&state);
+    thinking_tracker.record_chunk(
+        first_chunk_at,
+        state.has_reasoning,
+        !state.text.trim().is_empty(),
+    );
+
+    observer.on_start(&state);
+    observer.on_progress(&state, thinking_tracker.settled_thinking_ms());
     let mut last_progress_at = Instant::now();
 
     let duration_ms = loop {
@@ -199,11 +285,19 @@ async fn execute_streaming(
                     &mut state,
                     &mut fallback_raw,
                 )?;
+                let chunk_at = Instant::now();
                 if first_token_ms.is_none() && state.has_semantic_output {
                     first_token_ms = Some(start_time.elapsed().as_millis() as u64);
                 }
-                if last_progress_at.elapsed() >= Duration::from_millis(PROGRESS_THROTTLE_MS) {
-                    observer.on_progress(&state);
+                let just_got_text = thinking_tracker.record_chunk(
+                    chunk_at,
+                    state.has_reasoning,
+                    !state.text.trim().is_empty(),
+                );
+                if just_got_text
+                    || last_progress_at.elapsed() >= Duration::from_millis(PROGRESS_THROTTLE_MS)
+                {
+                    observer.on_progress(&state, thinking_tracker.settled_thinking_ms());
                     last_progress_at = Instant::now();
                 }
             }
@@ -225,10 +319,17 @@ async fn execute_streaming(
     if let Some(tail_data) = decoder.finish() {
         feed_sse_data_line(&tail_data, protocol, mode, &mut state)?;
     }
+    let ended_at = Instant::now();
     if first_token_ms.is_none() && state.has_semantic_output {
         first_token_ms = Some(duration_ms);
     }
-    observer.on_progress(&state);
+    thinking_tracker.record_chunk(
+        ended_at,
+        state.has_reasoning,
+        !state.text.trim().is_empty(),
+    );
+    let thinking_ms = thinking_tracker.finalize(ended_at);
+    observer.on_progress(&state, thinking_ms);
 
     if let Some(message) = &state.error_message {
         return Err(AppError::UpstreamProtocol(message.clone()));
@@ -247,6 +348,7 @@ async fn execute_streaming(
                     raw_status: status.as_u16(),
                     duration_ms,
                     first_token_ms,
+                    thinking_ms: None,
                 });
             }
         }
@@ -265,6 +367,7 @@ async fn execute_streaming(
         raw_status: status.as_u16(),
         duration_ms,
         first_token_ms,
+        thinking_ms,
     })
 }
 
@@ -380,5 +483,77 @@ async fn execute_non_streaming(
         raw_status: status.as_u16(),
         duration_ms,
         first_token_ms: None,
+        thinking_ms: None,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_thinking_tracker_first_chunk_with_text_returns_none() {
+        let t0 = Instant::now();
+        let mut tracker = StreamThinkingTracker::new(t0);
+        assert!(tracker.record_chunk(t0, false, true));
+        assert_eq!(tracker.settled_thinking_ms(), None);
+        assert_eq!(tracker.finalize(t0 + Duration::from_millis(500)), None);
+    }
+
+    #[test]
+    fn test_thinking_tracker_same_chunk_reasoning_and_text_returns_none() {
+        let t0 = Instant::now();
+        let mut tracker = StreamThinkingTracker::new(t0);
+        assert!(tracker.record_chunk(t0, true, true));
+        assert_eq!(tracker.settled_thinking_ms(), None);
+        assert_eq!(tracker.finalize(t0 + Duration::from_millis(1200)), None);
+    }
+
+    #[test]
+    fn test_thinking_tracker_empty_first_chunk_then_explicit_reasoning_then_text() {
+        let t0 = Instant::now();
+        let mut tracker = StreamThinkingTracker::new(t0);
+        assert!(!tracker.record_chunk(t0, false, false));
+        assert!(!tracker.record_chunk(t0 + Duration::from_millis(200), true, false));
+        assert!(tracker.record_chunk(t0 + Duration::from_millis(2700), true, true));
+        assert_eq!(tracker.settled_thinking_ms(), Some(2500));
+        assert_eq!(tracker.finalize(t0 + Duration::from_millis(4000)), Some(2500));
+    }
+
+    #[test]
+    fn test_thinking_tracker_explicit_short_reasoning_is_preserved() {
+        let t0 = Instant::now();
+        let mut tracker = StreamThinkingTracker::new(t0);
+        assert!(!tracker.record_chunk(t0, true, false));
+        assert!(tracker.record_chunk(t0 + Duration::from_millis(120), true, true));
+        assert_eq!(tracker.settled_thinking_ms(), Some(120));
+    }
+
+    #[test]
+    fn test_thinking_tracker_empty_first_chunk_fast_text_filtered_as_jitter() {
+        let t0 = Instant::now();
+        let mut tracker = StreamThinkingTracker::new(t0);
+        assert!(!tracker.record_chunk(t0, false, false));
+        assert!(tracker.record_chunk(t0 + Duration::from_millis(40), false, true));
+        assert_eq!(tracker.settled_thinking_ms(), None);
+        assert_eq!(tracker.finalize(t0 + Duration::from_millis(800)), None);
+    }
+
+    #[test]
+    fn test_thinking_tracker_implicit_long_pause_retained() {
+        let t0 = Instant::now();
+        let mut tracker = StreamThinkingTracker::new(t0);
+        assert!(!tracker.record_chunk(t0, false, false));
+        assert!(tracker.record_chunk(t0 + Duration::from_millis(1600), false, true));
+        assert_eq!(tracker.settled_thinking_ms(), Some(1600));
+    }
+
+    #[test]
+    fn test_thinking_tracker_reasoning_only_without_text_finalizes_at_end() {
+        let t0 = Instant::now();
+        let mut tracker = StreamThinkingTracker::new(t0);
+        assert!(!tracker.record_chunk(t0, true, false));
+        assert_eq!(tracker.settled_thinking_ms(), None);
+        assert_eq!(tracker.finalize(t0 + Duration::from_millis(900)), Some(900));
+    }
 }

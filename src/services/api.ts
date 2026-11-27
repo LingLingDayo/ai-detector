@@ -273,6 +273,69 @@ function parseNonStreamingJson(json: any, apiFormat: string): string {
   return text;
 }
 
+const IMPLICIT_THINKING_MIN_MS = 500;
+
+function hasStreamingReasoning(body: string, apiFormat: string): boolean {
+  const lines = body.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith(":") || !trimmed.startsWith("data:")) continue;
+    const dataStr = trimmed.slice(5).trim();
+    if (!dataStr || dataStr === "[DONE]") continue;
+    try {
+      const val = JSON.parse(dataStr);
+      if (apiFormat === "anthropic") {
+        if (
+          val.type === "content_block_start" &&
+          (val.content_block?.type === "thinking" || val.content_block?.type === "redacted_thinking")
+        ) {
+          return true;
+        }
+        if (
+          val.type === "content_block_delta" &&
+          ((val.delta?.type === "thinking_delta" && typeof val.delta?.thinking === "string" && val.delta.thinking.length > 0) ||
+            val.delta?.type === "signature_delta")
+        ) {
+          return true;
+        }
+      } else if (apiFormat === "responses" || apiFormat === "openai_responses") {
+        const valType = typeof val.type === "string" ? val.type : "";
+        if (
+          (valType === "response.reasoning_summary_text.delta" ||
+            valType === "response.reasoning_text.delta" ||
+            valType === "response.reasoning.delta" ||
+            valType === "response.reasoning_summary.delta") &&
+          ((typeof val.delta === "string" && val.delta.length > 0) ||
+            (typeof val.delta?.text === "string" && val.delta.text.length > 0) ||
+            (typeof val.text === "string" && val.text.length > 0))
+        ) {
+          return true;
+        }
+        if (valType === "response.output_item.added" && val.item?.type === "reasoning") {
+          return true;
+        }
+        if (valType === "response.reasoning_summary_part.added") {
+          return true;
+        }
+      } else {
+        const delta = val.choices?.[0]?.delta;
+        if (
+          delta &&
+          ((typeof delta.reasoning_content === "string" && delta.reasoning_content.length > 0) ||
+            (typeof delta.reasoning === "string" && delta.reasoning.length > 0) ||
+            (typeof delta.thinking === "string" && delta.thinking.length > 0) ||
+            (Array.isArray(delta.reasoning_details) && delta.reasoning_details.length > 0))
+        ) {
+          return true;
+        }
+      }
+    } catch {
+      // 忽略尚未完整的 JSON 片段
+    }
+  }
+  return false;
+}
+
 function parseStreamingText(body: string, apiFormat: string): string {
   let content = "";
   let finishReason = "";
@@ -383,11 +446,14 @@ export function resolveApiEndpoint(baseUrl: string, apiFormat: string): string {
 
 interface ProbeStreamStartPayload {
   requestId?: string | null;
+  hasText?: boolean;
+  hasReasoning?: boolean;
 }
 
 interface ProbeStreamProgressPayload {
   requestId?: string | null;
   text: string;
+  thinkingMs?: number | null;
 }
 
 function createProbeRequestId(): string {
@@ -427,14 +493,19 @@ export async function sendProbe({
         if (onStreamStart) {
           unlistenStart = await listen<ProbeStreamStartPayload>("pelican-stream-start", (event) => {
             if (event.payload?.requestId === requestId) {
-              onStreamStart();
+              onStreamStart({
+                hasText: event.payload.hasText,
+                hasReasoning: event.payload.hasReasoning,
+              });
             }
           });
         }
         if (onStreamProgress) {
           unlistenProgress = await listen<ProbeStreamProgressPayload>("pelican-stream-progress", (event) => {
             if (event.payload?.requestId === requestId) {
-              onStreamProgress(event.payload.text);
+              onStreamProgress(event.payload.text, {
+                thinkingMs: event.payload.thinkingMs,
+              });
             }
           });
         }
@@ -621,26 +692,57 @@ export async function sendProbe({
     }
 
     let text = "";
+    let thinkingMs: number | null = null;
     if (isStream && res.body) {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let streamBuffer = "";
       let lastProgressAt = 0;
       let lastProgressText = "";
+      let streamStartedAt = 0;
+      let firstReasoningAt = 0;
+      let firstTextAt = 0;
+      let resolvedThinkingMs: number | null | undefined;
 
-      const emitStreamProgress = (force = false): void => {
+      const computeWebThinkingMs = (endAt: number): number | null => {
+        if (firstReasoningAt > 0) {
+          const ms = endAt - firstReasoningAt;
+          return ms > 0 ? ms : null;
+        }
+        const ms = endAt - streamStartedAt;
+        return ms >= IMPLICIT_THINKING_MIN_MS ? ms : null;
+      };
+
+      const evaluateBuffer = (now: number): { preview: string; hasReasoning: boolean; justGotText: boolean } => {
+        let preview = "";
+        try {
+          preview = parseStreamingText(streamBuffer, apiFormat);
+        } catch {
+          // 中间态响应可能尚未完整，忽略预览解析异常
+        }
+        const hasReasoning = hasStreamingReasoning(streamBuffer, apiFormat);
+        if (firstReasoningAt === 0 && hasReasoning) {
+          firstReasoningAt = now;
+        }
+        let justGotText = false;
+        if (firstTextAt === 0 && preview.trim().length > 0) {
+          firstTextAt = now;
+          resolvedThinkingMs = computeWebThinkingMs(now);
+          justGotText = true;
+        }
+        return { preview, hasReasoning, justGotText };
+      };
+
+      const emitStreamProgress = (preview: string, force = false): void => {
         if (!onStreamProgress) return;
         const now = Date.now();
         if (!force && now - lastProgressAt < 100) return;
         lastProgressAt = now;
-        try {
-          const preview = parseStreamingText(streamBuffer, apiFormat);
-          if (preview && preview !== lastProgressText) {
-            lastProgressText = preview;
-            onStreamProgress(preview);
-          }
-        } catch {
-          // 中间态响应可能尚未完整，忽略预览解析异常
+        if (preview && preview !== lastProgressText) {
+          lastProgressText = preview;
+          onStreamProgress(preview, {
+            thinkingMs: resolvedThinkingMs !== undefined ? resolvedThinkingMs : null,
+          });
         }
       };
 
@@ -650,21 +752,35 @@ export async function sendProbe({
       clearTimeout(timeoutTimer);
 
       if (firstChunk.value) {
-        onStreamStart?.();
+        const now = Date.now();
+        streamStartedAt = now;
         streamBuffer += decoder.decode(firstChunk.value, { stream: true });
-        emitStreamProgress();
+        const { preview, hasReasoning, justGotText } = evaluateBuffer(now);
+        onStreamStart?.({
+          hasText: preview.trim().length > 0,
+          hasReasoning,
+        });
+        emitStreamProgress(preview, justGotText);
       }
 
       while (!firstChunk.done) {
         const { value, done } = await reader.read();
         if (done) break;
         if (value) {
+          const now = Date.now();
           streamBuffer += decoder.decode(value, { stream: true });
-          emitStreamProgress();
+          const { preview, justGotText } = evaluateBuffer(now);
+          emitStreamProgress(preview, justGotText);
         }
       }
       streamBuffer += decoder.decode();
-      emitStreamProgress(true);
+      const endNow = Date.now();
+      const { preview } = evaluateBuffer(endNow);
+      if (resolvedThinkingMs === undefined && streamStartedAt > 0) {
+        resolvedThinkingMs = computeWebThinkingMs(endNow);
+      }
+      thinkingMs = resolvedThinkingMs ?? null;
+      emitStreamProgress(preview, true);
       text = parseStreamingText(streamBuffer, apiFormat);
     } else {
       firstResponseReceived = true;
@@ -674,7 +790,7 @@ export async function sendProbe({
     }
 
     const durationMs = Date.now() - startTime;
-    return { text, raw_status: res.status, duration_ms: durationMs };
+    return { text, raw_status: res.status, duration_ms: durationMs, thinking_ms: thinkingMs };
   } catch (err: unknown) {
     if (controller.signal.aborted && !signal?.aborted) {
       if (controller.signal.reason instanceof Error) {

@@ -105,7 +105,7 @@ function toggleBgTheme(): void {
       <span v-if="durationMs > 0 || isRunning" class="meta-item">
         耗时: <strong>{{ durationSeconds }}s</strong>
       </span>
-      <span v-if="showThinking" class="meta-item" title="从模型开始流式响应到输出首个正文字符的时间">
+      <span v-if="showThinking" class="meta-item" title="从模型进入思考阶段到输出首个正文字符的时间">
         思考: <strong>{{ thinkingLabel }}</strong>
       </span>
     </div>

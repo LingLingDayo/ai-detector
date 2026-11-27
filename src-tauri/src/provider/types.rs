@@ -115,6 +115,7 @@ pub struct StreamParseState {
     pub error_message: Option<String>,
     pub saw_sse_data: bool,
     pub has_semantic_output: bool,
+    pub has_reasoning: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -125,4 +126,5 @@ pub struct CompletionOutput {
     pub raw_status: u16,
     pub duration_ms: u64,
     pub first_token_ms: Option<u64>,
+    pub thinking_ms: Option<u64>,
 }

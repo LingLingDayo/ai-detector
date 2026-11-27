@@ -14,6 +14,8 @@ pub const DIAGNOSTICS_LOG: &str = "diagnostics://log";
 #[serde(rename_all = "camelCase")]
 pub struct ProbeStreamStartPayload {
     pub request_id: Option<String>,
+    pub has_text: bool,
+    pub has_reasoning: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -21,6 +23,7 @@ pub struct ProbeStreamStartPayload {
 pub struct ProbeStreamProgressPayload {
     pub request_id: Option<String>,
     pub text: String,
+    pub thinking_ms: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -49,21 +52,24 @@ impl TauriProbeStreamSink {
 }
 
 impl ProbeStreamSink for TauriProbeStreamSink {
-    fn on_start(&mut self) {
+    fn on_start(&mut self, has_text: bool, has_reasoning: bool) {
         let _ = self.app.emit(
             PELICAN_STREAM_START,
             ProbeStreamStartPayload {
                 request_id: self.request_id.clone(),
+                has_text,
+                has_reasoning,
             },
         );
     }
 
-    fn on_progress(&mut self, text: &str) {
+    fn on_progress(&mut self, text: &str, thinking_ms: Option<u64>) {
         let _ = self.app.emit(
             PELICAN_STREAM_PROGRESS,
             ProbeStreamProgressPayload {
                 request_id: self.request_id.clone(),
                 text: text.to_string(),
+                thinking_ms,
             },
         );
     }

@@ -82,6 +82,25 @@ fn extract_delta_text(val: &Value) -> Option<String> {
         .map(|text| text.to_string())
 }
 
+fn has_reasoning_output(value: &Value) -> bool {
+    let val_type = value.get("type").and_then(|t| t.as_str()).unwrap_or("");
+    if matches!(
+        val_type,
+        "response.reasoning_summary_text.delta"
+            | "response.reasoning_text.delta"
+            | "response.reasoning.delta"
+            | "response.reasoning_summary.delta"
+    ) {
+        return non_empty_str(value.get("delta"))
+            || non_empty_str(value.pointer("/delta/text"))
+            || non_empty_str(value.get("text"));
+    }
+    if val_type == "response.output_item.added" {
+        return value.pointer("/item/type").and_then(|t| t.as_str()) == Some("reasoning");
+    }
+    val_type == "response.reasoning_summary_part.added"
+}
+
 fn has_semantic_output(value: &Value) -> bool {
     let val_type = value.get("type").and_then(|t| t.as_str()).unwrap_or("");
     if matches!(
@@ -220,6 +239,9 @@ impl LlmProtocol for OpenAiResponsesProtocol {
         if !state.has_semantic_output && has_semantic_output(value) {
             state.has_semantic_output = true;
         }
+        if !state.has_reasoning && has_reasoning_output(value) {
+            state.has_reasoning = true;
+        }
         if let Some(delta) = extract_delta_text(value) {
             if !delta.is_empty() {
                 state.has_semantic_output = true;
@@ -291,6 +313,7 @@ impl LlmProtocol for OpenAiResponsesProtocol {
 
         Ok(StreamParseState {
             has_semantic_output: !text.is_empty(),
+            has_reasoning: false,
             text,
             response_model: extract_response_model(value),
             usage: extract_usage(value),
@@ -404,6 +427,14 @@ mod tests {
 
     #[test]
     fn test_scan_chat_stream_detects_responses_reasoning() {
+        let created = "data: {\"type\":\"response.created\",\"response\":{\"model\":\"gpt-5.1\"}}\n\n";
+        let state_created = scan_sse_str(created, &OpenAiResponsesProtocol, ParseMode::StrictProbe);
+        assert!(!state_created.has_reasoning);
+
+        let text_only = "data: {\"type\":\"response.output_text.delta\",\"delta\":\"<svg>\"}\n\n";
+        let state_text = scan_sse_str(text_only, &OpenAiResponsesProtocol, ParseMode::StrictProbe);
+        assert!(!state_text.has_reasoning);
+
         let responses_reasoning =
             "data: {\"type\":\"response.reasoning_summary_text.delta\",\"delta\":\"thinking\"}\n\n";
         let state = scan_sse_str(
@@ -412,6 +443,13 @@ mod tests {
             ParseMode::LenientChat,
         );
         assert!(state.has_semantic_output);
+        assert!(state.has_reasoning);
         assert!(state.text.is_empty());
+
+        let item_added = "data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"reasoning\"}}\n\n";
+        assert!(scan_sse_str(item_added, &OpenAiResponsesProtocol, ParseMode::StrictProbe).has_reasoning);
+
+        let summary_added = "data: {\"type\":\"response.reasoning_summary_part.added\"}\n\n";
+        assert!(scan_sse_str(summary_added, &OpenAiResponsesProtocol, ParseMode::StrictProbe).has_reasoning);
     }
 }

@@ -76,11 +76,11 @@ struct ChatObserverAdapter<'a> {
 }
 
 impl CompletionStreamObserver for ChatObserverAdapter<'_> {
-    fn on_start(&mut self) {
+    fn on_start(&mut self, _state: &StreamParseState) {
         self.sink.on_start();
     }
 
-    fn on_progress(&mut self, state: &StreamParseState) {
+    fn on_progress(&mut self, state: &StreamParseState, _thinking_ms: Option<u64>) {
         let model_changed =
             state.response_model.is_some() && state.response_model != self.last_model;
         if state.text.len() > self.last_text_len || model_changed {
