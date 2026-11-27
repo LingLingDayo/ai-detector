@@ -1,9 +1,34 @@
 import { describe, expect, it } from "vitest";
 import {
   filterModelsByQuery,
+  getNextHighlightedIndex,
+  resolveInitialHighlightedIndex,
   resolveModelAfterCredentialChange,
   selectDefaultModel,
 } from "./useModelFetch";
+
+describe("resolveInitialHighlightedIndex & getNextHighlightedIndex", () => {
+  const models = ["gpt-5.6-sol", "gpt-6-sol", "gpt-6.2-sol"];
+
+  it("空列表返回 -1", () => {
+    expect(resolveInitialHighlightedIndex([], "gpt-6-sol")).toBe(-1);
+    expect(getNextHighlightedIndex(0, 0, "next")).toBe(-1);
+  });
+
+  it("初始高亮命中当前值时定位到该项，否则定位首项", () => {
+    expect(resolveInitialHighlightedIndex(models, "gpt-6-sol")).toBe(1);
+    expect(resolveInitialHighlightedIndex(models, "sol")).toBe(0);
+  });
+
+  it("上下方向键支持首尾循环与无效索引初始化", () => {
+    expect(getNextHighlightedIndex(-1, 3, "next")).toBe(0);
+    expect(getNextHighlightedIndex(-1, 3, "prev")).toBe(2);
+    expect(getNextHighlightedIndex(0, 3, "next")).toBe(1);
+    expect(getNextHighlightedIndex(2, 3, "next")).toBe(0);
+    expect(getNextHighlightedIndex(0, 3, "prev")).toBe(2);
+    expect(getNextHighlightedIndex(2, 3, "prev")).toBe(1);
+  });
+});
 
 describe("filterModelsByQuery", () => {
   const sampleModels = ["gpt-5.6-sol", "gpt-6-astra", "claude-opus-5-5", "codex-auto-review"];

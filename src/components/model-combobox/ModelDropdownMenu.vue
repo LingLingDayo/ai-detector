@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref, watch, nextTick } from "vue";
+
 const props = withDefaults(
   defineProps<{
     isOpen: boolean;
@@ -8,19 +10,36 @@ const props = withDefaults(
     models: string[];
     isFetchedFromApi: boolean;
     isFetching?: boolean;
+    highlightedIndex?: number;
   }>(),
   {
     isFetching: false,
+    highlightedIndex: -1,
   }
 );
 
 const emit = defineEmits<{
   (e: "select", model: string): void;
+  (e: "hover", index: number): void;
 }>();
+
+const listRef = ref<HTMLUListElement | null>(null);
 
 function handleSelect(model: string): void {
   emit("select", model);
 }
+
+watch(
+  [() => props.highlightedIndex, () => props.isOpen],
+  ([index, open]) => {
+    if (!open || index < 0) return;
+    nextTick(() => {
+      const items = listRef.value?.querySelectorAll<HTMLElement>(".dropdown-item");
+      const target = items?.[index];
+      target?.scrollIntoView({ block: "nearest" });
+    });
+  }
+);
 </script>
 
 <template>
@@ -29,7 +48,12 @@ function handleSelect(model: string): void {
     :class="{ hidden: !isOpen, 'is-top': placement === 'top', 'is-bottom': placement === 'bottom' }"
     :id="id ? `${id}-dropdown` : 'model-dropdown'"
   >
-    <ul class="dropdown-list" :id="id ? `${id}-dropdown-list` : 'dropdown-list'">
+    <ul
+      ref="listRef"
+      class="dropdown-list"
+      :id="id ? `${id}-dropdown-list` : 'dropdown-list'"
+      role="listbox"
+    >
       <template v-if="models.length === 0">
         <li v-if="isFetching" class="dropdown-empty">
           正在拉取模型列表...
@@ -46,10 +70,14 @@ function handleSelect(model: string): void {
       </template>
       <template v-else>
         <li
-          v-for="m in models"
+          v-for="(m, index) in models"
           :key="m"
           class="dropdown-item"
-          :class="{ selected: m === modelValue }"
+          :class="{ selected: m === modelValue, active: index === highlightedIndex }"
+          role="option"
+          :aria-selected="m === modelValue"
+          @mousedown.prevent
+          @mouseenter="emit('hover', index)"
           @click="handleSelect(m)"
         >
           <span class="model-name-text">{{ m }}</span>
@@ -139,7 +167,6 @@ function handleSelect(model: string): void {
         margin-left: 6px;
       }
 
-      &:hover,
       &.active {
         background: rgba(var(--accent-rgb), 0.15);
         color: var(--text-strong);

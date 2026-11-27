@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
 import { RotateCw, ChevronDown } from "@lucide/vue";
 import ModelDropdownMenu from "./model-combobox/ModelDropdownMenu.vue";
-import { useModelFetch, filterModelsByQuery } from "./model-combobox/useModelFetch";
+import {
+  useModelFetch,
+  filterModelsByQuery,
+  getNextHighlightedIndex,
+  resolveInitialHighlightedIndex,
+} from "./model-combobox/useModelFetch";
 import { isValidBaseUrl, isValidApiKey } from "./model-combobox/modelStorage";
 
 const props = withDefaults(
@@ -39,9 +44,11 @@ const emit = defineEmits<{
 }>();
 
 const comboboxRef = ref<HTMLDivElement | null>(null);
+const inputRef = ref<HTMLInputElement | null>(null);
 const isOpen = ref(false);
 const isFiltering = ref(false);
 const filterQuery = ref("");
+const highlightedIndex = ref(-1);
 const placement = ref<"bottom" | "top">("bottom");
 
 const {
@@ -68,6 +75,17 @@ const isDropdownVisible = computed(() => {
   return isOpen.value && (!isFiltering.value || displayedModels.value.length > 0);
 });
 
+watch(displayedModels, (models) => {
+  if (!isDropdownVisible.value) return;
+  if (models.length === 0) {
+    highlightedIndex.value = -1;
+    return;
+  }
+  if (highlightedIndex.value < 0 || highlightedIndex.value >= models.length) {
+    highlightedIndex.value = resolveInitialHighlightedIndex(models, props.modelValue);
+  }
+});
+
 function calculatePlacement(): void {
   if (!comboboxRef.value) return;
   const rect = comboboxRef.value.getBoundingClientRect();
@@ -81,16 +99,21 @@ function calculatePlacement(): void {
   }
 }
 
-function openDropdown(): void {
+function openDropdown(initialIndex?: number): void {
   if (props.disabled) return;
   calculatePlacement();
   isOpen.value = true;
+  highlightedIndex.value =
+    initialIndex !== undefined
+      ? initialIndex
+      : resolveInitialHighlightedIndex(displayedModels.value, props.modelValue);
 }
 
 function closeDropdown(): void {
   isOpen.value = false;
   isFiltering.value = false;
   filterQuery.value = "";
+  highlightedIndex.value = -1;
 }
 
 function toggleDropdown(): void {
@@ -101,6 +124,9 @@ function toggleDropdown(): void {
     isFiltering.value = false;
     filterQuery.value = "";
     openDropdown();
+    nextTick(() => {
+      inputRef.value?.focus();
+    });
     if (!isFetchedFromApi.value && isValidBaseUrl(props.baseUrl) && isValidApiKey(props.apiKey)) {
       void fetchModels({ autoSelectFirst: false });
     }
@@ -130,16 +156,50 @@ function handleInput(e: Event): void {
   emit("update:modelValue", value);
   emit("update:isCustomModel", true);
 
-  if (filterModelsByQuery(availableModels.value, value).length > 0) {
-    openDropdown();
+  const matched = filterModelsByQuery(availableModels.value, value);
+  if (matched.length > 0) {
+    openDropdown(resolveInitialHighlightedIndex(matched, value));
   } else {
     isOpen.value = false;
+    highlightedIndex.value = -1;
   }
 }
 
 function handleInputKeydown(e: KeyboardEvent): void {
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    const direction = e.key === "ArrowDown" ? "next" : "prev";
+    if (isDropdownVisible.value && displayedModels.value.length > 0) {
+      e.preventDefault();
+      highlightedIndex.value = getNextHighlightedIndex(
+        highlightedIndex.value,
+        displayedModels.value.length,
+        direction
+      );
+      return;
+    }
+
+    if (availableModels.value.length > 0) {
+      e.preventDefault();
+      isFiltering.value = false;
+      filterQuery.value = "";
+      const matchedIndex = availableModels.value.indexOf(props.modelValue);
+      const initialIndex =
+        matchedIndex >= 0 ? matchedIndex : direction === "next" ? 0 : availableModels.value.length - 1;
+      openDropdown(initialIndex);
+      return;
+    }
+  }
+
   if (!isDropdownVisible.value) return;
-  if (e.key === "Escape") {
+
+  if (e.key === "Enter" && !e.isComposing) {
+    const target = displayedModels.value[highlightedIndex.value];
+    if (target) {
+      e.preventDefault();
+      e.stopPropagation();
+      handleSelect(target);
+    }
+  } else if (e.key === "Escape") {
     e.stopPropagation();
     closeDropdown();
   } else if (e.key === "Tab") {
@@ -179,6 +239,7 @@ defineExpose({
     :class="{ 'combobox-open': isDropdownVisible, 'is-disabled': disabled }"
   >
     <input
+      ref="inputRef"
       type="text"
       :id="id"
       :value="modelValue"
@@ -230,6 +291,8 @@ defineExpose({
       :models="displayedModels"
       :is-fetched-from-api="isFetchedFromApi"
       :is-fetching="isFetching"
+      :highlighted-index="highlightedIndex"
+      @hover="(index) => (highlightedIndex = index)"
       @select="handleSelect"
     />
   </div>

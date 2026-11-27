@@ -101,6 +101,35 @@ export function filterModelsByQuery(models: readonly string[], query: string): s
   return models.filter((m) => m.toLowerCase().includes(q));
 }
 
+/**
+ * 计算下拉展开时的初始高亮索引：精确命中当前值时指向该项，否则指向首项
+ */
+export function resolveInitialHighlightedIndex(
+  models: readonly string[],
+  currentValue: string
+): number {
+  if (models.length === 0) return -1;
+  const idx = models.indexOf(currentValue);
+  return idx >= 0 ? idx : 0;
+}
+
+/**
+ * 按方向计算下一个高亮索引（支持首尾循环）
+ */
+export function getNextHighlightedIndex(
+  currentIndex: number,
+  total: number,
+  direction: "next" | "prev"
+): number {
+  if (total <= 0) return -1;
+  if (currentIndex < 0 || currentIndex >= total) {
+    return direction === "next" ? 0 : total - 1;
+  }
+  return direction === "next"
+    ? (currentIndex + 1) % total
+    : (currentIndex - 1 + total) % total;
+}
+
 export function resolveModelAfterCredentialChange(
   currentModel: string,
   models: string[],
