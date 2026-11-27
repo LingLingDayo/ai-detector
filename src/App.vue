@@ -318,6 +318,7 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
       @open-create="configStore.openCreateConfigModal"
       @open-edit="configStore.openEditConfigModal"
       @open-save-current="configStore.openSaveCurrentModal"
+      @duplicate="configStore.duplicateConfigItem"
       @delete="configStore.deleteConfigItem"
       @reorder="({ sourceId, targetId, position }) => configStore.moveConfigItem(sourceId, targetId, position)"
       @create-group="configStore.createConfigGroup"

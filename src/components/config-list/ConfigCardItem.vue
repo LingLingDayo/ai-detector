@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ConfigItem } from "../../types";
-import { Pencil, Trash2 } from "@lucide/vue";
+import { Copy, Pencil, Trash2 } from "@lucide/vue";
 
 const props = withDefaults(
   defineProps<{
@@ -25,6 +25,7 @@ const emit = defineEmits<{
   (e: "quickApply", item: ConfigItem): void;
   (e: "switchBlocked", item: ConfigItem): void;
   (e: "openEdit", item: ConfigItem): void;
+  (e: "duplicate", id: string): void;
   (e: "delete", id: string): void;
   (e: "dragstart", event: DragEvent, id: string): void;
   (e: "dragover", event: DragEvent, id: string, position: "before" | "after"): void;
@@ -151,26 +152,38 @@ function maskApiKey(key?: string): string {
       <div class="card-actions" @mousedown.stop @dblclick.stop>
         <button
           type="button"
+          class="btn-action btn-copy"
+          title="复制此配置"
+          aria-label="复制此配置"
+          draggable="false"
+          @dragstart.stop.prevent
+          @click.stop="emit('duplicate', item.id)"
+        >
+          <Copy :size="14" />
+        </button>
+
+        <button
+          type="button"
           class="btn-action btn-edit"
           title="编辑此配置"
+          aria-label="编辑此配置"
           draggable="false"
           @dragstart.stop.prevent
           @click.stop="emit('openEdit', item)"
         >
-          <Pencil :size="12" />
-          <span>编辑</span>
+          <Pencil :size="14" />
         </button>
 
         <button
           type="button"
           class="btn-action btn-delete"
           title="删除此配置"
+          aria-label="删除此配置"
           draggable="false"
           @dragstart.stop.prevent
           @click.stop="emit('delete', item.id)"
         >
-          <Trash2 :size="12" />
-          <span>删除</span>
+          <Trash2 :size="14" />
         </button>
       </div>
     </div>
@@ -387,23 +400,22 @@ function maskApiKey(key?: string): string {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 4px;
+        width: 24px;
         height: 24px;
-        padding: 0 8px;
-        font-size: 12px;
-        font-weight: 500;
-        line-height: 1;
+        padding: 0;
+        line-height: 0;
         border-radius: var(--radius-sm);
         cursor: pointer;
         font-family: inherit;
         transition: all var(--transition-fast);
         border: 1px solid transparent;
 
-        svg {
+        :deep(svg) {
           display: block;
           flex-shrink: 0;
         }
 
+        &.btn-copy,
         &.btn-edit {
           background: var(--bg-surface-control);
           color: var(--text-secondary);

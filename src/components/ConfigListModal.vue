@@ -35,6 +35,7 @@ const emit = defineEmits<{
   (e: "openCreate"): void;
   (e: "openEdit", item: ConfigItem): void;
   (e: "openSaveCurrent"): void;
+  (e: "duplicate", id: string): void;
   (e: "delete", id: string): void;
   (e: "reorder", payload: { sourceId: string; targetId: string; position: "before" | "after" }): void;
   (e: "swap", payload: { sourceId: string; targetId: string }): void;
@@ -244,6 +245,7 @@ function handleQuickApply(item: ConfigItem): void {
                 @quick-apply="handleQuickApply"
                 @switch-blocked="showSwitchBlockedTip"
                 @open-edit="emit('openEdit', $event)"
+                @duplicate="emit('duplicate', $event)"
                 @delete="emit('delete', $event)"
                 @dragstart="handleDragStart"
                 @dragover="handleDragOverItem"
@@ -283,6 +285,7 @@ function handleQuickApply(item: ConfigItem): void {
                 @quick-apply="handleQuickApply"
                 @switch-blocked="showSwitchBlockedTip"
                 @open-edit="emit('openEdit', $event)"
+                @duplicate="emit('duplicate', $event)"
                 @delete="emit('delete', $event)"
                 @dragstart="handleDragStart"
                 @dragover="handleDragOverItem"

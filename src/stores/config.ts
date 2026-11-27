@@ -11,6 +11,7 @@ import type { ActiveTestMode, ClientConfig, ConfigGroup, ConfigItem } from "../t
 import { useConfirm } from "../composables/useConfirm";
 import {
   generateConfigId,
+  generateDuplicateConfigName,
   generateGroupId,
   isSameConfigIdentity,
   isConfigEqual,
@@ -498,6 +499,29 @@ export const useConfigStore = defineStore("config", () => {
 
   function swapConfigItems(sourceId: string, targetId: string): void {
     moveConfigItem(sourceId, targetId, "before");
+  }
+
+  function duplicateConfigItem(id: string): ConfigItem | null {
+    const index = configList.value.findIndex((item) => item.id === id);
+    if (index === -1) return null;
+
+    const source = configList.value[index];
+    const now = Date.now();
+    const nextName = generateDuplicateConfigName(
+      source.name,
+      configList.value.map((item) => item.name)
+    );
+    const duplicatedItem: ConfigItem = {
+      ...source,
+      id: generateConfigId(),
+      name: nextName,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    configList.value.splice(index + 1, 0, duplicatedItem);
+    saveConfigListToStorage();
+    return duplicatedItem;
   }
 
   function createConfigGroup(name: string): ConfigGroup | null {
@@ -1204,6 +1228,7 @@ export const useConfigStore = defineStore("config", () => {
     applyConfig,
     handleSaveConfigItem,
     deleteConfigItem,
+    duplicateConfigItem,
     moveConfigItem,
     swapConfigItems,
     createConfigGroup,

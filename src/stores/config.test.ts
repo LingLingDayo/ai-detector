@@ -922,4 +922,91 @@ describe("配置分组管理、拖拽归组与级联删除测试套件", () => {
   });
 });
 
+describe("复制配置项 duplicateConfigItem 测试套件", () => {
+  it("复制配置时在原项正下方生成完全相同的副本并在名称末尾添加递增序号", () => {
+    storage.clear();
+    setActivePinia(createPinia());
+    const store = useConfigStore();
+    store.loadConfig();
+
+    const group = store.createConfigGroup("主力分组")!;
+    const itemA: ConfigItem = {
+      id: "cfg_a",
+      name: "bl_大概率不降智0039",
+      baseUrl: "https://beiluoxi.top",
+      apiKey: "sk-c-749d",
+      apiFormat: "responses",
+      modelName: "gpt-6.2-sol",
+      reasoningEffort: "medium",
+      stream: false,
+      isCustomModel: true,
+      groupId: group.id,
+      createdAt: 1000,
+      updatedAt: 1000,
+    };
+    const itemB: ConfigItem = {
+      id: "cfg_b",
+      name: "bl_不降智0055",
+      baseUrl: "https://beiluoxi.top",
+      apiKey: "sk-d-cb88",
+      apiFormat: "chat_completions",
+      modelName: "gpt-6.2-sol",
+      reasoningEffort: "high",
+      stream: true,
+      createdAt: 1000,
+      updatedAt: 1000,
+    };
+    store.configList = [itemA, itemB];
+    store.applyConfig(itemA);
+
+    // 第一次复制 itemA：插入到 itemA 正下方，名称末尾加 (1)
+    const copy1 = store.duplicateConfigItem("cfg_a");
+    expect(copy1).not.toBeNull();
+    expect(copy1!.id).not.toBe("cfg_a");
+    expect(copy1!.name).toBe("bl_大概率不降智0039 (1)");
+    expect(copy1!.baseUrl).toBe(itemA.baseUrl);
+    expect(copy1!.apiKey).toBe(itemA.apiKey);
+    expect(copy1!.apiFormat).toBe(itemA.apiFormat);
+    expect(copy1!.modelName).toBe(itemA.modelName);
+    expect(copy1!.reasoningEffort).toBe(itemA.reasoningEffort);
+    expect(copy1!.stream).toBe(itemA.stream);
+    expect(copy1!.isCustomModel).toBe(true);
+    expect(copy1!.groupId).toBe(group.id);
+    expect(store.configList.map((c) => c.id)).toEqual(["cfg_a", copy1!.id, "cfg_b"]);
+    expect(store.activeConfigId).toBe("cfg_a");
+
+    // 再次复制原 itemA：自动跳过 (1) 生成 (2)，插入到 itemA 正下方
+    const copy2 = store.duplicateConfigItem("cfg_a");
+    expect(copy2).not.toBeNull();
+    expect(copy2!.name).toBe("bl_大概率不降智0039 (2)");
+    expect(store.configList.map((c) => c.id)).toEqual(["cfg_a", copy2!.id, copy1!.id, "cfg_b"]);
+
+    // 复制已有序号的副本 copy1：自动递增并避开已存在的 (2)，生成 (3)
+    const copy3 = store.duplicateConfigItem(copy1!.id);
+    expect(copy3).not.toBeNull();
+    expect(copy3!.name).toBe("bl_大概率不降智0039 (3)");
+    expect(store.configList.map((c) => c.id)).toEqual([
+      "cfg_a",
+      copy2!.id,
+      copy1!.id,
+      copy3!.id,
+      "cfg_b",
+    ]);
+
+    // 持久化校验
+    const persisted = JSON.parse(storage.get(CONFIG_LIST_STORAGE_KEY)!) as ConfigItem[];
+    expect(persisted.map((c) => c.name)).toEqual([
+      "bl_大概率不降智0039",
+      "bl_大概率不降智0039 (2)",
+      "bl_大概率不降智0039 (1)",
+      "bl_大概率不降智0039 (3)",
+      "bl_不降智0055",
+    ]);
+
+    // 不存在的 ID 返回 null 且列表不变
+    expect(store.duplicateConfigItem("non-existent-id")).toBeNull();
+    expect(store.configList).toHaveLength(5);
+  });
+});
+
 

@@ -78,3 +78,30 @@ export function formatSettingsSummary(config: ClientConfig): string {
 
   return `${formatName} · ${streamLabel}`;
 }
+
+/**
+ * 为复制的配置项生成不重复的名称（在名称末尾添加递增序号）
+ */
+export function generateDuplicateConfigName(
+  sourceName: string,
+  existingNames: Iterable<string>
+): string {
+  const trimmed = (sourceName || "").trim() || "未命名配置";
+  const existingSet = new Set<string>();
+  for (const name of existingNames) {
+    const normalized = (name || "").trim();
+    if (normalized) {
+      existingSet.add(normalized);
+    }
+  }
+
+  const suffixMatch = trimmed.match(/^(.*?)\s*\((\d+)\)$/);
+  const baseName = suffixMatch && suffixMatch[1].trim() ? suffixMatch[1].trim() : trimmed;
+  let seq = suffixMatch && suffixMatch[1].trim() ? Number(suffixMatch[2]) + 1 : 1;
+
+  while (existingSet.has(`${baseName} (${seq})`)) {
+    seq += 1;
+  }
+
+  return `${baseName} (${seq})`;
+}
