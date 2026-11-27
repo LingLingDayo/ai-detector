@@ -25,6 +25,73 @@ export type CredentialModelResolution =
   | { action: "clear" }
   | { action: "select"; model: string };
 
+/**
+ * 提取模型名称中的首个版本/数字标识数组（如 "gpt-5.6-sol" -> [5, 6]）
+ * 无有效数字标识时返回 null
+ */
+export function extractModelVersionParts(model: string): number[] | null {
+  const trimmed = model.trim();
+  if (!trimmed) return null;
+
+  const lastSlashIndex = trimmed.lastIndexOf("/");
+  const baseName =
+    lastSlashIndex !== -1 && lastSlashIndex < trimmed.length - 1
+      ? trimmed.slice(lastSlashIndex + 1)
+      : trimmed;
+
+  // 移除独立的日期快照片段（如 20250501、2024-11-20、2025-05），避免日期数字干扰版本比较
+  const withoutDates = baseName.replace(
+    /(?:^|[-_:.])(?:20\d{2}[-_]?(?:0[1-9]|1[0-2])[-_]?(?:0[1-9]|[12]\d|3[01])|20\d{2}[-_](?:0[1-9]|1[0-2]))(?=$|[-_:.])/g,
+    "-"
+  );
+
+  const match = withoutDates.match(/\d+\.\d+(?:\.\d+)*|\d+(?:-(?:[1-9]\d?|0)(?=$|[-_:]))?/);
+  if (!match) return null;
+
+  return match[0].split(/[.-]/).map((part) => Number(part));
+}
+
+/**
+ * 逐段比较两个版本号数组，缺失位按 0 对齐
+ */
+export function compareModelVersionParts(a: readonly number[], b: readonly number[]): number {
+  const len = Math.max(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    const numA = a[i] ?? 0;
+    const numB = b[i] ?? 0;
+    if (numA !== numB) {
+      return numA - numB;
+    }
+  }
+  return 0;
+}
+
+/**
+ * 从模型列表中选出默认模型：
+ * 1. 优先选择标识数字最大的模型（无数字优先级更低）
+ * 2. 最大数字并列时选择列表中靠前的第一个
+ * 3. 全部无数字标识时兜底返回列表第一个模型
+ */
+export function selectDefaultModel(models: readonly string[]): string | null {
+  if (models.length === 0) return null;
+
+  let bestModel = models[0];
+  let bestVersion = extractModelVersionParts(bestModel);
+
+  for (let i = 1; i < models.length; i++) {
+    const candidate = models[i];
+    const candidateVersion = extractModelVersionParts(candidate);
+    if (!candidateVersion) continue;
+
+    if (!bestVersion || compareModelVersionParts(candidateVersion, bestVersion) > 0) {
+      bestModel = candidate;
+      bestVersion = candidateVersion;
+    }
+  }
+
+  return bestModel;
+}
+
 export function resolveModelAfterCredentialChange(
   currentModel: string,
   models: string[],
@@ -45,7 +112,12 @@ export function resolveModelAfterCredentialChange(
     return { action: "keep" };
   }
 
-  return { action: "select", model: models[0] };
+  const defaultModel = selectDefaultModel(models);
+  if (!defaultModel) {
+    return { action: "clear" };
+  }
+
+  return { action: "select", model: defaultModel };
 }
 
 export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
@@ -124,8 +196,11 @@ export function useModelFetch({ getProps, emit }: UseModelFetchOptions) {
     }
 
     if (list.length > 0 && options.autoSelectFirst && !current.modelValue.trim()) {
-      hasAutoSelected.value = true;
-      applyAutoSelectedModel(list[0]);
+      const defaultModel = selectDefaultModel(list);
+      if (defaultModel) {
+        hasAutoSelected.value = true;
+        applyAutoSelectedModel(defaultModel);
+      }
     }
   }
 
