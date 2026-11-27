@@ -28,6 +28,6 @@ export const PELICAN_PRESETS: PelicanPreset[] = [
   {
     id: "zh-crane-cart",
     name: "丹顶鹤 SVG",
-    prompt: "生成一只推着小推车丹顶鹤的动态矢量图。仅回复矢量图代码。",
+    prompt: "生成一只推着小推车丹顶鹤的矢量图。仅回复矢量图代码。",
   },
 ];
