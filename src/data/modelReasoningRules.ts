@@ -2,13 +2,13 @@
  * 系统预设的全部思考强度档位信息
  */
 export const ALL_REASONING_EFFORT_OPTIONS = [
-  { label: "none", value: "none", description: "关闭思考" },
-  { label: "minimal", value: "minimal", description: "极低思考" },
-  { label: "low", value: "low", description: "轻度思考" },
-  { label: "medium", value: "medium", description: "中度思考" },
-  { label: "high", value: "high", description: "深度思考" },
-  { label: "xhigh", value: "xhigh", description: "极高思考" },
-  { label: "max", value: "max", description: "最高思考" },
+  { label: "none", value: "none", description: "关闭" },
+  { label: "minimal", value: "minimal", description: "极低" },
+  { label: "low", value: "low", description: "轻度" },
+  { label: "medium", value: "medium", description: "中度" },
+  { label: "high", value: "high", description: "深度" },
+  { label: "xhigh", value: "xhigh", description: "极高" },
+  { label: "max", value: "max", description: "最高" },
 ] as const;
 
 /**
