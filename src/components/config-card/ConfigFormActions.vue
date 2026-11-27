@@ -22,13 +22,13 @@ const emit = defineEmits<{
 const connectionModeOptions: SegmentedOption[] = [
   {
     value: "chat",
-    label: "对话模式",
+    label: "对话",
     icon: MessagesSquare,
     title: "完整多轮对话，展示回复、图片与统计",
   },
   {
     value: "quick",
-    label: "精简模式",
+    label: "精简",
     icon: Zap,
     title: "清空上下文并发送 Hi，仅通过顶部提示反馈结果",
   },
