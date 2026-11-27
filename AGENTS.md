@@ -17,7 +17,7 @@
 | `src-tauri/src/platform/` | 桌面与操作系统适配层（跨平台打开外部链接、Windows 离屏 WebView2 GIF 采集、应用自动更新（安装类型识别与便携版自替换）） |
 | `src-tauri/src/transport/tauri/` | Tauri 命令薄封装与事件桥接；未来新增对外 HTTP/SSE API 时可同级新增 `transport/http/` |
 | `src-tauri/src/lib.rs` | 后端组装根（构建 `AppServices` 与 `CaptureRegistry` 并交由传输层启动） |
-| `scripts/`、`docs/` | 构建发布脚本、开发者文档与图片 |
+| `scripts/`、`docs/` | 构建发布脚本、内部开发者文档（`release.md` / `auto-update.md` / `diagnostics.md`）与图片 |
 
 ## 技术栈
 
@@ -46,3 +46,4 @@
 
 - 提交信息沿用仓库历史格式 `type(scope): 中文描述`。
 - 前端改动后运行 `npm test`、`npx vue-tsc --noEmit`、`npm run build`；Rust 改动后追加 `cd src-tauri && cargo check`。
+- 版本发布流程与自动发版规范见 `docs/release.md`。
